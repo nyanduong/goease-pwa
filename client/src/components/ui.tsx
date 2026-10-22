@@ -46,9 +46,14 @@ export function Notice({
 export function Brand() {
   return (
     <span className="brand">
-      <span className="brand-mark" aria-hidden="true">
-        ↗
-      </span>
+      <img
+        className="brand-mark"
+        src="/images/goease-logo.webp"
+        alt=""
+        aria-hidden="true"
+        width={36}
+        height={36}
+      />
       <span className="brand-name">GoEase</span>
       <span className="brand-dot">.</span>
     </span>
