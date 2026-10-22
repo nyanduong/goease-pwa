@@ -1,6 +1,6 @@
 # GoEase — kiến trúc nền v0.1
 
-**Trạng thái:** Stack đã chốt; cách tổ chức và task F0 dưới đây là khuyến nghị triển khai ngày 22/10/2026. Chưa có mã ứng dụng trong bộ tài liệu này.
+**Trạng thái:** Stack đã chốt; nền tảng F0 đã được triển khai ngày 22/10/2026. Xem README và docs/F0-VERIFICATION.md để biết cách chạy và bằng chứng kiểm tra. Các đề xuất nghiệp vụ ngoài F0 vẫn chưa mặc nhiên được duyệt.
 
 ## 1. Ranh giới hệ thống
 
@@ -8,26 +8,26 @@ Một web React gọi một Express API. Express thực thi nghiệp vụ, xác 
 
 Backend ban đầu là một ứng dụng có các module theo nghiệp vụ. Chỉ thêm dịch vụ triển khai độc lập khi có nhu cầu vận hành cụ thể.
 
-| Phần | Trách nhiệm |
-| --- | --- |
-| Web PWA | Màn hình, nhập liệu, hiển thị, trạng thái tương tác và gọi API |
-| Express API | Kiểm tra dữ liệu, quyền, nghiệp vụ, orchestration nhà cung cấp và persistence |
-| MongoDB/Mongoose | Schema, index, dữ liệu lưu trữ và các thao tác atomic/transaction phù hợp |
-| Contracts | Kiểu request/response và validation dùng chung, độc lập với nền tảng |
-| Nhà cung cấp | Dữ liệu địa điểm, AI hoặc thanh toán theo phạm vi được chốt |
+| Phần             | Trách nhiệm                                                                      |
+| ---------------- | -------------------------------------------------------------------------------- |
+| Web PWA          | Màn hình, nhập liệu, hiển thị, trạng thái tương tác và gọi API                   |
+| Express API      | Kiểm tra dữ liệu, quyền, nghiệp vụ, orchestration nhà cung cấp và persistence    |
+| MongoDB/Mongoose | Schema, index, dữ liệu lưu trữ và các thao tác atomic/transaction phù hợp        |
+| Contracts        | Kiểu request/response và validation dùng chung, độc lập với nền tảng             |
+| Nhà cung cấp     | Dữ liệu địa điểm, AI hoặc thanh toán theo phạm vi được chốt                      |
 | Mobile tương lai | UI/navigation/lưu trữ thiết bị riêng; dùng chung API và phần logic thuần phù hợp |
 
 ## 2. Cấu trúc đề xuất
 
-Giữ các tên đơn giản đã trao đổi. Dùng npm workspaces với một lockfile ở root.
+Giữ các tên đơn giản đã trao đổi. Dùng pnpm workspace với một pnpm-lock.yaml ở root theo yêu cầu F0 trực tiếp của chủ dự án (ưu tiên hơn khuyến nghị npm trước đây).
 
-| Đường dẫn dự kiến | Nội dung |
-| --- | --- |
-| client/ | React + Vite + TypeScript + Tailwind |
-| server/ | Express + TypeScript + Mongoose |
+| Đường dẫn dự kiến   | Nội dung                                                        |
+| ------------------- | --------------------------------------------------------------- |
+| client/             | React + Vite + TypeScript + Tailwind                            |
+| server/             | Express + TypeScript + Mongoose                                 |
 | packages/contracts/ | Request/response types và runtime schema thực sự cần dùng chung |
-| docs/ | BR và kiến trúc |
-| AGENTS.md | Quy ước làm việc cho coding agent |
+| docs/               | BR và kiến trúc                                                 |
+| AGENTS.md           | Quy ước làm việc cho coding agent                               |
 
 Chưa tạo thư mục mobile hoặc package UI đa nền tảng. Trong server, thêm module như trips, planner, auth khi triển khai tính năng tương ứng; mỗi module có route/controller, service và model khi cần. Không tạo hàng loạt thư mục rỗng cho tính năng chưa được xác định.
 
@@ -89,7 +89,7 @@ Nguồn: [Vite environment variables](https://vite.dev/guide/env-and-mode), [Exp
 **Phạm vi:**
 
 1. Kiểm tra runtime/môi trường; chọn bộ phiên bản tương thích, ghi Node version và package manager.
-2. Dựng npm workspaces cho client, server và contracts tối thiểu; bật TypeScript strict.
+2. Dựng pnpm workspace cho client, server và contracts tối thiểu; bật TypeScript strict.
 3. Dựng React/Vite/Tailwind với một màn hình nền có responsive cơ bản.
 4. Dựng Express với validation cấu hình môi trường, error handling và endpoint /api/v1/health.
 5. Thiết lập kết nối Mongoose local; health/readiness phải phân biệt được API đang chạy và database có truy cập được hay không. Không trả chi tiết nội bộ nhạy cảm.

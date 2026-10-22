@@ -1,0 +1,31 @@
+{
+  "name": "goease-pwa",
+  "private": true,
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=24.15.0 <25",
+    "pnpm": "10.34.6"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @goease/contracts build && pnpm --parallel --filter @goease/client --filter @goease/server dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm --filter @goease/contracts build && pnpm -r typecheck && tsc -p tsconfig.tools.json",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm --filter @goease/contracts build && pnpm --filter @goease/server test",
+    "test:e2e": "pnpm build && playwright test",
+    "db:check": "pnpm --filter @goease/server db:check",
+    "db:init": "pnpm --filter @goease/server db:init"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.13.0",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.0"
+  }
+}
