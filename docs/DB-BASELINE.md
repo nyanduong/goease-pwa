@@ -131,25 +131,25 @@ Mỗi bảng kế thừa field của bộ chung tương ứng ở mục 2. Các 
 
 Hồ sơ nội bộ ổn định, không chứa mọi hoạt động người dùng.
 
-| Field                                 | Kiểu                  | Required/default           | Ý nghĩa và ràng buộc                                                                                     |
-| ------------------------------------- | --------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------- |
-| emailNormalized                       | string?               | Điều kiện; duy nhất nếu có | Trim + lower-case theo chính sách nhất quán; không xóa dấu chấm/plus như Gmail; xóa khi purge được phép. |
-| emailVerifiedAt                       | Date?                 | null                       | Xác minh email hiện tại; đổi email phải xác minh lại.                                                    |
-| displayName                           | string                | Bắt buộc; 1–100 ký tự      | Tên hiển thị; không suy ra tên pháp lý.                                                                  |
-| avatarAssetId                         | ObjectId?             | null                       | Tham chiếu media_assets; không sao chép provider image khi chưa rõ quyền.                                |
-| status                                | enum                  | pending_verification       | pending_verification/active/suspended/deletion_pending/anonymized.                                       |
-| roles                                 | enum[]                | [traveler]                 | traveler/editor/support/finance/admin; server cấp; giới hạn tập role.                                    |
-| locale; timezone                      | string; IANA timezone | vi-VN; Asia/Ho_Chi_Minh    | Cài đặt hiển thị, không xác định vị trí thực.                                                            |
-| preferences                           | Preference object     | {}                         | interestCodes[], pace, budgetBand?, preferredTransport[]; chỉ sở thích user tự khai, không là consent.   |
-| privacySettings                       | object                | optional purposes disabled | personalization/analytics/marketing + lastConsentEventId; là projection, lịch sử ở consent_events.       |
-| lastLoginAt                           | Date?                 | null                       | Cập nhật có throttle, không là lịch sử đăng nhập.                                                        |
-| securityVersion                       | integer               | 1                          | Tăng khi thu hồi toàn bộ phiên hoặc thay đổi xác thực quan trọng.                                        |
-| suspendedAt; suspensionReasonCode     | Date?; enum?          | null                       | Chỉ actor được cấp quyền cập nhật.                                                                       |
-| deactivationRequestedAt; anonymizedAt | Date?; Date?          | null                       | Mốc xử lý xóa tài khoản, không thay deletedAt.                                                           |
+| Field                                 | Kiểu                  | Required/default                      | Ý nghĩa và ràng buộc                                                                                                                    |
+| ------------------------------------- | --------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| emailNormalized                       | string?               | Điều kiện; duy nhất nếu có            | Trim + lower-case theo chính sách nhất quán; không xóa dấu chấm/plus như Gmail; xóa khi purge được phép.                                |
+| emailVerifiedAt                       | Date?                 | null                                  | Xác minh email hiện tại; đổi email phải xác minh lại.                                                                                   |
+| displayName                           | string                | Bắt buộc; 1–100 ký tự                 | Tên hiển thị; không suy ra tên pháp lý.                                                                                                 |
+| avatarAssetId                         | ObjectId?             | null                                  | Tham chiếu media_assets; không sao chép provider image khi chưa rõ quyền.                                                               |
+| status                                | enum                  | active for new email/password account | pending_verification (legacy only)/active/suspended/deletion_pending/anonymized; account usability is separate from email verification. |
+| roles                                 | enum[]                | [traveler]                            | traveler/editor/support/finance/admin; server cấp; giới hạn tập role.                                                                   |
+| locale; timezone                      | string; IANA timezone | vi-VN; Asia/Ho_Chi_Minh               | Cài đặt hiển thị, không xác định vị trí thực.                                                                                           |
+| preferences                           | Preference object     | {}                                    | interestCodes[], pace, budgetBand?, preferredTransport[]; chỉ sở thích user tự khai, không là consent.                                  |
+| privacySettings                       | object                | optional purposes disabled            | personalization/analytics/marketing + lastConsentEventId; là projection, lịch sử ở consent_events.                                      |
+| lastLoginAt                           | Date?                 | null                                  | Cập nhật có throttle, không là lịch sử đăng nhập.                                                                                       |
+| securityVersion                       | integer               | 1                                     | Tăng khi thu hồi toàn bộ phiên hoặc thay đổi xác thực quan trọng.                                                                       |
+| suspendedAt; suspensionReasonCode     | Date?; enum?          | null                                  | Chỉ actor được cấp quyền cập nhật.                                                                                                      |
+| deactivationRequestedAt; anonymizedAt | Date?; Date?          | null                                  | Mốc xử lý xóa tài khoản, không thay deletedAt.                                                                                          |
 
 **Indexes:** Unique partial emailNormalized khi là string, KHÔNG giới hạn deletedAt; {status:1,createdAt:-1}.
 
-**Invariant/quyền:** Không soft-delete rồi tạo user mới cùng email để kế thừa trip cũ. Trong grace period dùng flow khôi phục; sau purge tạo account mới có ID mới. Không lưu CCCD, ngày sinh, giới tính, số điện thoại chỉ để đầy profile.
+**Invariant/quyền:** Email/password account mới được dùng khi emailVerifiedAt còn null. Legacy pending password account chỉ chuyển active sau xác thực mật khẩu đúng và kiểm tra chưa khóa/xóa; không xác minh email trong bước này. Không merge/link theo email chưa xác minh. Không soft-delete rồi tạo user mới cùng email để kế thừa trip cũ. Trong grace period dùng flow khôi phục; sau purge tạo account mới có ID mới. Không lưu CCCD, ngày sinh, giới tính, số điện thoại chỉ để đầy profile.
 
 **Retention:** Profile cho đến yêu cầu xóa hoặc policy inactivity đã duyệt; audit và tài chính xử lý riêng.
 

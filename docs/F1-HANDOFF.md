@@ -67,6 +67,8 @@ Nguồn đối chiếu F1-A: [MongoDB unique](https://www.mongodb.com/docs/manua
 
 ## 4. F1-C — authentication và identity
 
+**Cập nhật sau task 2026-10-22:** slice email/password register/login/logout/session đã triển khai. Email/password tạo account dùng được ngay, `emailVerifiedAt` giữ null, không phát verification challenge/mailbox. Google/link/recovery và email verification thật vẫn chưa triển khai hoặc kiểm thử live.
+
 **Mục tiêu:** Google và email/password trên một user ID ổn định, link an toàn, session revoke, token một lần; không giả thành công provider.
 
 **Phạm vi được sửa:** auth/user feature server, auth contracts/validation, UI login tối thiểu và trạng thái retry, env example placeholder, focused tests, tài liệu. Triển khai từng slice đăng ký/verify → login/logout/revoke → Google/link; không bắt đầu commerce hay trip CRUD.
@@ -109,4 +111,4 @@ Không chạy application tests, migration, syncIndexes, db:check, provider ho�
 
 Đã kiểm chứng unit/HTTP, scan stdout/stderr, concurrency, index thật, commit/rollback/audit write failure, sequential/concurrent dedupe và conflict; chi tiết lệnh/môi trường ở verification. F1-B không ghi audit lúc app startup, không HTTP audit API, không auth/trip/analytics/outbox/migration/purge. Fixture và probe chỉ nằm trong DB test riêng, cleanup không đụng rs0 ứng dụng.
 
-F1-C vẫn cần Q-06/R-04/R-05: email delivery provider; Google OAuth client/redirect/config; session/rate-limit thông số, email collision/re-auth/link/recovery UX, ma trận challenge binding; Q-02 cho quyền account chưa verify và Q-07 cho notice/policy trước public signup. Google + email/password đã chốt, không hỏi lại phương thức login. F1-B không tự chọn các policy đó và dừng tại đây.
+Email/password register/login/session và chuyến riêng cho account chưa xác minh đã triển khai theo task 2026-10-22. Còn Q-06/R-04/R-05 cho Google OAuth live, identity link/re-auth/recovery và challenge binding khi có flow xác minh thật. Q-02 không còn chặn chuyến riêng cho account email chưa xác minh; quyền đặc biệt, linking và commerce vẫn không được suy ra. Q-07 còn áp dụng policy/notice trước rollout public. Không coi email chưa xác minh là bằng chứng ownership ngoài credential đã đăng nhập.

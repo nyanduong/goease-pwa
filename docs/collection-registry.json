@@ -37,8 +37,8 @@
         [
           "status",
           "enum",
-          "pending_verification",
-          "pending_verification/active/suspended/deletion_pending/anonymized."
+          "active for new email/password account",
+          "pending_verification (legacy only)/active/suspended/deletion_pending/anonymized; account usability is separate from email verification."
         ],
         [
           "roles",

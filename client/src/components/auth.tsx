@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import type { UserDto } from '@goease/contracts';
 import { api } from '../api';
@@ -7,26 +7,16 @@ import { Field, Goe, Notice } from './ui';
 
 export function AuthPage({
   register,
-  google,
   link,
   onDone,
 }: {
   register: boolean;
-  google: boolean;
   link: Link;
   onDone: (user: UserDto) => void;
 }) {
   const [showPassword, setShowPassword] = useState(false);
-  const googleError = new URLSearchParams(location.search).get('google');
-  const [message, setMessage] = useState(
-    googleError === 'link_required'
-      ? 'Email này đã thuộc một tài khoản khác. Hãy đăng nhập bằng phương thức hiện có; GoEase không tự gộp tài khoản theo email.'
-      : googleError
-        ? 'Chưa đăng nhập được bằng Google. Hãy thử lại hoặc dùng email và mật khẩu.'
-        : '',
-  );
+  const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
 
   return (
     <section className="auth-layout">
@@ -66,17 +56,6 @@ export function AuthPage({
           </p>
         </div>
 
-        {register && (
-          <details className="dev-notice">
-            <summary>Lưu ý môi trường thử nghiệm (Local)</summary>
-            <p>
-              Bản local lưu email, mật khẩu đã băm và lịch trình trong MongoDB
-              trên máy. Thư xác minh dùng hộp thư phát triển, chưa gửi email
-              thật. Không dùng mật khẩu của tài khoản khác.
-            </p>
-          </details>
-        )}
-
         <form
           className="auth-form"
           onSubmit={(e) => {
@@ -95,14 +74,7 @@ export function AuthPage({
                 }),
               },
             )
-              .then((v) => {
-                if (register) {
-                  setSent(true);
-                  setMessage(
-                    v.message ?? 'Hãy mở thư xác minh để hoàn tất tài khoản.',
-                  );
-                } else onDone(v.user);
-              })
+              .then((v) => onDone(v.user))
               .catch((error: unknown) => setMessage(errorText(error)))
               .finally(() => setBusy(false));
           }}
@@ -176,15 +148,7 @@ export function AuthPage({
             )}
           </div>
 
-          {message && <Notice error={!sent}>{message}</Notice>}
-
-          {sent &&
-            import.meta.env.DEV &&
-            link(
-              '/dev/mailbox',
-              'Mở hộp thư phát triển để xác minh ↗',
-              'dev-mailbox-link',
-            )}
+          {message && <Notice error>{message}</Notice>}
 
           <button
             type="submit"
@@ -196,34 +160,6 @@ export function AuthPage({
           </button>
         </form>
 
-        <div className="divider">
-          <span>hoặc</span>
-        </div>
-
-        <div className="auth-social">
-          {google ? (
-            <a
-              className="button button-outline full-width google-btn"
-              href="/api/v1/auth/google"
-            >
-              Tiếp tục với Google
-            </a>
-          ) : (
-            <div className="google-disabled-group">
-              <button
-                type="button"
-                className="button button-outline full-width google-btn"
-                disabled
-              >
-                Google · Chưa khả dụng
-              </button>
-              <small className="muted text-center block">
-                Google chưa được cấu hình trong môi trường này.
-              </small>
-            </div>
-          )}
-        </div>
-
         <p className="auth-switch">
           {register ? 'Đã có tài khoản? ' : 'Bạn mới đến? '}
           {link(
@@ -232,124 +168,6 @@ export function AuthPage({
             'text-link',
           )}
         </p>
-      </div>
-    </section>
-  );
-}
-
-export function VerifyPage({ link }: { link: Link }) {
-  const [message, setMessage] = useState('');
-  const [done, setDone] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  return (
-    <section className="narrow-page panel">
-      <div className="verify-header">
-        <Goe size="medium" />
-        <p className="eyebrow">
-          <span></span>TÀI KHOẢN CỦA BẠN
-        </p>
-        <h1>Xác minh email</h1>
-        <p className="verify-sub">
-          Hoàn tất bước xác minh trước khi lưu chuyến đi vào tài khoản.
-        </p>
-      </div>
-
-      {message && <Notice error={!done}>{message}</Notice>}
-
-      <div className="verify-actions">
-        {done ? (
-          link('/login', 'Đến trang đăng nhập', 'button button-primary')
-        ) : (
-          <button
-            type="button"
-            className="button button-primary"
-            disabled={busy}
-            onClick={() => {
-              setBusy(true);
-              void api('/auth/verify-email', {
-                method: 'POST',
-                body: JSON.stringify({
-                  token: new URLSearchParams(location.search).get('token'),
-                }),
-              })
-                .then(() => {
-                  setDone(true);
-                  setMessage('Email đã được xác minh. Bạn có thể đăng nhập.');
-                  history.replaceState({}, '', '/verify-email');
-                })
-                .catch((e: unknown) => setMessage(errorText(e)))
-                .finally(() => setBusy(false));
-            }}
-          >
-            {busy ? 'Đang xác minh…' : 'Xác minh email của tôi'}
-          </button>
-        )}
-      </div>
-    </section>
-  );
-}
-
-type Mail = { id: string; to: string; url: string; createdAt: string };
-
-export function Mailbox({ link }: { link: Link }) {
-  const [items, setItems] = useState<Mail[]>([]);
-  const [error, setError] = useState('');
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    void api<{ items: Mail[] }>('/dev/mailbox')
-      .then((v) => setItems(v.items))
-      .catch((e: unknown) => setError(errorText(e)));
-  }, [attempt]);
-
-  return (
-    <section className="page-section mailbox-section">
-      <div className="mailbox-header">
-        <p className="eyebrow">
-          <span></span>CHỈ TRONG DEVELOPMENT
-        </p>
-        <h1>Hộp thư phát triển</h1>
-        <Notice>
-          Thư chỉ lưu trên máy phát triển, không được gửi tới email thật. Trang
-          này không hoạt động trong production.
-        </Notice>
-        <button
-          type="button"
-          className="button button-outline"
-          onClick={() => {
-            setError('');
-            setAttempt((v) => v + 1);
-          }}
-        >
-          Tải lại hộp thư
-        </button>
-      </div>
-
-      {error && <Notice error>{error}</Notice>}
-
-      <div className="mailbox-list">
-        {items.length ? (
-          items.map((m) => (
-            <article className="mail-card" key={m.id}>
-              <div className="mail-card-content">
-                <strong>Xác minh tài khoản GoEase</strong>
-                <p>
-                  {m.to} · {new Date(m.createdAt).toLocaleString('vi-VN')}
-                </p>
-              </div>
-              {link(
-                new URL(m.url).pathname + new URL(m.url).search,
-                'Mở thư xác minh ↗',
-                'button button-outline button-small',
-              )}
-            </article>
-          ))
-        ) : (
-          <p className="muted empty-mailbox-text">
-            Chưa có thư. Đăng ký một tài khoản để nhận thư xác minh local.
-          </p>
-        )}
       </div>
     </section>
   );

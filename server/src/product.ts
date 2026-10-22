@@ -38,10 +38,8 @@ export function createProduct(connection: Connection, config: Config) {
       '/auth/register',
       '/auth/login',
       '/auth/logout',
-      '/auth/verify-email',
       '/auth/google',
       '/auth/google/callback',
-      '/dev/mailbox',
       '/destinations',
       '/trips',
     ];
@@ -83,10 +81,7 @@ export function createProduct(connection: Connection, config: Config) {
       ok: true,
       data: {
         google: google.configured,
-        emailMode:
-          config.NODE_ENV === 'development'
-            ? 'development_mailbox'
-            : 'unavailable',
+        emailMode: 'password',
       },
     }),
   );
@@ -97,7 +92,9 @@ export function createProduct(connection: Connection, config: Config) {
   router.post('/auth/register', async (req, res) => {
     const value = parse(registerSchema, req.body);
     try {
-      res.status(201).json({ ok: true, data: await auth.register(req, value) });
+      const result = await auth.register(req, value);
+      auth.setCookie(res, result.token);
+      res.status(201).json({ ok: true, data: { user: result.user } });
     } catch (error) {
       if (
         error instanceof mongoose.mongo.MongoServerError &&
@@ -111,21 +108,6 @@ export function createProduct(connection: Connection, config: Config) {
       throw error;
     }
   });
-  router.post('/auth/verify-email', async (req, res) => {
-    auth.limitChallenge(req);
-    if (config.NODE_ENV !== 'development')
-      throw new HttpError(
-        503,
-        'EMAIL_UNAVAILABLE',
-        'Xác minh email chưa khả dụng trong môi trường này.',
-      );
-    const value = parse(
-      z.strictObject({ token: z.string().regex(/^[a-zA-Z0-9_-]{43}$/) }),
-      req.body,
-    );
-    await auth.verifyEmail(value.token);
-    res.json({ ok: true, data: { verified: true } });
-  });
   router.post('/auth/login', async (req, res) => {
     const value = await auth.login(req, parse(loginSchema, req.body));
     auth.setCookie(res, value.token);
@@ -137,18 +119,6 @@ export function createProduct(connection: Connection, config: Config) {
   });
   router.get('/auth/google', google.begin);
   router.get('/auth/google/callback', google.callback);
-  router.get('/dev/mailbox', async (req, res) => {
-    if (
-      config.NODE_ENV !== 'development' ||
-      !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(
-        req.socket.remoteAddress ?? '',
-      ) ||
-      req.get('X-GoEase-Client') !== 'web' ||
-      (req.get('Origin') && req.get('Origin') !== config.CLIENT_ORIGIN)
-    )
-      throw new HttpError(404, 'NOT_FOUND', 'Không tìm thấy trang này.');
-    res.json({ ok: true, data: { items: await auth.mailbox.list() } });
-  });
   router.get('/destinations', async (_req, res) =>
     res.json({ ok: true, data: await trips.destinations() }),
   );

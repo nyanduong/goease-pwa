@@ -9,7 +9,7 @@ import {
 import { Foundation } from './Foundation';
 import { api, ApiFailure } from './api';
 import { Brand, Goe, Notice, HeroArtwork } from './components/ui';
-import { AuthPage, VerifyPage, Mailbox } from './components/auth';
+import { AuthPage } from './components/auth';
 import { TripEditor } from './components/trip-editor';
 import { initialDraft, inputFromTrip } from './trip-draft';
 
@@ -27,7 +27,6 @@ export function App() {
   const [user, setUser] = useState<UserDto | null>(null);
   const [sessionError, setSessionError] = useState('');
   const [destinations, setDestinations] = useState<DestinationDto[]>([]);
-  const [google, setGoogle] = useState(false);
   const [draft, setDraft] = useState<TripInput>(initialDraft);
   const [loaded, setLoaded] = useState<TripDto | null>(null);
   const [list, setList] = useState<TripDto[]>([]);
@@ -95,11 +94,6 @@ export function App() {
       .catch((e: unknown) => {
         if (active) setSessionError(errorText(e));
       });
-    void api<{ google: boolean }>('/auth/options')
-      .then((v) => {
-        if (active) setGoogle(v.google);
-      })
-      .catch(() => {});
     return () => {
       active = false;
     };
@@ -223,11 +217,7 @@ export function App() {
 
   const isEditor =
     path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path);
-  const isAuth =
-    path === '/login' ||
-    path === '/register' ||
-    path === '/verify-email' ||
-    path === '/dev/mailbox';
+  const isAuth = path === '/login' || path === '/register';
 
   return (
     <div
@@ -477,7 +467,6 @@ export function App() {
           <AuthPage
             key={path}
             register={path === '/register'}
-            google={google}
             link={link}
             onDone={(v) => {
               setUser(v);
@@ -490,10 +479,6 @@ export function App() {
               );
             }}
           />
-        ) : path === '/verify-email' ? (
-          <VerifyPage link={link} />
-        ) : path === '/dev/mailbox' && import.meta.env.DEV ? (
-          <Mailbox link={link} />
         ) : path === '/trips' ? (
           <section className="page-section trips-page-section">
             <div className="page-heading">

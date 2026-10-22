@@ -7,7 +7,6 @@ import type { Config } from '../../config.js';
 import { HttpError } from '../../http-error.js';
 import { getRequestContext } from '../../observability/context.js';
 import { authModels, type UserRecord } from './auth.models.js';
-import { developmentMailbox } from './mailbox.js';
 import { authLimiter, cookie, opaqueToken, tokenHash } from './security.js';
 import type { businessAudit } from '../audit/business-audit.js';
 
@@ -31,11 +30,7 @@ export function authService(
   audit: ReturnType<typeof businessAudit>,
 ) {
   const models = authModels(connection);
-  const { User, Identity, Session, Challenge } = models;
-  const mailbox = developmentMailbox(
-    connection.name || new URL(config.MONGODB_URI).pathname.slice(1),
-    config.NODE_ENV === 'development',
-  );
+  const { User, Identity, Session } = models;
   const limit = authLimiter(
     config.AUTH_MAX_ATTEMPTS,
     config.AUTH_WINDOW_SECONDS,
@@ -47,35 +42,6 @@ export function authService(
     secure: config.NODE_ENV === 'production',
     path: '/api/v1',
   };
-  async function issueChallenge(
-    user: UserRecord,
-    identityId: Types.ObjectId,
-    session: ClientSession,
-    reqId: string,
-  ) {
-    const token = opaqueToken();
-    const expiresAt = new Date(Date.now() + 3600000);
-    await Challenge.updateMany(
-      {
-        userId: user._id,
-        purpose: 'verify_email',
-        consumedAt: null,
-        revokedAt: null,
-      },
-      { $set: { revokedAt: new Date() } },
-      { session },
-    );
-    await new Challenge({
-      userId: user._id,
-      purpose: 'verify_email',
-      tokenHash: tokenHash(token),
-      targetEmailNormalized: user.emailNormalized,
-      context: { identityId },
-      expiresAt,
-      requestId: reqId,
-    }).save({ session });
-    return { token, expiresAt };
-  }
   async function authenticate(req: Request) {
     const token = cookie(req, 'goease_session');
     if (!token) return null;
@@ -91,7 +57,6 @@ export function authService(
       _id: session.userId,
       status: 'active',
       deletedAt: null,
-      emailVerifiedAt: { $ne: null },
       securityVersion: session.securityVersionAtIssue,
     });
     const identity = await Identity.findOne({
@@ -100,8 +65,6 @@ export function authService(
       unlinkedAt: null,
     });
     if (!user || !identity) return null;
-    if (identity.provider === 'password' && config.NODE_ENV !== 'development')
-      return null;
     if (Date.now() - session.lastSeenAt.getTime() > 60000)
       await Session.updateOne(
         {
@@ -161,7 +124,6 @@ export function authService(
   }
   return {
     models,
-    mailbox,
     authenticate,
     createSession,
     limitChallenge(req: Request) {
@@ -178,16 +140,9 @@ export function authService(
       value: { email: string; password: string; displayName: string },
     ) {
       limit(req, value.email);
-      if (config.NODE_ENV !== 'development')
-        throw new HttpError(
-          503,
-          'EMAIL_UNAVAILABLE',
-          'Đăng ký email chưa khả dụng: môi trường này chưa cấu hình dịch vụ gửi thư.',
-        );
       const existing = await User.findOne({ emailNormalized: value.email });
       const reqId = requestId();
       const operationId = randomUUID();
-      let delivery: { token: string; expiresAt: Date };
       if (existing) {
         const identity = await Identity.findOne({
           userId: existing._id,
@@ -205,140 +160,89 @@ export function authService(
             'EMAIL_UNAVAILABLE',
             'Email này chưa dùng được cho đăng ký. Thử đăng nhập hoặc dùng email khác.',
           );
-        delivery = await connection.transaction((session) =>
-          issueChallenge(existing, identity._id, session, reqId),
-        );
-      } else {
-        const passwordHash = await hash(value.password, argonOptions);
-        delivery = await connection.transaction(async (session) => {
-          const user = await new User({
-            emailNormalized: value.email,
-            displayName: value.displayName,
-          }).save({ session });
-          const identity = await new Identity({
-            userId: user._id,
-            provider: 'password',
-            loginEmailNormalized: value.email,
-            passwordHash,
-            linkedAt: new Date(),
-          }).save({ session });
-          const challenge = await issueChallenge(
-            user,
-            identity._id,
-            session,
-            reqId,
+        const issued = await connection.transaction(async (session) => {
+          const user = await User.findOneAndUpdate(
+            {
+              _id: existing._id,
+              status: 'pending_verification',
+              deletedAt: null,
+              emailVerifiedAt: null,
+            },
+            {
+              $set: {
+                status: 'active',
+                updatedBy: existing._id,
+                updatedByType: 'user',
+              },
+              $inc: { revision: 1 },
+            },
+            { session, returnDocument: 'after' },
           );
+          if (!user)
+            throw new HttpError(
+              409,
+              'EMAIL_UNAVAILABLE',
+              'Email này chưa dùng được cho đăng ký. Thử đăng nhập hoặc dùng email khác.',
+            );
           await audit.append(
             {
               action: 'auth.registered',
+              actorUserId: user._id.toHexString(),
               entityId: user._id.toHexString(),
               requestId: reqId,
               operationId,
             },
             session,
           );
-          return challenge;
+          const token = await createSession(
+            user,
+            identity._id,
+            session,
+            reqId,
+            operationId,
+          );
+          return { user, token };
         });
+        return { user: userDto(issued.user), token: issued.token };
       }
-      try {
-        await mailbox.deliver(
-          value.email,
-          `${config.CLIENT_ORIGIN}/verify-email?token=${delivery.token}`,
-          delivery.expiresAt,
-        );
-      } catch {
-        throw new HttpError(
-          503,
-          'EMAIL_DELIVERY_FAILED',
-          'Chưa chuyển được thư vào hộp thư phát triển. Tài khoản vẫn chờ xác minh; thử lại đăng ký với cùng thông tin.',
-        );
-      }
-      return {
-        message:
-          'Tài khoản đang chờ xác minh. Thư đã vào hộp thư phát triển local, chưa gửi email thật.',
-        mailDelivery: 'development',
-      };
-    },
-    async verifyEmail(token: string) {
-      const reqId = requestId();
-      const operationId = randomUUID();
-      await connection.transaction(async (session) => {
-        const challenge = await Challenge.findOneAndUpdate(
-          {
-            tokenHash: tokenHash(token),
-            purpose: 'verify_email',
-            expiresAt: { $gt: new Date() },
-            consumedAt: null,
-            revokedAt: null,
-            attemptCount: { $lt: 1 },
-          },
-          { $set: { consumedAt: new Date() }, $inc: { attemptCount: 1 } },
-          { session, returnDocument: 'after' },
-        ).select('+targetEmailNormalized');
-        if (
-          !challenge?.userId ||
-          !challenge.context.identityId ||
-          !challenge.targetEmailNormalized
-        )
-          throw new HttpError(
-            400,
-            'INVALID_CHALLENGE',
-            'Link xác minh không hợp lệ, đã dùng hoặc hết hạn. Đăng ký lại với cùng thông tin để nhận thư mới.',
-          );
-        const user = await User.findOneAndUpdate(
-          {
-            _id: challenge.userId,
-            emailNormalized: challenge.targetEmailNormalized,
-            status: 'pending_verification',
-            deletedAt: null,
-          },
-          {
-            $set: {
-              emailVerifiedAt: new Date(),
-              status: 'active',
-              updatedBy: challenge.userId,
-              updatedByType: 'user',
-            },
-            $inc: { revision: 1 },
-          },
-          { session, returnDocument: 'after' },
-        );
-        const identity = await Identity.updateOne(
-          {
-            _id: challenge.context.identityId,
-            userId: challenge.userId,
-            provider: 'password',
-            unlinkedAt: null,
-          },
-          { $set: { verifiedAt: new Date() } },
-          { session },
-        );
-        if (!user || identity.matchedCount !== 1)
-          throw new HttpError(
-            400,
-            'INVALID_CHALLENGE',
-            'Không thể xác minh tài khoản này.',
-          );
+
+      const passwordHash = await hash(value.password, argonOptions);
+      const issued = await connection.transaction(async (session) => {
+        const user = await new User({
+          emailNormalized: value.email,
+          displayName: value.displayName,
+          status: 'active',
+          emailVerifiedAt: null,
+        }).save({ session });
+        const identity = await new Identity({
+          userId: user._id,
+          provider: 'password',
+          loginEmailNormalized: value.email,
+          passwordHash,
+          linkedAt: new Date(),
+        }).save({ session });
         await audit.append(
           {
-            action: 'auth.email_verified',
-            actorUserId: user._id.toHexString(),
+            action: 'auth.registered',
             entityId: user._id.toHexString(),
             requestId: reqId,
             operationId,
           },
           session,
         );
+        const token = await createSession(
+          user,
+          identity._id,
+          session,
+          reqId,
+          operationId,
+        );
+        return { user, token };
       });
+      return { user: userDto(issued.user), token: issued.token };
     },
     async login(req: Request, value: { email: string; password: string }) {
       limit(req, value.email);
-      if (config.NODE_ENV !== 'development')
-        throw new HttpError(
-          503,
-          'EMAIL_UNAVAILABLE',
-          'Đăng nhập mật khẩu chưa mở ngoài development khi chưa có dịch vụ xác minh email thật.',
-        );
       const identity = await Identity.findOne({
         provider: 'password',
         loginEmailNormalized: value.email,
@@ -348,7 +252,7 @@ export function authService(
         identity?.passwordHash ?? (await dummyHash),
         value.password,
       );
-      const user =
+      let user =
         valid && identity
           ? await User.findOne({ _id: identity.userId, deletedAt: null })
           : null;
@@ -365,12 +269,32 @@ export function authService(
           'Email hoặc mật khẩu chưa đúng.',
         );
       }
-      if (!user.emailVerifiedAt || user.status === 'pending_verification')
-        throw new HttpError(
-          403,
-          'EMAIL_NOT_VERIFIED',
-          'Hãy xác minh email trước khi đăng nhập. Nếu cần thư mới, đăng ký lại bằng cùng email và mật khẩu.',
+      if (user.status === 'pending_verification' && !user.emailVerifiedAt) {
+        const activated = await User.findOneAndUpdate(
+          {
+            _id: user._id,
+            status: 'pending_verification',
+            deletedAt: null,
+            emailVerifiedAt: null,
+          },
+          {
+            $set: {
+              status: 'active',
+              updatedBy: user._id,
+              updatedByType: 'user',
+            },
+            $inc: { revision: 1 },
+          },
+          { returnDocument: 'after' },
         );
+        if (!activated)
+          throw new HttpError(
+            403,
+            'ACCOUNT_UNAVAILABLE',
+            'Tài khoản hiện không khả dụng.',
+          );
+        user = activated;
+      }
       if (user.status !== 'active')
         throw new HttpError(
           403,

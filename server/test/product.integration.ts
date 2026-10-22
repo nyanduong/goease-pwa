@@ -13,7 +13,7 @@ import { seedDestinations } from '../src/features/trips/destination-seed.js';
 import { startTestReplicaSet } from './support/replica-set.js';
 
 test(
-  'real account and owner trip journey with verification, persistence, conflicts and audit rollback',
+  'real account and owner trip journey with password auth, persistence, conflicts and audit rollback',
   { timeout: 90000 },
   async (t) => {
     const harness = await startTestReplicaSet();
@@ -64,36 +64,12 @@ test(
     const emailA = `a-${suffix}@example.invalid`;
     const emailB = `b-${suffix}@example.invalid`;
     async function register(email: string) {
-      assert.equal(
-        (
-          await call('/auth/register', 'POST', {
-            email,
-            password,
-            displayName: 'Traveler',
-          })
-        ).status,
-        201,
-      );
-      assert.equal(
-        (await call('/auth/login', 'POST', { email, password })).status,
-        403,
-      );
-      const mailbox = (await (await call('/dev/mailbox')).json()) as {
-        data: { items: { to: string; url: string }[] };
-      };
-      const mail = mailbox.data.items.find((m) => m.to === email);
-      assert.ok(mail);
-      const token = new URL(mail.url).searchParams.get('token');
-      assert.equal(
-        (await call('/auth/verify-email', 'POST', { token })).status,
-        200,
-      );
-      assert.equal(
-        (await call('/auth/verify-email', 'POST', { token })).status,
-        400,
-      );
-      const response = await call('/auth/login', 'POST', { email, password });
-      assert.equal(response.status, 200);
+      const response = await call('/auth/register', 'POST', {
+        email,
+        password,
+        displayName: 'Traveler',
+      });
+      assert.equal(response.status, 201);
       const setCookie = response.headers.get('set-cookie') ?? '';
       assert.ok(
         setCookie.includes('HttpOnly') &&
@@ -155,7 +131,7 @@ test(
     };
     try {
       await t.test(
-        'registration verifies one-time challenge before login, PHC hash, no fake Google',
+        'registration creates password identity and session without marking email verified',
         async () => {
           cookieA = await register(emailA);
           cookieB = await register(emailB);
@@ -169,15 +145,150 @@ test(
           const me = (await (
             await call('/auth/me', 'GET', undefined, cookieA)
           ).json()) as { data: { user: { emailVerified: boolean } } };
-          assert.ok(me.data.user.emailVerified);
+          assert.equal(me.data.user.emailVerified, false);
+          assert.equal(
+            await product.auth.models.Challenge.countDocuments({
+              purpose: 'verify_email',
+            }),
+            0,
+          );
+          assert.equal(
+            await connection
+              .db!.collection('audit_logs')
+              .countDocuments({ action: 'auth.email_verified' }),
+            0,
+          );
+          assert.equal(
+            (await call('/dev/mailbox')).status,
+            404,
+            'development mailbox is no longer exposed',
+          );
+          assert.equal(
+            (await call('/auth/login', 'POST', { email: emailA, password }))
+              .status,
+            200,
+          );
+          assert.equal(
+            (
+              await call('/auth/login', 'POST', {
+                email: emailA,
+                password: 'wrong-password-123',
+              })
+            ).status,
+            401,
+          );
+          const duplicate = await call('/auth/register', 'POST', {
+            email: emailA,
+            password,
+            displayName: 'Overwrite attempt',
+          });
+          assert.equal(duplicate.status, 409);
+          assert.equal(
+            await product.auth.models.User.countDocuments({
+              emailNormalized: emailA,
+            }),
+            1,
+          );
           assert.equal((await call('/auth/google')).status, 503);
           assert.equal(
             (await call('/trips', 'POST', { trip: input }, '')).status,
             401,
           );
+          const emailC = `race-${suffix}@example.invalid`;
+          const racing = await Promise.all([
+            call('/auth/register', 'POST', {
+              email: emailC,
+              password,
+              displayName: 'First',
+            }),
+            call('/auth/register', 'POST', {
+              email: emailC,
+              password,
+              displayName: 'Second',
+            }),
+          ]);
+          assert.deepEqual(
+            racing.map((response) => response.status).sort(),
+            [201, 409],
+          );
+          assert.equal(
+            await product.auth.models.User.countDocuments({
+              emailNormalized: emailC,
+            }),
+            1,
+          );
         },
       );
       const key = randomUUID();
+      await t.test(
+        'legacy pending password account activates only after correct password; locked/deleted accounts stay blocked',
+        async () => {
+          const source = await product.auth.models.Identity.findOne({
+            loginEmailNormalized: emailA,
+          }).select('+passwordHash');
+          assert.ok(source?.passwordHash);
+          const createLegacy = async (
+            email: string,
+            status: 'pending_verification' | 'suspended' | 'active',
+            deletedAt: Date | null = null,
+          ) => {
+            const user = await new product.auth.models.User({
+              emailNormalized: email,
+              displayName: 'Legacy',
+              status,
+              emailVerifiedAt: null,
+              deletedAt,
+            }).save();
+            await new product.auth.models.Identity({
+              userId: user._id,
+              provider: 'password',
+              loginEmailNormalized: email,
+              passwordHash: source.passwordHash,
+              linkedAt: new Date(),
+            }).save();
+            return user;
+          };
+          const legacy = await createLegacy(
+            `legacy-${suffix}@example.invalid`,
+            'pending_verification',
+          );
+          const activated = await call('/auth/login', 'POST', {
+            email: legacy.emailNormalized,
+            password,
+          });
+          assert.equal(activated.status, 200);
+          const after = await product.auth.models.User.findById(legacy._id);
+          assert.equal(after?.status, 'active');
+          assert.equal(after?.emailVerifiedAt, null);
+          const suspended = await createLegacy(
+            `suspended-${suffix}@example.invalid`,
+            'suspended',
+          );
+          assert.equal(
+            (
+              await call('/auth/login', 'POST', {
+                email: suspended.emailNormalized,
+                password,
+              })
+            ).status,
+            403,
+          );
+          const deleted = await createLegacy(
+            `deleted-${suffix}@example.invalid`,
+            'active',
+            new Date(),
+          );
+          assert.equal(
+            (
+              await call('/auth/login', 'POST', {
+                email: deleted.emailNormalized,
+                password,
+              })
+            ).status,
+            401,
+          );
+        },
+      );
       await t.test(
         'create+retry persist once, source snapshots, history/audit and unknown cost',
         async () => {
@@ -359,7 +470,11 @@ test(
           assert.ok(existing);
           await collection.createIndex(
             { requestId: 1 },
-            { name: 'test_only_audit_failure', unique: true },
+            {
+              name: 'test_only_audit_failure',
+              unique: true,
+              partialFilterExpression: { entityType: 'trip' },
+            },
           );
           const patch = {
             trip: { ...input, title: 'After safe retry' },
@@ -452,7 +567,6 @@ test(
               { ...config, NODE_ENV: 'production' },
             );
             try {
-              await assert.rejects(production.auth.mailbox.list());
               await production.initialize();
               const productionApp = createApp(
                 { ...config, NODE_ENV: 'production' },
@@ -477,7 +591,7 @@ test(
                     headers: { Cookie: cookieA },
                   })
                 ).json()) as { data: { user: unknown } };
-                assert.equal(me.data.user, null);
+                assert.ok(me.data.user);
                 assert.equal(
                   (
                     await fetch(productionBase + '/auth/login', {
@@ -490,7 +604,28 @@ test(
                       body: JSON.stringify({ email: emailA, password }),
                     })
                   ).status,
-                  503,
+                  200,
+                );
+                const productionRegister = await fetch(
+                  productionBase + '/auth/register',
+                  {
+                    method: 'POST',
+                    headers: {
+                      Origin: config.CLIENT_ORIGIN,
+                      'X-GoEase-Client': 'web',
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      email: `production-${suffix}@example.invalid`,
+                      password,
+                      displayName: 'Production password test',
+                    }),
+                  },
+                );
+                assert.equal(productionRegister.status, 201);
+                assert.match(
+                  productionRegister.headers.get('set-cookie') ?? '',
+                  /Secure/,
                 );
               } finally {
                 await new Promise<void>((resolve) =>

@@ -214,9 +214,6 @@ test('real browser account, manual trip, failed save preservation, reload and re
     page.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
   ).toBeVisible();
   await page.getByRole('link', { name: 'Đăng nhập', exact: true }).click();
-  await expect(
-    page.getByRole('button', { name: 'Google · Chưa khả dụng' }),
-  ).toBeDisabled();
   await page.getByRole('link', { name: 'Tạo tài khoản', exact: false }).click();
   await page
     .getByLabel('Tên của bạn', { exact: true })
@@ -234,26 +231,14 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await page
     .getByRole('button', { name: 'Tạo tài khoản', exact: false })
     .click();
-  await page
-    .getByRole('link', { name: 'Mở hộp thư phát triển để xác minh' })
-    .click();
-  await page
-    .locator('.mail-card')
-    .filter({ hasText: email })
-    .getByRole('link')
-    .click();
-  await page
-    .getByRole('button', { name: 'Xác minh email của tôi', exact: true })
-    .click();
-  await page
-    .getByRole('link', { name: 'Đến trang đăng nhập', exact: true })
-    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Chuyến đi của tôi', exact: true }),
+  ).toBeVisible();
   async function login() {
     await page.getByLabel('Email', { exact: true }).fill(email);
     await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
     await page.getByRole('button', { name: 'Đăng nhập', exact: false }).click();
   }
-  await login();
   await expect(
     page.getByRole('heading', { name: 'Chuyến đi của tôi', exact: true }),
   ).toBeVisible();
@@ -394,18 +379,12 @@ test('real browser account, manual trip, failed save preservation, reload and re
         })
       ).status(),
     ).toBe(201);
-    const mails = (await (
-      await request.get(origin + '/api/v1/dev/mailbox', { headers })
-    ).json()) as { data: { items: { to: string; url: string }[] } };
-    const mail = mails.data.items.find((m) => m.to === emailB)!;
     expect(
-      (
-        await request.post(origin + '/api/v1/auth/verify-email', {
-          headers,
-          data: { token: new URL(mail.url).searchParams.get('token') },
-        })
-      ).status(),
+      (await request.get(origin + '/api/v1/auth/me', { headers })).status(),
     ).toBe(200);
+    expect(
+      (await request.get(origin + '/api/v1/dev/mailbox', { headers })).status(),
+    ).toBe(404);
     expect(
       (
         await request.post(origin + '/api/v1/auth/login', {

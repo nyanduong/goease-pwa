@@ -41,7 +41,7 @@ export function authModels(connection: Connection) {
           'deletion_pending',
           'anonymized',
         ],
-        default: 'pending_verification',
+        default: 'active',
       },
       roles: { type: [String], enum: ['traveler'], default: ['traveler'] },
       securityVersion: { type: Number, default: 1 },

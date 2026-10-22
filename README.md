@@ -2,7 +2,7 @@
 
 GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Phát triển bằng MongoDB local; Atlas là bước sau khi bản local hoàn thành. Mobile tương lai sử dụng cùng REST API và contracts thuần TypeScript.
 
-Đã có trang chủ sản phẩm, đăng ký/xác minh email local, đăng nhập/đăng xuất, phiên cookie và lịch trình thủ công lưu MongoDB theo tài khoản. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. AI, booking/payment, CMS, native mobile và offline cache chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
+Đã có trang chủ sản phẩm, đăng ký/đăng nhập email-mật khẩu không phụ thuộc xác minh email, đăng xuất bằng phiên cookie và lịch trình thủ công lưu MongoDB theo tài khoản. Account dùng được ngay; email chưa xác minh vẫn được ghi nhận riêng. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. AI, booking/payment, CMS, native mobile và offline cache chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
 
 ## Yêu cầu môi trường
 
@@ -147,7 +147,7 @@ Baseline thiết kế v0.2 đã được chủ dự án chấp thuận; F0 là p
 
 [Bản nhập BR lưu trữ](docs/archive/BR-v0.2-draft.md) chỉ để đối chiếu; nguồn nghiệp vụ duy nhất là BR.md. Sửa nghiệp vụ phải cập nhật mã BR, schema/dictionary/contracts và tests liên quan; ghi rõ phần chưa triển khai. Registry không phải schema executable.
 
-**F1-B đã triển khai và kiểm chứng local**; xem [bằng chứng F1-B](docs/F1-B-VERIFICATION.md) và giới hạn/gate trong handoff. Chưa phải audit production-ready. Tiếp theo F1-C (Google + email/password đã chốt) rồi CORE-1 owner trip. Quyền guest, provider/email config, retention và caps còn cần quyết định theo tính năng; commerce chưa chốt không chặn công việc độc lập. F1-B dừng sau context/log/audit; chưa triển khai authentication.
+**F1-B đã triển khai và kiểm chứng local**; xem [bằng chứng F1-B](docs/F1-B-VERIFICATION.md). Email/password và chuyến riêng hiện đã chạy local; email chưa được xác minh không được dùng để liên kết/merge account hay mở quyền đặc biệt. Google cần cấu hình OAuth để kiểm thử live; recovery/linking chưa có UI/API. Đây chưa phải xác nhận production readiness.
 
 Nguồn kỹ thuật: [Node.js LTS](https://github.com/nodejs/Release), [Vite](https://vite.dev/guide/), [Tailwind Vite plugin](https://tailwindcss.com/docs/installation/using-vite), [Mongoose connections](https://mongoosejs.com/docs/connections.html), [MongoDB replica set](https://www.mongodb.com/docs/manual/tutorial/convert-standalone-to-replica-set/).
 
@@ -168,13 +168,13 @@ OperationId khác requestId: caller backend cấp một UUIDv4 cho thao tác, gi
 ## Tài khoản và chuyến đi local
 
 - `/`: trang chủ; `/register`, `/login`: tài khoản; `/trips`: chuyến riêng; `/trips/new`: tạo lịch thủ công; `/trips/:id`: mở/chỉnh sửa.
-- Đăng ký bằng email thử và mật khẩu riêng tối thiểu 12 ký tự. Mở `/dev/mailbox`, chọn đúng email, xác minh rồi đăng nhập. Đây là hộp thư trên máy, **không gửi email thật**; không hoạt động ngoài development. Token dùng một lần, hết hạn sau một giờ, DB chỉ lưu hash. Không dùng dữ liệu/mật khẩu thật cho thử nghiệm local.
+- Đăng ký bằng email thử và mật khẩu riêng tối thiểu 12 ký tự; tài khoản tự đăng nhập và vào `/trips`. Reload đọc phiên từ API; logout rồi login lại bằng cùng thông tin. Tài khoản mới giữ `emailVerifiedAt=null`; không cần mailbox. Không dùng dữ liệu/mật khẩu thật cho thử nghiệm local.
 - `npm run db:seed` thêm tối đa ba điểm đến do GoEase biên soạn (Đà Nẵng, Đà Lạt, Hà Nội), không ghi đè record đã có. Script chỉ nhận development và database `goease` tại loopback 27019/rs0. Không có giá/rating/ảnh provider trong seed.
 - Nháp trước login chỉ giữ trong bộ nhớ trang; đăng nhập rồi bấm tạo/lưu mới ghi MongoDB. Reload trước khi lưu làm mất nháp này. Khi API lỗi hoặc conflict, giữ input hiện tại; không reload nếu cần giữ bản đang sửa.
 - Trip hiện hỗ trợ một điểm đến, VND tổng nhóm, giờ Việt Nam trong cùng ngày. Giới hạn kỹ thuật trong contracts: 31 ngày, 50 hoạt động/ngày, 300/chuyến, 1.000 người; không phải quota thương mại. Chỉnh constants/validation cùng nhau nếu cần thay đổi.
 - Danh sách hiển thị tối đa 50 chuyến cập nhật gần nhất. Chưa có phân trang, xóa chuyến, chia sẻ, bản đồ, recovery hay quản lý thiết bị.
 
-Google cần `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PKCE_KEY` (32 byte ngẫu nhiên dạng base64) và redirect URI được đăng ký trong Google Console. Callback local mặc định `http://localhost:3000/api/v1/auth/google/callback`. Chỉ đặt secret ở server; không commit `.env`. Production yêu cầu HTTPS origin/callback. Google không tự liên kết với tài khoản trùng email. Chưa có UI link/unlink trong task này. Nhánh password bị đóng ngoài development cho đến khi có adapter gửi/xác minh email thật; không thể biến tài khoản verified bằng hộp thư dev thành bypass production.
+Google cần `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PKCE_KEY` (32 byte ngẫu nhiên dạng base64) và redirect URI được đăng ký trong Google Console. Callback local mặc định `http://localhost:3000/api/v1/auth/google/callback`. Chỉ đặt secret ở server; không commit `.env`. Production yêu cầu HTTPS origin/callback. Google không tự liên kết với tài khoản trùng email. Chưa có UI link/unlink trong task này. Password login không phụ thuộc NODE_ENV hoặc email provider; production vẫn cần HTTPS để dùng Secure cookie.
 
 Session mặc định hết hạn tuyệt đối 7 ngày, idle 1 ngày; kiểm tra trên mỗi request, không chờ TTL. `SESSION_TTL_SECONDS`, `SESSION_IDLE_SECONDS`, `AUTH_MAX_ATTEMPTS`, `AUTH_WINDOW_SECONDS` có thể cấu hình server. Rate limit hiện theo tiến trình, không phục vụ triển khai nhiều API instance.
 
