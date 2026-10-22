@@ -168,11 +168,12 @@ OperationId khác requestId: caller backend cấp một UUIDv4 cho thao tác, gi
 ## Tài khoản và chuyến đi local
 
 - `/`: trang chủ; `/register`, `/login`: tài khoản; `/trips`: chuyến riêng; `/trips/new`: tạo lịch thủ công; `/trips/:id`: mở/chỉnh sửa.
-- Đăng ký bằng email thử và mật khẩu riêng tối thiểu 12 ký tự; tài khoản tự đăng nhập và vào `/trips`. Reload đọc phiên từ API; logout rồi login lại bằng cùng thông tin. Tài khoản mới giữ `emailVerifiedAt=null`; không cần mailbox. Không dùng dữ liệu/mật khẩu thật cho thử nghiệm local.
-- `npm run db:seed` thêm tối đa ba điểm đến do GoEase biên soạn (Đà Nẵng, Đà Lạt, Hà Nội), không ghi đè record đã có. Script chỉ nhận development và database `goease` tại loopback 27019/rs0. Không có giá/rating/ảnh provider trong seed.
+- Đăng ký bằng email thử và mật khẩu riêng tối thiểu 12 ký tự; tài khoản tự đăng nhập và vào Trang chủ `/`. Reload đọc phiên từ API; logout rồi login lại bằng cùng thông tin. Tài khoản mới giữ `emailVerifiedAt=null`; không cần mailbox. Không dùng dữ liệu/mật khẩu thật cho thử nghiệm local.
+- `npm run db:seed` thêm bốn điểm đến do GoEase biên soạn (Đà Nẵng, Đà Lạt, Hà Nội, Hội An) và ba gợi ý Khám phá tại Hội An, không ghi đè record đã có. Script chỉ nhận development và database `goease` tại loopback27019/rs0. Ảnh AI lưu local, không có giá/rating/ảnh provider trong seed.
+- `/explore`: tìm/lọc địa điểm từ API, xem danh sách hoặc bản đồ khu vực; `/places/:id`: chi tiết, ghi chú và thêm vào trip. Lưu địa điểm/ghi chú đồng bộ MongoDB theo tài khoản; bản nháp chuyến đi mới phải nhấn Lưu. API/giới hạn và bằng chứng kiểm tra ở [PRODUCT-VERIFICATION.md](docs/PRODUCT-VERIFICATION.md).
 - Nháp trước login chỉ giữ trong bộ nhớ trang; đăng nhập rồi bấm tạo/lưu mới ghi MongoDB. Reload trước khi lưu làm mất nháp này. Khi API lỗi hoặc conflict, giữ input hiện tại; không reload nếu cần giữ bản đang sửa.
 - Trip hiện hỗ trợ một điểm đến, VND tổng nhóm, giờ Việt Nam trong cùng ngày. Giới hạn kỹ thuật trong contracts: 31 ngày, 50 hoạt động/ngày, 300/chuyến, 1.000 người; không phải quota thương mại. Chỉnh constants/validation cùng nhau nếu cần thay đổi.
-- Danh sách hiển thị tối đa 50 chuyến cập nhật gần nhất. Chưa có phân trang, xóa chuyến, chia sẻ, bản đồ, recovery hay quản lý thiết bị.
+- Danh sách hiển thị tối đa 50 chuyến cập nhật gần nhất. Chưa có phân trang, xóa chuyến, chia sẻ, bản đồ tuyến hành trình, recovery hay quản lý thiết bị.
 
 Google cần `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PKCE_KEY` (32 byte ngẫu nhiên dạng base64) và redirect URI được đăng ký trong Google Console. Callback local mặc định `http://localhost:3000/api/v1/auth/google/callback`. Chỉ đặt secret ở server; không commit `.env`. Production yêu cầu HTTPS origin/callback. Google không tự liên kết với tài khoản trùng email. Chưa có UI link/unlink trong task này. Password login không phụ thuộc NODE_ENV hoặc email provider; production vẫn cần HTTPS để dùng Secure cookie.
 

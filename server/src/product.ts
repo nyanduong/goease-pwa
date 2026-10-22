@@ -1,3 +1,4 @@
+import { exploreService } from './features/explore/explore.service.js';
 import { Router } from 'express';
 import mongoose, { type Connection } from 'mongoose';
 import { z } from 'zod';
@@ -28,6 +29,7 @@ export function createProduct(connection: Connection, config: Config) {
   const audit = businessAudit(connection, config.NODE_ENV);
   const auth = authService(connection, config, audit);
   const trips = tripService(connection, audit);
+  const explore = exploreService(connection);
   const google = googleAuth(connection, config, auth);
   const router = Router();
   let ready = false;
@@ -41,12 +43,18 @@ export function createProduct(connection: Connection, config: Config) {
       '/auth/google',
       '/auth/google/callback',
       '/destinations',
+      '/places',
+      '/me/places',
       '/trips',
     ];
     if (publicTemplates.includes(req.path))
       res.locals.logRoute = '/api/v1' + req.path;
     else if (/^\/trips\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/trips/:id';
+    if (/^\/places\/[^/]+$/.test(req.path))
+      res.locals.logRoute = '/api/v1/places/:id';
+    if (/^\/me\/places\/[^/]+$/.test(req.path))
+      res.locals.logRoute = '/api/v1/me/places/:id';
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -131,6 +139,45 @@ export function createProduct(connection: Connection, config: Config) {
   router.get('/destinations', async (_req, res) =>
     res.json({ ok: true, data: await trips.destinations() }),
   );
+  router.get('/places', async (req, res) =>
+    res.json({ ok: true, data: await explore.list(req.query) }),
+  );
+  router.get('/places/:id', async (req, res) =>
+    res.json({ ok: true, data: await explore.read(String(req.params.id)) }),
+  );
+  router.use('/me/places', async (req, res, next) => {
+    const value = await auth.authenticate(req);
+    if (!value)
+      throw new HttpError(
+        401,
+        'AUTH_REQUIRED',
+        'Đăng nhập để lưu địa điểm và ghi chú.',
+      );
+    res.locals.authUser = value.user;
+    next();
+  });
+  router.get('/me/places', async (_req, res) =>
+    res.json({ ok: true, data: await explore.saved(res.locals.authUser._id) }),
+  );
+  router.get('/me/places/:id', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await explore.readState(
+        res.locals.authUser._id,
+        String(req.params.id),
+      ),
+    }),
+  );
+  router.patch('/me/places/:id', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await explore.updateState(
+        res.locals.authUser._id,
+        String(req.params.id),
+        req.body,
+      ),
+    }),
+  );
   router.use('/trips', async (req, res, next) => {
     const value = await auth.authenticate(req);
     if (!value)
@@ -196,11 +243,13 @@ export function createProduct(connection: Connection, config: Config) {
     router,
     auth,
     trips,
+    explore,
     async initialize() {
       ready = false;
       const all = [
         ...Object.values(auth.models),
         ...Object.values(trips.models),
+        ...Object.values(explore.models),
       ];
       for (const model of all) {
         await model.createCollection();

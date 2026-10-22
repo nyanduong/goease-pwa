@@ -1,3 +1,4 @@
+import { ExplorePage, PlaceDetail, placeActivity } from './components/explore';
 import { AccountAvatar } from './components/account-avatar';
 import { Compass, Map, House, Bird, Bookmark } from 'lucide-react';
 import { HomeDiscovery } from './components/home-discovery';
@@ -14,7 +15,7 @@ import { api, ApiFailure } from './api';
 import { Brand, Goe, Notice } from './components/ui';
 import { AuthPage } from './components/auth';
 import { TripEditor } from './components/trip-editor';
-import { initialDraft, inputFromTrip } from './trip-draft';
+import { initialDraft, inputFromTrip, withDays } from './trip-draft';
 
 export type Link = (
   to: string,
@@ -325,6 +326,8 @@ export function App() {
     path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path);
   const isAuth = path === '/login' || path === '/register';
   const isWelcome = path === '/welcome';
+  const isPlaceDetail = path.startsWith('/places/');
+  const isExplore = path === '/explore';
   const isDiscovery = ['/', '/explore', '/saved', '/goe'].includes(path);
   const setOnboardingSeen = (seen: boolean) => {
     setWelcomeSeenInMemory(seen);
@@ -341,15 +344,19 @@ export function App() {
       className={`app-shell ${
         isWelcome
           ? 'welcome-shell'
-          : isAuth
-            ? 'auth-shell'
-            : isEditor || path === '/trips'
-              ? 'workspace-shell'
-              : 'home-shell'
+          : isPlaceDetail
+            ? 'place-shell'
+            : isExplore
+              ? 'explore-shell'
+              : isAuth
+                ? 'auth-shell'
+                : isEditor || path === '/trips'
+                  ? 'workspace-shell'
+                  : 'home-shell'
       }`}
     >
       {/* Site Header: distinct and uncluttered for auth vs app */}
-      {!isWelcome && (
+      {!isWelcome && !isExplore && !isPlaceDetail && (
         <header className={`site-header ${isAuth ? 'auth-site-header' : ''}`}>
           <div className="header-inner">
             <div className="header-brand-wrap">{link('/', <Brand />)}</div>
@@ -441,9 +448,17 @@ export function App() {
         </Notice>
       )}
       <main
-        className={isWelcome ? 'welcome-main' : 'container main-content-wrap'}
+        className={
+          isWelcome
+            ? 'welcome-main'
+            : isPlaceDetail
+              ? 'place-main'
+              : isExplore
+                ? 'explore-main'
+                : 'container main-content-wrap'
+        }
         onClickCapture={
-          isDiscovery && sessionStatus === 'ready' && !user
+          path === '/' && sessionStatus === 'ready' && !user
             ? (event) => {
                 const target = event.target as HTMLElement;
                 if (
@@ -559,6 +574,71 @@ export function App() {
               <small>Không cần tài khoản để bắt đầu</small>
             </div>
           </section>
+        ) : isExplore ? (
+          <ExplorePage
+            key={user?.id ?? 'guest'}
+            signedIn={Boolean(user)}
+            onNavigate={go}
+          />
+        ) : isPlaceDetail ? (
+          <PlaceDetail
+            key={`${path}:${user?.id ?? 'guest'}`}
+            id={path.split('/')[2] ?? ''}
+            signedIn={Boolean(user)}
+            onNavigate={go}
+            onNewTrip={(place, note) => {
+              if (!user) {
+                go('/login');
+                return;
+              }
+              if (
+                (draft.title ||
+                  draft.notes ||
+                  draft.destinations.length ||
+                  draft.days.some((d) => d.activities.length)) &&
+                !confirm(
+                  'Bạn đang có bản nháp. Tạo bản nháp mới cho địa điểm này?',
+                )
+              )
+                return;
+              const next = withDays({
+                ...initialDraft(),
+                title: `Hành trình ${place.destinationName}`,
+                destinations: [
+                  { destinationId: place.destinationId, order: 0 },
+                ],
+              });
+              if (next.days[0])
+                next.days[0].activities.push(placeActivity(place, note, 0));
+              setDraft(next);
+              setLoaded(null);
+              setSaveState('dirty');
+              go('/trips/new');
+              setMessage(
+                'Địa điểm đã được thêm vào bản nháp. Nhấn Lưu để lưu chuyến đi.',
+              );
+            }}
+          />
+        ) : path === '/saved' ? (
+          <>
+            <ExplorePage
+              key={user?.id ?? 'guest'}
+              signedIn={Boolean(user)}
+              onNavigate={go}
+              savedOnly
+            />
+            <HomeDiscovery
+              key={`destinations:${user?.id ?? 'guest'}`}
+              mode="saved"
+              user={user}
+              destinations={destinations}
+              trips={list}
+              tripsStatus={tripsStatus}
+              onRetry={() => setTripsRetry((v) => v + 1)}
+              onStart={(id) => (id ? startWithDestination(id) : start())}
+              onNavigate={go}
+            />
+          </>
         ) : isDiscovery ? (
           <HomeDiscovery
             key={user?.id ?? 'guest'}
@@ -794,7 +874,7 @@ export function App() {
       </main>
 
       {/* Clean, quiet footer */}
-      {!isWelcome && (
+      {!isWelcome && !isExplore && !isPlaceDetail && (
         <footer className="site-footer">
           <div className="container footer-inner">
             <div className="footer-brand-line">
@@ -811,7 +891,7 @@ export function App() {
       )}
 
       {/* Mobile persistent bottom navigation bar */}
-      {!isAuth && !isWelcome && (
+      {!isAuth && !isWelcome && !isPlaceDetail && (
         <nav className="mobile-bottom-nav" aria-label="Điều hướng di động">
           {[
             { to: '/explore', label: 'Khám phá', Icon: Compass },

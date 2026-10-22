@@ -89,3 +89,21 @@ AUTH-09: email/password register/login và callback Google thành công về `/`
 Avatar người du lịch được tạo bằng ImageGen, lưu `client/public/images/default-traveler-avatar.png`. Thiếu URL hoặc lỗi tải chuyển về ảnh này; ảnh không gửi referrer. Ảnh mặc định cũng dùng cho nút đăng nhập của khách.
 
 Kiểm chứng: 9 unit/HTTP tests đạt; 3 browser tests với auth response mô phỏng đạt cho không có avatar, có avatar và avatar tải lỗi; cả ba kiểm tra login có `next=/trips/new` vẫn về Trang chủ và reload giữ Trang chủ. Đây là kiểm tra routing/ảnh ở UI, không phải login Google live. Các kiểm tra typecheck/lint/build và format được chạy cho thay đổi này.
+
+## Khám phá và chi tiết địa điểm — 2026-10-22
+
+Thay thế `/explore` gợi ý cũ bằng catalog MongoDB: tìm kiếm tiếng Việt không dấu, lọc Ẩm thực/Văn hóa/Thiên nhiên, danh sách/bản đồ, thẻ featured và chi tiết `/places/:id`. Giữ 5 mục điều hướng với Trang chủ ở giữa. `/saved` thêm bookmark địa điểm đồng bộ tài khoản; dấu trang điểm đến local cũ vẫn giữ riêng. Ghi chú/lưu và thêm vào trip cần session. Thêm trip dùng API trip hiện có với expectedRevision và idempotency key giữ nguyên khi retry lỗi mạng; tạo mới mở nháp cần Lưu.
+
+API mới (cùng envelope/error/Origin/readiness hiện có):
+
+- `GET /api/v1/places?q=&category=&offset=0&limit=20`: limit1–30, offset0–10000, q max100; trả items/hasMore; published/chưa xóa, query regex đã escape. UI hiện tải trang đầu catalog nhỏ.
+- `GET /api/v1/places/:id`: public detail hoặc404.
+- `GET /api/v1/me/places`: tối đa100 quan hệ đã lưu mới nhất, hydrate published/chưa xóa.
+- `GET /api/v1/me/places/:id`: private state `{placeId,saved,note,revision}`; state chưa tồn tại revision0.
+- `PATCH /api/v1/me/places/:id`: strict `{expectedRevision,saved?,note?}`, cần ít nhất một thay đổi, note max2000; owner từ session, conflict409, không tin client userId.
+
+`npm run db:seed` đã chạy trên local GoEase, thêm Hội An và ba place ID cố định; seed không ghi đè dữ liệu đã có. Ba ảnh ImageGen nằm ở `client/public/images/explore-hoian.png`, `explore-rice.png`, `explore-traque.png`; đổi imageUrl trong catalog khi upload Cloudinary sau. Ảnh có nhãn AI. Nội dung/giờ gợi ý do GoEase biên tập, không gọi AI live và không cam kết giá/giờ mở cửa. Nguồn tham khảo: [UNESCO Hội An](https://whc.unesco.org/en/list/948/), [Vietnam Travel ẩm thực Hội An](https://vietnam.travel/things-to-do/explore-food-hoi-an), [Hội An Heritage Trà Quế](https://hoianworldheritage.org.vn/en/news/Traditional-occupational-Village/tra-que-vegetable-village-tourist-attraction-583.hwh). Không sao chép ảnh từ các nguồn này.
+
+Đã kiểm tra: `server/test/explore.integration.ts` trên replica set riêng đạt: HTTP đăng ký, tìm/lọc/query không hợp lệ, owner isolation, concurrent create409, note persisted, unsave giữ note, archived404, private note không lọt public/log. Ba browser tests `tests/explore.spec.ts` với API mô phỏng đạt: responsive320/390/768 không tràn ngang, filter/map links/guest login, note reload/conflict giữ nội dung, thêm trip retry cùng payload/key và Escape đóng dialog. Đã xem Chrome thật dùng API local ở390×844 cho cả danh sách và detail, ảnh tải thành công. Bản đồ chỉ hiển thị khu vực OSM với link tìm trên Google Maps, chưa có pin tọa độ riêng/định tuyến; khả năng tải tile mạng ngoài chưa được xác nhận. Chưa deploy hoặc upload Cloudinary.
+
+Kiểm tra cuối task: typecheck/lint/build/format và git diff --check đạt; 9 unit/HTTP tests, 1 integration MongoDB Khám phá và 6 browser tests mô phỏng (3 Khám phá + 3 login/avatar) đạt. Screenshot local: .local/explore-preview/explore-mobile-390.png và detail-mobile-390.png. Các kết quả này không phải full-suite E2E hoặc kiểm chứng provider live.

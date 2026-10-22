@@ -5,6 +5,12 @@ export async function seedDestinations(
 ) {
   const entries = [
     [
+      '000000000000000000000004',
+      'hoi-an',
+      'Hội An',
+      'Phố cổ, hương vị và những khoảng xanh.',
+    ],
+    [
       '000000000000000000000001',
       'da-nang',
       'Đà Nẵng',

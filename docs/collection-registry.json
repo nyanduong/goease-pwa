@@ -584,7 +584,40 @@
       "indexes": "Unique partial {source.provider,source.externalId} khi có externalId; {destinationId,publicationStatus,deletedAt}; 2dsphere location nếu dùng near.",
       "rules": "Nguồn bị gỡ/expired phải refresh hoặc ẩn theo rights. Snapshots trong trip có policy riêng. Không coi source hợp lệ là thông tin bảo đảm luôn chính xác.",
       "retention": "Theo source permissions; không mặc định dump raw API response vĩnh viễn.",
-      "brRefs": ["CAT-01", "CAT-02", "CAT-03", "CAT-04", "CAT-05"]
+      "brRefs": ["CAT-01", "CAT-02", "CAT-03", "CAT-04", "CAT-05", "CAT-07"],
+      "implementationStatus": "Local curated catalog: destinationId/destinationName/name/slug/description/category/subtitle/searchText/imageUrl/durationLabel/travelLabel/bestTimeLabel/tip/highlights/sourceUrl/imageCredit/publicationStatus/deletedAt and mutable metadata. Index destinationId/publicationStatus/deletedAt implemented. Remaining baseline fields/provider/geo/external indexes planned, not executable schema.",
+      "runtimeFields": [
+        [
+          "destinationName; name; slug",
+          "string",
+          "required; slug optional",
+          "max100; max120; max120"
+        ],
+        [
+          "description; category; subtitle; searchText",
+          "string; enum; string; string",
+          "required",
+          "max2000; food/culture/nature; max150; accentless max2500"
+        ],
+        [
+          "imageUrl; sourceUrl; imageCredit",
+          "string",
+          "required",
+          "max2048; max2048; max100. Local AI illustration and reference URL, no provider image cache."
+        ],
+        [
+          "durationLabel; travelLabel; bestTimeLabel; tip",
+          "string",
+          "required",
+          "max60; max60; max60; max400. Editorial suggestions."
+        ],
+        [
+          "highlights",
+          "{name,query}[]",
+          "[]",
+          "max8; name max100; query max150"
+        ]
+      ]
     },
     {
       "name": "trips",
@@ -907,7 +940,17 @@
       "indexes": "Unique {userId,targetType,targetId}; {userId,removedAt,createdAt:-1}.",
       "rules": "Hydrate target qua quyền/publication/deleted checks. Không coi favorites là consent marketing.",
       "retention": "Xóa theo account; analytics có retention độc lập hợp lệ.",
-      "brRefs": ["CONTENT-02"]
+      "brRefs": ["CONTENT-02", "CAT-07"],
+      "implementationStatus": "Local place state implemented: userId from session, targetType=place, targetId, removedAt, note max2000 default empty, revision default1 and timestamps. Both listed indexes implemented. Other target types/base metadata/purge jobs planned. saved list capped100 newest relationships; published/nondeleted target hydration only; unsave keeps private note; note excluded from public DTO/log/audit.",
+      "runtimeFields": [
+        ["note", "string", "''", "Private, max2000; unsave preserves note."],
+        [
+          "revision",
+          "integer",
+          "1",
+          "CAS expectedRevision; absent state is revision0; stale update409."
+        ]
+      ]
     },
     {
       "name": "ai_runs",

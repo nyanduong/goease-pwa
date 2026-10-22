@@ -325,6 +325,8 @@ Khu vực du lịch/chặng, phân biệt địa điểm cụ thể.
 
 **Lớp:** CORE · **Bộ metadata:** `MUTABLE_SOFT`
 
+**Runtime Khám phá 2026-10-22 (CAT-07):** subset catalog biên tập đã chạy; bảng dưới là thiết kế provider rộng hơn. Runtime dùng destinationId, destinationName (max100), name/slug (max120), description (max2000), category enum food/culture/nature, subtitle (max150), searchText không dấu (max2500), imageUrl/sourceUrl (max2048), imageCredit (max100), durationLabel/travelLabel/bestTimeLabel (max60), tip (max400), highlights tối đa8 mục name(max100)/query(max150), publicationStatus draft/published/archived, deletedAt và mutable metadata. Index đang chạy: {destinationId,publicationStatus,deletedAt}. SourceRef/provider, categoryCodes/tags, địa lý/2dsphere, giá, giờ mở cửa, mediaAssetIds và external unique index chưa triển khai. imageUrl trỏ ảnh AI local; sourceUrl là nguồn tham khảo, không cache ảnh/review provider. Seed chỉ thêm ID chưa tồn tại.
+
 POI dùng discovery/planner; provider ref và dữ liệu chất lượng rõ ràng.
 
 | Field                        | Kiểu                         | Required/default   | Ý nghĩa và ràng buộc                                                      |
@@ -468,13 +470,17 @@ Thực chi du lịch, tách ước tính planner và giao dịch tiền trên Go
 
 **Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
 
+**Runtime Khám phá 2026-10-22 (CAT-07):** userId, targetType=place, targetId, removedAt, note, revision và timestamps đã chạy. TargetType khác và metadata MUTABLE ngoài timestamps chưa triển khai. Hai index dưới đã chạy. Owner từ session; chỉ hydrate place published/chưa xóa. Note private không có trong public DTO/log/audit. Bỏ lưu giữ note. List hiện giới hạn100 quan hệ mới nhất; account purge/retention job chưa triển khai.
+
 Quan hệ yêu thích, không mảng không giới hạn trên user.
 
-| Field                | Kiểu           | Required/default | Ý nghĩa và ràng buộc                                                 |
-| -------------------- | -------------- | ---------------- | -------------------------------------------------------------------- |
-| userId               | ObjectId       | Bắt buộc         | Chủ quan hệ.                                                         |
-| targetType; targetId | enum; ObjectId | Bắt buộc         | destination/place/post/service_listing.                              |
-| removedAt            | Date?          | null             | Toggle cùng một quan hệ; sự kiện thích/bỏ thích riêng nếu được phép. |
+| Field                | Kiểu           | Required/default | Ý nghĩa và ràng buộc                                                               |
+| -------------------- | -------------- | ---------------- | ---------------------------------------------------------------------------------- |
+| userId               | ObjectId       | Bắt buộc         | Chủ quan hệ.                                                                       |
+| targetType; targetId | enum; ObjectId | Bắt buộc         | destination/place/post/service_listing.                                            |
+| removedAt            | Date?          | null             | Toggle cùng một quan hệ; sự kiện thích/bỏ thích riêng nếu được phép.               |
+| note                 | string         | ''               | Runtime: private, tối đa2.000 ký tự; bỏ lưu vẫn giữ.                               |
+| revision             | integer        | 1                | Runtime: CAS expectedRevision; 0 khi chưa có record, conflict409 nếu phiên bản cũ. |
 
 **Indexes:** Unique {userId,targetType,targetId}; {userId,removedAt,createdAt:-1}.
 

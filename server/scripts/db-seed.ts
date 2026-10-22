@@ -1,3 +1,5 @@
+import { exploreService } from '../src/features/explore/explore.service.js';
+import { seedPlaces } from '../src/features/explore/explore.seed.js';
 import mongoose from 'mongoose';
 import { parseConfig } from '../src/config.js';
 import { tripModels } from '../src/features/trips/trip.models.js';
@@ -21,8 +23,12 @@ try {
   await Destination.createCollection();
   await Destination.createIndexes();
   await seedDestinations(Destination);
+  const { Place } = exploreService(connection).models;
+  await Place.createCollection();
+  await Place.createIndexes();
+  await seedPlaces(Place);
   console.info(
-    'PASS: GoEase-authored destination catalog ready; existing records preserved.',
+    'PASS: GoEase-authored destination and place catalogs ready; existing records preserved.',
   );
 } catch {
   console.error(

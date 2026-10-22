@@ -67,6 +67,9 @@ Backend xác định actor từ phiên đã xác thực. Role không lấy từ 
 | CAT-04 | Cập nhật danh mục              | Ngừng xuất bản địa điểm không tự viết lại lịch cũ. Trip dùng snapshot hợp lệ tại thời điểm chọn; nếu có yêu cầu xóa theo quyền dữ liệu, áp dụng redaction có kiểm soát.           |
 | CAT-05 | Xuất bản                       | Chỉ published + chưa xóa được hiển thị công khai. Draft/rejected/archived không lọt vào search, favorites hydrate hoặc link chi tiết.                                             |
 | CAT-06 | Ảnh và upload                  | Ảnh có owner/source/license. Upload giới hạn kích thước/định dạng, kiểm tra nội dung phù hợp, private file truy cập có thời hạn. Không nhét binary/base64 vào trip.               |
+| CAT-07 | Khám phá và ghi chú cá nhân | Catalog có tìm kiếm/lọc và chi tiết địa điểm published. Lưu địa điểm/ghi chú cần đăng nhập; owner từ session, note private tối đa 2.000 ký tự, cập nhật theo expectedRevision. Bỏ lưu giữ note. Chỉ thêm vào chuyến đi của mình và ngày thuộc cùng điểm đến; bản nháp mới cần Lưu. |
+
+**Runtime Khám phá (2026-10-22):** ba gợi ý Hội An, ảnh AI local. Cơm gà là gợi ý món ăn, không đại diện nhà hàng cụ thể. Thời lượng/Goe gợi ý là nội dung biên tập, không gọi AI trực tiếp. Không cung cấp giá/giờ mở cửa/tọa độ chưa biết. Map là bản đồ khu vực OpenStreetMap và link tìm trên Google Maps. Catalog trực tiếp cho phép khách xem; tương tác từ Trang chủ vẫn đi login theo yêu cầu trước đó.
 
 ### C. Lịch trình, ngân sách và cộng tác
 

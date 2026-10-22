@@ -17,3 +17,5 @@ export type HealthResponse = z.infer<typeof healthSchema>;
 export type DatabaseHealthResponse = z.infer<typeof databaseHealthSchema>;
 
 export * from './product.js';
+
+export * from './explore.js';
