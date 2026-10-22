@@ -76,6 +76,13 @@ export function tripManagement(
             source.revision++;
             source.updatedBy = ownerId;
             await source.save({ session });
+            await connection
+              .collection('trip_share_links')
+              .updateMany(
+                { tripId: source._id, revokedAt: null },
+                { $set: { revokedAt: now } },
+                { session },
+              );
           } else {
             // Lock the source version against deletion/update during the clone transaction.
             await Trip.updateOne(

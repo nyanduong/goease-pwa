@@ -428,23 +428,20 @@ Quyền collaborator có account; không thay public share token.
 
 ### 13. `trip_share_links`
 
-**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+**Implemented local — TRIP-11/TRIP-12.** Separate runtime collection; general MUTABLE metadata remains planned. Access by unique token hash; owner lists active links. No unbounded array on trip.
 
-Liên kết chỉ đọc có thể thu hồi, không để private trip trở thành public ngẫu nhiên.
+| Field                                        | Type/default               | Runtime constraint                                                                      |
+| -------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------- |
+| tripId; ownerId                              | ObjectId, required         | Owner from session; active owned trip required for management.                          |
+| tokenHash                                    | string, required           | SHA-256; UI generates 32 random bytes via Web Crypto. Raw token never persisted/logged. |
+| schemaVersion; permission; viewPolicyVersion | 1; read_only; itinerary-v1 | Fixed values.                                                                           |
+| expiresInDays                                | 1,7,30 required            | Retry must match duration; cannot extend expiry.                                        |
+| createdAt; expiresAt                         | Date, required             | Server clock; expiry enforced on reads.                                                 |
+| revokedAt                                    | Date/null, default null    | Owner revoke or trip soft delete, never reset by restore.                               |
 
-| Field                           | Kiểu                    | Required/default | Ý nghĩa và ràng buộc                                   |
-| ------------------------------- | ----------------------- | ---------------- | ------------------------------------------------------ |
-| tripId; createdByUserId         | ObjectId; ObjectId      | Bắt buộc         | Quyền tạo link kiểm tra owner.                         |
-| tokenHash                       | string private          | Bắt buộc         | Token random chỉ trả rõ một lần; không log URL đầy đủ. |
-| permission                      | enum                    | read_only        | Không share-link edit trong baseline.                  |
-| viewPolicyVersion               | string                  | Bắt buộc         | Projection public cho phép xem trường nào.             |
-| expiresAt; revokedAt; revokedBy | Date?; Date?; ObjectId? | null             | Kiểm tra khi đọc.                                      |
+**Indexes:** unique {tokenHash:1}; {tripId:1,ownerId:1,createdAt:-1}. No TTL, migration or purge job.
 
-**Indexes:** Unique tokenHash; {tripId,revokedAt}; không bắt buộc TTL để giữ thông tin revoke có căn cứ.
-
-**Invariant/quyền:** Không lộ notes private, collaborator email, order/payment. Restore trip không tự kích hoạt link cũ.
-
-**Retention:** Revoke ngay khi xóa; dọn theo retention trip/access.
+**Rules:** Maximum 10 active links per trip; server serializes creation/revoke/delete via existing internal trip expenseRevision counter without changing itinerary revision/updatedAt. Create/revoke and safe audit are transactional. Soft-delete revokes all links in the same transaction. Public DTO explicitly allows itinerary labels/dates/stops/catalog IDs only; no private notes, costs, user/owner IDs, AI provenance or expense reads. See [contract and limits](TRIP-SHARING.md).
 
 ### 14. `trip_expenses`
 

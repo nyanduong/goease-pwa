@@ -67,6 +67,8 @@ export function auditModel(connection: Connection) {
           'trip.updated',
           'trip.deleted',
           'trip.duplicated',
+          'trip.share_created',
+          'trip.share_revoked',
           'expense.created',
           'expense.updated',
           'expense.deleted',

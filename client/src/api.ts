@@ -16,7 +16,7 @@ export async function api<T>(
       `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/v1${path}`,
       {
         ...options,
-        credentials: 'include',
+        credentials: options.credentials ?? 'include',
         signal: options.signal ?? AbortSignal.timeout(15000),
         headers: {
           'Content-Type': 'application/json',

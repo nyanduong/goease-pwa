@@ -5248,3 +5248,72 @@ body:has(.journey-shell) {
 .account-card button:disabled {
   opacity: 0.5;
 }
+
+.shared-trip-page {
+  max-width: 760px;
+  min-height: 100dvh;
+  margin: auto;
+  padding: 24px 18px;
+  background: #faf7ef;
+  color: #123e38;
+  overflow-wrap: anywhere;
+}
+.shared-trip-page h1 {
+  font-family: Georgia, serif;
+  font-size: clamp(2rem, 7vw, 3rem);
+  line-height: 1.1;
+  margin: 24px 0 14px;
+}
+.share-badge {
+  font-size: 0.8rem;
+  margin-top: 20px;
+}
+.share-days {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 18px 0;
+}
+.share-days button {
+  white-space: nowrap;
+  border-radius: 24px;
+  padding: 9px 18px;
+  background: #e9ece2;
+}
+.share-days button[aria-pressed='true'],
+.shared-trip-page button[aria-pressed='true'] {
+  background: #155448;
+  color: white;
+}
+.shared-stops {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+.shared-stops li {
+  padding: 18px;
+  border: 1px solid #dce1d6;
+  background: #fffdf8;
+  border-radius: 18px;
+}
+.shared-stops h3 {
+  margin: 5px 0;
+}
+.share-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.share-list li {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #dce1d6;
+  padding: 12px;
+  border-radius: 14px;
+}
+.share-form input {
+  width: 100%;
+  min-width: 0;
+}

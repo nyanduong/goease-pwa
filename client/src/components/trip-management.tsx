@@ -1,3 +1,4 @@
+import { TripSharing } from './trip-sharing';
 import { useRef, useState } from 'react';
 import type { TripDto } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
@@ -75,6 +76,7 @@ export function TripManagement({
       <h2>Quản lý chuyến đi</h2>
       {unsaved && <p>Lưu thay đổi trước khi nhân bản hoặc xóa chuyến đi.</p>}
       <div className="expense-actions">
+        <TripSharing tripId={trip.id} unsaved={unsaved} />
         <button
           disabled={unsaved}
           onClick={() => {

@@ -986,7 +986,12 @@ export function TripWorkspace({
                         activities={day?.activities ?? []}
                         destinationName={destinationName}
                         destinationId={day?.destinationId}
-                        onEdit={(a) => setEditing(a)}
+                        onEdit={(a) => {
+                          const original = day?.activities.find(
+                            (v) => v.activityId === a.activityId,
+                          );
+                          if (original) setEditing(structuredClone(original));
+                        }}
                       />
                     </Suspense>
                   ) : (

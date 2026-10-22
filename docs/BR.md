@@ -317,3 +317,10 @@ Phân loại sắp/đang/đã kết thúc theo ngày Việt Nam, không là tr�
 ## Customer account — 2026-10-23
 
 AUTH-03/04/07/08/09: customer sửa tên/avatar qua endpoint profile xác thực và revision, email chỉ đọc. Avatar HTTPS hoặc null, upload chưa triển khai; Google login không ghi đè lựa chọn ảnh hiện có. Đổi mật khẩu phải xác minh password cũ, mới12–128 ký tự và khác cũ; giữ phiên hiện tại, thu hồi mọi phiên khác bằng securityVersion/revokedAt. Google-only không tự đặt password. Replay lần đổi gần nhất bound session/key và hash mới, không lưu request chứa mật khẩu. Chi tiết ACCOUNT-PROFILE.md.
+
+
+### Triển khai chia sẻ chỉ xem — 2026-10-23 (TRIP-11/TRIP-12)
+
+Owner tạo link từ chuyến đã lưu, hạn 1/7/30 ngày, tối đa 10 link hoạt động/chuyến; thu hồi từng link. Người có link đọc lịch đã lưu mới nhất và bản đồ không cần đăng nhập. Projection API chỉ có tên chuyến, điểm đến, ngày, tên/thời gian/thứ tự hoạt động và catalog ID cần bản đồ; ẩn toàn bộ ghi chú, dự toán/ngân sách/thực chi, tài khoản và AI metadata. Tên chuyến/hoạt động do người dùng nhập vẫn được chia sẻ; UI thông báo rõ.
+
+Token Web Crypto 256-bit truyền trong fragment `/share#token`, gửi API bằng Authorization; DB lưu SHA-256, không log token/URL. Retry cùng token/duration không tạo trùng hay gia hạn. Hết hạn/thu hồi/chuyến bị xóa trả404 chung; xóa chuyến thu hồi link trong transaction, khôi phục dữ liệu không kích hoạt link cũ. Chưa có editor/collaborator, link không có quyền ghi. Không thể thu lại nội dung người nhận đã xem/lưu; trang kiểm lại khi focus/tải lại/cập nhật lịch, không realtime push.

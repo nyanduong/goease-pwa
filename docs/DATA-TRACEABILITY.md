@@ -244,3 +244,7 @@ Owned source snapshot → duplicate mới với clonedFromTripId nội bộ, man
 ## Customer account — 2026-10-23
 
 Profile data chỉ customer đã xác thực đọc/sửa. Password chỉ trong request/memory và Argon2id hash hiện có; không ghi requestHash từ mật khẩu hoặc receipt payload. Session giữ UUID key gần nhất để retry, mất khi session bị dọn. Audit profile.updated/password.changed chỉ actor/entity/action/revision, không tên/avatar/password/hash. URL ảnh chỉ browser tải với no-referrer; không proxy server. Quên mật khẩu/email delivery/upload media chưa triển khai. ACCOUNT-PROFILE.md ghi chi tiết.
+
+## Read-only sharing runtime (2026-10-23)
+
+TRIP-11/TRIP-12 → `trip_share_links` → `tripSharing` → `/shared-trip` explicit allowlist. Owner create/revoke emits trip.share_created/trip.share_revoked (entity=trip, actor from session, changedFields tripDetails, changes empty). No token/hash/notes/costs in audit/log. Soft delete updates all share revokedAt in the trip.deleted transaction; duplicate never copies shares. Existing trip expenseRevision serializes management writes, itinerary revision is unchanged. No public expense/account/private trip endpoint bypass; no share editing. Retention jobs remain unimplemented; revoked/expired records retained, expiry checked without TTL. API integration covers owner separation, retry/race, projection, expiry/revoke/delete/restore, rollback and log scanning; browser covers anonymous view, lost-response retry, mobile/map/revocation.

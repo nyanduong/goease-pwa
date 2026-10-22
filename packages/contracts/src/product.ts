@@ -258,3 +258,38 @@ export type AccountDto = {
   revision: number;
   canChangePassword: boolean;
 };
+
+export const shareCreateSchema = z.strictObject({
+  token: z.string().regex(/^[a-f0-9]{64}$/),
+  expiresInDays: z.union([z.literal(1), z.literal(7), z.literal(30)]),
+});
+export type ShareLinkDto = {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+};
+export type SharedActivity = Pick<
+  ActivityInput,
+  | 'activityId'
+  | 'placeId'
+  | 'kind'
+  | 'title'
+  | 'startLocalTime'
+  | 'endLocalTime'
+  | 'timezone'
+  | 'order'
+>;
+export type SharedTripDto = {
+  title: string;
+  destinationName: string;
+  startDate: string;
+  endDate: string;
+  expiresAt: string;
+  days: {
+    dayId: string;
+    date: string;
+    destinationId: string;
+    activities: SharedActivity[];
+  }[];
+};

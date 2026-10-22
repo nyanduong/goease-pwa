@@ -1781,3 +1781,158 @@ test('live Gemini proposal applies saves reloads and preserves AI provenance', a
     fullPage: true,
   });
 });
+
+test('share link creation retry guest view map and revocation', async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(90000);
+  await page.goto('/register');
+  await page.getByLabel('Tên của bạn', { exact: true }).fill('Share traveler');
+  await page
+    .getByLabel('Email', { exact: true })
+    .fill(`share-${Date.now()}@example.invalid`);
+  await page
+    .getByLabel('Mật khẩu', { exact: true })
+    .fill('Share-browser-only-2026');
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  const origin = new URL(page.url()).origin;
+  const headers = {
+    Origin: origin,
+    'X-GoEase-Client': 'web',
+    'Idempotency-Key': crypto.randomUUID(),
+  };
+  const destinationId = '000000000000000000000004';
+  const input: TripInput = {
+    title: 'Hội An chia sẻ',
+    destinations: [{ destinationId, order: 0 }],
+    startDate: '2026-11-12',
+    endDate: '2026-11-12',
+    timezone: 'Asia/Ho_Chi_Minh',
+    travelers: { totalCount: 4 },
+    budget: {
+      amountMinor: 1000000,
+      currency: 'VND',
+      scope: 'group_total',
+      includedCategories: [],
+    },
+    preferences: { interestCodes: [], pace: 'relaxed', transportModes: [] },
+    generationMode: 'manual',
+    notes: 'PRIVATE_NOTE_SENTINEL',
+    days: [
+      {
+        dayId: crypto.randomUUID(),
+        date: '2026-11-12',
+        destinationId,
+        activities: [100000, null].map((amountMinor, order) => ({
+          activityId: crypto.randomUUID(),
+          kind: 'visit',
+          title: `Điểm ${order + 1}`,
+          timezone: 'Asia/Ho_Chi_Minh',
+          order,
+          notes: 'PRIVATE_NOTE_SENTINEL',
+          source: 'manual',
+          estimatedCost: {
+            amountMinor,
+            currency: 'VND',
+            basis: 'group_total',
+            quantity: 1,
+            confidence: 'user_entered',
+          },
+        })),
+      },
+    ],
+  };
+
+  const created = await page.request.post('/api/v1/trips', {
+    headers,
+    data: { trip: input },
+  });
+  expect(created.status()).toBe(201);
+  const trip = (await created.json()).data.trip as TripDto;
+  await page.goto(`/trips/${trip.id}`);
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Chia sẻ lịch trình', exact: true })
+    .click();
+  await page.route(`**/api/v1/trips/${trip.id}/shares`, async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fetch();
+      await route.abort();
+    } else await route.continue();
+  });
+  await page
+    .getByRole('button', { name: 'Tạo link chỉ xem', exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: 'Thử lại tạo link', exact: true }),
+  ).toBeVisible();
+  await page.unroute(`**/api/v1/trips/${trip.id}/shares`);
+  await page
+    .getByRole('button', { name: 'Thử lại tạo link', exact: true })
+    .click();
+  const link = page.getByRole('textbox', {
+    name: 'Link chia sẻ',
+    exact: false,
+  });
+  await expect(link).toHaveValue(/\/share#[a-f0-9]{64}$/);
+  const url = await link.inputValue();
+  expect(
+    (await (await page.request.get(`/api/v1/trips/${trip.id}/shares`)).json())
+      .data.items,
+  ).toHaveLength(1);
+  const guest = await browser.newContext({ baseURL: origin });
+  try {
+    const view = await guest.newPage();
+    await view.goto(url);
+    await expect(
+      view.getByRole('heading', { name: 'Hội An chia sẻ', exact: true }),
+    ).toBeVisible();
+    await expect(view.getByText('PRIVATE_NOTE_SENTINEL')).toHaveCount(0);
+    await expect(
+      view.getByRole('button', { name: 'Lưu chuyến đi', exact: true }),
+    ).toHaveCount(0);
+    await view.getByRole('button', { name: 'Bản đồ', exact: true }).click();
+    await expect(
+      view.getByRole('region', { name: 'Bản đồ lịch trình' }),
+    ).toBeVisible();
+    await expect(
+      view.getByRole('button', { name: 'Xem / chỉnh điểm dừng' }),
+    ).toHaveCount(0);
+    await view.getByRole('button', { name: 'Lịch trình', exact: true }).click();
+    await mkdir('.local/share-preview', { recursive: true });
+    for (const width of [320, 390, 768]) {
+      await view.setViewportSize({ width, height: 844 });
+      expect(
+        await view.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      await view.screenshot({
+        path: `.local/share-preview/shared-${width}.png`,
+        fullPage: true,
+      });
+    }
+    page.once('dialog', (dialog) => dialog.accept());
+    await page
+      .getByRole('button', { name: 'Thu hồi link 1', exact: true })
+      .click();
+    await expect(
+      page.getByText('Đã thu hồi link.', { exact: true }),
+    ).toBeVisible();
+    await view.reload();
+    await expect(
+      view.getByRole('heading', { name: 'Chưa mở được lịch trình' }),
+    ).toBeVisible();
+    await expect(
+      view.getByRole('heading', { name: 'Hội An chia sẻ', exact: true }),
+    ).toHaveCount(0);
+  } finally {
+    await guest.close();
+  }
+});

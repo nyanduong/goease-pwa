@@ -1,3 +1,5 @@
+import { tripSharing } from './features/trips/trip-sharing.js';
+import { shareCreateSchema } from '@goease/contracts';
 import { tripManagement } from './features/trips/trip-management.js';
 import { expenseService } from './features/expenses/expense.service.js';
 import { exploreService } from './features/explore/explore.service.js';
@@ -45,6 +47,7 @@ export function createProduct(connection: Connection, config: Config) {
   const audit = businessAudit(connection, config.NODE_ENV);
   const auth = authService(connection, config, audit);
   const trips = tripService(connection, audit);
+  const sharing = tripSharing(connection, trips, audit);
   const manageTrip = tripManagement(connection, trips, audit);
   const expenses = expenseService(connection, trips, audit);
   const explore = exploreService(connection);
@@ -54,6 +57,7 @@ export function createProduct(connection: Connection, config: Config) {
   let ready = false;
   router.use((req, res, next) => {
     const publicTemplates = [
+      '/shared-trip',
       '/auth/options',
       '/auth/me',
       '/me/profile',
@@ -88,6 +92,10 @@ export function createProduct(connection: Connection, config: Config) {
       res.locals.logRoute = '/api/v1/trips/:id/goe-proposal';
     if (/^\/trips\/[^/]+\/goe-apply$/.test(req.path))
       res.locals.logRoute = '/api/v1/trips/:id/goe-apply';
+    if (/^\/trips\/[^/]+\/shares$/.test(req.path))
+      res.locals.logRoute = '/api/v1/trips/:id/shares';
+    if (/^\/trips\/[^/]+\/shares\/[^/]+$/.test(req.path))
+      res.locals.logRoute = '/api/v1/trips/:id/shares/:shareId';
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -230,6 +238,15 @@ export function createProduct(connection: Connection, config: Config) {
       ),
     }),
   );
+  router.get('/shared-trip', async (req, res) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.json({
+      ok: true,
+      data: await sharing.read(
+        (req.get('Authorization') ?? '').replace(/^Bearer /, ''),
+      ),
+    });
+  });
   router.use('/trips', async (req, res, next) => {
     const value = await auth.authenticate(req);
     if (!value)
@@ -241,6 +258,32 @@ export function createProduct(connection: Connection, config: Config) {
     res.locals.authUser = value.user;
     next();
   });
+  router.get('/trips/:id/shares', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await sharing.list(res.locals.authUser._id, String(req.params.id)),
+    }),
+  );
+  router.post('/trips/:id/shares', async (req, res) =>
+    res.status(201).json({
+      ok: true,
+      data: await sharing.create(
+        res.locals.authUser._id,
+        String(req.params.id),
+        parse(shareCreateSchema, req.body),
+      ),
+    }),
+  );
+  router.delete('/trips/:id/shares/:shareId', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await sharing.revoke(
+        res.locals.authUser._id,
+        String(req.params.id),
+        String(req.params.shareId),
+      ),
+    }),
+  );
   router.get('/trips/:id/expenses', async (req, res) => {
     const query = parse(expenseQuerySchema, req.query);
     res.json({
@@ -431,6 +474,7 @@ export function createProduct(connection: Connection, config: Config) {
     trips,
     explore,
     expenses,
+    sharing,
     async initialize() {
       ready = false;
       const all = [
@@ -438,6 +482,7 @@ export function createProduct(connection: Connection, config: Config) {
         ...Object.values(trips.models),
         ...Object.values(explore.models),
         ...Object.values(expenses.models),
+        ...Object.values(sharing.models),
         ...Object.values(planner.models),
       ];
       for (const model of all) {

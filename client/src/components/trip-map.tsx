@@ -3,26 +3,26 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
   mapLocationSchema,
-  type ActivityInput,
+  type SharedActivity,
   type PlaceDto,
   type MapLocation,
 } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
 
-type Props = {
-  activities: ActivityInput[];
+type Props<A extends SharedActivity> = {
+  activities: A[];
   destinationName: string;
   destinationId: string | undefined;
-  onEdit: (activity: ActivityInput) => void;
+  onEdit?: (activity: A) => void;
 };
 type Entry = { place?: PlaceDto; failed?: boolean; unavailable?: boolean };
 
-export function TripMap({
+export function TripMap<A extends SharedActivity>({
   activities,
   destinationName,
   destinationId,
   onEdit,
-}: Props) {
+}: Props<A>) {
   const [catalog, setCatalog] = useState<Record<string, Entry>>({});
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
@@ -230,7 +230,10 @@ export function TripMap({
               </a>
             </>
           )}
-          <button onClick={() => onEdit(structuredClone(activeStop.activity))}>
+          <button
+            hidden={!onEdit}
+            onClick={() => onEdit?.(structuredClone(activeStop.activity))}
+          >
             Xem / chỉnh điểm dừng
           </button>
         </article>

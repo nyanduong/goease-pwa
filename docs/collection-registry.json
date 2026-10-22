@@ -887,40 +887,47 @@
       "purpose": "Liên kết chỉ đọc có thể thu hồi, không để private trip trở thành public ngẫu nhiên.",
       "fields": [
         [
-          "tripId; createdByUserId",
+          "tripId; ownerId",
           "ObjectId; ObjectId",
-          "Bắt buộc",
-          "Quyền tạo link kiểm tra owner."
+          "Required",
+          "Owner derived from authenticated session."
         ],
         [
           "tokenHash",
           "string private",
-          "Bắt buộc",
-          "Token random chỉ trả rõ một lần; không log URL đầy đủ."
+          "Required",
+          "SHA-256 of Web Crypto 32-byte token; raw token never persisted or logged."
         ],
         [
-          "permission",
-          "enum",
-          "read_only",
-          "Không share-link edit trong baseline."
+          "schemaVersion; permission; viewPolicyVersion",
+          "integer; enum; enum",
+          "1; read_only; itinerary-v1",
+          "Fixed runtime policy; explicit public projection."
         ],
         [
-          "viewPolicyVersion",
-          "string",
-          "Bắt buộc",
-          "Projection public cho phép xem trường nào."
+          "expiresInDays",
+          "integer enum",
+          "Required: 1, 7, 30",
+          "Retry must match original duration; no extension on retry."
         ],
         [
-          "expiresAt; revokedAt; revokedBy",
-          "Date?; Date?; ObjectId?",
+          "createdAt; expiresAt",
+          "Date; Date",
+          "Required",
+          "Server time; expiry checked on every read independently of cleanup."
+        ],
+        [
+          "revokedAt",
+          "Date or null",
           "null",
-          "Kiểm tra khi đọc."
+          "Owner revoke or trip soft delete; never automatically reset."
         ]
       ],
-      "indexes": "Unique tokenHash; {tripId,revokedAt}; không bắt buộc TTL để giữ thông tin revoke có căn cứ.",
-      "rules": "Không lộ notes private, collaborator email, order/payment. Restore trip không tự kích hoạt link cũ.",
-      "retention": "Revoke ngay khi xóa; dọn theo retention trip/access.",
-      "brRefs": ["TRIP-11", "TRIP-12"]
+      "indexes": "Unique {tokenHash:1}; {tripId:1,ownerId:1,createdAt:-1}; no TTL.",
+      "rules": "TRIP-11/TRIP-12: owner create/list/revoke; at most10 active links per trip; live saved itinerary allowlist excludes notes, costs, account and AI data. Revoke/delete atomic with audit; restored trips do not reactivate links.",
+      "retention": "No cleanup/TTL/purge job; expiry enforced by API, revocation retained.",
+      "brRefs": ["TRIP-11", "TRIP-12"],
+      "implementationStatus": "Implemented local read-only sharing; see TRIP-SHARING.md. Listed fields/indexes are runtime; general MUTABLE metadata and purge jobs are not implemented."
     },
     {
       "name": "trip_expenses",
