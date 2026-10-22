@@ -1,3 +1,12 @@
+import {
+  beginOfflineLogout,
+  clearOffline,
+  finishOfflineLogout,
+  offlineOwner,
+  offlineKeys,
+  offlineLogoutPending,
+  removeOffline,
+} from './offline';
 import { TripTrash } from './components/trip-trash';
 import { PasswordRecovery } from './components/password-recovery';
 import { AccountPage } from './components/account-page';
@@ -32,6 +41,7 @@ export const errorText = (e: unknown) =>
   e instanceof Error ? e.message : 'Có lỗi xảy ra. Hãy thử lại.';
 
 export function App() {
+  const [online, setOnline] = useState(navigator.onLine);
   const [path, setPath] = useState(location.pathname);
   const [user, setUser] = useState<UserDto | null>(null);
   const [sessionStatus, setSessionStatus] = useState<
@@ -117,13 +127,64 @@ export function App() {
     return () => removeEventListener('popstate', pop);
   }, []);
 
+  useEffect(() => {
+    const connection = () => setOnline(navigator.onLine);
+    const restoredPage = (event: PageTransitionEvent) => {
+      if (event.persisted) location.reload();
+    };
+    const invalid = () => {
+      try {
+        clearOffline();
+      } catch {
+        /* storage unavailable */
+      }
+    };
+    const missing = (event: Event) => {
+      try {
+        removeOffline((event as CustomEvent<string>).detail);
+      } catch {
+        /* storage unavailable */
+      }
+    };
+    const storage = (event: StorageEvent) => {
+      if (
+        event.key === offlineKeys.owner ||
+        event.key === offlineKeys.logout ||
+        event.key === null
+      )
+        location.reload();
+    };
+    addEventListener('pageshow', restoredPage);
+    addEventListener('online', connection);
+    addEventListener('offline', connection);
+    addEventListener('storage', storage);
+    addEventListener('goease-auth-invalid', invalid);
+    addEventListener('goease-trip-missing', missing);
+    return () => {
+      removeEventListener('pageshow', restoredPage);
+      removeEventListener('online', connection);
+      removeEventListener('offline', connection);
+      removeEventListener('storage', storage);
+      removeEventListener('goease-auth-invalid', invalid);
+      removeEventListener('goease-trip-missing', missing);
+    };
+  }, []);
+
   // Resolve the session before deciding whether a root visit should show welcome.
   useEffect(() => {
     let active = true;
     setSessionStatus('loading');
-    void api<{ user: UserDto | null; expiredSession?: boolean }>('/auth/me')
+    void finishOfflineLogout()
+      .then(() =>
+        api<{ user: UserDto | null; expiredSession?: boolean }>('/auth/me'),
+      )
       .then((v) => {
         if (active) {
+          try {
+            offlineOwner(v.user?.id ?? null);
+          } catch {
+            /* private storage optional */
+          }
           setUser(v.user);
           setExpiredSession(v.expiredSession ?? false);
           setSessionError('');
@@ -218,6 +279,11 @@ export function App() {
   // Fetch individual trip when visiting /trips/:id
   useEffect(() => {
     if (!/^\/trips\/[a-f0-9]{24}$/.test(path)) return;
+    if (sessionStatus !== 'ready' || !user || offlineLogoutPending()) {
+      setLoaded(null);
+      setBusy(false);
+      return;
+    }
     let active = true;
     setBusy(true);
     setLoaded(null);
@@ -238,7 +304,7 @@ export function App() {
     return () => {
       active = false;
     };
-  }, [path, detailRetry]);
+  }, [path, detailRetry, user?.id, sessionStatus]);
 
   const start = () => {
     if (!user) {
@@ -336,6 +402,19 @@ export function App() {
     }
   }
 
+  if (offlineLogoutPending())
+    return (
+      <main className="container">
+        <Notice>
+          Đã xóa bản offline. Đang chờ hoàn tất đăng xuất trên server.
+          <button onClick={() => setSessionRetry((v) => v + 1)}>
+            Thử kết nối lại
+          </button>
+          <a href="/offline.html">Mở màn offline</a>
+        </Notice>
+      </main>
+    );
+
   if (path === '/dev/foundation')
     return import.meta.env.DEV ? (
       <Foundation />
@@ -420,7 +499,19 @@ export function App() {
                         type="button"
                         className="button button-subtle button-small"
                         onClick={() => {
-                          void api('/auth/logout', { method: 'POST' })
+                          try {
+                            beginOfflineLogout();
+                          } catch {
+                            setMessage(
+                              'Chưa xóa được dữ liệu offline. Hãy xóa dữ liệu trang trong cài đặt trình duyệt.',
+                            );
+                            return;
+                          }
+                          setUser(null);
+                          setList([]);
+                          setLoaded(null);
+                          setDraft(initialDraft());
+                          void finishOfflineLogout()
                             .then(() => {
                               setUser(null);
                               setExpiredSession(false);
@@ -428,9 +519,10 @@ export function App() {
                               setList([]);
                               setLoaded(null);
                               setDraft(initialDraft());
-                              go('/');
+                              history.replaceState({}, '', '/');
+                              setPath('/');
                             })
-                            .catch((e: unknown) => setMessage(errorText(e)));
+                            .catch(() => location.replace('/offline.html'));
                         }}
                       >
                         Đăng xuất
@@ -455,10 +547,17 @@ export function App() {
         </header>
       )}
 
+      {!online && (
+        <div className="container">
+          <Notice>
+            Đang mất mạng. <a href="/offline.html">Mở lịch trình đã tải</a>
+          </Notice>
+        </div>
+      )}
       {sessionError && (
         <div className="container">
           <Notice error>
-            {sessionError}{' '}
+            {sessionError} <a href="/offline.html">Xem bản offline</a>{' '}
             <button
               type="button"
               className="text-button inline-retry-btn"
@@ -704,6 +803,11 @@ export function App() {
             reset={path === '/reset-password'}
             link={link}
             onReset={() => {
+              try {
+                clearOffline();
+              } catch {
+                /* private storage optional */
+              }
               setUser(null);
               setExpiredSession(false);
             }}
@@ -714,6 +818,11 @@ export function App() {
             register={path === '/register'}
             link={link}
             onDone={(v) => {
+              try {
+                offlineOwner(v.id);
+              } catch {
+                /* private storage optional */
+              }
               setUser(v);
               setExpiredSession(false);
               setOnboardingSeen(false);

@@ -2385,5 +2385,17 @@
   },
   "executable": false,
   "reviewHead": "fddcf6643f67356dde151d432338fc4b7cb616f8",
-  "implementationEvidence": "PRODUCT-VERIFICATION.md"
+  "implementationEvidence": "PRODUCT-VERIFICATION.md",
+  "browserStorage": {
+    "implementationStatus": "local read-only offline itinerary, 2026-10-23",
+    "contract": "OFFLINE-ITINERARY.md",
+    "version": 1,
+    "scope": "single owner per browser origin; generation-checked writes; logout clears private snapshots",
+    "limits": {
+      "trips": 10,
+      "jsonCharacters": 2000000
+    },
+    "serverCollectionsChanged": false,
+    "privateDataInCacheStorage": false
+  }
 }

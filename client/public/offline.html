@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#184c43" />
+    <title>GoEase · Lịch trình offline</title>
+    <link rel="stylesheet" href="/offline.css" />
+    <script src="/offline.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <a href="/">GoEase</a
+        ><button id="logout">Đăng xuất &amp; xóa dữ liệu</button>
+      </header>
+      <p class="eyebrow">ĐỒNG HÀNH KHI MẤT MẠNG</p>
+      <h1>Lịch trình bên bạn.</h1>
+      <p id="status" role="status">Đang mở bản tải xuống…</p>
+      <p class="hint">
+        Bản lưu chỉ xem, có thể đã cũ. Chỉnh sửa, thực chi, bản đồ và Goe cần
+        kết nối mạng. Người dùng trình duyệt này có thể xem bản đã tải; hãy đăng
+        xuất trên máy dùng chung.
+      </p>
+      <nav>
+        <a href="/trips">Về chuyến đi online</a
+        ><button id="refresh">Kiểm tra kết nối</button>
+      </nav>
+      <div id="content"></div>
+      <p id="error" role="alert"></p>
+    </main>
+  </body>
+</html>

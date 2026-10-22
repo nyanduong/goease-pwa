@@ -1,3 +1,5 @@
+import { TripOffline } from './trip-offline';
+import { removeOffline } from '../offline';
 import { TripSharing } from './trip-sharing';
 import { useRef, useState } from 'react';
 import type { TripDto } from '@goease/contracts';
@@ -52,6 +54,13 @@ export function TripManagement({
           headers: { 'Idempotency-Key': operation.key },
         },
       );
+      if (result.deleted) {
+        try {
+          removeOffline(trip.id);
+        } catch {
+          /* reader revalidates on reconnect */
+        }
+      }
       pending.current = null;
       setUncertain(false);
       setAction(null);
@@ -73,6 +82,7 @@ export function TripManagement({
   }
   return (
     <section className="trip-management" aria-label="Quản lý chuyến đi">
+      <TripOffline id={trip.id} unsaved={unsaved} />
       <h2>Quản lý chuyến đi</h2>
       {unsaved && <p>Lưu thay đổi trước khi nhân bản hoặc xóa chuyến đi.</p>}
       <div className="expense-actions">

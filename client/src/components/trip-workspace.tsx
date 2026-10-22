@@ -149,6 +149,9 @@ export function JourneyList({
       </button>
       <div className="journey-section-title">
         <h2>Hành trình của bạn</h2>
+        <a className="trip-trash-link" href="/offline.html">
+          Bản offline
+        </a>
         {signedIn && (
           <button
             className="trip-trash-link"

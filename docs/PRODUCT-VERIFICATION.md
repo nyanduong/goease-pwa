@@ -238,3 +238,16 @@ Observed checks:
 - Responsive320/390/768px no horizontal overflow. Inspected local screenshots .local/management-preview/trash-390.png and list-390.png; ignored artifacts not committed.
 
 No application Mongo27019 changes, external provider call, production deployment or physical-device test. First typecheck caught nullable Mongoose date inference and an intermediate test-edit syntax error; both corrected before final PASS runs. No SMTP/Gemini live acceptance claimed.
+
+## 2026-10-23 — Read-only offline itinerary
+
+Implemented DATA-10/TRIP-01/09/12 using existing authenticated GET auth/me and GET trip APIs. Explicit download/refresh/removal in trip settings, Bản offline list entry, standalone mobile reader with savedAt and stale/offline notice. Service worker caches only3public reader files. Owner/epoch-scoped localStorage contains bounded saved itinerary/notes/estimates, no actual expenses, auth tokens or public shares. Logout clears private storage immediately across tabs, invalidates pending downloads, clears app state and prevents private views/new login while server logout is pending. Offline marker retries existing logout on reconnect. Back-forward restored SPA pages reload rather than show old in-memory state. Details/limits in OFFLINE-ITINERARY.md.
+
+Observed final checks:
+
+- npm run typecheck, npm run build, npm run lint, npm run format:check, git diff --check: PASS. Production dist contains sw.js/offline.html/offline.js/offline.css. No dependency, API schema or MongoDB changes.
+- npm test:22 PASS. npm run test:integration:52 PASS, isolated Mongo27021; existing ownership/auth/trip/expense/sharing/recovery checks remain green.
+- npx playwright test:22 PASS,1liveGemini opt-in skipped; API3011/web5191/Mongo27020. New real-browser test installs actual service worker, downloads current saved trip, preserves prior snapshot on503 refresh, updates title, checks exact cache allowlist, removes a remotely deleted trip on online revalidation, uses context.setOffline(true) then reload/new-tab navigation and reads notes/time/estimates without write controls, verifies HTML notes render only as text, checks320/390/768px, logs out offline across two tabs and reloads to empty, reconnects and observes server session null, registers another account with no inherited data, removes one download without deleting server trip, and verifies ordinary online logout clears downloads.
+- Screenshot .local/offline-preview/itinerary-390.png inspected; local test artifacts ignored. First full browser run caught hard-navigation logout racing immediate login navigation; replaced with SPA state/navigation reset, added private-view gating while logout pending, then full final rerun PASS. No claim that the earlier failed run passed.
+
+No application Mongo27019 writes, live external provider calls, public deployment, installable-PWA/manifest acceptance or physical-device test. Offline snapshots cannot learn about remote revocation/deletion until reconnect; browser storage may be evicted. Local logout is immediate, server session revocation requires connectivity. Reader source and runtime assets are identical between dev and built public files, but production hosting/HTTPS behavior has not been exercised on a public host.

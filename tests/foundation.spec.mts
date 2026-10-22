@@ -2169,3 +2169,306 @@ test('password recovery UI with explicit delivered-token database fixture and un
     await guest.close();
   }
 });
+
+test('offline itinerary survives network loss reload and clears across tabs on logout', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/register');
+  await page.getByLabel('Tên của bạn', { exact: true }).fill('Khách offline');
+  await page
+    .getByLabel('Email', { exact: true })
+    .fill('offline-' + Date.now() + '@example.invalid');
+  await page
+    .getByLabel('Mật khẩu', { exact: true })
+    .fill('Offline-browser-only-2026');
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  const headers = () => ({
+    Origin: new URL(page.url()).origin,
+    'X-GoEase-Client': 'web',
+    'Idempotency-Key': crypto.randomUUID(),
+  });
+  const destinationId = '000000000000000000000004';
+  const input: TripInput = {
+    title: 'Hội An offline',
+    destinations: [{ destinationId, order: 0 }],
+    startDate: '2026-11-12',
+    endDate: '2026-11-12',
+    timezone: 'Asia/Ho_Chi_Minh',
+    travelers: { totalCount: 4 },
+    budget: {
+      amountMinor: 1000000,
+      currency: 'VND',
+      scope: 'group_total',
+      includedCategories: [],
+    },
+    preferences: { interestCodes: [], pace: 'relaxed', transportModes: [] },
+    generationMode: 'manual',
+    notes: 'Ghi chú riêng offline',
+    days: [
+      {
+        dayId: crypto.randomUUID(),
+        date: '2026-11-12',
+        destinationId,
+        activities: [
+          {
+            activityId: crypto.randomUUID(),
+            kind: 'visit',
+            title: 'Phố cổ Hội An',
+            order: 0,
+            timezone: 'Asia/Ho_Chi_Minh',
+            notes: '<img src=x onerror=alert(1)> Ghi chú điểm dừng',
+            source: 'manual',
+            startLocalTime: '09:00',
+            endLocalTime: '10:00',
+            estimatedCost: {
+              amountMinor: 120000,
+              currency: 'VND',
+              basis: 'per_person',
+              quantity: 1,
+              confidence: 'user_entered',
+            },
+          },
+        ],
+      },
+    ],
+  };
+  const created = await page.request.post('/api/v1/trips', {
+    headers: headers(),
+    data: { trip: input },
+  });
+  expect(created.status()).toBe(201);
+  const trip: TripDto = (await created.json()).data.trip;
+  const apiPath = '/api/v1/trips/' + trip.id;
+  await page.goto('/trips/' + trip.id);
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Lưu để xem offline', exact: true })
+    .click();
+  await expect(page.getByText(/Đã tải:/)).toBeVisible();
+  const original = await page.evaluate(() =>
+    localStorage.getItem('goease:offline:data:v1'),
+  );
+  expect(JSON.parse(original!).items[0].trip.days).toEqual(trip.days);
+  // Failed refresh keeps the previous snapshot and timestamp intact.
+  await page.route('**' + apiPath, (route) =>
+    route.fulfill({
+      status: 503,
+      json: { ok: false, error: { message: 'Offline refresh test failure' } },
+    }),
+  );
+  await page
+    .getByRole('button', { name: 'Cập nhật bản offline', exact: true })
+    .click();
+  await expect(page.getByRole('alert')).toContainText(
+    'Offline refresh test failure',
+  );
+  expect(
+    await page.evaluate(() => localStorage.getItem('goease:offline:data:v1')),
+  ).toBe(original);
+  await page.unroute('**' + apiPath);
+  const changed = await page.request.patch(apiPath, {
+    headers: headers(),
+    data: {
+      trip: { ...input, title: 'Hội An bản mới' },
+      expectedRevision: trip.revision,
+    },
+  });
+  expect(changed.status()).toBe(200);
+  await page
+    .getByRole('button', { name: 'Cập nhật bản offline', exact: true })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('goease:offline:data:v1')!).items[0]
+            .trip.title,
+      ),
+    )
+    .toBe('Hội An bản mới');
+  const cacheUrls = await page.evaluate(async () => {
+    const keys = await caches.keys();
+    return (
+      await Promise.all(
+        keys.map(async (key) =>
+          (await (await caches.open(key)).keys()).map(
+            (r) => new URL(r.url).pathname,
+          ),
+        ),
+      )
+    ).flat();
+  });
+  expect(cacheUrls.sort()).toEqual([
+    '/offline.css',
+    '/offline.html',
+    '/offline.js',
+  ]);
+  // A deletion on another device/API call is removed when the reader reconnects.
+  const doomedResult = await page.request.post('/api/v1/trips', {
+    headers: headers(),
+    data: { trip: { ...input, title: 'Chuyến đã xóa từ máy khác' } },
+  });
+  const doomed: TripDto = (await doomedResult.json()).data.trip;
+  await page.goto('/trips/' + doomed.id);
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Lưu để xem offline', exact: true })
+    .click();
+  await expect(page.getByText(/Đã tải:/)).toBeVisible();
+  expect(
+    (
+      await page.request.delete('/api/v1/trips/' + doomed.id, {
+        headers: headers(),
+        data: { expectedRevision: doomed.revision },
+      })
+    ).status(),
+  ).toBe(200);
+  await page.goto('/offline.html');
+  await expect(
+    page.getByRole('heading', { name: 'Hội An bản mới' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Chuyến đã xóa từ máy khác' }),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem('goease:offline:data:v1')!).items
+          .length,
+    ),
+  ).toBe(1);
+  await context.setOffline(true);
+  await page.goto('/trips/' + trip.id);
+  await expect(
+    page.getByRole('heading', { name: 'Lịch trình bên bạn.' }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Xem lịch trình', exact: true })
+    .click();
+  await expect(
+    page.getByText('Ghi chú riêng offline', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('09:00 – 10:00', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Dự toán đã biết: 480.000đ/)).toBeVisible();
+  expect(await page.locator('#content img').count()).toBe(0);
+  expect(await page.locator('input, textarea').count()).toBe(0);
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mkdir('.local/offline-preview', { recursive: true });
+  await page.screenshot({
+    path: '.local/offline-preview/itinerary-390.png',
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(
+    page.getByRole('heading', { name: 'Hội An bản mới' }),
+  ).toBeVisible();
+  const second = await context.newPage();
+  await second.goto('/offline.html');
+  await expect(
+    second.getByRole('heading', { name: 'Hội An bản mới' }),
+  ).toBeVisible();
+  await second.getByRole('button', { name: 'Đăng xuất & xóa dữ liệu' }).click();
+  await expect(
+    second.getByRole('heading', { name: 'Chưa có lịch trình tải xuống' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Chưa có lịch trình tải xuống' }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => localStorage.getItem('goease:offline:data:v1')),
+  ).toBeNull();
+  expect(
+    await page.evaluate(() => localStorage.getItem('goease:offline:owner:v1')),
+  ).toBeNull();
+  await page.reload();
+  await expect(
+    page.getByRole('heading', { name: 'Chưa có lịch trình tải xuống' }),
+  ).toBeVisible();
+  await context.setOffline(false);
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem('goease:offline:logout:v1')),
+    )
+    .toBeNull();
+  expect(
+    (await (await page.request.get('/api/v1/auth/me')).json()).data.user,
+  ).toBeNull();
+  await second.close();
+  await page.goto('/register');
+  await page.getByLabel('Tên của bạn', { exact: true }).fill('Khách khác');
+  await page
+    .getByLabel('Email', { exact: true })
+    .fill('offline-other-' + Date.now() + '@example.invalid');
+  await page
+    .getByLabel('Mật khẩu', { exact: true })
+    .fill('Offline-browser-only-2026');
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto('/offline.html');
+  await expect(
+    page.getByRole('heading', { name: 'Chưa có lịch trình tải xuống' }),
+  ).toBeVisible();
+  // The normal online logout and per-trip removal use the same deletion policy.
+  const other = await page.request.post('/api/v1/trips', {
+    headers: headers(),
+    data: { trip: { ...input, title: 'Chuyến tài khoản mới' } },
+  });
+  expect(other.status()).toBe(201);
+  const otherId = (await other.json()).data.trip.id;
+  await page.goto('/trips/' + otherId);
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Lưu để xem offline', exact: true })
+    .click();
+  await expect(page.getByText(/Đã tải:/)).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Xóa bản tải xuống', exact: true })
+    .click();
+  await expect(page.getByText(/Đã tải:/)).toHaveCount(0);
+  expect((await page.request.get('/api/v1/trips/' + otherId)).status()).toBe(
+    200,
+  );
+  await page
+    .getByRole('button', { name: 'Lưu để xem offline', exact: true })
+    .click();
+  await expect(page.getByText(/Đã tải:/)).toBeVisible();
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem('goease:offline:data:v1')),
+    )
+    .toBeNull();
+  await expect
+    .poll(
+      async () =>
+        (await (await page.request.get('/api/v1/auth/me')).json()).data.user,
+    )
+    .toBeNull();
+  await page.goto('/offline.html');
+  await expect(
+    page.getByRole('heading', { name: 'Chưa có lịch trình tải xuống' }),
+  ).toBeVisible();
+});

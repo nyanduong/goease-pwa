@@ -1204,3 +1204,7 @@ Issuance uses cooldown60seconds and atomically revokes previous unused reset cha
 ## Runtime trip trash — 2026-10-23
 
 TRIP-09/10/12/13: trips dùng lại deletedAt/deletedBy/deletionReasonCode, restore clear cả3field và tăng revision; không thay content/expenseRevision/firstSavedAt. trip_revisions.action bổ sung restored, previousRevision=revision tombstone, snapshot cùng nội dung. audit_logs.action bổ sung trip.restored; idempotency_keys.operation trip.restore, responseStatus200, TTL24h. Share revokedAt chỉ set khi null, không clear; trip_expenses không bị ghi. Không collection/index/migration mới, không raw DB validator mới. API/query/DTO: TRIP-MANAGEMENT.md. Restore thùng rác khác restore revision lịch sử (chưa triển khai).
+
+## Offline reader — 2026-10-23
+
+Không thay MongoDB schema/collection/index. Snapshot riêng chỉ ở localStorage browser, contract version1/owner epoch/bounded10trips và2triệu ký tự; không auth token/expense. Logout xóa local data ngay, marker phi cá nhân chờ thu hồi server. Trip DTO/API có sẵn giữ nguyên. Xem OFFLINE-ITINERARY.md; registry browserStorage chỉ mô tả, không executable schema.

@@ -333,3 +333,7 @@ Token Web Crypto 256-bit truyền trong fragment `/share#token`, gửi API bằn
 ### TRIP-09/10/11/12/13 — Thùng rác customer (2026-10-23)
 
 Owner xem thùng rác và khôi phục chuyến của mình bằng revision hiện tại. Khôi phục cùng ID, giữ nguyên lịch/ngày/ghi chú/dự toán/source và thực chi, tạo revision mới cùng audit; không phục hồi expense đã xóa riêng. Link chia sẻ cũ vẫn thu hồi, kể cả sau restore. Chưa có purge tự động hoặc restore về revision lịch sử tùy chọn. Xem TRIP-MANAGEMENT.md.
+
+### DATA-10 / TRIP-01/09/12 — Lịch trình offline chỉ xem (2026-10-23)
+
+Customer chủ động tải snapshot chuyến thuộc mình từ API đã lưu, tối đa10chuyến/bộ nhớ2triệu ký tự JSON. Xem lịch/ngày/giờ/ghi chú/dự toán, thời điểm tải và cảnh báo bản cũ; không sửa/sync queue/thực chi/AI/map offline. Logout xóa snapshot trên máy ngay và mọi tab; mất mạng thì đánh dấu hoàn tất logout server khi kết nối lại. Đổi account không kế thừa cache. Phiên hết hạn hoặc trip bị xóa được kiểm lại khi online; không thể thu hồi tức thì bản đã tải khi thiết bị mất mạng. API ownership không đổi, share link không được cache. Chi tiết OFFLINE-ITINERARY.md.

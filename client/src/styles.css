@@ -5366,3 +5366,8 @@ body:has(.journey-shell) {
   opacity: 0.55;
   cursor: wait;
 }
+
+.journey-section-title {
+  flex-wrap: wrap;
+  gap: 10px;
+}

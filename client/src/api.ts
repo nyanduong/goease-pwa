@@ -35,6 +35,12 @@ export async function api<T>(
     data?: T;
     error?: { message?: string };
   } | null;
+  if (response.status === 401 && !path.startsWith('/auth/'))
+    window.dispatchEvent(new Event('goease-auth-invalid'));
+  if (response.status === 404 && /^\/trips\/[a-f0-9]{24}$/.test(path))
+    window.dispatchEvent(
+      new CustomEvent('goease-trip-missing', { detail: path.split('/')[2]! }),
+    );
   if (!response.ok || !result?.ok)
     throw new ApiFailure(
       result?.error?.message ?? 'Không thể hoàn tất yêu cầu. Hãy thử lại.',

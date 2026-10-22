@@ -256,3 +256,7 @@ AUTH-03/04/07/08 → auth_challenges(reset_password) → passwordRecovery → fo
 ## Trip trash — 2026-10-23
 
 TRIP-09/10/12/13 → owned tombstone → tripManagement restore → same trip + new trip_revisions/restored + audit trip.restored + receipt trip.restore trong transaction. Owner từ session, không nhận owner/notes/amount từ restore body. Danh sách thùng rác chỉ metadata, không snapshot riêng. Actual expense documents giữ nguyên; expense đã xóa riêng vẫn ẩn. Share revokedAt không bao giờ clear. Log chỉ route template/action/IDs, không tên/ghi chú. Chưa có purge/retention job; TRIP-MANAGEMENT.md mô tả giới hạn.
+
+## Offline itinerary — 2026-10-23
+
+DATA-10/TRIP-01/09/12: authenticated GET trip → parsed saved snapshot → owner-scoped browser localStorage → read-only text renderer. Bản lưu gồm ghi chú riêng nên không dùng chung máy mà chưa logout. Không expense/token/profile/provider response. Download rechecks owner epoch; logout clears content and invalidates pending writes. No server write/audit on download (GET read), offline logout uses existing auth/logout when online. Service worker CacheStorage chỉ3static files, không private data. Retention là customer remove/logout/account switch hoặc browser eviction; không tự đặt server retention mới. Xem OFFLINE-ITINERARY.md.
