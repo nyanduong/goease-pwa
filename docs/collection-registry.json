@@ -731,7 +731,7 @@
         "TRIP-09",
         "TRIP-12"
       ],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md",
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expenseRevision internal serialization counter, no itinerary revision/snapshot changes",
       "runtimeFields": [
         [
           "days[].activities[].placeId",
@@ -917,47 +917,48 @@
       "purpose": "Thực chi du lịch, tách ước tính planner và giao dịch tiền trên GoEase.",
       "fields": [
         [
-          "tripId; recordedBy",
-          "ObjectId; ObjectId",
-          "Bắt buộc",
-          "Owner/editor theo policy, server derive actor."
+          "tripId; recordedBy; updatedBy",
+          "ObjectId",
+          "required",
+          "Server-derived trip ownership and actors."
         ],
         [
-          "activityId",
-          "string?",
-          "null",
-          "Liên hệ activity nhưng không cascade xóa khi activity mất."
-        ],
-        [
-          "category; description",
-          "enum; string?",
-          "Bắt buộc; optional",
-          "accommodation/food/transport/activity/other."
+          "description; category",
+          "string; enum",
+          "required",
+          "Trim1–160; transport/lodging/meal/visit/other."
         ],
         [
           "amountMinor; currency",
-          "integer; string",
-          "Bắt buộc",
-          "Tổng khoản chi, không tự nhân người; số tiền chính xác."
-        ],
-        ["spentAt; timezone", "Date; IANA", "Bắt buộc", "Thời gian thực chi."],
-        [
-          "paidByUserId",
-          "ObjectId?",
-          "null",
-          "Chỉ user có liên quan, không tự định danh người lạ."
+          "integer; literal",
+          "required",
+          "1..1e12 group total VND."
         ],
         [
-          "receiptAssetId; notes",
-          "ObjectId?; string? private",
+          "spentOn; timezone",
+          "ISO date; literal",
+          "required",
+          "Date-only; Asia/Ho_Chi_Minh; may be outside trip dates."
+        ],
+        [
+          "revision; schemaVersion",
+          "integer",
+          "1",
+          "Expense revision independent of itinerary."
+        ],
+        ["createdAt; updatedAt", "Date", "server", "Mongoose timestamps."],
+        [
+          "deletedAt; deletedBy",
+          "Date?; ObjectId?",
           "null",
-          "Receipt private có hạn lưu riêng."
+          "Soft deletion; excluded from totals."
         ]
       ],
-      "indexes": "{tripId,deletedAt,spentAt:-1}; {recordedBy,createdAt:-1}.",
-      "rules": "Không gọi expense là payment confirmed. Không xây settle/debt wallet khi chưa có BR chia tiền.",
-      "retention": "Theo trip; receipt có thể purge sớm hơn metadata.",
-      "brRefs": ["TRIP-13"]
+      "indexes": "Implemented {tripId:1,deletedAt:1,spentOn:-1,_id:-1}.",
+      "rules": "TRIP-08/TRIP-13 owner-only; atomic expense/audit/idempotency writes; safe integer aggregate; no receipts, paidBy, activity link or wallet. Runtime uses spentOn, not proposed spentAt.",
+      "retention": "Soft delete implemented; purge/retention jobs not implemented.",
+      "brRefs": ["TRIP-08", "TRIP-13"],
+      "implementationStatus": "implemented-local-owner-only-expense-crud; runtime fields/index below; receipt/activity/payment extensions not implemented; see TRIP-EXPENSES.md"
     },
     {
       "name": "favorites",
@@ -2113,7 +2114,7 @@
         "qualification": "DB-BASELINE.md#12-audit-subset-f1-b-đã-triển-khai",
         "productionReady": false
       },
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts"
     },
     {
       "name": "analytics_events",
@@ -2282,7 +2283,7 @@
       "rules": "Idempotency không thay authorization: trả cached result vẫn kiểm tra actor/current access. Race duplicate-key phải đọc record hiện có.",
       "retention": "Đề xuất 24h cho trip create; payment không dựa TTL ngắn để ngăn thanh toán/cấp quyền trùng lâu dài.",
       "brRefs": ["TRIP-09", "COM-04"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted, resourceType trip_expense, 24h TTL"
     },
     {
       "name": "schema_migrations",

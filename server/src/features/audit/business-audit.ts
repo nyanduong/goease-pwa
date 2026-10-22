@@ -13,6 +13,9 @@ const input = z.strictObject({
     'session.revoked',
     'trip.created',
     'trip.updated',
+    'expense.created',
+    'expense.updated',
+    'expense.deleted',
   ]),
   actorUserId: id.optional(),
   entityId: id,
@@ -34,7 +37,8 @@ export function businessAudit(
       const checked = input.safeParse(value);
       if (!checked.success) throw new Error('Invalid business audit context');
       const v = checked.data;
-      const trip = v.action.startsWith('trip.');
+      const expense = v.action.startsWith('expense.');
+      const trip = v.action.startsWith('trip.') || expense;
       const authSession = v.action.startsWith('session.');
       if (
         (trip || authSession || v.action === 'auth.email_verified') &&
@@ -48,7 +52,13 @@ export function businessAudit(
         actor: v.actorUserId
           ? { type: 'user', userId: v.actorUserId }
           : { type: 'system', serviceName: 'auth' },
-        entityType: trip ? 'trip' : authSession ? 'auth_session' : 'user',
+        entityType: expense
+          ? 'trip_expense'
+          : trip
+            ? 'trip'
+            : authSession
+              ? 'auth_session'
+              : 'user',
         entityId: v.entityId,
         entityRevision: v.entityRevision,
         requestId: v.requestId,
@@ -57,7 +67,13 @@ export function businessAudit(
         recordedAt: now,
         outcome: v.action === 'auth.failed' ? 'failed' : 'succeeded',
         changedFields: [
-          trip ? 'tripDetails' : authSession ? 'sessionState' : 'accountState',
+          expense
+            ? 'expenseDetails'
+            : trip
+              ? 'tripDetails'
+              : authSession
+                ? 'sessionState'
+                : 'accountState',
         ],
         changes: [],
         source: {

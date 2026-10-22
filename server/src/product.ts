@@ -1,8 +1,13 @@
+import { expenseService } from './features/expenses/expense.service.js';
 import { exploreService } from './features/explore/explore.service.js';
 import { Router } from 'express';
 import mongoose, { type Connection } from 'mongoose';
 import { z } from 'zod';
 import {
+  expenseCreateSchema,
+  expenseUpdateSchema,
+  expenseRevisionSchema,
+  expenseQuerySchema,
   loginSchema,
   registerSchema,
   tripInputSchema,
@@ -34,6 +39,7 @@ export function createProduct(connection: Connection, config: Config) {
   const audit = businessAudit(connection, config.NODE_ENV);
   const auth = authService(connection, config, audit);
   const trips = tripService(connection, audit);
+  const expenses = expenseService(connection, trips, audit);
   const explore = exploreService(connection);
   const planner = plannerService(connection, config, trips, explore);
   const google = googleAuth(connection, config, auth);
@@ -59,6 +65,10 @@ export function createProduct(connection: Connection, config: Config) {
       res.locals.logRoute = '/api/v1' + req.path;
     else if (/^\/trips\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/trips/:id';
+    if (/^\/trips\/[^/]+\/expenses$/.test(req.path))
+      res.locals.logRoute = '/api/v1/trips/:id/expenses';
+    if (/^\/trips\/[^/]+\/expenses\/[^/]+$/.test(req.path))
+      res.locals.logRoute = '/api/v1/trips/:id/expenses/:expenseId';
     if (/^\/places\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/places/:id';
     if (/^\/me\/places\/[^/]+$/.test(req.path))
@@ -201,6 +211,49 @@ export function createProduct(connection: Connection, config: Config) {
     res.locals.authUser = value.user;
     next();
   });
+  router.get('/trips/:id/expenses', async (req, res) => {
+    const query = parse(expenseQuerySchema, req.query);
+    res.json({
+      ok: true,
+      data: await expenses.list(
+        res.locals.authUser._id,
+        String(req.params.id),
+        query,
+      ),
+    });
+  });
+  for (const [method, action, suffix] of [
+    ['post', 'created', ''],
+    ['patch', 'updated', '/:expenseId'],
+    ['delete', 'deleted', '/:expenseId'],
+  ] as const) {
+    router[method](`/trips/:id/expenses${suffix}`, async (req, res) => {
+      const body =
+        action === 'created'
+          ? parse(expenseCreateSchema, req.body)
+          : action === 'updated'
+            ? parse(expenseUpdateSchema, req.body)
+            : parse(expenseRevisionSchema, req.body);
+      const key = parse(
+        z.string().regex(uuidPattern),
+        req.get('Idempotency-Key'),
+      );
+      const result = await expenses.write(
+        res.locals.authUser._id,
+        String(req.params.id),
+        action,
+        key,
+        'expense' in body ? body.expense : undefined,
+        action === 'created'
+          ? undefined
+          : String('expenseId' in req.params ? req.params.expenseId : ''),
+        'expectedRevision' in body ? body.expectedRevision : undefined,
+      );
+      res
+        .status(action === 'created' ? 201 : 200)
+        .json({ ok: true, data: result });
+    });
+  }
   router.get('/trips', async (_req, res) =>
     res.json({ ok: true, data: await trips.list(res.locals.authUser._id) }),
   );
@@ -306,12 +359,14 @@ export function createProduct(connection: Connection, config: Config) {
     auth,
     trips,
     explore,
+    expenses,
     async initialize() {
       ready = false;
       const all = [
         ...Object.values(auth.models),
         ...Object.values(trips.models),
         ...Object.values(explore.models),
+        ...Object.values(expenses.models),
         ...Object.values(planner.models),
       ];
       for (const model of all) {

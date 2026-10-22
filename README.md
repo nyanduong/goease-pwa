@@ -200,3 +200,7 @@ Integration dùng fixture replica set riêng trên 27021 và giữ dữ liệu t
 Customer itinerary proposals are connected to the server Gemini adapter. Set server-only GEMINI_API_KEY; see [setup, contract, quotas and verification limits](docs/AI-PLANNER.md). Goe supports selected-day itinerary adjustment with explicit confirmation.
 
 Goe chat can now adjust a selected day of a saved Hội An trip: choose trip/day → send a request → review before/after → confirm save. Read [Goe scope and contracts](docs/AI-PLANNER.md#goe-adjustment-customer-flow--2026-10-23).
+
+## Trip expenses — 2026-10-23
+
+Chi tiêu thực tế: mở chuyến đi đã lưu → Chi phí → Thực chi để nhập/sửa/xóa khoản chi, xem tổng nhóm, bình quân, ngân sách còn lại và chênh lệch với dự toán đã biết. Dùng MongoDB/session hiện có, không cần provider key hay seed mới. API và giới hạn: [docs/TRIP-EXPENSES.md](docs/TRIP-EXPENSES.md).

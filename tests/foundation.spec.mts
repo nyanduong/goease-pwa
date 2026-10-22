@@ -845,6 +845,233 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   await expect(page.locator('.budget-total')).toContainText('400.000');
 });
 
+test('real expenses create retry edit conflict delete and persist independently of itinerary', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/register');
+  const email = `expense-browser-${Date.now()}@example.invalid`,
+    password = 'Expenses-browser-only-2026';
+  await page
+    .getByLabel('Tên của bạn', { exact: true })
+    .fill('Người ghi chi tiêu');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  const headers = () => ({
+    Origin: new URL(page.url()).origin,
+    'X-GoEase-Client': 'web',
+    'Idempotency-Key': crypto.randomUUID(),
+  });
+  const destinationId = '000000000000000000000004';
+  const input: TripInput = {
+    title: 'Hội An và chi tiêu',
+    destinations: [{ destinationId, order: 0 }],
+    startDate: '2026-11-12',
+    endDate: '2026-11-12',
+    timezone: 'Asia/Ho_Chi_Minh',
+    travelers: { totalCount: 4 },
+    budget: {
+      amountMinor: 1000000,
+      currency: 'VND',
+      scope: 'group_total',
+      includedCategories: [],
+    },
+    preferences: { interestCodes: [], pace: 'relaxed', transportModes: [] },
+    generationMode: 'manual',
+    notes: '',
+    days: [
+      {
+        dayId: crypto.randomUUID(),
+        date: '2026-11-12',
+        destinationId,
+        activities: [100000, null].map((amountMinor, order) => ({
+          activityId: crypto.randomUUID(),
+          kind: 'visit',
+          title: `Điểm ${order + 1}`,
+          timezone: 'Asia/Ho_Chi_Minh',
+          order,
+          notes: '',
+          source: 'manual',
+          estimatedCost: {
+            amountMinor,
+            currency: 'VND',
+            basis: 'group_total',
+            quantity: 1,
+            confidence: 'user_entered',
+          },
+        })),
+      },
+    ],
+  };
+  const created = await page.request.post('/api/v1/trips', {
+    headers: headers(),
+    data: { trip: input },
+  });
+  expect(created.status()).toBe(201);
+  const trip: TripDto = (await created.json()).data.trip;
+  const path = `/api/v1/trips/${trip.id}/expenses`;
+  await page.goto(`/trips/${trip.id}`);
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await page.getByRole('button', { name: 'Thực chi', exact: true }).click();
+  await expect(
+    page.getByText('Chưa ghi nhận khoản chi nào.', { exact: false }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: '+ Thêm khoản chi', exact: true })
+    .click();
+  await page
+    .getByLabel('Tên khoản chi', { exact: true })
+    .fill('Ăn trưa cả nhóm');
+  await page.getByLabel('Số tiền đã chi (VND)', { exact: true }).fill('240000');
+  await page.getByLabel('Ngày chi', { exact: true }).fill('2026-11-11');
+  const keys: string[] = [];
+  let drop = true;
+  await page.route(`**${path}`, async (r) => {
+    if (r.request().method() !== 'POST') return r.continue();
+    keys.push(r.request().headers()['idempotency-key']!);
+    const response = await r.fetch();
+    expect(response.status()).toBe(201);
+    if (drop) {
+      drop = false;
+      await r.abort();
+    } else await r.fulfill({ response });
+  });
+  await page
+    .getByRole('button', { name: 'Lưu khoản chi', exact: true })
+    .click();
+  await expect(page.getByLabel('Tên khoản chi', { exact: true })).toHaveValue(
+    'Ăn trưa cả nhóm',
+  );
+  await page
+    .getByRole('button', { name: 'Thử lại thao tác', exact: true })
+    .click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  expect(keys).toHaveLength(2);
+  expect(keys[0]).toBe(keys[1]);
+  await page.unroute(`**${path}`);
+  await expect(page.locator('.expense-total')).toContainText('240.000');
+  await expect(page.locator('.expense-remaining')).toContainText('760.000');
+  await expect(page.locator('.expense-list li')).toHaveCount(1);
+  await page
+    .getByRole('button', { name: 'Sửa Ăn trưa cả nhóm', exact: true })
+    .click();
+  await page
+    .getByLabel('Số tiền đã chi (VND)', { exact: true })
+    .fill('1200000');
+  await page
+    .getByRole('button', { name: 'Lưu khoản chi', exact: true })
+    .click();
+  await expect(page.locator('.expense-remaining')).toContainText(
+    'Vượt ngân sách 200.000',
+  );
+  await page
+    .getByRole('button', { name: '+ Thêm khoản chi', exact: true })
+    .click();
+  await page.getByLabel('Tên khoản chi', { exact: true }).fill('Taxi');
+  await page.getByLabel('Số tiền đã chi (VND)', { exact: true }).fill('200000');
+  await page
+    .getByLabel('Nhóm chi phí', { exact: true })
+    .selectOption('transport');
+  await page
+    .getByRole('button', { name: 'Lưu khoản chi', exact: true })
+    .click();
+  await expect(page.locator('.expense-total')).toContainText('1.400.000');
+  await expect(page.locator('.expense-caption').first()).toContainText(
+    '1 điểm dừng chưa có dự toán',
+  );
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mkdir('.local/expense-preview', { recursive: true });
+  await page.screenshot({
+    path: '.local/expense-preview/actual-live-390.png',
+    fullPage: true,
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await page.getByRole('button', { name: 'Thực chi', exact: true }).click();
+  await expect(page.locator('.expense-total')).toContainText('1.400.000');
+  await page
+    .getByRole('button', { name: 'Sửa Ăn trưa cả nhóm', exact: true })
+    .click();
+  const list = (await (await page.request.get(path)).json()).data;
+  const item = list.items.find(
+    (v: { description: string }) => v.description === 'Ăn trưa cả nhóm',
+  );
+  const newer = await page.request.patch(`${path}/${item.id}`, {
+    headers: headers(),
+    data: {
+      expectedRevision: item.revision,
+      expense: {
+        description: item.description,
+        category: item.category,
+        amountMinor: 900000,
+        currency: 'VND',
+        spentOn: item.spentOn,
+        timezone: 'Asia/Ho_Chi_Minh',
+      },
+    },
+  });
+  expect(newer.status()).toBe(200);
+  await page
+    .getByLabel('Số tiền đã chi (VND)', { exact: true })
+    .fill('1100000');
+  await page
+    .getByRole('button', { name: 'Lưu khoản chi', exact: true })
+    .click();
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+    'đã thay đổi',
+  );
+  await expect(
+    page.getByLabel('Số tiền đã chi (VND)', { exact: true }),
+  ).toHaveValue('1100000');
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Đóng', exact: true }).click();
+  await expect(page.locator('.expense-total')).toContainText('1.100.000');
+  page.once('dialog', (d) => d.dismiss());
+  await page.getByRole('button', { name: 'Xóa Taxi', exact: true }).click();
+  await expect(page.locator('.expense-list li')).toHaveCount(2);
+  for (const title of ['Taxi', 'Ăn trưa cả nhóm']) {
+    page.once('dialog', (d) => d.accept());
+    await page
+      .getByRole('button', { name: `Xóa ${title}`, exact: true })
+      .click();
+    await expect(
+      page.getByText('Đã xóa khoản chi.', { exact: true }),
+    ).toBeVisible();
+  }
+  await expect(page.locator('.expense-total')).toContainText('0');
+  await expect(page.locator('.expense-list li')).toHaveCount(0);
+  const unchanged: TripDto = (
+    await (await page.request.get(`/api/v1/trips/${trip.id}`)).json()
+  ).data.trip;
+  expect(unchanged.revision).toBe(trip.revision);
+  expect(unchanged.days).toEqual(trip.days);
+  expect(unchanged.budgetSummary).toEqual(trip.budgetSummary);
+  await page.route(`**${path}?**`, (r) => r.abort());
+  await page.reload();
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await page.getByRole('button', { name: 'Thực chi', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Tải lại chi tiêu' }),
+  ).toBeVisible();
+  await expect(page.locator('.expense-total')).toHaveCount(0);
+  await page.unroute(`**${path}?**`);
+  await page.getByRole('button', { name: 'Tải lại chi tiêu' }).click();
+  await expect(page.locator('.expense-total')).toContainText('0');
+});
+
 test('live Gemini proposal applies saves reloads and preserves AI provenance', async ({
   page,
   browser,

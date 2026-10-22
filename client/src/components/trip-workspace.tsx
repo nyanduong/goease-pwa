@@ -1,3 +1,5 @@
+import { Sheet } from './journey-sheet';
+import { TripExpenses } from './trip-expenses';
 import { TripBudget } from './budget-screen';
 import { AiPlanner } from './ai-planner';
 import { ActivityCatalogInfo } from './place-planning';
@@ -27,7 +29,6 @@ import {
   Compass,
   Plus,
   SlidersHorizontal,
-  X,
   Pencil,
   Trash2,
   Map,
@@ -76,49 +77,6 @@ const paces = [
   { code: 'balanced', label: 'Vừa phải' },
   { code: 'active', label: 'Khám phá nhiều' },
 ] as const;
-
-function Sheet({
-  title,
-  children,
-  onClose,
-}: {
-  title: string;
-  children: ReactNode;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const dialog = ref.current;
-    const prior = document.activeElement as HTMLElement | null;
-    dialog?.showModal();
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      dialog?.close();
-      document.body.style.overflow = overflow;
-      prior?.focus();
-    };
-  }, []);
-  return (
-    <dialog
-      ref={ref}
-      className="journey-sheet"
-      aria-label={title}
-      onCancel={(e) => {
-        e.preventDefault();
-        onClose();
-      }}
-    >
-      <header>
-        <h2>{title}</h2>
-        <button type="button" aria-label="Đóng" onClick={onClose}>
-          <X size={21} />
-        </button>
-      </header>
-      {children}
-    </dialog>
-  );
-}
 
 function Companion({ children }: { children: ReactNode }) {
   return (
@@ -280,6 +238,7 @@ export function TripWorkspace({
   onSave: () => void;
   onBack: () => void;
 }) {
+  const [costView, setCostView] = useState<'estimate' | 'actual'>('estimate');
   const [step, setStep] = useState(
     draft.days.some((d) => d.activities.length) ? 2 : 1,
   );
@@ -812,11 +771,42 @@ export function TripWorkspace({
             )}
             {tab === 'cost' ? (
               <div className="journey-budget-view">
-                <TripBudget
-                  draft={draft}
-                  destinationName={destinationName}
-                  onAdjust={() => openField('budget')}
-                />
+                <div
+                  className="expense-view-tabs"
+                  role="group"
+                  aria-label="Loại chi phí"
+                >
+                  <button
+                    aria-pressed={costView === 'estimate'}
+                    onClick={() => setCostView('estimate')}
+                  >
+                    Dự toán
+                  </button>
+                  <button
+                    aria-pressed={costView === 'actual'}
+                    onClick={() => setCostView('actual')}
+                  >
+                    Thực chi
+                  </button>
+                </div>
+                {costView === 'estimate' ? (
+                  <TripBudget
+                    draft={draft}
+                    destinationName={destinationName}
+                    onAdjust={() => openField('budget')}
+                  />
+                ) : loaded ? (
+                  <TripExpenses
+                    key={loaded.id}
+                    tripId={loaded.id}
+                    tripRevision={loaded.revision}
+                    unsaved={saveState !== 'saved'}
+                  />
+                ) : (
+                  <p className="expense-empty">
+                    Lưu chuyến đi trước để ghi nhận chi tiêu thực tế.
+                  </p>
+                )}
               </div>
             ) : (
               <>

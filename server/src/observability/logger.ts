@@ -50,6 +50,8 @@ const fieldsSchema = z.object({
       '/api/v1/me/places',
       '/api/v1/me/places/:id',
       '/api/v1/trips',
+      '/api/v1/trips/:id/expenses',
+      '/api/v1/trips/:id/expenses/:expenseId',
       '/api/v1/trips/budget-preview',
       '/api/v1/trips/ai-proposal',
       '/api/v1/trips/:id/goe-proposal',

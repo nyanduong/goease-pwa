@@ -305,3 +305,7 @@ AI-01–AI-06 now also cover selected-day adjustment from customer messages: ser
 
 
 **CAT-03/CAT-05/TRIP-05/TRIP-06 — bản đồ Hội An (2026-10-23):** tab Bản đồ phản ánh ngày và thứ tự lịch đang mở. Chỉ dùng tọa độ catalog published có nguồn; vị trí khu vực không phải lối vào đã xác minh. Thiếu tọa độ hiển thị chưa rõ và tìm kiếm ngoài; không bịa vị trí cho món ăn. Nét nối thứ tự không phải tuyến đường/ETA, không tự sửa lịch. Xem [TRIP-MAP](TRIP-MAP.md).
+
+## TRIP-08 / TRIP-13 — Customer actual expenses, 2026-10-23
+
+Implemented: owner-only create/edit/soft-delete of independent trip expenses; positive integer VND group totals and date-only spentOn (outside itinerary dates allowed). Compare recorded actuals against saved budget and known estimate; retain unknown-cost warnings. Revision conflicts cannot overwrite silently; same-key retries deduplicate within retained key window. No activity cascade, wallet, receipts, split settlement or payment confirmation. Details/contracts: [TRIP-EXPENSES.md](TRIP-EXPENSES.md).

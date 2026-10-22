@@ -63,6 +63,9 @@ export function auditModel(connection: Connection) {
           'session.revoked',
           'trip.created',
           'trip.updated',
+          'expense.created',
+          'expense.updated',
+          'expense.deleted',
         ],
         required: true,
       },
@@ -74,7 +77,7 @@ export function auditModel(connection: Connection) {
       actor: { type: actor, required: true },
       entityType: {
         type: String,
-        enum: ['system_probe', 'user', 'auth_session', 'trip'],
+        enum: ['system_probe', 'user', 'auth_session', 'trip', 'trip_expense'],
         required: true,
       },
       entityId: { type: String, match: /^[0-9a-f]{24}$/, required: true },
@@ -90,7 +93,13 @@ export function auditModel(connection: Connection) {
         type: [
           {
             type: String,
-            enum: ['probeState', 'tripDetails', 'accountState', 'sessionState'],
+            enum: [
+              'probeState',
+              'tripDetails',
+              'accountState',
+              'sessionState',
+              'expenseDetails',
+            ],
           },
         ],
         default: [],

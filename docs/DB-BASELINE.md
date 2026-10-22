@@ -448,25 +448,13 @@ Liên kết chỉ đọc có thể thu hồi, không để private trip trở th
 
 ### 14. `trip_expenses`
 
-**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE_SOFT`
+**Implemented local subset — 2026-10-23, TRIP-08/TRIP-13.** Separate collection; owner-only CRUD. Fields: tripId, recordedBy, updatedBy (server ObjectId); description (trim1–160); category transport/lodging/meal/visit/other; amountMinor (integer1..1e12 group total), currency=VND; spentOn (ISO date-only), timezone=Asia/Ho_Chi_Minh; revision/schemaVersion default1; timestamps; deletedAt/deletedBy null by default.
 
-Thực chi du lịch, tách ước tính planner và giao dịch tiền trên GoEase.
+**Index implemented:** `{tripId:1,deletedAt:1,spentOn:-1,_id:-1}`. Strict Mongoose and Zod runtime validation; no raw MongoDB JSON Schema validator. Date can precede/follow trip. Soft-deleted entries excluded from paginated lists and full aggregate. Owner derived from parent trip and session. No activity link, paidBy, receipts, notes, spentAt instant or settlement in current runtime; those remain future design.
 
-| Field                 | Kiểu                       | Required/default   | Ý nghĩa và ràng buộc                                       |
-| --------------------- | -------------------------- | ------------------ | ---------------------------------------------------------- |
-| tripId; recordedBy    | ObjectId; ObjectId         | Bắt buộc           | Owner/editor theo policy, server derive actor.             |
-| activityId            | string?                    | null               | Liên hệ activity nhưng không cascade xóa khi activity mất. |
-| category; description | enum; string?              | Bắt buộc; optional | accommodation/food/transport/activity/other.               |
-| amountMinor; currency | integer; string            | Bắt buộc           | Tổng khoản chi, không tự nhân người; số tiền chính xác.    |
-| spentAt; timezone     | Date; IANA                 | Bắt buộc           | Thời gian thực chi.                                        |
-| paidByUserId          | ObjectId?                  | null               | Chỉ user có liên quan, không tự định danh người lạ.        |
-| receiptAssetId; notes | ObjectId?; string? private | null               | Receipt private có hạn lưu riêng.                          |
+**Related runtime changes:** trips.expenseRevision default0 serializes expense transactions independently of itinerary revision/updatedAt; idempotency_keys accepts resourceType trip_expense and expense.created/updated/deleted operations (24h TTL); audit_logs supports those actions/entity, with no description/amount payload. Full contract and atomicity in [TRIP-EXPENSES.md](TRIP-EXPENSES.md).
 
-**Indexes:** {tripId,deletedAt,spentAt:-1}; {recordedBy,createdAt:-1}.
-
-**Invariant/quyền:** Không gọi expense là payment confirmed. Không xây settle/debt wallet khi chưa có BR chia tiền.
-
-**Retention:** Theo trip; receipt có thể purge sớm hơn metadata.
+**Retention:** soft delete implemented; automatic purge/account deletion cascades and receipt retention are not implemented. This is a spending journal, not confirmed payment.
 
 ### 15. `favorites`
 
