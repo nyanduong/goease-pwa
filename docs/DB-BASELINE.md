@@ -1,0 +1,1156 @@
+# GoEase — MongoDB Schema Baseline v0.2 / Baseline thiết kế
+
+Ngày: **22/10/2026**. Baseline thiết kế được chủ dự án chấp thuận; chưa triển khai models/collections. Nguồn chính cho field/type/index; [BR](BR.md) quyết định nghiệp vụ, [handoff](F1-HANDOFF.md) ghi phạm vi và khoảng trống. [Registry](collection-registry.json) là bản đọc máy, không executable. Đây là **từ điển dữ liệu mục tiêu**, không phải yêu cầu tạo tất cả collections/models ngay ở F1. Chỉ khởi tạo khi module được bật có consumer thật. Field phụ thuộc provider/hoạt động tài chính được ghi điều kiện rõ, không hứa schema đã bao phủ mọi nghiệp vụ tương lai.
+
+Stack giữ nguyên: npm workspaces; React/Vite/TypeScript/Tailwind; Express/TypeScript; MongoDB local replica set + Mongoose; web/API localhost. Sau này Atlas/mobile không làm đổi ownership và IDs nội bộ.
+
+## 1. Quy ước dữ liệu
+
+- Collection: `snake_case`, dạng số nhiều; field: `camelCase`; Mongoose model có thể PascalCase và chỉ định rõ tên collection.
+- `_id`: ObjectId; DTO trả ID string. Embedded activity/day/line IDs là UUID/string ổn định do server hoặc client draft phát sinh rồi server kiểm tra; không dùng vị trí mảng làm khóa.
+- Timestamps hệ thống là BSON Date UTC. API serialize ISO 8601. Ngày du lịch là `YYYY-MM-DD`; giờ địa phương là `HH:mm` kèm timezone IANA; provider booking có UTC instant và timezone gốc khi cần.
+- `null` có nghĩa chưa biết/không áp dụng được mô tả từng field; `0` là số không thực sự, không thay cho giá chưa biết. Trường optional không tự thu thập chỉ để lấp schema.
+- Tiền: integer theo đơn vị nhỏ nhất của currency; VND dùng đồng. API kiểm tra safe integer, giới hạn miền, currency, rounding theo rule; không cộng tiền khác currency không có conversion snapshot. Nếu phát sinh miền vượt safe integer/tiền phân số cần Decimal128 hoặc representation khác qua migration.
+- `schemaVersion`: version hình dạng document, mặc định 1 khi tạo; tăng khi format thay đổi. `revision`: version cập nhật nội dung cùng một entity để chống lost update. `eventVersion`: version schema của loại sự kiện. Ba giá trị này không thay thế nhau.
+- Không field `metadata: Mixed` vô hạn để né thiết kế. Dùng subdocument/discriminated union có field allowlist, giới hạn kích thước. Provider-specific attributes cần schema theo provider, không passthrough raw JSON.
+- Enum nghiệp vụ có state machine. Boolean đơn lẻ `isPaid`, `isPremium`, `isDeleted` không thay các mô hình vòng đời đa trạng thái. Không giữ `isDeleted` cùng `deletedAt` trừ projection được quản lý có lý do.
+- Required là điều kiện tại state tương ứng. Draft có thể thiếu một số trường; publish/confirm bắt buộc validation đầy đủ tại server.
+
+## 2. Các bộ field dùng chung
+
+| Bộ             | Field                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| MUTABLE        | `_id`, `schemaVersion:1`, `revision:0`, `createdAt`, `updatedAt`, `createdBy:ObjectId                                                       | null`, `updatedBy:ObjectId  | null`, `createdByType:user/admin/system/provider`, `updatedByType:user/admin/system/provider` |
+| MUTABLE_SOFT   | MUTABLE + `deletedAt:Date                                                                                                                   | null`, `deletedBy:ObjectId  | null`, `deletionReasonCode:enum                                                               | null` |
+| MUTABLE_RETAIN | MUTABLE + `archivedAt:Date                                                                                                                  | null`, `retentionUntil:Date | null`, `legalHold:boolean=false`; **không deletedAt để xóa lịch sử tài chính**                |
+| EPHEMERAL      | `_id`, `schemaVersion:1`, `createdAt`, `updatedAt`; vòng đời bằng expiry/consumed/revoked và update có điều kiện, không generic soft delete |
+| APPEND         | `_id`, `eventId:UUID`, `schemaVersion:1`, `createdAt`; **không updatedAt/deletedAt cho sửa/xóa thông thường**; occurredAt/actor theo event  |
+
+Mongoose `timestamps:true` tạo `createdAt` và `updatedAt`, không tự tạo `deletedAt` [S1]. APPEND có thể bật riêng createdAt/tắt updatedAt. Actor metadata phải gán từ request context đáng tin, không từ request body. `createdAt/createdBy` bất biến trong API bình thường; import/migration có đường đặc quyền, evidence riêng. Tránh replacement update tùy ý vì replacement có thể đổi createdAt [S1].
+
+### Chính sách soft delete
+
+Read/update/list/count/export thông thường lọc `deletedAt:null` và quyền. Áp dụng cả aggregation, populate, lookup, admin endpoint và job: một `pre('find')` middleware không chứng minh đã bao phủ mọi đường đọc/ghi. Restore kiểm tra dependency và unique conflicts trước; không tự cướp slug/email của record mới. Phân biệt delete/restore/purge/privacy erasure. Không bật TTL trên deletedAt cho cả DB.
+
+### Concurrency
+
+Trip và entity có chỉnh sửa song song dùng `{_id, owner/permission, deletedAt:null, revision:expectedRevision}` và tăng revision nguyên tử. Với Mongoose có thể dùng `versionKey:'revision'` và optimisticConcurrency cho `save`; đường query update vẫn phải kiểm tra revision rõ ràng, không giả định tất cả update tự làm đúng. Không dùng updatedAt để thay revision. Retry mutation dùng idempotency key riêng.
+
+## 3. Kiểu lồng dùng chung
+
+### SourceRef
+
+`provider:string`, `externalId?:string`, `sourceUrl?:URL`, `fetchedAt:Date`, `lastVerifiedAt?:Date`, `validUntil?:Date`, `rights:{policyRef,cacheAllowed,persistentSnapshotAllowed,attributionRequired,storageUntil?}`. Các cờ rights đến từ cấu hình hợp đồng/điều khoản đã rà soát, **không từ user và không do AI tự gán**. External content chưa rõ quyền không mặc định persistentSnapshotAllowed=true.
+
+### CostEstimate / PriceDisplay / QuoteSnapshot
+
+- CostEstimate: `amountMinor:integer|null`, `currency`, `basis:group_total/per_person/per_unit`, `quantity:integer`, `confidence:unknown/estimated/quoted/user_entered`, `asOf?`, `sourceRef?`; group_total thì quantity=1. Server tính totalMinor, không nhận total từ client.
+- PriceDisplay: `mode:from/estimated/quote_required`, `amountMinor?`, `currency`, `basis`, `asOf?`; không là booking price.
+- QuoteSnapshot: `quoteId`, `quoteVersion`, `amountMinor`, `currency`, `lineItems[]` hữu hạn, `issuedAt`, `expiresAt`, `inclusions[]`, `exclusions[]`, `termsVersion`, `cancellationPolicySnapshot`, `providerRef?`. Muốn thanh toán phải quote còn hiệu lực hoặc reprice được chấp nhận.
+
+### TripDestination
+
+`destinationId`, `nameSnapshot`, `timezone`, `order`, `startDate?`, `endDate?`. Snapshot tối thiểu được phép dùng; nếu nguồn ngoài cấm lưu, dùng reference + fallback do GoEase sở hữu thay vì cố lưu trái điều khoản.
+
+### TripDay
+
+`dayId`, `date:LocalDate`, `destinationId`, `title?`, `activities:TripActivity[]`. Ngày không trùng trong cùng trip khi policy là một day mỗi date. Không cần collection TripDay riêng trong baseline; timestamp lịch sử chủ yếu ở Trip/TripRevision.
+
+### TripActivity
+
+`activityId`, `kind:visit/meal/transport/lodging/free_time/custom`, `placeId?`, `placeSnapshot?`, `title`, `startLocalTime?`, `endLocalTime?`, `timezone`, `durationMinutes?`, `order`, `notes?`, `estimatedCost?:CostEstimate`, `source:manual/ai/template`, `recommendationId?`, `bookingId?`, `addedAt`, `updatedAt`.
+
+PlaceSnapshot chỉ gồm `name/category/address/location/sourceRef/asOf` cần hiển thị và được quyền lưu; không copy review/photo blobs từ provider. Notes là private. BookingId là liên kết, không tự thay trạng thái booking. Hoạt động qua đêm hoặc hành trình đa múi giờ cần explicit date/offset model trước khi bật, không lấy end-start bằng chuỗi giờ.
+
+### Preference object và PlannerInputSummary
+
+Sở thích tự khai: `interestCodes[]`, `pace:relaxed/balanced/active`, `budgetBand?`, `preferredTransport[]`. PlannerInputSummary thêm destination/date range/group count/budget currency + amount. Không thu nhạy cảm như bệnh tật/tôn giáo để suy đoán sở thích. Constraint người dùng tự nhập có thể nhạy cảm; hạn chế scope và không đưa vào analytics.
+
+### OrderLine / Benefit
+
+OrderLine: `lineId`, `productId?`, `bookingId?`, `productType`, `titleSnapshot`, `quantity`, `unitAmountMinor`, `discountMinor`, `taxMinor`, `lineTotalMinor`, `benefitSnapshot[]`, `termsVersion`. Benefit: `feature`, `unitLimit?`, `durationDays?`, `scope`. Giá trị tiền được server kiểm tra và tính với policy rounding.
+
+### AuditActor / SafeChange
+
+AuditActor: `type`, `userId?`, `roleSnapshot?`, `serviceName?`; actor thực từ phiên/backend. SafeChange: `path`, `before?`, `after?`, `redacted:boolean`; chỉ allowlist enum/numeric/non-sensitive. Email/name/notes/free text/password/token thay bằng changed flag hoặc omitted; không serialize full before/after document.
+
+## 4. Registry collections mục tiêu
+
+Phân kỳ trong bảng là đề xuất **khi module tương ứng được bật**, không phải danh sách tạo tất cả trong một task.
+
+| #   | Collection              | Lớp      | Mục đích                                                                                               |
+| --- | ----------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| 1   | `users`                 | F1       | Hồ sơ nội bộ ổn định, không chứa mọi hoạt động người dùng.                                             |
+| 2   | `auth_identities`       | F1       | Thông tin đăng nhập tách khỏi hồ sơ, cho phép một user liên kết Google và password.                    |
+| 3   | `auth_sessions`         | F1       | Phiên ứng dụng và thu hồi từng thiết bị; web có thể dùng opaque HttpOnly cookie.                       |
+| 4   | `auth_challenges`       | F1       | Token một lần cho xác minh email/reset/link/OAuth state.                                               |
+| 5   | `consent_events`        | F1       | Bằng chứng thông báo/chọn/rút lại từng mục đích xử lý.                                                 |
+| 6   | `privacy_requests`      | PLATFORM | Theo dõi yêu cầu truy cập, xuất, sửa, rút consent hoặc xóa dữ liệu.                                    |
+| 7   | `media_assets`          | CORE     | Metadata media; binary để file/object storage, không nhúng document.                                   |
+| 8   | `destinations`          | CORE     | Khu vực du lịch/chặng, phân biệt địa điểm cụ thể.                                                      |
+| 9   | `places`                | CORE     | POI dùng discovery/planner; provider ref và dữ liệu chất lượng rõ ràng.                                |
+| 10  | `trips`                 | CORE     | Aggregate chuyến đi: ngày/hoạt động hữu hạn nhúng; không nhúng audit/reviews/events.                   |
+| 11  | `trip_revisions`        | CORE     | Bản lịch đã lưu có thể phục hồi; dữ liệu riêng không phải analytics.                                   |
+| 12  | `trip_access`           | PLATFORM | Quyền collaborator có account; không thay public share token.                                          |
+| 13  | `trip_share_links`      | PLATFORM | Liên kết chỉ đọc có thể thu hồi, không để private trip trở thành public ngẫu nhiên.                    |
+| 14  | `trip_expenses`         | PLATFORM | Thực chi du lịch, tách ước tính planner và giao dịch tiền trên GoEase.                                 |
+| 15  | `favorites`             | PLATFORM | Quan hệ yêu thích, không mảng không giới hạn trên user.                                                |
+| 16  | `ai_runs`               | CORE     | Metadata thực thi planner có thể đối soát chi phí/quota/chất lượng.                                    |
+| 17  | `usage_buckets`         | CORE     | Counter quota theo user/feature/time window; không nguồn bằng chứng thanh toán.                        |
+| 18  | `posts`                 | PLATFORM | Cẩm nang và bài chia sẻ với vòng đời xuất bản.                                                         |
+| 19  | `reviews`               | PLATFORM | Review nền tảng với provenance khác external ratings.                                                  |
+| 20  | `moderation_reports`    | PLATFORM | Báo cáo nội dung và quyết định kiểm duyệt.                                                             |
+| 21  | `partners`              | PLATFORM | Đối tác địa phương/công ty hoặc hướng dẫn viên, không phải identity login riêng.                       |
+| 22  | `partner_memberships`   | PLATFORM | Quyền user trong một đối tác.                                                                          |
+| 23  | `service_listings`      | PLATFORM | Danh mục local guide/experience/hotel/flight referral và dịch vụ có adapter thực.                      |
+| 24  | `service_inquiries`     | PLATFORM | Yêu cầu liên hệ/báo giá có định danh, chưa phải booking.                                               |
+| 25  | `bookings`              | COMMERCE | Thực thi dịch vụ, tách khỏi order/payment và trip chỉnh sửa.                                           |
+| 26  | `products`              | COMMERCE | Sản phẩm GoEase bán: gói planner hoặc item dịch vụ được phép thu phí.                                  |
+| 27  | `orders`                | COMMERCE | Đơn hàng/quote đã chấp nhận, tách quyền sử dụng và payment attempts.                                   |
+| 28  | `payments`              | COMMERCE | Một lần thử thanh toán/charge qua nhà cung cấp.                                                        |
+| 29  | `webhook_events`        | COMMERCE | Inbox bền vững cho event provider; envelope bất biến, processing state được cập nhật.                  |
+| 30  | `refunds`               | COMMERCE | Yêu cầu hoàn tiền và kết quả đối soát, không sửa payment thành chưa từng tồn tại.                      |
+| 31  | `entitlements`          | COMMERCE | Quyền sử dụng được cấp từ mua hàng hoặc admin grant có căn cứ.                                         |
+| 32  | `promotions`            | COMMERCE | Chiến dịch ưu đãi versioned, không sửa lịch sử giảm giá của đơn đã mua.                                |
+| 33  | `promotion_redemptions` | COMMERCE | Giữ lượt/ghi nhận dùng ưu đãi và chống vượt hạn mức.                                                   |
+| 34  | `notifications`         | PLATFORM | Thông báo theo user; không mảng lịch sử vô hạn.                                                        |
+| 35  | `support_tickets`       | PLATFORM | Yêu cầu hỗ trợ có quyền, tránh thu PII qua log chung.                                                  |
+| 36  | `audit_logs`            | F1       | Ai đã làm gì, trên đối tượng nào, kết quả và lý do; không là hồ sơ marketing.                          |
+| 37  | `analytics_events`      | CORE     | Hành vi tối thiểu để đo funnel/cá nhân hóa theo mục đích được phép.                                    |
+| 38  | `outbox_events`         | F1       | Outbox trong cùng DB transaction để chuyển audit/notification/analytics có retry mà không mất sự kiện. |
+| 39  | `idempotency_keys`      | CORE     | Chống tạo bản sao do retry khi client mất phản hồi.                                                    |
+| 40  | `schema_migrations`     | F1       | Phiên bản thay đổi dữ liệu/index có thể truy vết và tiếp tục sau lỗi.                                  |
+
+## 5. Data dictionary chi tiết
+
+Mỗi bảng kế thừa field của bộ chung tương ứng ở mục 2. Các đề xuất index phải được kiểm tra với truy vấn thật và dữ liệu duplicate trước khi migration; không index mọi field.
+
+### 01. `users`
+
+**Lớp:** F1 · **Bộ metadata:** `MUTABLE_SOFT`
+
+Hồ sơ nội bộ ổn định, không chứa mọi hoạt động người dùng.
+
+| Field                                 | Kiểu                  | Required/default           | Ý nghĩa và ràng buộc                                                                                     |
+| ------------------------------------- | --------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| emailNormalized                       | string?               | Điều kiện; duy nhất nếu có | Trim + lower-case theo chính sách nhất quán; không xóa dấu chấm/plus như Gmail; xóa khi purge được phép. |
+| emailVerifiedAt                       | Date?                 | null                       | Xác minh email hiện tại; đổi email phải xác minh lại.                                                    |
+| displayName                           | string                | Bắt buộc; 1–100 ký tự      | Tên hiển thị; không suy ra tên pháp lý.                                                                  |
+| avatarAssetId                         | ObjectId?             | null                       | Tham chiếu media_assets; không sao chép provider image khi chưa rõ quyền.                                |
+| status                                | enum                  | pending_verification       | pending_verification/active/suspended/deletion_pending/anonymized.                                       |
+| roles                                 | enum[]                | [traveler]                 | traveler/editor/support/finance/admin; server cấp; giới hạn tập role.                                    |
+| locale; timezone                      | string; IANA timezone | vi-VN; Asia/Ho_Chi_Minh    | Cài đặt hiển thị, không xác định vị trí thực.                                                            |
+| preferences                           | Preference object     | {}                         | interestCodes[], pace, budgetBand?, preferredTransport[]; chỉ sở thích user tự khai, không là consent.   |
+| privacySettings                       | object                | optional purposes disabled | personalization/analytics/marketing + lastConsentEventId; là projection, lịch sử ở consent_events.       |
+| lastLoginAt                           | Date?                 | null                       | Cập nhật có throttle, không là lịch sử đăng nhập.                                                        |
+| securityVersion                       | integer               | 1                          | Tăng khi thu hồi toàn bộ phiên hoặc thay đổi xác thực quan trọng.                                        |
+| suspendedAt; suspensionReasonCode     | Date?; enum?          | null                       | Chỉ actor được cấp quyền cập nhật.                                                                       |
+| deactivationRequestedAt; anonymizedAt | Date?; Date?          | null                       | Mốc xử lý xóa tài khoản, không thay deletedAt.                                                           |
+
+**Indexes:** Unique partial emailNormalized khi là string, KHÔNG giới hạn deletedAt; {status:1,createdAt:-1}.
+
+**Invariant/quyền:** Không soft-delete rồi tạo user mới cùng email để kế thừa trip cũ. Trong grace period dùng flow khôi phục; sau purge tạo account mới có ID mới. Không lưu CCCD, ngày sinh, giới tính, số điện thoại chỉ để đầy profile.
+
+**Retention:** Profile cho đến yêu cầu xóa hoặc policy inactivity đã duyệt; audit và tài chính xử lý riêng.
+
+### 02. `auth_identities`
+
+**Lớp:** F1 · **Bộ metadata:** `MUTABLE`
+
+Thông tin đăng nhập tách khỏi hồ sơ, cho phép một user liên kết Google và password.
+
+| Field                            | Kiểu               | Required/default      | Ý nghĩa và ràng buộc                                              |
+| -------------------------------- | ------------------ | --------------------- | ----------------------------------------------------------------- |
+| userId                           | ObjectId           | Bắt buộc              | Chủ identity, tham chiếu users.                                   |
+| provider                         | enum               | Bắt buộc              | password/google.                                                  |
+| issuer                           | string?            | Bắt buộc với google   | Issuer được kiểm chứng, canonical hóa theo adapter.               |
+| providerSubject                  | string?            | Bắt buộc với google   | Claim sub đã xác minh, không dùng email làm khóa Google.          |
+| loginEmailNormalized             | string?            | Bắt buộc với password | Đồng bộ với email hiện tại sau verification; không có với Google. |
+| passwordHash                     | string? private    | Bắt buộc với password | PHC string Argon2id gồm salt/cost; select false, không DTO/log.   |
+| passwordChangedAt                | Date?              | null                  | Kiểm tra việc thu hồi phiên.                                      |
+| linkedAt; verifiedAt; lastUsedAt | Date; Date?; Date? | server time           | Các mốc nghiệp vụ riêng createdAt.                                |
+| unlinkedAt                       | Date?              | null                  | Thu hồi liên kết; không tự xóa chứng cứ bảo mật.                  |
+
+**Indexes:** Unique partial {provider,issuer,providerSubject} cho google đang liên kết; unique partial {provider,loginEmailNormalized} cho password đang liên kết; unique partial {userId,provider} cho unlinkedAt:null.
+
+**Invariant/quyền:** Điều kiện trường theo discriminator; không lưu access/refresh token Google nếu chỉ login. Linking phải re-auth; không unlink identity cuối cùng còn dùng được. Race linking xử lý E11000 an toàn. Khi unlink, bản cũ không được dùng xác thực.
+
+**Retention:** Hash/xác thực xóa theo deletion policy; audit chỉ giữ hành động và ID tham chiếu cần thiết.
+
+### 03. `auth_sessions`
+
+**Lớp:** F1 · **Bộ metadata:** `EPHEMERAL`
+
+Phiên ứng dụng và thu hồi từng thiết bị; web có thể dùng opaque HttpOnly cookie.
+
+| Field                       | Kiểu               | Required/default | Ý nghĩa và ràng buộc                                                |
+| --------------------------- | ------------------ | ---------------- | ------------------------------------------------------------------- |
+| userId; identityId          | ObjectId; ObjectId | Bắt buộc         | Người dùng và identity đã login.                                    |
+| sessionTokenHash            | string private     | Bắt buộc         | Hash token entropy cao; không lưu token rõ.                         |
+| clientPlatform              | enum               | web              | web/ios/android; mobile là tương lai, không tạo code native lúc F1. |
+| securityVersionAtIssue      | integer            | Bắt buộc         | Khớp users.securityVersion trước khi chấp nhận.                     |
+| issuedAt; lastSeenAt        | Date; Date         | server time      | Throttle lastSeenAt để tránh write mỗi request.                     |
+| expiresAt; idleExpiresAt    | Date; Date         | Bắt buộc         | TTL cleanup theo expiresAt; ứng dụng kiểm tra cả hai.               |
+| revokedAt; revocationReason | Date?; enum?       | null             | logout/password_change/admin_suspend/reuse_detected/other.          |
+| deviceLabel                 | string?            | null; giới hạn   | Mô tả dễ nhận biết đã sanitize; không fingerprint phần cứng.        |
+| securityContext             | object? restricted | null             | coarse user agent/IP HMAC theo policy; không raw token/cookie.      |
+
+**Indexes:** Unique sessionTokenHash; {userId,revokedAt,lastSeenAt:-1}; TTL expiresAt (expireAfterSeconds:0).
+
+**Invariant/quyền:** Cookie HttpOnly/SameSite; production Secure/HTTPS và CSRF/Origin checks phù hợp. Không ép JWT vì mobile. Tách TTL session khỏi log bảo mật cần giữ lâu hơn.
+
+**Retention:** Session hết hạn được dọn; audit sự kiện login/logout tồn tại theo security retention.
+
+### 04. `auth_challenges`
+
+**Lớp:** F1 · **Bộ metadata:** `EPHEMERAL`
+
+Token một lần cho xác minh email/reset/link/OAuth state.
+
+| Field                     | Kiểu                 | Required/default | Ý nghĩa và ràng buộc                                                                     |
+| ------------------------- | -------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
+| userId                    | ObjectId?            | Điều kiện        | Có thể chưa có user trong flow đăng ký.                                                  |
+| purpose                   | enum                 | Bắt buộc         | verify_email/reset_password/link_identity/oauth_state/change_email.                      |
+| tokenHash                 | string private       | Bắt buộc         | Token random một lần; hash đối chiếu.                                                    |
+| targetEmailNormalized     | string? private      | Điều kiện        | Email đang xác minh; không log giá trị.                                                  |
+| context                   | discriminated object | Theo purpose     | identityId?, returnTo allowlist?, nonceHash?, encryptedPkceVerifier?; không Mixed tùy ý. |
+| expiresAt                 | Date                 | Bắt buộc         | Hạn dùng nghiệp vụ.                                                                      |
+| consumedAt; revokedAt     | Date?; Date?         | null             | Consume bằng update có điều kiện nguyên tử.                                              |
+| attemptCount; maxAttempts | integer; integer     | 0; cấu hình      | Giới hạn thử theo policy.                                                                |
+| requestId                 | string               | Bắt buộc         | Liên kết technical/audit logs.                                                           |
+
+**Indexes:** Unique tokenHash; {userId,purpose,createdAt:-1}; TTL expiresAt.
+
+**Invariant/quyền:** Kiểm tra purpose, expiry, consumed và user binding. Không tin returnTo tùy ý. PKCE verifier nếu cần phải encrypt để dùng lại, không chỉ hash rồi mất khả năng đổi code.
+
+**Retention:** Thời gian ngắn theo purpose; không dùng challenge collection làm lịch sử bảo mật.
+
+### 05. `consent_events`
+
+**Lớp:** F1 · **Bộ metadata:** `APPEND`
+
+Bằng chứng thông báo/chọn/rút lại từng mục đích xử lý.
+
+| Field                        | Kiểu               | Required/default   | Ý nghĩa và ràng buộc                                                                                  |
+| ---------------------------- | ------------------ | ------------------ | ----------------------------------------------------------------------------------------------------- |
+| subjectUserId; anonymousId   | ObjectId?; string? | Ít nhất một        | Anonymous ID chỉ dùng khi hợp lệ; không fingerprint.                                                  |
+| purpose                      | enum               | Bắt buộc           | terms_acceptance/optional_analytics/personalization/marketing/ai_processing.                          |
+| action                       | enum               | Bắt buộc           | accepted/granted/declined/withdrawn/notified; không gọi terms acceptance là consent cho mọi mục đích. |
+| policyVersion; noticeVersion | string; string     | Bắt buộc           | Nội dung pháp lý có version và bản lưu kiểm chứng.                                                    |
+| legalBasisCode               | string             | Bắt buộc           | Căn cứ đã rà soát cho purpose; không mặc định tất cả là consent.                                      |
+| occurredAt; receivedAt       | Date; Date         | Bắt buộc           | Thời điểm thao tác và server tiếp nhận.                                                               |
+| source; locale               | enum; string       | Bắt buộc           | settings/signup/consent_banner; ngôn ngữ thông báo.                                                   |
+| requestId; evidenceRef       | string; string?    | Bắt buộc; optional | Evidence tối thiểu, không raw full request.                                                           |
+
+**Indexes:** {subjectUserId,purpose,occurredAt:-1}; unique eventId từ APPEND.
+
+**Invariant/quyền:** Grant/withdraw tạo bản mới, không sửa bản cũ. Server cập nhật projection privacySettings nguyên tử. Analytics tùy chọn chỉ hoạt động sau grant phù hợp; dùng chức năng cốt lõi không bị ép marketing.
+
+**Retention:** Giữ evidence có căn cứ, tối thiểu và thời hạn đã duyệt; không TTL tùy tiện.
+
+### 06. `privacy_requests`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+
+Theo dõi yêu cầu truy cập, xuất, sửa, rút consent hoặc xóa dữ liệu.
+
+| Field                                | Kiểu               | Required/default  | Ý nghĩa và ràng buộc                                                    |
+| ------------------------------------ | ------------------ | ----------------- | ----------------------------------------------------------------------- |
+| userId                               | ObjectId           | Bắt buộc          | Xác minh chủ thể trước export/delete.                                   |
+| requestType                          | enum               | Bắt buộc          | access/export/rectify/delete/restrict.                                  |
+| status                               | enum               | received          | Theo state machine BR.                                                  |
+| requestedAt; verifiedAt; completedAt | Date; Date?; Date? | server time; null | Mốc nghiệp vụ.                                                          |
+| identityVerificationMethod           | enum?              | null              | Re-auth phù hợp; không bắt upload giấy tờ khi chưa cần.                 |
+| requestedScope; completedScope       | string[]; string[] | Bắt buộc; []      | Nhóm dữ liệu, không arbitrary query.                                    |
+| retainedCategories                   | object[]           | []                | Category + basisCode + retentionUntil?; không nhân bản dữ liệu giữ lại. |
+| assignedTo; outcomeCode              | ObjectId?; enum?   | null              | Phân công và kết quả đã giải thích.                                     |
+| exportAssetId; exportExpiresAt       | ObjectId?; Date?   | null              | Export private, có expiry, không public URL lâu dài.                    |
+| requestId                            | string             | Bắt buộc          | Trace toàn flow.                                                        |
+
+**Indexes:** {userId,requestedAt:-1}; {status,requestedAt:1}.
+
+**Invariant/quyền:** Purge cả linked data theo map; kết quả có thể partially_completed và giải thích dữ liệu phải giữ. Backup restore phải chạy lại suppression/deletion list.
+
+**Retention:** Nội dung export ngắn hạn; hồ sơ xử lý giữ tối thiểu theo policy, không copy toàn PII vào ticket.
+
+### 07. `media_assets`
+
+**Lớp:** CORE · **Bộ metadata:** `MUTABLE_SOFT`
+
+Metadata media; binary để file/object storage, không nhúng document.
+
+| Field                               | Kiểu                      | Required/default   | Ý nghĩa và ràng buộc                                             |
+| ----------------------------------- | ------------------------- | ------------------ | ---------------------------------------------------------------- |
+| ownerId                             | ObjectId?                 | Điều kiện          | Người upload; system ingest có actor riêng.                      |
+| storageKey; storageProvider         | string; enum              | Bắt buộc           | File local dev/object_storage/remote_reference.                  |
+| purpose; access                     | enum; enum                | Bắt buộc; private  | avatar/place_image/post_image/attachment/export; public/private. |
+| mimeType; byteSize; checksum        | string; integer; string?  | Bắt buộc; optional | Validate server; checksum không thay kiểm tra an toàn.           |
+| width; height                       | integer?; integer?        | null               | Với ảnh.                                                         |
+| sourceUrl; attribution; licenseCode | string?; string?; string? | Theo nguồn         | Chỉ giữ URL hợp lệ, tránh query chứa token.                      |
+| scanStatus                          | enum                      | pending            | pending/clean/rejected/not_applicable.                           |
+| retentionUntil; expiresAt           | Date?; Date?              | null               | Expiry áp dụng file lẫn metadata qua job có kiểm soát.           |
+
+**Indexes:** {ownerId,createdAt:-1}; {storageProvider,storageKey} unique nếu storage nội bộ.
+
+**Invariant/quyền:** Authorization dựa owner/access và entity liên kết. Không public export giấy tờ. Xóa file không thể bảo đảm bằng TTL metadata đơn thuần.
+
+**Retention:** Theo entity sở hữu/license; xóa orphan và object storage bằng job có audit.
+
+### 08. `destinations`
+
+**Lớp:** CORE · **Bộ metadata:** `MUTABLE_SOFT`
+
+Khu vực du lịch/chặng, phân biệt địa điểm cụ thể.
+
+| Field                            | Kiểu               | Required/default | Ý nghĩa và ràng buộc                                                |
+| -------------------------------- | ------------------ | ---------------- | ------------------------------------------------------------------- |
+| slug; name                       | string; string     | Bắt buộc         | Slug nội bộ; tên có dấu.                                            |
+| countryCode; administrativeCodes | string; object?    | VN; optional     | Code có source/version, không hardcode vĩnh viễn đơn vị hành chính. |
+| parentDestinationId              | ObjectId?          | null             | Quan hệ cha nếu cần; không cycle.                                   |
+| summary; coverAssetId            | string?; ObjectId? | null             | Nội dung tuyển chọn.                                                |
+| center                           | GeoJSON Point?     | null             | Coordinates [longitude,latitude].                                   |
+| timezone                         | IANA timezone      | Bắt buộc         | Múi giờ lịch tại điểm đến.                                          |
+| interestCodes                    | string[]           | []               | Taxonomy kiểm soát, giới hạn số phần tử.                            |
+| publicationStatus                | enum               | draft            | draft/published/archived.                                           |
+| source                           | SourceRef          | Bắt buộc         | GoEase curated hoặc provider, provenance và rights.                 |
+
+**Indexes:** Unique active slug; {publicationStatus,deletedAt}; optional 2dsphere center nếu có query gần.
+
+**Invariant/quyền:** Không suy ra cả vùng là một POI. Không để đổi tên/codes làm đổi ID trip cũ.
+
+**Retention:** Nội dung nội bộ theo lifecycle; nguồn ngoài theo license.
+
+### 09. `places`
+
+**Lớp:** CORE · **Bộ metadata:** `MUTABLE_SOFT`
+
+POI dùng discovery/planner; provider ref và dữ liệu chất lượng rõ ràng.
+
+| Field                        | Kiểu                         | Required/default   | Ý nghĩa và ràng buộc                                                      |
+| ---------------------------- | ---------------------------- | ------------------ | ------------------------------------------------------------------------- |
+| destinationId                | ObjectId                     | Bắt buộc           | Khu vực chính; query nhiều vùng qua địa lý khi có nhu cầu.                |
+| name; slug; description      | string; string?; string?     | Bắt buộc; optional | Nội dung giới hạn, sanitize.                                              |
+| categoryCodes; tags          | string[]; string[]           | Bắt buộc; []       | Enum/taxonomy versioned.                                                  |
+| location; address            | GeoJSON Point?; object?      | Điều kiện          | Address có formatted/country/admin codes, không địa chỉ người dùng.       |
+| contact; website             | object?; string?             | optional           | Public contact hợp lệ của cơ sở.                                          |
+| openingHours; timezone       | OpeningHours?; IANA timezone | optional; bắt buộc | Weekly slots, exceptions, sourceVerifiedAt; unknown phân biệt closed.     |
+| visitDurationMinutes         | integer?                     | null               | Ước tính có nhãn.                                                         |
+| priceEstimate                | CostEstimate?                | null               | Giá tham khảo, có source/asOf; không quote booking.                       |
+| mediaAssetIds                | ObjectId[]                   | []; bounded        | Ảnh được quyền dùng.                                                      |
+| source                       | SourceRef                    | Bắt buộc           | provider/externalId/fetchedAt/validUntil/rights.                          |
+| externalRating               | object?                      | null               | Provider rating tách review GoEase; không cộng gộp sai.                   |
+| qualityFlags; businessStatus | enum[]; enum                 | []; unknown        | Mức kiểm chứng/temporarily_closed/permanently_closed/operational/unknown. |
+| publicationStatus            | enum                         | draft              | draft/published/archived.                                                 |
+
+**Indexes:** Unique partial {source.provider,source.externalId} khi có externalId; {destinationId,publicationStatus,deletedAt}; 2dsphere location nếu dùng near.
+
+**Invariant/quyền:** Nguồn bị gỡ/expired phải refresh hoặc ẩn theo rights. Snapshots trong trip có policy riêng. Không coi source hợp lệ là thông tin bảo đảm luôn chính xác.
+
+**Retention:** Theo source permissions; không mặc định dump raw API response vĩnh viễn.
+
+### 10. `trips`
+
+**Lớp:** CORE · **Bộ metadata:** `MUTABLE_SOFT`
+
+Aggregate chuyến đi: ngày/hoạt động hữu hạn nhúng; không nhúng audit/reviews/events.
+
+| Field                         | Kiểu                       | Required/default   | Ý nghĩa và ràng buộc                                                                  |
+| ----------------------------- | -------------------------- | ------------------ | ------------------------------------------------------------------------------------- |
+| ownerId                       | ObjectId                   | Bắt buộc           | Gán từ authenticated user, bất biến ngoài transfer flow.                              |
+| title; summary; coverAssetId  | string; string?; ObjectId? | Bắt buộc; optional | Title/notes mặc định private, không tự gửi analytics.                                 |
+| status; visibility            | enum; enum                 | draft; private     | draft/planned/completed/archived; private/shared_link.                                |
+| destinations                  | TripDestination[]          | 1..cap             | destinationId + nameSnapshot + timezone + order; thiết kế nhiều chặng.                |
+| startDate; endDate; timezone  | LocalDate; LocalDate; IANA | Bắt buộc           | Date-only theo lịch chuyến; timezone tổng dùng khi chưa có chặng.                     |
+| travelers                     | object                     | Bắt buộc           | totalCount; adults?/children? chỉ khi scope cần. Không thu tên mọi người mặc định.    |
+| budget                        | object                     | Bắt buộc           | amountMinor:null hoặc integer; currency:VND; scope:group_total; includedCategories[]. |
+| preferences                   | object                     | {}                 | interestCodes[], pace, transportModes[], explicit constraints allowlist.              |
+| generationMode; sourceAiRunId | enum; ObjectId?            | manual; null       | manual/ai/rule_based/template; nguồn tạo đề xuất.                                     |
+| days                          | TripDay[]                  | Bounded            | dayId/date/destinationId/title?/activities[]; xem embedded dictionary.                |
+| summaryTotals                 | object                     | server computed    | knownEstimatedMinor, missingCostCount, currency; không là doanh thu/thực chi.         |
+| notes                         | string? private            | null; length cap   | Không ghi vào analytics hoặc audit snapshot tổng quát.                                |
+| firstSavedAt; completedAt     | Date; Date?                | server time; null  | Activation chỉ dùng firstSavedAt, không đếm mỗi update.                               |
+| clonedFromTripId              | ObjectId?                  | null               | Clone có quyền; không lộ nguồn private cho người ngoài.                               |
+
+**Indexes:** {ownerId,deletedAt,updatedAt:-1,_id:-1}; {ownerId,status,deletedAt}; idempotency trên key riêng.
+
+**Invariant/quyền:** Mọi update dùng expectedRevision và quyền. Trip + tripRevision + audit/outbox commit cùng transaction khi cần lịch sử chắc chắn. Giới hạn BSON theo app nhỏ hơn mức MongoDB; không stringify toàn trip vào log.
+
+**Retention:** Xóa mềm đề xuất 30 ngày để khôi phục rồi purge cùng revisions/shares/expenses thích hợp; booking/order độc lập.
+
+### 11. `trip_revisions`
+
+**Lớp:** CORE · **Bộ metadata:** `APPEND`
+
+Bản lịch đã lưu có thể phục hồi; dữ liệu riêng không phải analytics.
+
+| Field                                                       | Kiểu                                | Required/default                            | Ý nghĩa và ràng buộc                                                   |
+| ----------------------------------------------------------- | ----------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------- |
+| tripId; ownerIdAtWrite                                      | ObjectId; ObjectId                  | Bắt buộc                                    | Authorization luôn đối chiếu trip hiện tại, không chỉ owner snapshot.  |
+| revision; previousRevision                                  | integer; integer?                   | Bắt buộc                                    | Monotonic, unique theo trip.                                           |
+| tripSchemaVersion                                           | integer                             | Bắt buộc                                    | Phiên bản cấu trúc snapshot.                                           |
+| action                                                      | enum                                | Bắt buộc                                    | created/saved/generated_applied/restored/deleted/transfer.             |
+| snapshot                                                    | TripRestoreSnapshot                 | Bắt buộc                                    | Nội dung cần phục hồi, không auth tokens/payment/URLs private hết hạn. |
+| changedFieldPaths                                           | string[]                            | []                                          | Allowlist; không raw user field path tùy ý.                            |
+| actorId; actorType                                          | ObjectId?; enum                     | Bắt buộc theo actor                         | user/admin/system.                                                     |
+| requestId; operationId; sourceAiRunId; restoredFromRevision | string; string; ObjectId?; integer? | Hai string bắt buộc; hai field sau optional | Cùng operationId với mutation/audit; truy vết đề xuất và phục hồi.     |
+
+**Indexes:** Unique {tripId,revision}; {tripId,createdAt:-1}.
+
+**Invariant/quyền:** Không lưu từng phím gõ. Snapshot được kiểm soát kích thước; mỗi version độc lập dễ restore. Nếu sau này chuyển patch phải có anchor snapshot và kiểm thử reconstruction.
+
+**Retention:** Cùng thời hạn trip, không giữ private notes vĩnh viễn chỉ vì gọi là log.
+
+### 12. `trip_access`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+
+Quyền collaborator có account; không thay public share token.
+
+| Field                            | Kiểu                    | Required/default | Ý nghĩa và ràng buộc                                     |
+| -------------------------------- | ----------------------- | ---------------- | -------------------------------------------------------- |
+| tripId; userId                   | ObjectId; ObjectId      | Bắt buộc         | Một member/permission cho mỗi trip + user.               |
+| role                             | enum                    | viewer           | viewer/editor; owner nằm trên trips.                     |
+| status                           | enum                    | invited          | invited/accepted/revoked/declined.                       |
+| invitedBy; invitedAt             | ObjectId; Date          | Bắt buộc         | Ai mời và lúc nào.                                       |
+| acceptedAt; revokedAt; revokedBy | Date?; Date?; ObjectId? | null             | Lịch sử chi tiết vào audit.                              |
+| expiresAt                        | Date?                   | null             | Nếu membership có thời hạn; app kiểm tra, không dựa TTL. |
+
+**Indexes:** Unique {tripId,userId}; {userId,status,updatedAt:-1}.
+
+**Invariant/quyền:** Editor không chuyển owner, xóa trip hoặc mời editor khác trừ policy riêng. Không public lookup membership. Invitation tới email chưa có user cần auth challenge/token riêng trước khi tạo accepted access.
+
+**Retention:** Revoke khi trip/account bị xóa; purge theo trip.
+
+### 13. `trip_share_links`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+
+Liên kết chỉ đọc có thể thu hồi, không để private trip trở thành public ngẫu nhiên.
+
+| Field                           | Kiểu                    | Required/default | Ý nghĩa và ràng buộc                                   |
+| ------------------------------- | ----------------------- | ---------------- | ------------------------------------------------------ |
+| tripId; createdByUserId         | ObjectId; ObjectId      | Bắt buộc         | Quyền tạo link kiểm tra owner.                         |
+| tokenHash                       | string private          | Bắt buộc         | Token random chỉ trả rõ một lần; không log URL đầy đủ. |
+| permission                      | enum                    | read_only        | Không share-link edit trong baseline.                  |
+| viewPolicyVersion               | string                  | Bắt buộc         | Projection public cho phép xem trường nào.             |
+| expiresAt; revokedAt; revokedBy | Date?; Date?; ObjectId? | null             | Kiểm tra khi đọc.                                      |
+
+**Indexes:** Unique tokenHash; {tripId,revokedAt}; không bắt buộc TTL để giữ thông tin revoke có căn cứ.
+
+**Invariant/quyền:** Không lộ notes private, collaborator email, order/payment. Restore trip không tự kích hoạt link cũ.
+
+**Retention:** Revoke ngay khi xóa; dọn theo retention trip/access.
+
+### 14. `trip_expenses`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE_SOFT`
+
+Thực chi du lịch, tách ước tính planner và giao dịch tiền trên GoEase.
+
+| Field                 | Kiểu                       | Required/default   | Ý nghĩa và ràng buộc                                       |
+| --------------------- | -------------------------- | ------------------ | ---------------------------------------------------------- |
+| tripId; recordedBy    | ObjectId; ObjectId         | Bắt buộc           | Owner/editor theo policy, server derive actor.             |
+| activityId            | string?                    | null               | Liên hệ activity nhưng không cascade xóa khi activity mất. |
+| category; description | enum; string?              | Bắt buộc; optional | accommodation/food/transport/activity/other.               |
+| amountMinor; currency | integer; string            | Bắt buộc           | Tổng khoản chi, không tự nhân người; số tiền chính xác.    |
+| spentAt; timezone     | Date; IANA                 | Bắt buộc           | Thời gian thực chi.                                        |
+| paidByUserId          | ObjectId?                  | null               | Chỉ user có liên quan, không tự định danh người lạ.        |
+| receiptAssetId; notes | ObjectId?; string? private | null               | Receipt private có hạn lưu riêng.                          |
+
+**Indexes:** {tripId,deletedAt,spentAt:-1}; {recordedBy,createdAt:-1}.
+
+**Invariant/quyền:** Không gọi expense là payment confirmed. Không xây settle/debt wallet khi chưa có BR chia tiền.
+
+**Retention:** Theo trip; receipt có thể purge sớm hơn metadata.
+
+### 15. `favorites`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+
+Quan hệ yêu thích, không mảng không giới hạn trên user.
+
+| Field                | Kiểu           | Required/default | Ý nghĩa và ràng buộc                                                 |
+| -------------------- | -------------- | ---------------- | -------------------------------------------------------------------- |
+| userId               | ObjectId       | Bắt buộc         | Chủ quan hệ.                                                         |
+| targetType; targetId | enum; ObjectId | Bắt buộc         | destination/place/post/service_listing.                              |
+| removedAt            | Date?          | null             | Toggle cùng một quan hệ; sự kiện thích/bỏ thích riêng nếu được phép. |
+
+**Indexes:** Unique {userId,targetType,targetId}; {userId,removedAt,createdAt:-1}.
+
+**Invariant/quyền:** Hydrate target qua quyền/publication/deleted checks. Không coi favorites là consent marketing.
+
+**Retention:** Xóa theo account; analytics có retention độc lập hợp lệ.
+
+### 16. `ai_runs`
+
+**Lớp:** CORE · **Bộ metadata:** `MUTABLE`
+
+Metadata thực thi planner có thể đối soát chi phí/quota/chất lượng.
+
+| Field                                          | Kiểu                       | Required/default   | Ý nghĩa và ràng buộc                                                                          |
+| ---------------------------------------------- | -------------------------- | ------------------ | --------------------------------------------------------------------------------------------- |
+| userId; tripId                                 | ObjectId; ObjectId?        | Bắt buộc; optional | Có thể chạy trước khi trip được lưu lần đầu.                                                  |
+| requestId; idempotencyKey                      | string; string             | Bắt buộc           | Key theo actor và operation; payload hash riêng.                                              |
+| status                                         | enum                       | queued             | queued/running/succeeded/failed/cancelled.                                                    |
+| provider; model; promptVersion; plannerVersion | string                     | Bắt buộc           | Không chỉ model name chung chung.                                                             |
+| inputSummary                                   | PlannerInputSummary        | Bắt buộc           | Dest IDs/date range/group count/budget amount+currency/interests cần cho generation; private. |
+| sourceRefs                                     | SourceRef[]                | Bounded            | Nguồn đã dùng; không copy toàn bộ raw response.                                               |
+| inputHash; outputHash                          | string; string?            | Bắt buộc; optional | HMAC khi nội dung có entropy thấp/PII; hash không phải ẩn danh.                               |
+| validatedProposal                              | ItineraryProposal? private | null               | Kết quả chờ apply, có expiry; không raw reasoning.                                            |
+| startedAt; completedAt; latencyMs              | Date?; Date?; integer?     | null               | Thống kê runtime.                                                                             |
+| usage                                          | object                     | {}                 | inputTokens/outputTokens/providerCostMinor? + currency; providerReported flag.                |
+| quotaReservation                               | object                     | Bắt buộc           | bucketId/units/state reserved-consumed-released; recovery status.                             |
+| errorCode; warnings; appliedTripRevision       | enum?; enum[]; integer?    | null; []; null     | Error sanitized; phân biệt completed và applied.                                              |
+| proposalExpiresAt; retentionUntil              | Date?; Date                | Theo policy        | Xóa proposal trước metadata khi cần; không dùng TTL xóa nhầm run trước reconciliation.        |
+
+**Indexes:** Unique {userId,idempotencyKey}; {userId,createdAt:-1}; {tripId,createdAt:-1}; {status,updatedAt}.
+
+**Invariant/quyền:** Không gửi email/token vào prompt; không log raw prompt/output. Mọi inputSummary có mục đích phục vụ planner chứ không tự được tái dùng marketing/training.
+
+**Retention:** Proposal ngắn hạn đề xuất 24h; metadata 90 ngày là đề xuất. Snapshot applied nằm trip_revisions với retention trip.
+
+### 17. `usage_buckets`
+
+**Lớp:** CORE · **Bộ metadata:** `MUTABLE`
+
+Counter quota theo user/feature/time window; không nguồn bằng chứng thanh toán.
+
+| Field                        | Kiểu             | Required/default | Ý nghĩa và ràng buộc                               |
+| ---------------------------- | ---------------- | ---------------- | -------------------------------------------------- |
+| userId; feature              | ObjectId; enum   | Bắt buộc         | ai_generation hoặc feature được duyệt.             |
+| windowStart; windowEnd       | Date; Date       | Bắt buộc         | UTC, policy múi giờ rõ; cửa sổ nửa mở [start,end). |
+| limitSnapshot; policyVersion | integer; string  | Bắt buộc         | Quota lúc tạo bucket; admin changes có audit.      |
+| reservedUnits; consumedUnits | integer; integer | 0; 0             | Không âm; reserve nguyên tử dưới limit.            |
+| entitlementId                | ObjectId?        | null             | Nếu lượt từ gói trả phí.                           |
+
+**Indexes:** Unique {userId,feature,windowStart}; {windowEnd:1}.
+
+**Invariant/quyền:** Không tăng rồi kiểm tra sau; dùng điều kiện nguyên tử. Reservation có nguồn aiRun; job reconcile tránh kẹt lượt. Không query audit để tính quota mỗi request.
+
+**Retention:** Dọn sau reconciliation và khoảng kiểm tra được duyệt; không purge khi còn reservation đang chạy.
+
+### 18. `posts`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE_SOFT`
+
+Cẩm nang và bài chia sẻ với vòng đời xuất bản.
+
+| Field                                          | Kiểu                      | Required/default   | Ý nghĩa và ràng buộc                               |
+| ---------------------------------------------- | ------------------------- | ------------------ | -------------------------------------------------- |
+| authorId; editorId                             | ObjectId; ObjectId?       | Bắt buộc; optional | Không public email tác giả.                        |
+| slug; title; excerpt                           | string; string; string?   | Bắt buộc; optional | Slug normalize và uniqueness theo policy.          |
+| body; bodyFormat                               | string/typed blocks; enum | Bắt buộc           | Markdown hoặc blocks có schema; sanitize HTML/XSS. |
+| coverAssetId; mediaAssetIds                    | ObjectId?; ObjectId[]     | null; bounded []   | Media có quyền.                                    |
+| destinationIds; tags                           | ObjectId[]; string[]      | Bounded []         | Discovery cross links.                             |
+| status; publishedAt; submittedAt               | enum; Date?; Date?        | draft; null        | Theo state machine.                                |
+| moderationReasonCode; moderatedBy; moderatedAt | enum?; ObjectId?; Date?   | null               | Chi tiết vào audit, không chỉ ghi đè lý do.        |
+
+**Indexes:** Unique active slug; {status,deletedAt,publishedAt:-1}; {authorId,updatedAt:-1}.
+
+**Invariant/quyền:** Cần revision bài viết nếu editor cộng tác/rollback trở thành yêu cầu; không dùng audit diff chứa raw body để thay versioned content.
+
+**Retention:** Draft/published theo lifecycle; xóa cá nhân cân nhắc bài công khai theo policy tác giả.
+
+### 19. `reviews`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE_SOFT`
+
+Review nền tảng với provenance khác external ratings.
+
+| Field                                | Kiểu                     | Required/default        | Ý nghĩa và ràng buộc                              |
+| ------------------------------------ | ------------------------ | ----------------------- | ------------------------------------------------- |
+| authorId; targetType; targetId       | ObjectId; enum; ObjectId | Bắt buộc                | place/service_listing/partner.                    |
+| rating; title; body                  | integer; string?; string | 1..5; optional; bounded | Không cho HTML tùy ý.                             |
+| bookingId                            | ObjectId?                | null                    | Nguồn chứng minh trải nghiệm nếu có.              |
+| verification                         | enum                     | unverified              | unverified/verified_booking do server quyết định. |
+| status                               | enum                     | pending                 | pending/published/rejected/hidden.                |
+| moderatedBy; moderatedAt; reasonCode | ObjectId?; Date?; enum?  | null                    | Audit mọi thay đổi moderation.                    |
+
+**Indexes:** {targetType,targetId,status,deletedAt,createdAt:-1}; unique active {authorId,targetType,targetId} theo baseline một review/target.
+
+**Invariant/quyền:** Rating aggregate chỉ published; sửa review có revision/audit cần thiết. Nếu review theo từng booking sau này thay unique index qua migration đã kiểm tra.
+
+**Retention:** User deletion anonymize attribution hoặc purge theo policy; không giữ nội dung nhận diện ngoài căn cứ.
+
+### 20. `moderation_reports`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+
+Báo cáo nội dung và quyết định kiểm duyệt.
+
+| Field                                  | Kiểu                     | Required/default  | Ý nghĩa và ràng buộc                                           |
+| -------------------------------------- | ------------------------ | ----------------- | -------------------------------------------------------------- |
+| reporterId; targetType; targetId       | ObjectId; enum; ObjectId | Bắt buộc          | Review/post/listing/user public profile.                       |
+| category; description                  | enum; string? private    | Bắt buộc; bounded | spam/abuse/inaccurate/privacy/other; không gửi sang analytics. |
+| status; assignedTo                     | enum; ObjectId?          | open; null        | open/in_review/resolved/rejected.                              |
+| resolutionCode; resolvedAt; resolvedBy | enum?; Date?; ObjectId?  | null              | Reference audit hành động sửa target.                          |
+
+**Indexes:** {status,createdAt:1}; {targetType,targetId,createdAt:-1}; rate-limit theo reporter.
+
+**Invariant/quyền:** Bảo vệ danh tính người báo cáo. Report không tự xóa target trước khi đủ điều kiện policy.
+
+**Retention:** Thời hạn xử lý và appeal policy; dọn description PII sớm khi có thể.
+
+### 21. `partners`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE_SOFT`
+
+Đối tác địa phương/công ty hoặc hướng dẫn viên, không phải identity login riêng.
+
+| Field                                         | Kiểu                          | Required/default   | Ý nghĩa và ràng buộc                                                |
+| --------------------------------------------- | ----------------------------- | ------------------ | ------------------------------------------------------------------- |
+| kind; displayName; legalName                  | enum; string; string? private | Bắt buộc; optional | individual_guide/company/provider.                                  |
+| slug; description; avatarAssetId              | string; string?; ObjectId?    | Bắt buộc; optional | Hồ sơ công khai tách dữ liệu pháp lý.                               |
+| serviceDestinationIds; languages; specialties | arrays                        | Bounded []         | Khu vực, ngôn ngữ, chuyên môn đã khai.                              |
+| publicContact; privateContact                 | typed object?                 | optional           | Thu tối thiểu; không tự public email/phone riêng.                   |
+| verificationStatus; verifiedAt; verifiedBy    | enum; Date?; ObjectId?        | pending; null      | pending/approved/rejected/suspended.                                |
+| verificationEvidenceRef                       | private media ref?            | null               | Chỉ thu giấy tờ khi quy trình yêu cầu; không lưu bản gốc trong log. |
+| commissionPolicyRef                           | string?                       | null               | Hợp đồng/phiên bản, chưa tự quyết tỷ lệ.                            |
+
+**Indexes:** Unique active slug; {verificationStatus,deletedAt}; destination query index khi có nhu cầu.
+
+**Invariant/quyền:** Không dùng một contactEmail để suy ra partner ownership. Không lưu số dư tài chính ở đây.
+
+**Retention:** Tắt partner không xóa bookings. Hồ sơ pháp lý theo policy riêng, không blanket soft delete.
+
+### 22. `partner_memberships`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+
+Quyền user trong một đối tác.
+
+| Field                            | Kiểu                   | Required/default | Ý nghĩa và ràng buộc                   |
+| -------------------------------- | ---------------------- | ---------------- | -------------------------------------- |
+| partnerId; userId                | ObjectId; ObjectId     | Bắt buộc         | Actor đang active mới có quyền.        |
+| role                             | enum                   | operator         | owner/manager/operator/finance_viewer. |
+| status                           | enum                   | invited          | invited/active/revoked.                |
+| invitedBy; acceptedAt; revokedAt | ObjectId; Date?; Date? | Bắt buộc; null   | User không tự nâng role.               |
+
+**Indexes:** Unique {partnerId,userId}; {userId,status}.
+
+**Invariant/quyền:** Không gỡ owner cuối trước transfer đã xác minh; partner admin không trở thành system admin.
+
+**Retention:** Revoke ngay khi cần; audit lịch sử, purge theo quan hệ/policy.
+
+### 23. `service_listings`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE_SOFT`
+
+Danh mục local guide/experience/hotel/flight referral và dịch vụ có adapter thực.
+
+| Field                               | Kiểu                   | Required/default | Ý nghĩa và ràng buộc                                                                                                       |
+| ----------------------------------- | ---------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| partnerId; destinationId            | ObjectId?; ObjectId?   | Theo loại        | Provider listing có provenance riêng.                                                                                      |
+| type; fulfillmentMode               | enum; enum             | Bắt buộc         | guide/experience/hotel/flight; referral/inquiry/manual_booking/provider_api.                                               |
+| title; description; slug            | string; string; string | Bắt buộc         | Nội dung có kiểm duyệt.                                                                                                    |
+| mediaAssetIds; languages; tags      | arrays                 | Bounded []       | Không lưu media binary.                                                                                                    |
+| pricing                             | PriceDisplay object    | Bắt buộc         | from/estimated/quote_required + amountMinor? + currency + basis; không báo giá cam kết.                                    |
+| serviceDetails                      | discriminated object   | Theo type        | Guide:duration/languages/groupSize; hotel:propertyRef/amenities; flight:providerSearchRef, không giả inventory chuyến bay. |
+| provider; externalId; referralUrl   | string?; string?; URL? | Theo mode        | Referral host allowlist, nguồn/license.                                                                                    |
+| cancellationPolicyRef; termsVersion | string?; string?       | Theo mode        | Booking enabled cần đủ điều kiện.                                                                                          |
+| status; approvedAt; approvedBy      | enum; Date?; ObjectId? | draft; null      | draft/in_review/published/suspended/archived.                                                                              |
+
+**Indexes:** Unique active slug; partial unique {provider,externalId}; {type,destinationId,status,deletedAt}.
+
+**Invariant/quyền:** Mode quyết định CTA đúng: Xem đối tác/Gửi yêu cầu/Đặt dịch vụ. Partner không tự đổi provider refs thành giả mạo.
+
+**Retention:** Theo quyền dữ liệu và lịch sử booking snapshot; gỡ listing không xóa order.
+
+### 24. `service_inquiries`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+
+Yêu cầu liên hệ/báo giá có định danh, chưa phải booking.
+
+| Field                                 | Kiểu                          | Required/default | Ý nghĩa và ràng buộc                                             |
+| ------------------------------------- | ----------------------------- | ---------------- | ---------------------------------------------------------------- |
+| userId; listingId; partnerId          | ObjectId                      | Bắt buộc         | Actor requester và bên xử lý.                                    |
+| tripId                                | ObjectId?                     | null             | Chỉ backlink, không chia sẻ toàn trip với partner.               |
+| requestedDateRange; partySize; budget | typed object; integer; Money? | Theo dịch vụ     | Chỉ thông tin cần báo giá.                                       |
+| message; contactChannel               | string private; enum          | Bounded; in_app  | Không tự gửi full profile ra ngoài.                              |
+| status; assignedTo                    | enum; ObjectId?               | new; null        | new/acknowledged/quoted/closed/rejected/cancelled.               |
+| quote                                 | QuoteSnapshot?                | null             | amount/currency/inclusions/cancellationPolicy/version/expiresAt. |
+| quotedAt; closedAt; reasonCode        | Date?; Date?; enum?           | null             | Audit trạng thái.                                                |
+
+**Indexes:** {userId,createdAt:-1}; {partnerId,status,createdAt:-1}; {listingId,createdAt:-1}.
+
+**Invariant/quyền:** Không biến quoted thành confirmed booking. Sửa báo giá tạo quoteVersion và audit; order tham chiếu đúng version đã chấp nhận.
+
+**Retention:** Contact/message private giữ theo vòng xử lý + retention đã duyệt.
+
+### 25. `bookings`
+
+**Lớp:** COMMERCE · **Bộ metadata:** `MUTABLE_RETAIN`
+
+Thực thi dịch vụ, tách khỏi order/payment và trip chỉnh sửa.
+
+| Field                                       | Kiểu                        | Required/default | Ý nghĩa và ràng buộc                                                                                              |
+| ------------------------------------------- | --------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| bookingCode; userId; partnerId              | string; ObjectId; ObjectId? | Bắt buộc         | Code public random đủ khó đoán, không thay authorization.                                                         |
+| listingId; inquiryId; tripId                | ObjectId?                   | Theo nguồn       | Links tùy dịch vụ; xóa trip không xóa booking.                                                                    |
+| fulfillmentMode; serviceType                | enum; enum                  | Bắt buộc         | manual_booking/provider_api; guide/experience/hotel/flight.                                                       |
+| serviceSnapshot; acceptedQuote              | typed objects               | Bắt buộc         | Title/provider/local schedule/termsVersion/cancellation policy/amount/currency/quoteExpiry.                       |
+| orderId; orderLineId                        | ObjectId?; string?          | Theo thu phí     | Ràng buộc một booking với đúng line.                                                                              |
+| status                                      | enum                        | requested        | Theo BR; provider status không map không biết thành confirmed.                                                    |
+| schedule                                    | discriminated object        | Bắt buộc         | Experience:start/end/timezone/groupSize; Hotel:dates/room occupancy; Flight:segments+quoteRef khi provider duyệt. |
+| travelerDataRef                             | restricted encrypted ref?   | null             | Schema hành khách theo provider, tối thiểu; không generic Mixed passport dump.                                    |
+| provider; providerBookingId; providerStatus | string?                     | Điều kiện        | Dùng khi provider thực đã xác nhận.                                                                               |
+| confirmationRef; confirmedAt; completedAt   | string?; Date?; Date?       | null             | Có evidence nguồn, không client tự gán.                                                                           |
+| cancelledAt; cancellationReasonCode         | Date?; enum?                | null             | Chính sách phí/refund áp dụng độc lập.                                                                            |
+
+**Indexes:** Unique bookingCode; partial unique {provider,providerBookingId}; {userId,createdAt:-1}; {partnerId,status,schedule.startsAt}.
+
+**Invariant/quyền:** Before confirmation verify slot/provider and payment rule. Không dùng deletedAt để hủy nghĩa vụ. Thông tin hành khách không được vào analytics/audit generic.
+
+**Retention:** Không soft-delete tài chính; trạng thái archived khi cần. Retention hợp đồng/pháp lý xác định trước production.
+
+### 26. `products`
+
+**Lớp:** COMMERCE · **Bộ metadata:** `MUTABLE_SOFT`
+
+Sản phẩm GoEase bán: gói planner hoặc item dịch vụ được phép thu phí.
+
+| Field                         | Kiểu                 | Required/default   | Ý nghĩa và ràng buộc                                              |
+| ----------------------------- | -------------------- | ------------------ | ----------------------------------------------------------------- |
+| code; productType; title      | string; enum; string | Bắt buộc           | planner_pass/service_fee/service_booking; không tự bật recurring. |
+| priceMinor; currency          | integer; string      | Bắt buộc           | Giá server; VND bản đầu.                                          |
+| benefits                      | Benefit[]            | Bounded            | feature/units/duration; không boolean isPremium toàn cục.         |
+| listingId                     | ObjectId?            | null               | Nếu gắn dịch vụ.                                                  |
+| status; priceVersion          | enum; integer        | draft; 1           | draft/active/retired; version giá bất biến khi đã dùng.           |
+| termsVersion; refundPolicyRef | string               | Bắt buộc trước bán | Không tự quyết nội dung pháp lý.                                  |
+
+**Indexes:** Unique code; {status,productType}.
+
+**Invariant/quyền:** Đổi giá chỉ ảnh hưởng order mới; bản order cũ giữ snapshot. Recurring/subscription cần thiết kế billing cycle riêng sau khi chốt.
+
+**Retention:** Giữ catalog lịch sử bằng order snapshots; soft-delete không xóa lịch sử mua.
+
+### 27. `orders`
+
+**Lớp:** COMMERCE · **Bộ metadata:** `MUTABLE_RETAIN`
+
+Đơn hàng/quote đã chấp nhận, tách quyền sử dụng và payment attempts.
+
+| Field                                                        | Kiểu                     | Required/default     | Ý nghĩa và ràng buộc                                                                                               |
+| ------------------------------------------------------------ | ------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| orderCode; userId; idempotencyKey                            | string; ObjectId; string | Bắt buộc             | Unique code và dedupe theo user.                                                                                   |
+| status; currency                                             | enum; string             | pending_payment; VND | Theo BR, không dựa redirect để paid.                                                                               |
+| items                                                        | OrderLine[]              | 1..cap               | lineId/productId?/bookingId?/productType/titleSnapshot/quantity/unitAmount/discount/tax/lineTotal/benefitSnapshot. |
+| subtotalMinor; discountMinor; feeMinor; taxMinor; totalMinor | integer                  | Server computed      | Quy tắc sum rõ, không float; thuế chỉ khi đã chốt nghĩa vụ.                                                        |
+| paidMinor; refundedMinor; refundReservedMinor                | integer                  | 0                    | Projection từ payment/refund đã xác minh; cập nhật transaction.                                                    |
+| promotionSnapshot                                            | object?                  | null                 | Code/ruleVersion/discount, không query campaign mới cho đơn cũ.                                                    |
+| termsSnapshot; pricingVersion                                | typed object; string     | Bắt buộc             | Bằng chứng điều kiện tại lúc mua.                                                                                  |
+| expiresAt; paidAt; fulfilledAt; cancelledAt                  | Date?                    | null theo trạng thái | Quá hạn có tiền đến cần reconciliation.                                                                            |
+| billingProfileRef                                            | restricted ref?          | null                 | Chỉ khi xuất hóa đơn cần; không thu mã số/địa chỉ đại trà.                                                         |
+
+**Indexes:** Unique orderCode; unique {userId,idempotencyKey}; {userId,createdAt:-1}; {status,expiresAt}.
+
+**Invariant/quyền:** Item có ID ổn định. Không xóa mềm/cascade; trạng thái và record bù. Không gọi tổng order là doanh thu ròng GoEase.
+
+**Retention:** Không TTL; thời hạn lưu tài chính phải rà soát theo hình thức kinh doanh/hợp đồng.
+
+### 28. `payments`
+
+**Lớp:** COMMERCE · **Bộ metadata:** `MUTABLE_RETAIN`
+
+Một lần thử thanh toán/charge qua nhà cung cấp.
+
+| Field                                     | Kiểu                    | Required/default  | Ý nghĩa và ràng buộc                                 |
+| ----------------------------------------- | ----------------------- | ----------------- | ---------------------------------------------------- |
+| orderId; userId                           | ObjectId                | Bắt buộc          | Links bắt buộc còn truy vết được dù user anonymized. |
+| provider; merchantAccountRef; environment | string; string; enum    | Bắt buộc          | sandbox/live không trộn; merchantRef không secret.   |
+| providerRequestId; providerTransactionId  | string; string?         | Bắt buộc; null    | Unique trong đúng merchant/provider/environment.     |
+| idempotencyKey; amountMinor; currency     | string; integer; string | Bắt buộc          | Đúng order/attempt; không client định giá.           |
+| status                                    | enum                    | created           | created/pending/unknown/succeeded/failed/expired.    |
+| initiatedAt; verifiedAt; paidAt           | Date; Date?; Date?      | server time; null | verifiedAt ghi sau kiểm chứng.                       |
+| providerResultCode; failureCode           | string?; enum?          | null              | Sanitize, không raw body.                            |
+| lastWebhookEventId; lastReconciledAt      | ObjectId?; Date?        | null              | Liên kết evidence và kiểm tra provider API.          |
+
+**Indexes:** Partial unique {provider,merchantAccountRef,environment,providerTransactionId}; unique {provider,merchantAccountRef,environment,providerRequestId}; {orderId,createdAt:-1}.
+
+**Invariant/quyền:** Order có nhiều payment attempts; server kiểm soát overpay; không auto cấp gói thêm cho mỗi notification. Không lưu PAN/CVV/password ngân hàng.
+
+**Retention:** Retention tài chính riêng; không soft-delete succeeded payment.
+
+### 29. `webhook_events`
+
+**Lớp:** COMMERCE · **Bộ metadata:** `MUTABLE_RETAIN`
+
+Inbox bền vững cho event provider; envelope bất biến, processing state được cập nhật.
+
+| Field                                     | Kiểu                       | Required/default            | Ý nghĩa và ràng buộc                                                               |
+| ----------------------------------------- | -------------------------- | --------------------------- | ---------------------------------------------------------------------------------- |
+| provider; merchantAccountRef; environment | string; string; enum       | Bắt buộc                    | Binding đã kiểm chứng.                                                             |
+| eventKey; eventType; providerOccurredAt   | string; string; Date?      | Bắt buộc; optional          | Key chính thức hoặc fingerprint canonical ổn định theo adapter.                    |
+| paymentId; providerTransactionId          | ObjectId?; string?         | null                        | Resolve an toàn, không tin userId từ callback.                                     |
+| receivedAt; signatureVerifiedAt           | Date; Date                 | Bắt buộc cho accepted event | Invalid signature vào security log hạn chế, không accepted inbox.                  |
+| payloadHash; normalizedPayload            | string; allowlisted object | Bắt buộc                    | Amount/currency/order/status cần xử lý; raw body dùng verify trong RAM, không log. |
+| processingStatus; attempts                | enum; integer              | received; 0                 | received/processing/processed/retry/dead_letter.                                   |
+| processedAt; nextAttemptAt; lastErrorCode | Date?; Date?; enum?        | null                        | Theo retry/backoff; có lease nếu worker.                                           |
+| requestId                                 | string                     | Bắt buộc                    | Trace callback.                                                                    |
+
+**Indexes:** Unique {provider,merchantAccountRef,environment,eventKey}; {processingStatus,nextAttemptAt}.
+
+**Invariant/quyền:** Chỉ ACK theo contract provider sau ghi bền vững an toàn; processing idempotent. Replay không tạo thêm quyền. Đừng dùng audit generic thay inbox.
+
+**Retention:** Envelope tài chính giữ phù hợp; raw payload mặc định không giữ, muốn giữ phải encrypted + retention riêng.
+
+### 30. `refunds`
+
+**Lớp:** COMMERCE · **Bộ metadata:** `MUTABLE_RETAIN`
+
+Yêu cầu hoàn tiền và kết quả đối soát, không sửa payment thành chưa từng tồn tại.
+
+| Field                                      | Kiểu                       | Required/default   | Ý nghĩa và ràng buộc                                              |
+| ------------------------------------------ | -------------------------- | ------------------ | ----------------------------------------------------------------- |
+| refundCode; orderId; paymentId             | string; ObjectId; ObjectId | Bắt buộc           | Refund gắn charge thực đã thu.                                    |
+| provider; merchantAccountRef; environment  | string; string; enum       | Bắt buộc           | Scope từ payment đã xác minh, dùng unique index providerRefundId. |
+| amountMinor; currency; reasonCode          | integer; string; enum      | Bắt buộc           | Amount >0 và không vượt refundable.                               |
+| requestedBy; approvedBy                    | ObjectId; ObjectId?        | Bắt buộc; policy   | Tách phê duyệt khi cần.                                           |
+| idempotencyKey; providerRefundId           | string; string?            | Bắt buộc; optional | Dedupe cả nội bộ và provider.                                     |
+| status                                     | enum                       | requested          | requested/processing/succeeded/failed/cancelled/unknown.          |
+| requestedAt; processedAt; lastReconciledAt | Date; Date?; Date?         | server time; null  | Unknown phải đối soát trước retry tạo mới.                        |
+
+**Indexes:** Unique refundCode; unique {paymentId,idempotencyKey}; partial unique {provider,merchantAccountRef,environment,providerRefundId} khi có giá trị; {orderId,createdAt:-1}.
+
+**Invariant/quyền:** Reserve refund amount nguyên tử cùng order/payment balance projection; không chỉ tổng refund sau khi thành công vì hai refund concurrent sẽ vượt.
+
+**Retention:** Theo tài chính, không TTL hoặc deletedAt để xóa tranh chấp.
+
+### 31. `entitlements`
+
+**Lớp:** COMMERCE · **Bộ metadata:** `MUTABLE_RETAIN`
+
+Quyền sử dụng được cấp từ mua hàng hoặc admin grant có căn cứ.
+
+| Field                                   | Kiểu                       | Required/default   | Ý nghĩa và ràng buộc                         |
+| --------------------------------------- | -------------------------- | ------------------ | -------------------------------------------- |
+| userId; feature                         | ObjectId; enum             | Bắt buộc           | Scope cụ thể ai_generation/premium_features. |
+| sourceType; sourceId; orderLineId       | enum; ObjectId; string?    | Bắt buộc           | order_line/admin_grant; orderLine khi mua.   |
+| startsAt; endsAt                        | Date; Date?                | Bắt buộc; optional | Kiểm tra ở server, không dựa TTL.            |
+| unitLimit; reservedUnits; consumedUnits | integer?; integer; integer | policy; 0; 0       | Null unlimited chỉ khi policy rõ.            |
+| status; revokedAt; revokeReasonCode     | enum; Date?; enum?         | active; null       | active/exhausted/expired/revoked.            |
+| grantPolicyVersion                      | string                     | Bắt buộc           | Benefit snapshot từ order.                   |
+
+**Indexes:** Unique {sourceType,sourceId,orderLineId,feature}; {userId,feature,status,endsAt}.
+
+**Invariant/quyền:** Cấp đúng một lần; refund xử lý quyền theo policy đã chốt; không reset consumed qua rename gói.
+
+**Retention:** Giữ tối thiểu phục vụ support/tài chính; quyền hết hạn không có nghĩa xóa record ngay.
+
+### 32. `promotions`
+
+**Lớp:** COMMERCE · **Bộ metadata:** `MUTABLE_SOFT`
+
+Chiến dịch ưu đãi versioned, không sửa lịch sử giảm giá của đơn đã mua.
+
+| Field                                                                  | Kiểu                    | Required/default | Ý nghĩa và ràng buộc                                          |
+| ---------------------------------------------------------------------- | ----------------------- | ---------------- | ------------------------------------------------------------- |
+| codeNormalized; title                                                  | string; string          | Bắt buộc         | Code normalize; unique policy.                                |
+| discountType; value; maxDiscountMinor                                  | enum; integer; integer? | Bắt buộc         | fixed_amount/basis_points; integer basis points tránh float.  |
+| currency; minimumOrderMinor                                            | string; integer         | VND; 0           | Currency bắt buộc với fixed amount.                           |
+| applicableProductIds; applicableListingIds                             | ObjectId[]              | Bounded []       | Empty được định nghĩa rõ là tất cả hay không; không suy đoán. |
+| startsAt; endsAt; status                                               | Date; Date; enum        | Bắt buộc         | draft/active/paused/ended.                                    |
+| maxRedemptions; perUserLimit; budgetLimitMinor                         | integer?                | Theo policy      | Không null unlimited ngoài quyết định.                        |
+| reservedCount; redeemedCount; reservedBudgetMinor; redeemedBudgetMinor | integers                | 0                | Counters nguyên tử, không frontend tăng.                      |
+| ruleVersion                                                            | integer                 | 1                | Order giữ snapshot ruleVersion.                               |
+
+**Indexes:** Unique codeNormalized (không tái dùng code cũ tùy tiện); {status,startsAt,endsAt}.
+
+**Invariant/quyền:** Sửa policy khi active phải giữ ruleVersion/history; check entitlement/eligibility server.
+
+**Retention:** Lưu rule đã dùng phục vụ order, soft-delete chỉ ẩn campaign.
+
+### 33. `promotion_redemptions`
+
+**Lớp:** COMMERCE · **Bộ metadata:** `MUTABLE_RETAIN`
+
+Giữ lượt/ghi nhận dùng ưu đãi và chống vượt hạn mức.
+
+| Field                                         | Kiểu                     | Required/default | Ý nghĩa và ràng buộc                           |
+| --------------------------------------------- | ------------------------ | ---------------- | ---------------------------------------------- |
+| promotionId; userId; orderId                  | ObjectId                 | Bắt buộc         | Ràng buộc cả ba.                               |
+| ruleVersion; discountMinor; currency          | integer; integer; string | Bắt buộc         | Snapshot kết quả server.                       |
+| status                                        | enum                     | reserved         | reserved/redeemed/released.                    |
+| reservedAt; expiresAt; redeemedAt; releasedAt | Date; Date; Date?; Date? | Bắt buộc; null   | Expiry job release counter, không chỉ TTL xóa. |
+
+**Indexes:** Unique {promotionId,orderId}; {promotionId,userId,status}; {status,expiresAt}.
+
+**Invariant/quyền:** Counters global + user phải cập nhật transaction hoặc atomic allocation có chứng minh; không có rollback tiền thật qua TTL.
+
+**Retention:** Giữ redeemed theo order; reserved/released dọn sau đối soát.
+
+### 34. `notifications`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+
+Thông báo theo user; không mảng lịch sử vô hạn.
+
+| Field                                    | Kiểu                               | Required/default | Ý nghĩa và ràng buộc                          |
+| ---------------------------------------- | ---------------------------------- | ---------------- | --------------------------------------------- |
+| userId; type                             | ObjectId; enum                     | Bắt buộc         | trip/inquiry/booking/payment/security/system. |
+| templateKey; templateVersion; parameters | string; string; allowlisted object | Bắt buộc         | Không nhét full sensitive payload.            |
+| entityType; entityId                     | enum?; ObjectId?                   | null             | Deep link phải re-authorize khi mở.           |
+| channel; status                          | enum; enum                         | in_app; pending  | in_app/email/push; pending/sent/failed.       |
+| dedupeKey; sentAt; readAt; expiresAt     | string; Date?; Date?; Date?        | Bắt buộc; null   | Distinct notification với delivery retry.     |
+
+**Indexes:** Unique {userId,channel,dedupeKey}; {userId,readAt,createdAt:-1}; TTL expiresAt nếu phù hợp chỉ in-app.
+
+**Invariant/quyền:** Thông báo lockscreen/email không lộ trip notes hoặc giấy tờ; unsubscribe marketing không chặn thông báo giao dịch cần thiết theo policy.
+
+**Retention:** In-app đề xuất 90 ngày; security evidence ở audit, không phụ thuộc notification tồn tại.
+
+### 35. `support_tickets`
+
+**Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
+
+Yêu cầu hỗ trợ có quyền, tránh thu PII qua log chung.
+
+| Field                        | Kiểu                   | Required/default   | Ý nghĩa và ràng buộc                                           |
+| ---------------------------- | ---------------------- | ------------------ | -------------------------------------------------------------- |
+| ticketCode; userId; category | string; ObjectId; enum | Bắt buộc           | account/trip/booking/payment/privacy/other.                    |
+| subject; description         | string private         | Bounded            | Không copy password/token; hướng dẫn user không nhập bí mật.   |
+| relatedType; relatedId       | enum?; ObjectId?       | null               | Support access cần quyền, không cho arbitrary ref đọc dữ liệu. |
+| attachmentAssetIds           | ObjectId[]             | Bounded []         | Private storage.                                               |
+| status; priority; assignedTo | enum; enum; ObjectId?  | open; normal; null | open/in_progress/waiting_user/resolved/closed.                 |
+| resolvedAt; resolutionCode   | Date?; enum?           | null               | Không biến description thành chat history vô hạn.              |
+
+**Indexes:** Unique ticketCode; {userId,createdAt:-1}; {status,priority,createdAt:1}.
+
+**Invariant/quyền:** Nếu có hội thoại hỗ trợ nhiều lượt, thêm support_messages với ticketId, không append mảng không giới hạn vào ticket.
+
+**Retention:** Đề xuất đóng +90 ngày rồi giảm PII; tranh chấp tài chính xử lý retention riêng.
+
+### 36. `audit_logs`
+
+**Lớp:** F1 · **Bộ metadata:** `APPEND`
+
+Ai đã làm gì, trên đối tượng nào, kết quả và lý do; không là hồ sơ marketing.
+
+| Field                                     | Kiểu                    | Required/default             | Ý nghĩa và ràng buộc                                                                   |
+| ----------------------------------------- | ----------------------- | ---------------------------- | -------------------------------------------------------------------------------------- |
+| action; category                          | enum; enum              | Bắt buộc                     | Taxonomy action/category theo mục 11; collection registry không phải action registry.  |
+| actor                                     | AuditActor              | Bắt buộc                     | type user/admin/system/provider; userId?; roleSnapshot?; serviceName?; server-derived. |
+| entityType; entityId; entityRevision      | enum; string?; integer? | Bắt buộc theo action         | ID nội bộ; không user-supplied collectionName/query.                                   |
+| occurredAt; recordedAt                    | Date; Date              | server time                  | Phân biệt lúc xảy ra và ghi nhận.                                                      |
+| requestId; correlationId; operationId     | string; string?; string | Bắt buộc; optional; bắt buộc | Correlation nối nhiều request, operation chống event duplicate.                        |
+| outcome; reasonCode                       | enum; enum?             | Bắt buộc                     | succeeded/failed/denied; reason code không arbitrary PII.                              |
+| changedFields; changes                    | string[]; SafeChange[]  | Bounded []                   | Field allowlist; before/after cho enum/numeric an toàn, text chỉ changed/redacted.     |
+| source                                    | object                  | Bắt buộc                     | appVersion/clientPlatform/channel/environment.                                         |
+| securityContext                           | object? restricted      | optional                     | Coarse agent/IP HMAC nếu mục đích cần; không IP raw mặc định.                          |
+| retentionClass; retentionUntil; legalHold | string; Date?; boolean  | Bắt buộc; policy; false      | Không TTL blanket; legalHold cần căn cứ, expiry/review.                                |
+
+**Indexes:** Unique {operationId,action,entityType,entityId}; {entityType,entityId,occurredAt:-1}; {actor.userId,occurredAt:-1}; {requestId:1}.
+
+**Invariant/quyền:** Ứng dụng chỉ insert/read được cấp. Mutation quan trọng cùng transaction audit; thất bại transaction không tự tạo audit thành công. Migration/privileged bypass cần actor và runId riêng.
+
+**Retention:** Append-only nghiệp vụ không đồng nghĩa giữ vĩnh viễn; purge/redact đặc quyền có policy và log độc lập.
+
+### 37. `analytics_events`
+
+**Lớp:** CORE · **Bộ metadata:** `APPEND`
+
+Hành vi tối thiểu để đo funnel/cá nhân hóa theo mục đích được phép.
+
+| Field                                     | Kiểu                           | Required/default | Ý nghĩa và ràng buộc                                                                              |
+| ----------------------------------------- | ------------------------------ | ---------------- | ------------------------------------------------------------------------------------------------- |
+| eventName; eventVersion                   | enum; integer                  | Bắt buộc         | Registry, không arbitrary event/data payload.                                                     |
+| userId; anonymousId; analyticsSessionId   | ObjectId?; string?; string?    | Theo consent     | Không dùng auth token làm sessionId; guest ID chỉ khi cho phép.                                   |
+| occurredAt; receivedAt                    | Date; Date                     | Bắt buộc         | Client timestamp không đáng tin; nhận lệch lớn phải cờ hóa.                                       |
+| source; trustLevel                        | enum; enum                     | Bắt buộc         | client/server/provider_verified; không coi client payment event là bằng chứng tiền.               |
+| entityType; entityId; requestId           | enum?; string?; string?        | Theo event       | Server xác minh userId, quyền và business event khi có.                                           |
+| properties                                | discriminated allowlist object | Bắt buộc         | destinationId/budgetBand/tripDays/groupSizeBucket/rank/errorCode... không email/notes/raw search. |
+| consent                                   | object                         | Bắt buộc         | purpose/policyVersion/consentEventId/status; essential event không bị đổi nhãn để né consent.     |
+| appVersion; platform; environment; isTest | string; enum; enum; boolean    | Bắt buộc         | web/ios/android; dev/staging/prod; internal traffic loại KPI.                                     |
+| recommendationId; experiment              | string?; object?               | optional         | modelVersion/rank; experimentId/variant khi thật sự có experiment.                                |
+| expiresAt                                 | Date                           | Theo retention   | TTL raw analytics; chấp nhận trễ cleanup, không dùng để kiểm soát quyền.                          |
+
+**Indexes:** Unique eventId; {eventName,receivedAt:-1}; {userId,receivedAt:-1} khi cần; TTL expiresAt.
+
+**Invariant/quyền:** Không chứa free text, IP/token/email. Dedupe theo eventId; server conversion có businessKey riêng. Opt-out ngừng optional collection; aggregate được giữ chỉ khi đã loại khả năng nhận diện theo policy.
+
+**Retention:** Raw đề xuất 90 ngày; aggregates hạn chế và không identifiers có thể lâu hơn sau rà soát; pseudonym hóa không tự thành vô danh.
+
+### 38. `outbox_events`
+
+**Lớp:** F1 · **Bộ metadata:** `MUTABLE`
+
+Outbox trong cùng DB transaction để chuyển audit/notification/analytics có retry mà không mất sự kiện.
+
+| Field                                               | Kiểu                              | Required/default  | Ý nghĩa và ràng buộc                                          |
+| --------------------------------------------------- | --------------------------------- | ----------------- | ------------------------------------------------------------- |
+| eventType; eventVersion; aggregateType; aggregateId | strings; integer                  | Bắt buộc          | Business event envelope bounded.                              |
+| correlationId; operationId; idempotencyKey          | strings                           | Bắt buộc          | Consumer dedupe theo key.                                     |
+| payload                                             | event-specific allowlisted object | Bắt buộc          | IDs và nội dung cần thiết; không auth secrets hoặc full trip. |
+| status; attempts; availableAt                       | enum; integer; Date               | pending; 0; now   | pending/processing/delivered/dead_letter.                     |
+| leaseOwner; leaseUntil                              | string?; Date?                    | null              | Claim nguyên tử, worker chết có thể reclaim.                  |
+| processedAt; lastErrorCode                          | Date?; enum?                      | null              | Retry/backoff và giám sát.                                    |
+| expiresAt                                           | Date?                             | Chỉ sau delivered | Không TTL pending/financial dead-letter chưa xử lý.           |
+
+**Indexes:** Unique idempotencyKey; {status,availableAt,leaseUntil}; optional TTL expiresAt.
+
+**Invariant/quyền:** Delivery at-least-once; consumer phải idempotent, không hứa exactly-once. Không chạy external side effect trong retried transaction.
+
+**Retention:** Delivered đề xuất 7 ngày; pending/dead-letter giữ để xử lý, không im lặng mất.
+
+### 39. `idempotency_keys`
+
+**Lớp:** CORE · **Bộ metadata:** `EPHEMERAL`
+
+Chống tạo bản sao do retry khi client mất phản hồi.
+
+| Field                                    | Kiểu                     | Required/default   | Ý nghĩa và ràng buộc                                                      |
+| ---------------------------------------- | ------------------------ | ------------------ | ------------------------------------------------------------------------- |
+| actorId; operation; key                  | ObjectId; enum; string   | Bắt buộc           | Scope theo actor + endpoint business action.                              |
+| requestHash                              | string                   | Bắt buộc           | Canonical payload hash; cùng key khác payload trả conflict.               |
+| status; leaseUntil                       | enum; Date?              | processing; policy | processing/completed/failed_retryable; không tự cướp request đang chạy.   |
+| resourceType; resourceId; responseStatus | enum?; string?; integer? | null               | Trả lại reference/DTO nhỏ, không raw secret response.                     |
+| expiresAt                                | Date                     | Theo operation     | Khoảng retry đã duyệt; tài chính cần business uniqueness bền hơn TTL này. |
+
+**Indexes:** Unique {actorId,operation,key}; TTL expiresAt.
+
+**Invariant/quyền:** Idempotency không thay authorization: trả cached result vẫn kiểm tra actor/current access. Race duplicate-key phải đọc record hiện có.
+
+**Retention:** Đề xuất 24h cho trip create; payment không dựa TTL ngắn để ngăn thanh toán/cấp quyền trùng lâu dài.
+
+### 40. `schema_migrations`
+
+**Lớp:** F1 · **Bộ metadata:** `MUTABLE_RETAIN`
+
+Phiên bản thay đổi dữ liệu/index có thể truy vết và tiếp tục sau lỗi.
+
+| Field                                          | Kiểu                         | Required/default        | Ý nghĩa và ràng buộc                          |
+| ---------------------------------------------- | ---------------------------- | ----------------------- | --------------------------------------------- |
+| migrationId; checksum                          | string; string               | Bắt buộc                | Tên duy nhất, checksum code migration.        |
+| fromVersion; toVersion; collections            | integer?; integer?; string[] | Bắt buộc theo migration | Collection có schemaVersion độc lập.          |
+| status; batchCursor; affectedCount             | enum; string?; integer       | pending; null; 0        | pending/running/completed/failed/rolled_back. |
+| startedAt; completedAt; executedBy; appVersion | Date?; Date?; string; string | Bắt buộc                | Actor hệ thống/operational identity.          |
+| backupRef; rollbackPlanRef; errorCode          | string?; string; string?     | Policy                  | Không lưu URI có credential.                  |
+
+**Indexes:** Unique migrationId; {status,startedAt:-1}.
+
+**Invariant/quyền:** Dry-run/backup trước destructive migration; idempotent batches; update indexes sau kiểm tra duplicates. Không sửa migration đã chạy mà giữ cùng checksum.
+
+**Retention:** Giữ cùng lịch sử vận hành của project; dữ liệu cá nhân không nằm trong record migration.
+
+## 6. Ranh giới quan hệ
+
+```text
+users ──< auth_identities, auth_sessions, consent_events, privacy_requests
+users ──< trips ──< trip_revisions, trip_access, trip_share_links, trip_expenses
+trips ── embeds days[] ── embeds activities[]
+destinations ──< places ── referenced/snapshotted by trip activities
+users ──< ai_runs ──> usage_buckets / entitlements
+partners ──< partner_memberships >── users
+partners ──< service_listings ──< service_inquiries ──> bookings
+orders ── embeds items[]; orders ──< payments ──< refunds
+payments ──< webhook_events; order items ──> entitlements
+business mutations ──> audit_logs / outbox_events
+allowed user interactions ──> analytics_events
+```
+
+Đây là tham chiếu logic. MongoDB không tự tạo foreign key enforcement từ ObjectId; services kiểm tra target tồn tại/quyền/vòng đời, transactions cho thao tác cần tính nguyên tử. Không cascade-delete user→orders/payments. View/DTO của partner không hydrate toàn user/trip.
+
+## 7. Extension có điều kiện — không khởi tạo ở F1
+
+Các collection dưới đây **chỉ có khi mô hình vận hành tương ứng được duyệt**. Chúng không cần thiết cho việc thu phí một gói planner qua cổng thanh toán.
+
+| Collection          | Field dự kiến và invariant                                                                                                                                                                                   | Khi nào cần                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| inventory_slots     | listingId/resourceId, startAt/endAt/timezone, capacity, heldCount, bookedCount, revision, status + metadata. Counters phải cập nhật cùng holds.                                                              | GoEase thực sự quản lý inventory slot, không phải referral |
+| inventory_holds     | slotIds, userId, bookingId/orderId, quantity, status held/confirmed/released/expired, expiresAt, idempotencyKey. Expiry job release inventory idempotently; không TTL xóa mà quên release.                   | Checkout giữ chỗ; transaction nhiều slot và compensation   |
+| ledger_accounts     | accountCode, ownerType/ownerId?, currency, accountType, status, createdAt; balance là projection, không nguồn duy nhất.                                                                                      | Có thu hộ/chia tiền/số dư và nghĩa vụ đối tác              |
+| ledger_transactions | transactionCode, occurredAt, sourceType/sourceId, currency, entries[{accountId,debitMinor,creditMinor}], reversalOf?, idempotencyKey, createdAt. Tổng debit=credit, append-only; reversal bằng bút toán mới. | Sổ cái/đối soát thực sự; phải review tài chính riêng       |
+| payout_requests     | partnerId, amountMinor/currency, settlementAccountRef, status, providerRef, ledgerTransactionId, requested/approved/paidAt, idempotencyKey. Không lưu plaintext bank details trong log.                      | Chi trả đối tác sau compliance/onboarding                  |
+| subscriptions       | userId, productVersion, providerSubscriptionId, billingPeriod, status, cancelAtPeriodEnd, lastInvoiceRef, entitlementRef. Billing webhook và proration policy riêng.                                         | Bán gói tự gia hạn thay vì mua một lần                     |
+| support_messages    | ticketId, authorId/type, bodyPrivate, attachmentIds, createdAt; pagination, retention riêng.                                                                                                                 | Có hội thoại hỗ trợ nhiều lượt                             |
+
+**Inventory caveat:** index unique `{resourceId,startAt}` không chống toàn bộ khoảng giờ chồng lấp. Cần slot chuẩn không overlap hoặc giao thức serialize/lock theo resource để kiểm tra và ghi booking nguyên tử. Ghi design cụ thể trước khi mở bán chỗ. Hotel/flight external inventory phải kiểm tra provider, không bảo đảm bằng collection local.
+
+**Financial caveat:** dictionary này không thay thiết kế kế toán, thuế, hợp đồng, settlement và legal compliance. Chốt merchant-of-record, refund, payout, invoice và reconciliation trước khi bật marketplace money movement.
+
+## 8. Indexes, constraints và kích thước
+
+Unique là DB index, không phải validator duy nhất; xử lý E11000. Unique partial chỉ áp dụng document khớp filter [S4,S13]. Ví dụ active slug có thể dùng partial `deletedAt:null` nhưng restore gặp trùng phải 409; email/identity keys có chính sách giữ chỗ khác, không copy cùng index generic.
+
+Arrays nhúng chỉ cho dữ liệu hữu hạn đọc cùng nhau. Không nhúng lịch sử login, logs, mọi bookings, mọi reviews vào users/trips. MongoDB có giới hạn document 16 MiB và unbounded arrays có rủi ro vượt giới hạn/ảnh hưởng hiệu năng [S3]. GoEase nên có app payload/document budget nhỏ hơn nhiều, đo thực tế và chốt caps; đừng đợi tới 16 MiB mới từ chối.
+
+TTL cleanup chỉ cho dữ liệu được phép hết hạn. Session/token phải kiểm tra expiry lúc truy cập, vì TTL không xóa tức thời [S5]. Không TTL audit/financial toàn cục. Index lựa chọn dựa access patterns: list trips theo owner, lookup identity, payment/event dedupe, chronological audit, search places, worker pending.
+
+## 9. Nâng cấp baseline và migration
+
+1. Ghi lý do/BR đổi, ảnh hưởng đọc/ghi/API và dữ liệu cũ.
+2. **Expand:** thêm field optional/default an toàn và reader hiểu cũ+mới.
+3. **Backfill:** script theo lô, idempotent, checkpoint, dry-run, backup và số liệu trước/sau; actor `migration:<id>`.
+4. **Validate:** kiểm tra invariant/duplicates và update indexes; dùng test với dữ liệu cũ.
+5. **Switch:** writer ghi schema mới; bật constraint required chỉ khi an toàn.
+6. **Contract:** xóa field cũ ở release sau khi reader/client không còn dùng; không drop database.
+
+MongoDB schemaVersion pattern cho phép tài liệu nhiều phiên bản cùng tồn tại nhưng ứng dụng phải biết cách đọc/update chúng [S2]. Không tự tạo backward compatibility chỉ bằng thêm field schemaVersion.
+
+Ví dụ: thêm trip.transportPreferences có default đọc [] dễ hơn đổi budget từ mỗi người sang cả nhóm. Đổi ý nghĩa tiền là migration nghiệp vụ phải giữ snapshot và tránh nhân/chia sai, không chỉ rename field.
+
+## 10. Bộ nhỏ cần có trước, không tạo 40 models ngay
+
+F1-B chỉ dùng `audit_logs` cho audit nền; `schema_migrations` chỉ khi có migration/index change cụ thể cần ghi nhận, không dựng runner tổng quát trước consumer. F1-C thêm `users`, `auth_identities`, `auth_sessions`, `auth_challenges`, `consent_events` khi notice/consent flow thật cần. `outbox_events` chỉ thêm cùng delivery bền vững có consumer. Chưa mở signup public trước khi email verification và privacy policy ready.
+
+CORE-1 dùng `trips`, `trip_revisions`, `idempotency_keys` và `destinations` tối thiểu vì TripDestination/TripDay tham chiếu destinationId. `places`, `ai_runs`, `usage_buckets` chỉ thêm cùng CORE-2; `analytics_events` đợi consent và event taxonomy đã triển khai. Mỗi collection thêm cùng endpoint/flow/test sử dụng nó; model đơn lẻ chưa chứng minh chức năng hoàn thành.
+
+## Nguồn kỹ thuật và pháp lý đã đối chiếu
+
+- [S1] Mongoose — Timestamps: https://mongoosejs.com/docs/timestamps.html
+- [S2] MongoDB — Schema versioning: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/schema-versioning/
+- [S3] MongoDB — Avoid unbounded arrays: https://www.mongodb.com/docs/v8.0/data-modeling/design-antipatterns/unbounded-arrays/
+- [S4] MongoDB — Unique indexes: https://www.mongodb.com/docs/manual/core/index-unique/
+- [S5] MongoDB — TTL indexes: https://www.mongodb.com/docs/manual/core/index-ttl/
+- [S6] MongoDB — Transactions: https://www.mongodb.com/docs/manual/core/transactions/
+- [S8] OWASP — Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+- [S9] Google — OpenID Connect: https://developers.google.com/identity/openid-connect/openid-connect
+- [S13] MongoDB — Partial indexes: https://www.mongodb.com/docs/v8.0/core/index-partial/
+
+Các cấu trúc, trạng thái và mức retention trong bộ tài liệu là thiết kế đề xuất của GoEase, không phải yêu cầu nguyên văn của các nguồn. Ngày đối chiếu: 22/10/2026.
+
+## 11. Làm rõ sau review F1-A
+
+### Cách đọc required/default
+
+`?` là có thể vắng mặt; ghi default `null` nghĩa khi tạo sẽ lưu null và kiểu thực tế nullable. Không dùng missing/null/chuỗi rỗng thay thế nhau trong business key. `Bắt buộc` không có default là caller/service phải cung cấp, không tự đoán. `Theo policy`, `Điều kiện`, `Bounded`, `cap` chưa có số hay predicate **chưa đủ để tạo validator production**; chốt trong task consumer và Q-05/Q-09. Mỗi row ghép bằng dấu `;` áp dụng theo thứ tự field; registry giữ nguyên các row này, không suy ra JSON Schema.
+
+Bộ MUTABLE yêu cầu các field và timestamp ở mục 2; actor ID null chỉ khi actor system/provider có type/context đáng tin. APPEND không có API update/delete thông thường; purge/redaction đặc quyền phải theo DATA-08/09 và có evidence độc lập. revision khởi tạo 0 theo bộ chung, tăng nguyên tử ở mutation; schemaVersion chỉ đổi hình dạng, không tăng ở mỗi lần save.
+
+### Required theo discriminator/state đã rõ
+
+| Đối tượng            | Điều kiện và dữ liệu cần kiểm tra                                                                                                                                                                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| auth_identities      | google: issuer/providerSubject string đã verify, không có passwordHash/loginEmailNormalized; password: loginEmailNormalized/passwordHash bắt buộc, không dùng issuer/sub. unlinkedAt khác null không được xác thực. linkedAt bắt buộc; verifiedAt/lastUsedAt nullable theo lifecycle. |
+| auth_sessions        | user/identity còn hợp lệ, securityVersionAtIssue khớp; now trước cả expiresAt và idleExpiresAt, revokedAt null. TTL chỉ cleanup. Thời lượng vẫn Q-06.                                                                                                                                 |
+| auth_challenges      | Consume cần purpose đúng, còn hạn, chưa consume/revoke, chưa quá maxAttempts và binding đúng. Ma trận userId/context theo từng purpose chưa đầy đủ: R-05.                                                                                                                             |
+| trips                | Các field Bắt buộc ở dictionary vẫn bắt buộc cho saved draft; draft không phải quyền bỏ hết input. planned/completed cần tiêu chí transition ở Q-09; completedAt có khi completed. Thiếu ngày/activity caps không được suy diễn là vô hạn.                                            |
+| trip_revisions       | snapshot/actor/requestId/operationId bắt buộc; previousRevision null cho bản đầu; restoredFromRevision có khi phục hồi revision. Snapshot không được phục hồi owner/quyền/token hoặc link đã revoke.                                                                                  |
+| content/service      | published chỉ hiển thị khi đủ field loại nội dung và chưa xóa; confirmed booking cần evidence, confirmedAt và điều kiện payment/provider. Ma trận cụ thể từng loại chưa đủ: R-06.                                                                                                     |
+| payment/refund/order | Chỉ chuyển trạng thái từ evidence server/provider đã verify. Các timestamp/ID required theo từng transition, trường hợp unknown và đến muộn cần adapter/policy; chưa đủ để triển khai commerce: R-06.                                                                                 |
+| outbox_events        | expiresAt chỉ có sau delivered; pending/processing/dead_letter không có TTL cleanup. processing cần lease claim nguyên tử; việc hồi phục phải có consumer cụ thể.                                                                                                                     |
+
+### Unique/null/soft-delete và truy vấn
+
+Các index sau là thiết kế, chưa được tạo hay benchmark:
+
+- users.emailNormalized: partial chỉ string; không lọc deletedAt. Khóa được giữ khi xóa mềm, tái sử dụng sau purge theo Q-07. Lookup login/collision và restore phải xử lý E11000; không merge account qua email.
+- auth_identities: unique google theo provider/issuer/sub và password theo provider/loginEmailNormalized, chỉ khi unlinkedAt null và khóa tương ứng là string; unique userId/provider đang linked. Tránh index chung khiến nhiều Google identity null email xung đột.
+- Active slug ở destinations/posts/partners/service_listings: unique slug cho deletedAt null; restore gặp trùng trả conflict, không tự đổi quyền/chiếm slug. places.slug chưa có uniqueness policy, không tự thêm index.
+- External keys ở places/service_listings/bookings/payments/refunds: partial chỉ khi toàn bộ key tùy chọn có string hợp lệ, không dùng sparse để ngầm định null được bỏ qua. Giữ dedupe external key ngoài soft-delete trừ policy riêng; scope merchant/environment đã ghi cho payment/refund.
+- trip_access/partner_memberships/favorites: unique quan hệ qua mọi status; tái kích hoạt cùng record, lịch sử chi tiết ở audit. reviews một review active/target là đề xuất baseline cần moderation policy trước PLATFORM.
+- trips list theo owner/deletedAt/updatedAt/_id; trip_revisions unique tripId/revision cho lịch sử và restore; audit theo entity/time, actor/time, requestId và operation dedupe. Có query consumer mới tạo index; optional geo/search index chỉ khi có query thật.
+- Unique audit operation/action/entity không thay eventId: APPEND có eventId unique; auth.failed không có entityId cần operationId riêng từng attempt. Consumer phải dùng cùng operationId khi callback transaction retry.
+
+### Taxonomy audit tối thiểu để triển khai từng slice
+
+F1-B chỉ cần `system.audit_probe` (category `system`) trong DB test riêng, actor system, outcome succeeded/failed; action này không phải sự kiện production đã có. F1-C bổ sung auth.failed/session.created/session.revoked/identity.linked với category auth; CORE-1 thêm trip.created/trip.updated/trip.deleted/trip.restored/trip.visibility_changed với category trip khi endpoint có thật. role.granted/payment.verified chỉ khi module tương ứng triển khai. reasonCode và changedFields phải allowlist theo action; không nhận tên collection/query/path tùy ý từ client. Danh sách này là taxonomy thiết kế, chưa là executable enum.
+
+### Quan hệ và những phụ thuộc chưa bật
+
+Trip embeds days/activities vì đọc/lưu cùng nhau và phải bounded; lịch sử, sessions, audit tách collection vì tăng độc lập. OrderLine nhúng chỉ ở commerce với cap riêng. ObjectId không tự đảm bảo target tồn tại/quyền. `users.avatarAssetId`, trip cover và booking links phải không được ghi trước khi module đích tồn tại; không tạo collection rỗng để thỏa sơ đồ. CORE-1 cần destination tối thiểu; chưa cần places hay AI. Extension mục 7 không nằm trong 40 collection registry và chưa được bật.
+
+### Khoảng trống còn mở
+
+R-04–R-09 trong [F1-HANDOFF](F1-HANDOFF.md) ghi tác động và đề xuất cho email collision, challenge binding, state/provider fields, purge dẫn xuất, caps/retention và phụ thuộc catalog. Các mục đó là gate trước consumer tương ứng, không phải lỗi đã được giải quyết bằng tài liệu.

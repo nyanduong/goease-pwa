@@ -1,8 +1,8 @@
 {
-  "version": "0.2-draft",
+  "version": "0.2",
   "date": "2026-10-22",
   "sourceCommit": "685552e549a474bc300d361c9343a82c3a7c181b",
-  "status": "design-only-not-implemented",
+  "status": "accepted-design-baseline-not-implemented",
   "collections": [
     {
       "name": "users",
@@ -44,7 +44,7 @@
           "roles",
           "enum[]",
           "[traveler]",
-          "Traveler/editor/support/finance/admin; server cấp; giới hạn tập role."
+          "traveler/editor/support/finance/admin; server cấp; giới hạn tập role."
         ],
         [
           "locale; timezone",
@@ -91,7 +91,8 @@
       ],
       "indexes": "Unique partial emailNormalized khi là string, KHÔNG giới hạn deletedAt; {status:1,createdAt:-1}.",
       "rules": "Không soft-delete rồi tạo user mới cùng email để kế thừa trip cũ. Trong grace period dùng flow khôi phục; sau purge tạo account mới có ID mới. Không lưu CCCD, ngày sinh, giới tính, số điện thoại chỉ để đầy profile.",
-      "retention": "Profile cho đến yêu cầu xóa hoặc policy inactivity đã duyệt; audit và tài chính xử lý riêng."
+      "retention": "Profile cho đến yêu cầu xóa hoặc policy inactivity đã duyệt; audit và tài chính xử lý riêng.",
+      "brRefs": ["AUTH-01", "AUTH-06", "AUTH-08", "DATA-06"]
     },
     {
       "name": "auth_identities",
@@ -99,18 +100,8 @@
       "base": "MUTABLE",
       "purpose": "Thông tin đăng nhập tách khỏi hồ sơ, cho phép một user liên kết Google và password.",
       "fields": [
-        [
-          "userId",
-          "ObjectId",
-          "Bắt buộc",
-          "Chủ identity, tham chiếu users."
-        ],
-        [
-          "provider",
-          "enum",
-          "Bắt buộc",
-          "password/google."
-        ],
+        ["userId", "ObjectId", "Bắt buộc", "Chủ identity, tham chiếu users."],
+        ["provider", "enum", "Bắt buộc", "password/google."],
         [
           "issuer",
           "string?",
@@ -135,12 +126,7 @@
           "Bắt buộc với password",
           "PHC string Argon2id gồm salt/cost; select false, không DTO/log."
         ],
-        [
-          "passwordChangedAt",
-          "Date?",
-          "null",
-          "Kiểm tra việc thu hồi phiên."
-        ],
+        ["passwordChangedAt", "Date?", "null", "Kiểm tra việc thu hồi phiên."],
         [
           "linkedAt; verifiedAt; lastUsedAt",
           "Date; Date?; Date?",
@@ -156,7 +142,8 @@
       ],
       "indexes": "Unique partial {provider,issuer,providerSubject} cho google đang liên kết; unique partial {provider,loginEmailNormalized} cho password đang liên kết; unique partial {userId,provider} cho unlinkedAt:null.",
       "rules": "Điều kiện trường theo discriminator; không lưu access/refresh token Google nếu chỉ login. Linking phải re-auth; không unlink identity cuối cùng còn dùng được. Race linking xử lý E11000 an toàn. Khi unlink, bản cũ không được dùng xác thực.",
-      "retention": "Hash/xác thực xóa theo deletion policy; audit chỉ giữ hành động và ID tham chiếu cần thiết."
+      "retention": "Hash/xác thực xóa theo deletion policy; audit chỉ giữ hành động và ID tham chiếu cần thiết.",
+      "brRefs": ["AUTH-01", "AUTH-02", "AUTH-03"]
     },
     {
       "name": "auth_sessions",
@@ -221,7 +208,8 @@
       ],
       "indexes": "Unique sessionTokenHash; {userId,revokedAt,lastSeenAt:-1}; TTL expiresAt (expireAfterSeconds:0).",
       "rules": "Cookie HttpOnly/SameSite; production Secure/HTTPS và CSRF/Origin checks phù hợp. Không ép JWT vì mobile. Tách TTL session khỏi log bảo mật cần giữ lâu hơn.",
-      "retention": "Session hết hạn được dọn; audit sự kiện login/logout tồn tại theo security retention."
+      "retention": "Session hết hạn được dọn; audit sự kiện login/logout tồn tại theo security retention.",
+      "brRefs": ["AUTH-04", "AUTH-06", "AUTH-07"]
     },
     {
       "name": "auth_challenges",
@@ -259,12 +247,7 @@
           "Theo purpose",
           "identityId?, returnTo allowlist?, nonceHash?, encryptedPkceVerifier?; không Mixed tùy ý."
         ],
-        [
-          "expiresAt",
-          "Date",
-          "Bắt buộc",
-          "Hạn dùng nghiệp vụ."
-        ],
+        ["expiresAt", "Date", "Bắt buộc", "Hạn dùng nghiệp vụ."],
         [
           "consumedAt; revokedAt",
           "Date?; Date?",
@@ -277,16 +260,12 @@
           "0; cấu hình",
           "Giới hạn thử theo policy."
         ],
-        [
-          "requestId",
-          "string",
-          "Bắt buộc",
-          "Liên kết technical/audit logs."
-        ]
+        ["requestId", "string", "Bắt buộc", "Liên kết technical/audit logs."]
       ],
       "indexes": "Unique tokenHash; {userId,purpose,createdAt:-1}; TTL expiresAt.",
       "rules": "Kiểm tra purpose, expiry, consumed và user binding. Không tin returnTo tùy ý. PKCE verifier nếu cần phải encrypt để dùng lại, không chỉ hash rồi mất khả năng đổi code.",
-      "retention": "Thời gian ngắn theo purpose; không dùng challenge collection làm lịch sử bảo mật."
+      "retention": "Thời gian ngắn theo purpose; không dùng challenge collection làm lịch sử bảo mật.",
+      "brRefs": ["AUTH-02", "AUTH-03", "AUTH-07"]
     },
     {
       "name": "consent_events",
@@ -345,7 +324,8 @@
       ],
       "indexes": "{subjectUserId,purpose,occurredAt:-1}; unique eventId từ APPEND.",
       "rules": "Grant/withdraw tạo bản mới, không sửa bản cũ. Server cập nhật projection privacySettings nguyên tử. Analytics tùy chọn chỉ hoạt động sau grant phù hợp; dùng chức năng cốt lõi không bị ép marketing.",
-      "retention": "Giữ evidence có căn cứ, tối thiểu và thời hạn đã duyệt; không TTL tùy tiện."
+      "retention": "Giữ evidence có căn cứ, tối thiểu và thời hạn đã duyệt; không TTL tùy tiện.",
+      "brRefs": ["DATA-05", "DATA-06", "DATA-08"]
     },
     {
       "name": "privacy_requests",
@@ -365,12 +345,7 @@
           "Bắt buộc",
           "access/export/rectify/delete/restrict."
         ],
-        [
-          "status",
-          "enum",
-          "received",
-          "Theo state machine BR."
-        ],
+        ["status", "enum", "received", "Theo state machine BR."],
         [
           "requestedAt; verifiedAt; completedAt",
           "Date; Date?; Date?",
@@ -407,16 +382,12 @@
           "null",
           "Export private, có expiry, không public URL lâu dài."
         ],
-        [
-          "requestId",
-          "string",
-          "Bắt buộc",
-          "Trace toàn flow."
-        ]
+        ["requestId", "string", "Bắt buộc", "Trace toàn flow."]
       ],
       "indexes": "{userId,requestedAt:-1}; {status,requestedAt:1}.",
       "rules": "Purge cả linked data theo map; kết quả có thể partially_completed và giải thích dữ liệu phải giữ. Backup restore phải chạy lại suppression/deletion list.",
-      "retention": "Nội dung export ngắn hạn; hồ sơ xử lý giữ tối thiểu theo policy, không copy toàn PII vào ticket."
+      "retention": "Nội dung export ngắn hạn; hồ sơ xử lý giữ tối thiểu theo policy, không copy toàn PII vào ticket.",
+      "brRefs": ["DATA-06", "DATA-08", "DATA-09"]
     },
     {
       "name": "media_assets",
@@ -448,12 +419,7 @@
           "Bắt buộc; optional",
           "Validate server; checksum không thay kiểm tra an toàn."
         ],
-        [
-          "width; height",
-          "integer?; integer?",
-          "null",
-          "Với ảnh."
-        ],
+        ["width; height", "integer?; integer?", "null", "Với ảnh."],
         [
           "sourceUrl; attribution; licenseCode",
           "string?; string?; string?",
@@ -475,7 +441,8 @@
       ],
       "indexes": "{ownerId,createdAt:-1}; {storageProvider,storageKey} unique nếu storage nội bộ.",
       "rules": "Authorization dựa owner/access và entity liên kết. Không public export giấy tờ. Xóa file không thể bảo đảm bằng TTL metadata đơn thuần.",
-      "retention": "Theo entity sở hữu/license; xóa orphan và object storage bằng job có audit."
+      "retention": "Theo entity sở hữu/license; xóa orphan và object storage bằng job có audit.",
+      "brRefs": ["CAT-06", "DATA-08"]
     },
     {
       "name": "destinations",
@@ -513,24 +480,14 @@
           "null",
           "Coordinates [longitude,latitude]."
         ],
-        [
-          "timezone",
-          "IANA timezone",
-          "Bắt buộc",
-          "Múi giờ lịch tại điểm đến."
-        ],
+        ["timezone", "IANA timezone", "Bắt buộc", "Múi giờ lịch tại điểm đến."],
         [
           "interestCodes",
           "string[]",
           "[]",
           "Taxonomy kiểm soát, giới hạn số phần tử."
         ],
-        [
-          "publicationStatus",
-          "enum",
-          "draft",
-          "draft/published/archived."
-        ],
+        ["publicationStatus", "enum", "draft", "draft/published/archived."],
         [
           "source",
           "SourceRef",
@@ -540,7 +497,8 @@
       ],
       "indexes": "Unique active slug; {publicationStatus,deletedAt}; optional 2dsphere center nếu có query gần.",
       "rules": "Không suy ra cả vùng là một POI. Không để đổi tên/codes làm đổi ID trip cũ.",
-      "retention": "Nội dung nội bộ theo lifecycle; nguồn ngoài theo license."
+      "retention": "Nội dung nội bộ theo lifecycle; nguồn ngoài theo license.",
+      "brRefs": ["CAT-01", "CAT-02", "CAT-05"]
     },
     {
       "name": "places",
@@ -584,24 +542,14 @@
           "optional; bắt buộc",
           "Weekly slots, exceptions, sourceVerifiedAt; unknown phân biệt closed."
         ],
-        [
-          "visitDurationMinutes",
-          "integer?",
-          "null",
-          "Ước tính có nhãn."
-        ],
+        ["visitDurationMinutes", "integer?", "null", "Ước tính có nhãn."],
         [
           "priceEstimate",
           "CostEstimate?",
           "null",
           "Giá tham khảo, có source/asOf; không quote booking."
         ],
-        [
-          "mediaAssetIds",
-          "ObjectId[]",
-          "[]; bounded",
-          "Ảnh được quyền dùng."
-        ],
+        ["mediaAssetIds", "ObjectId[]", "[]; bounded", "Ảnh được quyền dùng."],
         [
           "source",
           "SourceRef",
@@ -620,16 +568,12 @@
           "[]; unknown",
           "Mức kiểm chứng/temporarily_closed/permanently_closed/operational/unknown."
         ],
-        [
-          "publicationStatus",
-          "enum",
-          "draft",
-          "draft/published/archived."
-        ]
+        ["publicationStatus", "enum", "draft", "draft/published/archived."]
       ],
       "indexes": "Unique partial {source.provider,source.externalId} khi có externalId; {destinationId,publicationStatus,deletedAt}; 2dsphere location nếu dùng near.",
       "rules": "Nguồn bị gỡ/expired phải refresh hoặc ẩn theo rights. Snapshots trong trip có policy riêng. Không coi source hợp lệ là thông tin bảo đảm luôn chính xác.",
-      "retention": "Theo source permissions; không mặc định dump raw API response vĩnh viễn."
+      "retention": "Theo source permissions; không mặc định dump raw API response vĩnh viễn.",
+      "brRefs": ["CAT-01", "CAT-02", "CAT-03", "CAT-04", "CAT-05"]
     },
     {
       "name": "trips",
@@ -724,7 +668,19 @@
       ],
       "indexes": "{ownerId,deletedAt,updatedAt:-1,_id:-1}; {ownerId,status,deletedAt}; idempotency trên key riêng.",
       "rules": "Mọi update dùng expectedRevision và quyền. Trip + tripRevision + audit/outbox commit cùng transaction khi cần lịch sử chắc chắn. Giới hạn BSON theo app nhỏ hơn mức MongoDB; không stringify toàn trip vào log.",
-      "retention": "Xóa mềm đề xuất 30 ngày để khôi phục rồi purge cùng revisions/shares/expenses thích hợp; booking/order độc lập."
+      "retention": "Xóa mềm đề xuất 30 ngày để khôi phục rồi purge cùng revisions/shares/expenses thích hợp; booking/order độc lập.",
+      "brRefs": [
+        "TRIP-01",
+        "TRIP-02",
+        "TRIP-03",
+        "TRIP-04",
+        "TRIP-05",
+        "TRIP-06",
+        "TRIP-07",
+        "TRIP-08",
+        "TRIP-09",
+        "TRIP-12"
+      ]
     },
     {
       "name": "trip_revisions",
@@ -775,15 +731,16 @@
           "user/admin/system."
         ],
         [
-          "requestId; sourceAiRunId; restoredFromRevision",
-          "string; ObjectId?; integer?",
-          "Bắt buộc; optional",
-          "Truy vết đề xuất và phục hồi."
+          "requestId; operationId; sourceAiRunId; restoredFromRevision",
+          "string; string; ObjectId?; integer?",
+          "Hai string bắt buộc; hai field sau optional",
+          "Cùng operationId với mutation/audit; truy vết đề xuất và phục hồi."
         ]
       ],
       "indexes": "Unique {tripId,revision}; {tripId,createdAt:-1}.",
       "rules": "Không lưu từng phím gõ. Snapshot được kiểm soát kích thước; mỗi version độc lập dễ restore. Nếu sau này chuyển patch phải có anchor snapshot và kiểm thử reconstruction.",
-      "retention": "Cùng thời hạn trip, không giữ private notes vĩnh viễn chỉ vì gọi là log."
+      "retention": "Cùng thời hạn trip, không giữ private notes vĩnh viễn chỉ vì gọi là log.",
+      "brRefs": ["TRIP-09", "TRIP-10", "TRIP-12"]
     },
     {
       "name": "trip_access",
@@ -797,18 +754,8 @@
           "Bắt buộc",
           "Một member/permission cho mỗi trip + user."
         ],
-        [
-          "role",
-          "enum",
-          "viewer",
-          "viewer/editor; owner nằm trên trips."
-        ],
-        [
-          "status",
-          "enum",
-          "invited",
-          "invited/accepted/revoked/declined."
-        ],
+        ["role", "enum", "viewer", "viewer/editor; owner nằm trên trips."],
+        ["status", "enum", "invited", "invited/accepted/revoked/declined."],
         [
           "invitedBy; invitedAt",
           "ObjectId; Date",
@@ -830,7 +777,8 @@
       ],
       "indexes": "Unique {tripId,userId}; {userId,status,updatedAt:-1}.",
       "rules": "Editor không chuyển owner, xóa trip hoặc mời editor khác trừ policy riêng. Không public lookup membership. Invitation tới email chưa có user cần auth challenge/token riêng trước khi tạo accepted access.",
-      "retention": "Revoke khi trip/account bị xóa; purge theo trip."
+      "retention": "Revoke khi trip/account bị xóa; purge theo trip.",
+      "brRefs": ["AUTH-08", "TRIP-11"]
     },
     {
       "name": "trip_share_links",
@@ -871,7 +819,8 @@
       ],
       "indexes": "Unique tokenHash; {tripId,revokedAt}; không bắt buộc TTL để giữ thông tin revoke có căn cứ.",
       "rules": "Không lộ notes private, collaborator email, order/payment. Restore trip không tự kích hoạt link cũ.",
-      "retention": "Revoke ngay khi xóa; dọn theo retention trip/access."
+      "retention": "Revoke ngay khi xóa; dọn theo retention trip/access.",
+      "brRefs": ["TRIP-11", "TRIP-12"]
     },
     {
       "name": "trip_expenses",
@@ -903,12 +852,7 @@
           "Bắt buộc",
           "Tổng khoản chi, không tự nhân người; số tiền chính xác."
         ],
-        [
-          "spentAt; timezone",
-          "Date; IANA",
-          "Bắt buộc",
-          "Thời gian thực chi."
-        ],
+        ["spentAt; timezone", "Date; IANA", "Bắt buộc", "Thời gian thực chi."],
         [
           "paidByUserId",
           "ObjectId?",
@@ -924,7 +868,8 @@
       ],
       "indexes": "{tripId,deletedAt,spentAt:-1}; {recordedBy,createdAt:-1}.",
       "rules": "Không gọi expense là payment confirmed. Không xây settle/debt wallet khi chưa có BR chia tiền.",
-      "retention": "Theo trip; receipt có thể purge sớm hơn metadata."
+      "retention": "Theo trip; receipt có thể purge sớm hơn metadata.",
+      "brRefs": ["TRIP-13"]
     },
     {
       "name": "favorites",
@@ -932,12 +877,7 @@
       "base": "MUTABLE",
       "purpose": "Quan hệ yêu thích, không mảng không giới hạn trên user.",
       "fields": [
-        [
-          "userId",
-          "ObjectId",
-          "Bắt buộc",
-          "Chủ quan hệ."
-        ],
+        ["userId", "ObjectId", "Bắt buộc", "Chủ quan hệ."],
         [
           "targetType; targetId",
           "enum; ObjectId",
@@ -953,7 +893,8 @@
       ],
       "indexes": "Unique {userId,targetType,targetId}; {userId,removedAt,createdAt:-1}.",
       "rules": "Hydrate target qua quyền/publication/deleted checks. Không coi favorites là consent marketing.",
-      "retention": "Xóa theo account; analytics có retention độc lập hợp lệ."
+      "retention": "Xóa theo account; analytics có retention độc lập hợp lệ.",
+      "brRefs": ["CONTENT-02"]
     },
     {
       "name": "ai_runs",
@@ -1042,7 +983,8 @@
       ],
       "indexes": "Unique {userId,idempotencyKey}; {userId,createdAt:-1}; {tripId,createdAt:-1}; {status,updatedAt}.",
       "rules": "Không gửi email/token vào prompt; không log raw prompt/output. Mọi inputSummary có mục đích phục vụ planner chứ không tự được tái dùng marketing/training.",
-      "retention": "Proposal ngắn hạn đề xuất 24h; metadata 90 ngày là đề xuất. Snapshot applied nằm trip_revisions với retention trip."
+      "retention": "Proposal ngắn hạn đề xuất 24h; metadata 90 ngày là đề xuất. Snapshot applied nằm trip_revisions với retention trip.",
+      "brRefs": ["AI-01", "AI-02", "AI-03", "AI-04", "AI-06", "AI-07"]
     },
     {
       "name": "usage_buckets",
@@ -1074,16 +1016,12 @@
           "0; 0",
           "Không âm; reserve nguyên tử dưới limit."
         ],
-        [
-          "entitlementId",
-          "ObjectId?",
-          "null",
-          "Nếu lượt từ gói trả phí."
-        ]
+        ["entitlementId", "ObjectId?", "null", "Nếu lượt từ gói trả phí."]
       ],
       "indexes": "Unique {userId,feature,windowStart}; {windowEnd:1}.",
       "rules": "Không tăng rồi kiểm tra sau; dùng điều kiện nguyên tử. Reservation có nguồn aiRun; job reconcile tránh kẹt lượt. Không query audit để tính quota mỗi request.",
-      "retention": "Dọn sau reconciliation và khoảng kiểm tra được duyệt; không purge khi còn reservation đang chạy."
+      "retention": "Dọn sau reconciliation và khoảng kiểm tra được duyệt; không purge khi còn reservation đang chạy.",
+      "brRefs": ["AI-05"]
     },
     {
       "name": "posts",
@@ -1136,7 +1074,8 @@
       ],
       "indexes": "Unique active slug; {status,deletedAt,publishedAt:-1}; {authorId,updatedAt:-1}.",
       "rules": "Cần revision bài viết nếu editor cộng tác/rollback trở thành yêu cầu; không dùng audit diff chứa raw body để thay versioned content.",
-      "retention": "Draft/published theo lifecycle; xóa cá nhân cân nhắc bài công khai theo policy tác giả."
+      "retention": "Draft/published theo lifecycle; xóa cá nhân cân nhắc bài công khai theo policy tác giả.",
+      "brRefs": ["CONTENT-01"]
     },
     {
       "name": "reviews",
@@ -1168,12 +1107,7 @@
           "unverified",
           "unverified/verified_booking do server quyết định."
         ],
-        [
-          "status",
-          "enum",
-          "pending",
-          "pending/published/rejected/hidden."
-        ],
+        ["status", "enum", "pending", "pending/published/rejected/hidden."],
         [
           "moderatedBy; moderatedAt; reasonCode",
           "ObjectId?; Date?; enum?",
@@ -1183,7 +1117,8 @@
       ],
       "indexes": "{targetType,targetId,status,deletedAt,createdAt:-1}; unique active {authorId,targetType,targetId} theo baseline một review/target.",
       "rules": "Rating aggregate chỉ published; sửa review có revision/audit cần thiết. Nếu review theo từng booking sau này thay unique index qua migration đã kiểm tra.",
-      "retention": "User deletion anonymize attribution hoặc purge theo policy; không giữ nội dung nhận diện ngoài căn cứ."
+      "retention": "User deletion anonymize attribution hoặc purge theo policy; không giữ nội dung nhận diện ngoài căn cứ.",
+      "brRefs": ["CONTENT-03"]
     },
     {
       "name": "moderation_reports",
@@ -1218,7 +1153,8 @@
       ],
       "indexes": "{status,createdAt:1}; {targetType,targetId,createdAt:-1}; rate-limit theo reporter.",
       "rules": "Bảo vệ danh tính người báo cáo. Report không tự xóa target trước khi đủ điều kiện policy.",
-      "retention": "Thời hạn xử lý và appeal policy; dọn description PII sớm khi có thể."
+      "retention": "Thời hạn xử lý và appeal policy; dọn description PII sớm khi có thể.",
+      "brRefs": ["CONTENT-04"]
     },
     {
       "name": "partners",
@@ -1271,7 +1207,8 @@
       ],
       "indexes": "Unique active slug; {verificationStatus,deletedAt}; destination query index khi có nhu cầu.",
       "rules": "Không dùng một contactEmail để suy ra partner ownership. Không lưu số dư tài chính ở đây.",
-      "retention": "Tắt partner không xóa bookings. Hồ sơ pháp lý theo policy riêng, không blanket soft delete."
+      "retention": "Tắt partner không xóa bookings. Hồ sơ pháp lý theo policy riêng, không blanket soft delete.",
+      "brRefs": ["SERVICE-01", "SERVICE-08"]
     },
     {
       "name": "partner_memberships",
@@ -1285,18 +1222,8 @@
           "Bắt buộc",
           "Actor đang active mới có quyền."
         ],
-        [
-          "role",
-          "enum",
-          "operator",
-          "owner/manager/operator/finance_viewer."
-        ],
-        [
-          "status",
-          "enum",
-          "invited",
-          "invited/active/revoked."
-        ],
+        ["role", "enum", "operator", "owner/manager/operator/finance_viewer."],
+        ["status", "enum", "invited", "invited/active/revoked."],
         [
           "invitedBy; acceptedAt; revokedAt",
           "ObjectId; Date?; Date?",
@@ -1306,7 +1233,8 @@
       ],
       "indexes": "Unique {partnerId,userId}; {userId,status}.",
       "rules": "Không gỡ owner cuối trước transfer đã xác minh; partner admin không trở thành system admin.",
-      "retention": "Revoke ngay khi cần; audit lịch sử, purge theo quan hệ/policy."
+      "retention": "Revoke ngay khi cần; audit lịch sử, purge theo quan hệ/policy.",
+      "brRefs": ["SERVICE-01", "AUTH-08"]
     },
     {
       "name": "service_listings",
@@ -1371,7 +1299,8 @@
       ],
       "indexes": "Unique active slug; partial unique {provider,externalId}; {type,destinationId,status,deletedAt}.",
       "rules": "Mode quyết định CTA đúng: Xem đối tác/Gửi yêu cầu/Đặt dịch vụ. Partner không tự đổi provider refs thành giả mạo.",
-      "retention": "Theo quyền dữ liệu và lịch sử booking snapshot; gỡ listing không xóa order."
+      "retention": "Theo quyền dữ liệu và lịch sử booking snapshot; gỡ listing không xóa order.",
+      "brRefs": ["SERVICE-02", "SERVICE-05", "SERVICE-08"]
     },
     {
       "name": "service_inquiries",
@@ -1424,7 +1353,8 @@
       ],
       "indexes": "{userId,createdAt:-1}; {partnerId,status,createdAt:-1}; {listingId,createdAt:-1}.",
       "rules": "Không biến quoted thành confirmed booking. Sửa báo giá tạo quoteVersion và audit; order tham chiếu đúng version đã chấp nhận.",
-      "retention": "Contact/message private giữ theo vòng xử lý + retention đã duyệt."
+      "retention": "Contact/message private giữ theo vòng xử lý + retention đã duyệt.",
+      "brRefs": ["SERVICE-03"]
     },
     {
       "name": "bookings",
@@ -1501,7 +1431,8 @@
       ],
       "indexes": "Unique bookingCode; partial unique {provider,providerBookingId}; {userId,createdAt:-1}; {partnerId,status,schedule.startsAt}.",
       "rules": "Before confirmation verify slot/provider and payment rule. Không dùng deletedAt để hủy nghĩa vụ. Thông tin hành khách không được vào analytics/audit generic.",
-      "retention": "Không soft-delete tài chính; trạng thái archived khi cần. Retention hợp đồng/pháp lý xác định trước production."
+      "retention": "Không soft-delete tài chính; trạng thái archived khi cần. Retention hợp đồng/pháp lý xác định trước production.",
+      "brRefs": ["SERVICE-04", "SERVICE-05", "SERVICE-06", "SERVICE-07"]
     },
     {
       "name": "products",
@@ -1527,12 +1458,7 @@
           "Bounded",
           "feature/units/duration; không boolean isPremium toàn cục."
         ],
-        [
-          "listingId",
-          "ObjectId?",
-          "null",
-          "Nếu gắn dịch vụ."
-        ],
+        ["listingId", "ObjectId?", "null", "Nếu gắn dịch vụ."],
         [
           "status; priceVersion",
           "enum; integer",
@@ -1548,7 +1474,8 @@
       ],
       "indexes": "Unique code; {status,productType}.",
       "rules": "Đổi giá chỉ ảnh hưởng order mới; bản order cũ giữ snapshot. Recurring/subscription cần thiết kế billing cycle riêng sau khi chốt.",
-      "retention": "Giữ catalog lịch sử bằng order snapshots; soft-delete không xóa lịch sử mua."
+      "retention": "Giữ catalog lịch sử bằng order snapshots; soft-delete không xóa lịch sử mua.",
+      "brRefs": ["COM-01", "COM-08"]
     },
     {
       "name": "orders",
@@ -1613,7 +1540,8 @@
       ],
       "indexes": "Unique orderCode; unique {userId,idempotencyKey}; {userId,createdAt:-1}; {status,expiresAt}.",
       "rules": "Item có ID ổn định. Không xóa mềm/cascade; trạng thái và record bù. Không gọi tổng order là doanh thu ròng GoEase.",
-      "retention": "Không TTL; thời hạn lưu tài chính phải rà soát theo hình thức kinh doanh/hợp đồng."
+      "retention": "Không TTL; thời hạn lưu tài chính phải rà soát theo hình thức kinh doanh/hợp đồng.",
+      "brRefs": ["COM-01", "COM-02", "COM-05", "COM-09"]
     },
     {
       "name": "payments",
@@ -1672,7 +1600,8 @@
       ],
       "indexes": "Partial unique {provider,merchantAccountRef,environment,providerTransactionId}; unique {provider,merchantAccountRef,environment,providerRequestId}; {orderId,createdAt:-1}.",
       "rules": "Order có nhiều payment attempts; server kiểm soát overpay; không auto cấp gói thêm cho mỗi notification. Không lưu PAN/CVV/password ngân hàng.",
-      "retention": "Retention tài chính riêng; không soft-delete succeeded payment."
+      "retention": "Retention tài chính riêng; không soft-delete succeeded payment.",
+      "brRefs": ["COM-02", "COM-03", "COM-04", "COM-05"]
     },
     {
       "name": "webhook_events",
@@ -1722,16 +1651,12 @@
           "null",
           "Theo retry/backoff; có lease nếu worker."
         ],
-        [
-          "requestId",
-          "string",
-          "Bắt buộc",
-          "Trace callback."
-        ]
+        ["requestId", "string", "Bắt buộc", "Trace callback."]
       ],
       "indexes": "Unique {provider,merchantAccountRef,environment,eventKey}; {processingStatus,nextAttemptAt}.",
       "rules": "Chỉ ACK theo contract provider sau ghi bền vững an toàn; processing idempotent. Replay không tạo thêm quyền. Đừng dùng audit generic thay inbox.",
-      "retention": "Envelope tài chính giữ phù hợp; raw payload mặc định không giữ, muốn giữ phải encrypted + retention riêng."
+      "retention": "Envelope tài chính giữ phù hợp; raw payload mặc định không giữ, muốn giữ phải encrypted + retention riêng.",
+      "brRefs": ["COM-03", "COM-04"]
     },
     {
       "name": "refunds",
@@ -1749,7 +1674,7 @@
           "provider; merchantAccountRef; environment",
           "string; string; enum",
           "Bắt buộc",
-          "Sao chép scope từ payment đã xác minh; dùng trong providerRefundId unique index."
+          "Scope từ payment đã xác minh, dùng unique index providerRefundId."
         ],
         [
           "amountMinor; currency; reasonCode",
@@ -1782,9 +1707,10 @@
           "Unknown phải đối soát trước retry tạo mới."
         ]
       ],
-      "indexes": "Unique refundCode; unique {paymentId,idempotencyKey}; partial unique {provider,merchantAccountRef,environment,providerRefundId} khi providerRefundId có giá trị; {orderId,createdAt:-1}.",
+      "indexes": "Unique refundCode; unique {paymentId,idempotencyKey}; partial unique {provider,merchantAccountRef,environment,providerRefundId} khi có giá trị; {orderId,createdAt:-1}.",
       "rules": "Reserve refund amount nguyên tử cùng order/payment balance projection; không chỉ tổng refund sau khi thành công vì hai refund concurrent sẽ vượt.",
-      "retention": "Theo tài chính, không TTL hoặc deletedAt để xóa tranh chấp."
+      "retention": "Theo tài chính, không TTL hoặc deletedAt để xóa tranh chấp.",
+      "brRefs": ["COM-06"]
     },
     {
       "name": "entitlements",
@@ -1831,7 +1757,8 @@
       ],
       "indexes": "Unique {sourceType,sourceId,orderLineId,feature}; {userId,feature,status,endsAt}.",
       "rules": "Cấp đúng một lần; refund xử lý quyền theo policy đã chốt; không reset consumed qua rename gói.",
-      "retention": "Giữ tối thiểu phục vụ support/tài chính; quyền hết hạn không có nghĩa xóa record ngay."
+      "retention": "Giữ tối thiểu phục vụ support/tài chính; quyền hết hạn không có nghĩa xóa record ngay.",
+      "brRefs": ["COM-04", "COM-08"]
     },
     {
       "name": "promotions",
@@ -1881,16 +1808,12 @@
           "0",
           "Counters nguyên tử, không frontend tăng."
         ],
-        [
-          "ruleVersion",
-          "integer",
-          "1",
-          "Order giữ snapshot ruleVersion."
-        ]
+        ["ruleVersion", "integer", "1", "Order giữ snapshot ruleVersion."]
       ],
       "indexes": "Unique codeNormalized (không tái dùng code cũ tùy tiện); {status,startsAt,endsAt}.",
       "rules": "Sửa policy khi active phải giữ ruleVersion/history; check entitlement/eligibility server.",
-      "retention": "Lưu rule đã dùng phục vụ order, soft-delete chỉ ẩn campaign."
+      "retention": "Lưu rule đã dùng phục vụ order, soft-delete chỉ ẩn campaign.",
+      "brRefs": ["COM-07"]
     },
     {
       "name": "promotion_redemptions",
@@ -1910,12 +1833,7 @@
           "Bắt buộc",
           "Snapshot kết quả server."
         ],
-        [
-          "status",
-          "enum",
-          "reserved",
-          "reserved/redeemed/released."
-        ],
+        ["status", "enum", "reserved", "reserved/redeemed/released."],
         [
           "reservedAt; expiresAt; redeemedAt; releasedAt",
           "Date; Date; Date?; Date?",
@@ -1925,7 +1843,8 @@
       ],
       "indexes": "Unique {promotionId,orderId}; {promotionId,userId,status}; {status,expiresAt}.",
       "rules": "Counters global + user phải cập nhật transaction hoặc atomic allocation có chứng minh; không có rollback tiền thật qua TTL.",
-      "retention": "Giữ redeemed theo order; reserved/released dọn sau đối soát."
+      "retention": "Giữ redeemed theo order; reserved/released dọn sau đối soát.",
+      "brRefs": ["COM-07"]
     },
     {
       "name": "notifications",
@@ -1966,7 +1885,8 @@
       ],
       "indexes": "Unique {userId,channel,dedupeKey}; {userId,readAt,createdAt:-1}; TTL expiresAt nếu phù hợp chỉ in-app.",
       "rules": "Thông báo lockscreen/email không lộ trip notes hoặc giấy tờ; unsubscribe marketing không chặn thông báo giao dịch cần thiết theo policy.",
-      "retention": "In-app đề xuất 90 ngày; security evidence ở audit, không phụ thuộc notification tồn tại."
+      "retention": "In-app đề xuất 90 ngày; security evidence ở audit, không phụ thuộc notification tồn tại.",
+      "brRefs": ["DATA-12"]
     },
     {
       "name": "support_tickets",
@@ -1992,12 +1912,7 @@
           "null",
           "Support access cần quyền, không cho arbitrary ref đọc dữ liệu."
         ],
-        [
-          "attachmentAssetIds",
-          "ObjectId[]",
-          "Bounded []",
-          "Private storage."
-        ],
+        ["attachmentAssetIds", "ObjectId[]", "Bounded []", "Private storage."],
         [
           "status; priority; assignedTo",
           "enum; enum; ObjectId?",
@@ -2013,7 +1928,8 @@
       ],
       "indexes": "Unique ticketCode; {userId,createdAt:-1}; {status,priority,createdAt:1}.",
       "rules": "Nếu có hội thoại hỗ trợ nhiều lượt, thêm support_messages với ticketId, không append mảng không giới hạn vào ticket.",
-      "retention": "Đề xuất đóng +90 ngày rồi giảm PII; tranh chấp tài chính xử lý retention riêng."
+      "retention": "Đề xuất đóng +90 ngày rồi giảm PII; tranh chấp tài chính xử lý retention riêng.",
+      "brRefs": ["DATA-12", "AUTH-08"]
     },
     {
       "name": "audit_logs",
@@ -2025,7 +1941,7 @@
           "action; category",
           "enum; enum",
           "Bắt buộc",
-          "trip.updated/auth.failed/role.granted/payment.verified... theo registry."
+          "Taxonomy action/category theo mục 11; collection registry không phải action registry."
         ],
         [
           "actor",
@@ -2084,7 +2000,8 @@
       ],
       "indexes": "Unique {operationId,action,entityType,entityId}; {entityType,entityId,occurredAt:-1}; {actor.userId,occurredAt:-1}; {requestId:1}.",
       "rules": "Ứng dụng chỉ insert/read được cấp. Mutation quan trọng cùng transaction audit; thất bại transaction không tự tạo audit thành công. Migration/privileged bypass cần actor và runId riêng.",
-      "retention": "Append-only nghiệp vụ không đồng nghĩa giữ vĩnh viễn; purge/redact đặc quyền có policy và log độc lập."
+      "retention": "Append-only nghiệp vụ không đồng nghĩa giữ vĩnh viễn; purge/redact đặc quyền có policy và log độc lập.",
+      "brRefs": ["DATA-02", "DATA-03", "DATA-04", "DATA-07", "DATA-09"]
     },
     {
       "name": "analytics_events",
@@ -2155,7 +2072,8 @@
       ],
       "indexes": "Unique eventId; {eventName,receivedAt:-1}; {userId,receivedAt:-1} khi cần; TTL expiresAt.",
       "rules": "Không chứa free text, IP/token/email. Dedupe theo eventId; server conversion có businessKey riêng. Opt-out ngừng optional collection; aggregate được giữ chỉ khi đã loại khả năng nhận diện theo policy.",
-      "retention": "Raw đề xuất 90 ngày; aggregates hạn chế và không identifiers có thể lâu hơn sau rà soát; pseudonym hóa không tự thành vô danh."
+      "retention": "Raw đề xuất 90 ngày; aggregates hạn chế và không identifiers có thể lâu hơn sau rà soát; pseudonym hóa không tự thành vô danh.",
+      "brRefs": ["AI-07", "DATA-05", "DATA-06", "DATA-09"]
     },
     {
       "name": "outbox_events",
@@ -2208,7 +2126,8 @@
       ],
       "indexes": "Unique idempotencyKey; {status,availableAt,leaseUntil}; optional TTL expiresAt.",
       "rules": "Delivery at-least-once; consumer phải idempotent, không hứa exactly-once. Không chạy external side effect trong retried transaction.",
-      "retention": "Delivered đề xuất 7 ngày; pending/dead-letter giữ để xử lý, không im lặng mất."
+      "retention": "Delivered đề xuất 7 ngày; pending/dead-letter giữ để xử lý, không im lặng mất.",
+      "brRefs": ["DATA-03", "DATA-12"]
     },
     {
       "name": "idempotency_keys",
@@ -2249,7 +2168,8 @@
       ],
       "indexes": "Unique {actorId,operation,key}; TTL expiresAt.",
       "rules": "Idempotency không thay authorization: trả cached result vẫn kiểm tra actor/current access. Race duplicate-key phải đọc record hiện có.",
-      "retention": "Đề xuất 24h cho trip create; payment không dựa TTL ngắn để ngăn thanh toán/cấp quyền trùng lâu dài."
+      "retention": "Đề xuất 24h cho trip create; payment không dựa TTL ngắn để ngăn thanh toán/cấp quyền trùng lâu dài.",
+      "brRefs": ["TRIP-09", "COM-04"]
     },
     {
       "name": "schema_migrations",
@@ -2290,7 +2210,18 @@
       ],
       "indexes": "Unique migrationId; {status,startedAt:-1}.",
       "rules": "Dry-run/backup trước destructive migration; idempotent batches; update indexes sau kiểm tra duplicates. Không sửa migration đã chạy mà giữ cùng checksum.",
-      "retention": "Giữ cùng lịch sử vận hành của project; dữ liệu cá nhân không nằm trong record migration."
+      "retention": "Giữ cùng lịch sử vận hành của project; dữ liệu cá nhân không nằm trong record migration.",
+      "brRefs": ["DATA-11"]
     }
-  ]
+  ],
+  "reviewedAt": "2026-10-22",
+  "authority": {
+    "businessRules": "BR.md",
+    "dataDictionary": "DB-BASELINE.md",
+    "metadataAndStateQualifications": "DB-BASELINE.md#11-làm-rõ-sau-review-f1-a",
+    "traceability": "DATA-TRACEABILITY.md",
+    "reviewAndGates": "F1-HANDOFF.md"
+  },
+  "executable": false,
+  "reviewHead": "fddcf6643f67356dde151d432338fc4b7cb616f8"
 }

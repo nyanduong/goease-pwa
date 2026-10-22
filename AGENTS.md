@@ -2,12 +2,15 @@
 
 ## Context
 
-Read README.md, docs/BR.md, docs/ARCHITECTURE.md, and the current task before changing code. The product owner's latest explicit instructions take precedence over repository recommendations.
+Read AGENTS.md, README.md, docs/BR.md, docs/ARCHITECTURE.md, docs/F0-VERIFICATION.md, docs/DB-BASELINE.md, docs/DATA-TRACEABILITY.md, docs/collection-registry.json, docs/F1-HANDOFF.md, and the current task before changes. docs/BR.md is the current business authority; docs/archive/BR-v0.2-draft.md is reference only. The product owner's latest explicit instructions take precedence over repository recommendations.
 
 The owner has confirmed a complete rewrite: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Develop against local MongoDB first; move to Atlas after the local implementation is complete. Do not import code from the old GoEase repository or reopen the stack choice without a concrete owner request.
 
+Baseline v0.2 is accepted as design, not implemented features or approval of every proposed policy. Google plus email/password, npm workspaces with one package-lock.json, npm run dev and localhost web/API are confirmed. Preserve the working local MongoDB loopback/replica set. Follow the current task for Git scope; F1-A uses main without branch/PR.
+
 ## Working agreement
 
+- A business-rule change must update related BR identifiers, schema/data dictionary/contracts, and tests; explicitly mark planned checks or schemas that are not implemented. Keep DB-BASELINE.md and collection-registry.json aligned; the registry is not executable schema.
 - Complete the authorized task in small, reviewable changes. Make routine implementation choices without repeatedly asking for permission.
 - Treat BR sections marked "Đề xuất" or "Cần chốt" as proposals or open questions, not approved product policy. Advance unaffected foundation work; ask only when a missing decision materially changes behavior.
 - Keep one web application and one Express API. Organize server code by features as they are implemented. Add abstractions when there is a real consumer or concrete need.

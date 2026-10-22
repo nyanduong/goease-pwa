@@ -1,6 +1,6 @@
-# GoEase — kiến trúc nền v0.1
+# GoEase — kiến trúc v0.2
 
-**Trạng thái:** Stack đã chốt; nền tảng F0 đã được triển khai ngày 22/10/2026. Xem README và docs/F0-VERIFICATION.md để biết cách chạy và bằng chứng kiểm tra. Các đề xuất nghiệp vụ ngoài F0 vẫn chưa mặc nhiên được duyệt.
+**Trạng thái:** Stack đã chốt; nền tảng F0 đã được triển khai ngày 22/10/2026. Xem README và docs/F0-VERIFICATION.md để biết cách chạy và bằng chứng kiểm tra. Baseline thiết kế v0.2 đã được chủ dự án chấp thuận; policy đánh dấu đề xuất/cần duyệt vẫn còn mở. F1 chưa triển khai. Nguồn nghiệp vụ là [BR](BR.md), field/index là [DB-BASELINE](DB-BASELINE.md), truy vết là [DATA-TRACEABILITY](DATA-TRACEABILITY.md), review/gates là [F1-HANDOFF](F1-HANDOFF.md).
 
 ## 1. Ranh giới hệ thống
 
@@ -33,7 +33,7 @@ Chưa tạo thư mục mobile hoặc package UI đa nền tảng. Trong server, 
 
 ## 3. API và domain
 
-- Đề xuất prefix /api/v1; request/response có kiểu dữ liệu và lỗi nhất quán.
+- F0 đã có prefix /api/v1, health/database health và envelope ok/data hoặc ok/error; request/response có kiểu dữ liệu và validation. Auth/trip endpoints thuộc F1/CORE dự kiến.
 - Chuẩn hóa ID dạng chuỗi; thời điểm hệ thống dùng ISO 8601; ngày du lịch cần mô hình ngày và múi giờ rõ để tránh lệch ngày.
 - Validation lúc chạy là bắt buộc ở ranh giới API. TypeScript không thay thế việc kiểm tra dữ liệu nhận từ mạng.
 - Services thực hiện quy tắc nghiệp vụ; controllers xử lý HTTP. Mongoose model ở server và được ánh xạ sang DTO trước khi trả về client.
@@ -45,9 +45,9 @@ Chưa tạo thư mục mobile hoặc package UI đa nền tảng. Trong server, 
 
 Kết nối được cấu hình bằng MONGODB_URI tại server. Có hướng dẫn khởi tạo, kiểm tra kết nối và dừng dịch vụ rõ ràng.
 
-Khuyến nghị cấu hình local replica set khi chuẩn bị kiểm thử transaction nhiều document. Replica set một thành viên dùng cho phát triển không cung cấp dự phòng như một triển khai production. Cấu hình URI có tên replica set không tự khởi tạo replica set.
+F0 đã có local single-node rs0 trên loopback 127.0.0.1:27019; giữ nguyên cấu hình này. Kiểm thử transaction nhiều document của F1 cần bằng chứng riêng, chưa được nghiệm thu ở F0. Replica set một thành viên dùng cho phát triển không cung cấp dự phòng như một triển khai production. Cấu hình URI có tên replica set không tự khởi tạo replica set.
 
-Chọn Docker Compose nếu máy phát triển có Docker hoạt động; có thể dùng cài đặt MongoDB local trực tiếp. Phải kiểm tra hệ điều hành/môi trường trước khi viết lệnh setup. Nếu cần truy cập database từ điện thoại, điện thoại chỉ gọi API; không mở MongoDB trực tiếp cho frontend.
+F0 dùng MongoDB cài sẵn, không cần Docker Compose. Theo README để chạy localhost, không mở IP LAN hay reconfigure replica set đang hoạt động. Nếu cần truy cập database từ điện thoại, điện thoại chỉ gọi API; không mở MongoDB trực tiếp cho frontend.
 
 Trip có thể nhúng days/activities khi chúng thường được đọc và cập nhật cùng nhau, với giới hạn kích thước phù hợp. Dữ liệu tăng không giới hạn hoặc có vòng đời độc lập cần tách theo access pattern.
 
@@ -67,7 +67,7 @@ Có thể dùng lại API, dữ liệu tài khoản, contracts, các hàm TypeSc
 
 Màn hình React DOM + Tailwind không tự chuyển thành UI native. Navigation, storage, OAuth redirect, quyền thiết bị và hành vi offline cần thiết kế theo nền tảng. Không để packages/contracts phụ thuộc window, localStorage, React hoặc Mongoose.
 
-Chọn cơ chế session theo BR đăng nhập và mô hình triển khai. Không ép dùng JWT chỉ vì có kế hoạch mobile. Web cần xử lý cookie/CSRF phù hợp nếu dùng session cookie; native cần cơ chế xác thực và lưu thông tin phiên phù hợp khi được triển khai.
+Google và email/password đã được xác nhận. Identity tách user, Google dùng issuer/sub đã verify, không merge chỉ vì trùng email. Chọn cơ chế session và thông số theo BR đăng nhập/mô hình triển khai; baseline đề xuất opaque session HttpOnly, chưa phải implementation. Không ép dùng JWT chỉ vì có kế hoạch mobile. Web cần xử lý cookie/CSRF phù hợp nếu dùng session cookie; native cần cơ chế xác thực và lưu thông tin phiên phù hợp khi được triển khai.
 
 Nguồn: [React Native components](https://reactnative.dev/docs/intro-react-native-components), [Expo workspaces](https://docs.expo.dev/guides/monorepos/).
 
@@ -109,8 +109,12 @@ Nguồn: [Vite environment variables](https://vite.dev/guide/env-and-mode), [Exp
 
 Không cần đợi Q-02/Q-04 trong BR để hoàn thành nền tảng này. Việc triển khai auth, planner, booking và payment phụ thuộc các quyết định nghiệp vụ tương ứng.
 
-## 8. Task tiếp theo sau F0
+## 8. F0 hiện có và F1/CORE dự kiến
 
-Giải quyết Q-02 về định danh và quyền sở hữu trước khi triển khai lưu trip. Sau đó chọn một luồng sản phẩm nhỏ có giá trị: tạo thông tin trip → lưu qua API → mở lại theo chính sách đã chốt. Trong lúc Q-02 còn mở, persistence chỉ được kiểm chứng bằng database kiểm tra riêng của F0; không mặc định cho phép lưu trip công khai hoặc không có chủ sở hữu.
+F0 thực có một client health, Express health routes/error handler/config validation, Mongoose lifecycle/retry/ping, npm workspace/contracts Zod, dev/build/check scripts và CI. Source hiện chưa có request context/audit service, auth/session, trip CRUD, migration runner, provider hay PWA offline/service worker. F0 E2E khởi động mongod standalone test trên 27020; không chứng minh transaction trên rs0.
 
-Chốt schema cùng luồng này, rồi mở rộng sang khám phá, AI và chỉnh sửa theo BR. Mỗi task hoàn tất một hành vi với điều kiện nghiệm thu, tránh tích lũy nhiều màn hình chưa nối dữ liệu.
+[F1-HANDOFF](F1-HANDOFF.md) chốt bước nhỏ: F1-B context/log/audit tối thiểu → F1-C identity/auth → CORE-1 owner trip persistence manual. Chỉ thêm module route/service/model khi có consumer. Audit trực tiếp trong transaction đủ cho slice đầu; outbox chỉ khi delivery thật cần retry, migration runner chỉ khi có migration cụ thể. Không tạo framework nội bộ hoặc toàn bộ 40 collections.
+
+Trip embeds days/activities có giới hạn; revisions và audit riêng. Mutation/revision/audit/idempotency completion cần session transaction chung, actor từ server, expectedRevision chống lost update. schemaVersion khác revision. Tên/field/index chuẩn ở DB baseline; registry là mirror không executable. Lịch sử phục hồi không được bật lại quyền/share đã revoke. Retention/purge đề xuất phải xét cả dữ liệu dẫn xuất và backup trước khi bật job.
+
+Commerce giữ order/payment/booking/entitlement độc lập itinerary. Các gate provider, state/required theo loại, tiền, hủy/hoàn và retention nằm trong BR/handoff; không chặn context/auth/trip độc lập. Chưa thu optional analytics chỉ vì đã có schema.

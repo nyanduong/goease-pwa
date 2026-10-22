@@ -124,11 +124,15 @@ Health hiện chỉ cần routes gọi dependency ping; chưa có domain logic c
 
 ## Tài liệu và bước tiếp theo
 
-- [BR và câu hỏi cần chốt](docs/BR.md): giữ nguyên các mục đề xuất; chưa coi là chính sách đã duyệt.
-- [Kiến trúc](docs/ARCHITECTURE.md): dùng npm workspace và localhost theo yêu cầu mới nhất của chủ dự án.
-- [Quy ước repository](AGENTS.md).
-- [Bằng chứng nghiệm thu F0](docs/F0-VERIFICATION.md).
+Baseline thiết kế v0.2 đã được chủ dự án chấp thuận; F0 là phần đã triển khai, auth/trip và các module mới chưa triển khai. Policy ghi đề xuất/cần duyệt vẫn còn mở. Thứ tự đọc:
 
-Task tiếp theo: chốt **Q-02** về đăng nhập và quyền sở hữu trước khi xây luồng tạo thông tin trip → lưu API → mở lại. Không mặc định cho phép lưu trip công khai khi chưa có quyết định.
+1. [Quy ước repository](AGENTS.md) và README này.
+2. [BR hiện hành](docs/BR.md), [kiến trúc](docs/ARCHITECTURE.md), [bằng chứng F0](docs/F0-VERIFICATION.md).
+3. [DB baseline](docs/DB-BASELINE.md), [truy vết/vòng đời](docs/DATA-TRACEABILITY.md), [registry đọc máy](docs/collection-registry.json).
+4. [Review và bàn giao F1](docs/F1-HANDOFF.md) cùng task hiện tại.
+
+[Bản nhập BR lưu trữ](docs/archive/BR-v0.2-draft.md) chỉ để đối chiếu; nguồn nghiệp vụ duy nhất là BR.md. Sửa nghiệp vụ phải cập nhật mã BR, schema/dictionary/contracts và tests liên quan; ghi rõ phần chưa triển khai. Registry không phải schema executable.
+
+Bước tiếp theo **F1-B READY trong phạm vi context/log an toàn/audit tối thiểu**; xem acceptance và gate trong handoff. Tiếp theo F1-C (Google + email/password đã chốt) rồi CORE-1 owner trip. Quyền guest, provider/email config, retention và caps còn cần quyết định theo tính năng; commerce chưa chốt không chặn công việc độc lập. F1-A dừng ở tài liệu.
 
 Nguồn kỹ thuật: [Node.js LTS](https://github.com/nodejs/Release), [Vite](https://vite.dev/guide/), [Tailwind Vite plugin](https://tailwindcss.com/docs/installation/using-vite), [Mongoose connections](https://mongoosejs.com/docs/connections.html), [MongoDB replica set](https://www.mongodb.com/docs/manual/tutorial/convert-standalone-to-replica-set/).
