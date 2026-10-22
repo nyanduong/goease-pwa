@@ -25,14 +25,28 @@ export const errorText = (e: unknown) =>
 export function App() {
   const [path, setPath] = useState(location.pathname);
   const [user, setUser] = useState<UserDto | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<
+    'loading' | 'ready' | 'error'
+  >('loading');
+  const [welcomeSeenInMemory, setWelcomeSeenInMemory] = useState(false);
   const [sessionError, setSessionError] = useState('');
   const [destinations, setDestinations] = useState<DestinationDto[]>([]);
+  const [destinationStatus, setDestinationStatus] = useState<
+    'loading' | 'ready' | 'error'
+  >('loading');
+  const [destinationQuery, setDestinationQuery] = useState('');
+  const [tripsStatus, setTripsStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'error'
+  >('idle');
   const [draft, setDraft] = useState<TripInput>(initialDraft);
   const [loaded, setLoaded] = useState<TripDto | null>(null);
   const [list, setList] = useState<TripDto[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const [retry, setRetry] = useState(0);
+  const [sessionRetry, setSessionRetry] = useState(0);
+  const [destinationRetry, setDestinationRetry] = useState(0);
+  const [tripsRetry, setTripsRetry] = useState(0);
+  const [detailRetry, setDetailRetry] = useState(0);
   const [saveState, setSaveState] = useState<
     'dirty' | 'saving' | 'saved' | 'error'
   >('dirty');
@@ -74,51 +88,95 @@ export function App() {
     return () => removeEventListener('popstate', pop);
   }, []);
 
-  // Fetch initial auth, destinations, and options
+  // Resolve the session before deciding whether a root visit should show welcome.
   useEffect(() => {
     let active = true;
+    setSessionStatus('loading');
     void api<{ user: UserDto | null }>('/auth/me')
       .then((v) => {
         if (active) {
           setUser(v.user);
           setSessionError('');
+          setSessionStatus('ready');
         }
       })
       .catch((e: unknown) => {
-        if (active) setSessionError(errorText(e));
-      });
-    void api<{ items: DestinationDto[] }>('/destinations')
-      .then((v) => {
-        if (active) setDestinations(v.items);
-      })
-      .catch((e: unknown) => {
-        if (active) setSessionError(errorText(e));
+        if (active) {
+          setSessionError(errorText(e));
+          setSessionStatus('error');
+        }
       });
     return () => {
       active = false;
     };
-  }, [retry]);
+  }, [sessionRetry]);
+
+  useEffect(() => {
+    let active = true;
+    setDestinationStatus('loading');
+    void api<{ items: DestinationDto[] }>('/destinations')
+      .then((v) => {
+        if (active) {
+          setDestinations(v.items);
+          setDestinationStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (active) setDestinationStatus('error');
+      });
+    return () => {
+      active = false;
+    };
+  }, [destinationRetry]);
+
+  useEffect(() => {
+    if (path !== '/' || sessionStatus !== 'ready' || user) return;
+    let seen = false;
+    try {
+      seen = localStorage.getItem('goease:onboarding:seen:v1') === 'true';
+    } catch {
+      /* storage is optional */
+    }
+    if (!seen && !welcomeSeenInMemory) {
+      history.replaceState({}, '', '/welcome');
+      setPath('/welcome');
+    }
+  }, [path, sessionStatus, user, welcomeSeenInMemory]);
+
+  useEffect(() => {
+    setList([]);
+    setTripsStatus('idle');
+  }, [user?.id]);
 
   // Fetch user trips when on /trips or on / when logged in
   useEffect(() => {
-    if (!user || (path !== '/trips' && path !== '/')) return;
+    if (!user || (path !== '/trips' && path !== '/')) {
+      setTripsStatus('idle');
+      return;
+    }
     let active = true;
-    if (path === '/trips') setBusy(true);
-    setMessage('');
+    setTripsStatus('loading');
     void api<{ items: TripDto[] }>('/trips')
       .then((v) => {
-        if (active) setList(v.items);
+        if (active) {
+          setList(
+            [...v.items].sort((a, b) =>
+              (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''),
+            ),
+          );
+          setTripsStatus('ready');
+        }
       })
-      .catch((e: unknown) => {
-        if (active && path === '/trips') setMessage(errorText(e));
-      })
-      .finally(() => {
-        if (active && path === '/trips') setBusy(false);
+      .catch(() => {
+        if (active) {
+          setTripsStatus('error');
+          setList([]);
+        }
       });
     return () => {
       active = false;
     };
-  }, [path, user, retry]);
+  }, [path, user, tripsRetry]);
 
   // Fetch individual trip when visiting /trips/:id
   useEffect(() => {
@@ -143,19 +201,48 @@ export function App() {
     return () => {
       active = false;
     };
-  }, [path, retry]);
+  }, [path, detailRetry]);
 
   const start = () => {
-    setDraft(initialDraft());
-    setLoaded(null);
-    setSaveState('dirty');
+    if (
+      draft.title ||
+      draft.notes ||
+      draft.days.some((d) => d.activities.length) ||
+      draft.destinations.length
+    ) {
+      if (
+        !window.confirm(
+          'Bạn đang có một bản nháp. Bỏ bản nháp và tạo chuyến mới?',
+        )
+      )
+        return;
+      setDraft(initialDraft());
+      setLoaded(null);
+      setSaveState('dirty');
+    }
     go('/trips/new');
   };
 
   const startWithDestination = (destId: string) => {
-    const fresh = initialDraft();
-    fresh.destinations = [{ destinationId: destId, order: 0 }];
-    setDraft(fresh);
+    if (
+      draft.title ||
+      draft.notes ||
+      draft.days.some((d) => d.activities.length) ||
+      draft.destinations.length
+    ) {
+      if (
+        !window.confirm(
+          'Thay điểm đến cho bản nháp hiện tại? Các hoạt động sẽ được giữ lại.',
+        )
+      )
+        return;
+    }
+    const updated: TripInput = {
+      ...draft,
+      destinations: [{ destinationId: destId, order: 0 }],
+      days: draft.days.map((day) => ({ ...day, destinationId: destId })),
+    };
+    setDraft(updated);
     setLoaded(null);
     setSaveState('dirty');
     go('/trips/new');
@@ -218,75 +305,107 @@ export function App() {
   const isEditor =
     path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path);
   const isAuth = path === '/login' || path === '/register';
+  const isWelcome = path === '/welcome';
+  const markWelcomeSeen = () => {
+    setWelcomeSeenInMemory(true);
+    try {
+      localStorage.setItem('goease:onboarding:seen:v1', 'true');
+    } catch {
+      /* in-memory navigation still works */
+    }
+  };
+  const fold = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLocaleLowerCase('vi');
+  const visibleDestinations = destinations.filter((d) =>
+    fold(d.name).includes(fold(destinationQuery)),
+  );
 
   return (
     <div
       className={`app-shell ${
-        isAuth
-          ? 'auth-shell'
-          : isEditor || path === '/trips'
-            ? 'workspace-shell'
-            : 'home-shell'
+        isWelcome
+          ? 'welcome-shell'
+          : isAuth
+            ? 'auth-shell'
+            : isEditor || path === '/trips'
+              ? 'workspace-shell'
+              : 'home-shell'
       }`}
     >
       {/* Site Header: distinct and uncluttered for auth vs app */}
-      <header className={`site-header ${isAuth ? 'auth-site-header' : ''}`}>
-        <div className="header-inner">
-          <div className="header-brand-wrap">{link('/', <Brand />)}</div>
+      {!isWelcome && (
+        <header className={`site-header ${isAuth ? 'auth-site-header' : ''}`}>
+          <div className="header-inner">
+            <div className="header-brand-wrap">{link('/', <Brand />)}</div>
 
-          {!isAuth ? (
-            <>
-              <nav aria-label="Điều hướng chính" className="main-nav">
-                {link(
-                  '/',
-                  'Trang chủ',
-                  `nav-link ${path === '/' ? 'active' : ''}`,
-                )}
-                {link(
-                  '/trips',
-                  'Chuyến đi của tôi',
-                  `nav-link ${path.startsWith('/trips') ? 'active' : ''}`,
-                )}
-              </nav>
+            {!isAuth ? (
+              <>
+                <nav aria-label="Điều hướng chính" className="main-nav">
+                  {link(
+                    '/',
+                    'Trang chủ',
+                    `nav-link ${path === '/' ? 'active' : ''}`,
+                  )}
+                  {link(
+                    '/trips',
+                    'Chuyến đi của tôi',
+                    `nav-link ${path.startsWith('/trips') ? 'active' : ''}`,
+                  )}
+                </nav>
 
-              <div className="account-nav">
-                {user ? (
-                  <div className="user-menu">
-                    <span className="greeting" title={user.displayName}>
-                      Chào, {user.displayName}
-                    </span>
+                <div className="account-nav">
+                  {sessionStatus === 'loading' ? (
+                    <span role="status">Đang kiểm tra phiên…</span>
+                  ) : user ? (
+                    <div className="user-menu">
+                      <span className="greeting" title={user.displayName}>
+                        Chào, {user.displayName}
+                      </span>
+                      <button
+                        type="button"
+                        className="button button-subtle button-small"
+                        onClick={() => {
+                          void api('/auth/logout', { method: 'POST' })
+                            .then(() => {
+                              setUser(null);
+                              setList([]);
+                              setLoaded(null);
+                              setDraft(initialDraft());
+                              go('/');
+                            })
+                            .catch((e: unknown) => setMessage(errorText(e)));
+                        }}
+                      >
+                        Đăng xuất
+                      </button>
+                    </div>
+                  ) : sessionStatus === 'error' ? (
                     <button
-                      type="button"
-                      className="button button-subtle button-small"
-                      onClick={() => {
-                        void api('/auth/logout', { method: 'POST' })
-                          .then(() => {
-                            setUser(null);
-                            setList([]);
-                            setLoaded(null);
-                            setDraft(initialDraft());
-                            go('/');
-                          })
-                          .catch((e: unknown) => setMessage(errorText(e)));
-                      }}
+                      className="button button-small button-outline"
+                      onClick={() => setSessionRetry((v) => v + 1)}
                     >
-                      Đăng xuất
+                      Thử kết nối lại
                     </button>
-                  </div>
-                ) : (
-                  link(
-                    '/login',
-                    'Đăng nhập',
-                    'button button-small button-outline',
-                  )
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="auth-header-action" />
-          )}
-        </div>
-      </header>
+                  ) : (
+                    link(
+                      '/login',
+                      'Đăng nhập',
+                      'button button-small button-outline',
+                    )
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="auth-header-action" />
+            )}
+          </div>
+        </header>
+      )}
 
       {sessionError && (
         <div className="container">
@@ -295,7 +414,7 @@ export function App() {
             <button
               type="button"
               className="text-button inline-retry-btn"
-              onClick={() => setRetry((v) => v + 1)}
+              onClick={() => setSessionRetry((v) => v + 1)}
             >
               Thử kết nối lại
             </button>
@@ -308,13 +427,80 @@ export function App() {
           <Notice error>{message}</Notice>
         )}
 
-        {path === '/' ? (
+        {path === '/' && sessionStatus !== 'ready' ? (
+          <section className="home-session-loading" aria-live="polite">
+            <Goe size="small" />
+            <p>
+              {sessionStatus === 'loading'
+                ? 'Đang kiểm tra phiên…'
+                : 'Chưa kiểm tra được phiên đăng nhập.'}
+            </p>
+            {sessionStatus === 'error' && (
+              <button
+                className="button button-outline"
+                onClick={() => setSessionRetry((v) => v + 1)}
+              >
+                Thử kết nối lại
+              </button>
+            )}
+          </section>
+        ) : path === '/welcome' ? (
+          <section className="welcome-page" aria-labelledby="welcome-title">
+            <div className="welcome-copy">
+              <Brand />
+              <p className="eyebrow">
+                <span /> VIỆT NAM · ĐI DỄ HƠN, ĐẸP HƠN
+              </p>
+              <h1 id="welcome-title">
+                Những hành trình đẹp bắt đầu từ một ý tưởng nhỏ.
+              </h1>
+              <p className="hero-description">
+                Bạn chọn niềm vui. GoEase giúp bạn tự tay lên kế hoạch và lưu
+                chuyến đi.
+              </p>
+              <button
+                className="button button-primary"
+                onClick={() => {
+                  markWelcomeSeen();
+                  start();
+                }}
+              >
+                Bắt đầu hành trình ↗
+              </button>
+              <a
+                href="/"
+                className="welcome-explore"
+                onClick={(e) => {
+                  e.preventDefault();
+                  markWelcomeSeen();
+                  go('/');
+                }}
+              >
+                Khám phá trước
+              </a>
+              <small>Không cần tài khoản để bắt đầu phác thảo.</small>
+            </div>
+            <div className="welcome-visual">
+              <HeroArtwork />
+              <Goe size="large" />
+            </div>
+            {!user &&
+              link(
+                '/login',
+                'Đăng nhập',
+                'button button-small button-outline welcome-login',
+              )}
+          </section>
+        ) : path === '/' ? (
           <>
             {/* Hero Section */}
             <section className="hero" aria-label="Giới thiệu GoEase">
               <div className="hero-copy">
                 <p className="eyebrow">
-                  <span></span>VIỆT NAM · ĐI DỄ HƠN, ĐẸP HƠN
+                  <span></span>
+                  {user
+                    ? `CHÀO ${user.displayName.toLocaleUpperCase('vi')}`
+                    : 'VIỆT NAM · ĐI DỄ HƠN, ĐẸP HƠN'}
                 </p>
                 <h1>
                   Hôm nay,
@@ -344,123 +530,137 @@ export function App() {
               </div>
             </section>
 
-            {/* If logged in with real trips: showcase recent trips! */}
-            {user && list.length > 0 && (
+            {user ? (
               <section
                 className="home-recent-trips"
-                aria-label="Chuyến đi gần đây của bạn"
+                aria-label="Chuyến đi của bạn"
               >
                 <div className="section-header-compact">
                   <div>
                     <p className="eyebrow">
-                      <span></span>GÓC HÀNH TRÌNH
+                      <span /> CHUYẾN ĐI CỦA BẠN
                     </p>
-                    <h2>Chuyến đi gần đây của bạn</h2>
+                    <h2>Những kế hoạch gần đây</h2>
                   </div>
                   {link('/trips', 'Xem tất cả ↗', 'text-button')}
                 </div>
-                <div className="trip-grid recent-trip-grid">
-                  {list.slice(0, 3).map((trip) => (
-                    <article className="trip-card" key={trip.id}>
-                      <div className="trip-card-art">
-                        <span className="trip-card-art-arrow">↗</span>
-                        <span className="trip-card-art-dest">
-                          {trip.destinationName}
-                        </span>
-                      </div>
-                      <div className="trip-card-body">
-                        <p className="eyebrow">
-                          LỊCH TRÌNH THỦ CÔNG · RIÊNG TƯ
-                        </p>
-                        <h2>{link(`/trips/${trip.id}`, trip.title)}</h2>
-                        <p>
-                          {trip.startDate} → {trip.endDate} ·{' '}
-                          {trip.travelers.totalCount} người
-                        </p>
-                        {link(
-                          `/trips/${trip.id}`,
-                          'Mở lịch trình ↗',
-                          'text-button trip-open-link',
-                        )}
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                {tripsStatus === 'loading' ? (
+                  <Notice>Đang tải chuyến đi…</Notice>
+                ) : tripsStatus === 'error' ? (
+                  <Notice error>
+                    Chưa tải được chuyến đi.{' '}
+                    <button
+                      className="text-button"
+                      onClick={() => setTripsRetry((v) => v + 1)}
+                    >
+                      Thử lại
+                    </button>
+                  </Notice>
+                ) : list.length === 0 ? (
+                  <div className="empty-state panel">
+                    <Goe size="small" />
+                    <h2>Chưa có chuyến đi nào</h2>
+                    <p>Tạo lịch trình đầu tiên và lưu vào tài khoản.</p>
+                    <button className="button button-primary" onClick={start}>
+                      Tạo chuyến đi
+                    </button>
+                  </div>
+                ) : (
+                  <div className="trip-grid recent-trip-grid">
+                    {list.slice(0, 3).map((trip) => (
+                      <article className="trip-card" key={trip.id}>
+                        <div className="trip-card-art">
+                          <span className="trip-card-art-arrow">↗</span>
+                          <span className="trip-card-art-dest">
+                            {trip.destinationName}
+                          </span>
+                        </div>
+                        <div className="trip-card-body">
+                          <h2>{link(`/trips/${trip.id}`, trip.title)}</h2>
+                          <p>
+                            {trip.destinationName} · {trip.startDate} →{' '}
+                            {trip.endDate} · {trip.travelers.totalCount} người
+                          </p>
+                          {link(
+                            `/trips/${trip.id}`,
+                            'Mở lịch trình ↗',
+                            'text-button',
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="home-recent-trips guest-trips">
+                <h2>Chuyến đi của bạn</h2>
+                <p>Đăng nhập để lưu và mở lại lịch trình của riêng mình.</p>
+                {link('/login', 'Đăng nhập', 'button button-outline')}
               </section>
             )}
 
-            {/* Destination inspiration cards from real database */}
-            {destinations.length > 0 && (
-              <section
-                className="home-destinations"
-                aria-label="Điểm đến gợi ý"
-              >
-                <div className="section-header-compact">
-                  <div>
-                    <p className="eyebrow">
-                      <span></span>GỢI Ý ĐIỂM ĐẾN
-                    </p>
-                    <h2>Khởi đầu nhẹ nhàng</h2>
-                  </div>
-                  <span className="muted-text">
-                    Từ dữ liệu GoEase đã chuẩn bị
-                  </span>
+            {/* Real destination catalog */}
+            <section className="home-destinations" aria-label="Điểm đến gợi ý">
+              <div className="section-header-compact">
+                <div>
+                  <p className="eyebrow">
+                    <span /> GỢI Ý ĐIỂM ĐẾN
+                  </p>
+                  <h2>Bạn muốn đi đâu?</h2>
                 </div>
+                <span className="muted-text">
+                  Tìm trong các điểm đến đang có trên GoEase
+                </span>
+              </div>
+              <label className="destination-search">
+                Tìm điểm đến theo tên
+                <input
+                  type="search"
+                  value={destinationQuery}
+                  onChange={(e) => setDestinationQuery(e.target.value)}
+                  placeholder="Ví dụ: Đà Nẵng"
+                />
+              </label>
+              {destinationStatus === 'loading' ? (
+                <Notice>Đang tải điểm đến…</Notice>
+              ) : destinationStatus === 'error' ? (
+                <Notice error>
+                  Chưa tải được danh mục điểm đến.{' '}
+                  <button
+                    className="text-button"
+                    onClick={() => setDestinationRetry((v) => v + 1)}
+                  >
+                    Thử lại
+                  </button>
+                </Notice>
+              ) : destinations.length === 0 ? (
+                <p>Danh mục điểm đến hiện chưa có dữ liệu.</p>
+              ) : visibleDestinations.length === 0 ? (
+                <p>
+                  Không tìm thấy điểm đến phù hợp.{' '}
+                  <button
+                    className="text-button"
+                    onClick={() => setDestinationQuery('')}
+                  >
+                    Xóa từ khóa
+                  </button>
+                </p>
+              ) : (
                 <div className="destinations-pills-row">
-                  {destinations.map((d) => (
+                  {visibleDestinations.map((d) => (
                     <button
                       key={d.id}
-                      type="button"
                       className="destination-chip-card"
                       onClick={() => startWithDestination(d.id)}
                     >
                       <span className="dest-chip-name">{d.name}</span>
                       <span className="dest-chip-arrow">↗</span>
+                      <small>Lên kế hoạch tại đây</small>
                     </button>
                   ))}
                 </div>
-              </section>
-            )}
-
-            {/* 3 Steps Guide */}
-            <section className="steps" aria-label="Bắt đầu dễ dàng">
-              <div className="step-item">
-                <span className="step-badge">01</span>
-                <h2>Chọn nơi muốn đến</h2>
-                <p>Ngày đi, bạn đồng hành và một chút mong đợi.</p>
-              </div>
-              <div className="step-item">
-                <span className="step-badge">02</span>
-                <h2>Vẽ nên từng ngày</h2>
-                <p>Thêm hoạt động và khoảng nghỉ theo ý bạn.</p>
-              </div>
-              <div className="step-item">
-                <span className="step-badge">03</span>
-                <h2>Lưu lại, rồi lên đường</h2>
-                <p>Mở lại lịch trình khi đăng nhập vào tài khoản.</p>
-              </div>
-            </section>
-
-            {/* Bottom invitation banner */}
-            <section className="home-next" aria-label="Bắt đầu chuyến đi">
-              <div className="home-next-copy">
-                <p className="eyebrow">
-                  <span></span>GÓC HÀNH TRÌNH CỦA BẠN
-                </p>
-                <h2>Những chuyến đi đang chờ.</h2>
-                <p>
-                  {user
-                    ? 'Tiếp tục những kế hoạch bạn đã lưu.'
-                    : 'Đăng nhập để lưu và mở lại chuyến đi đầu tiên.'}
-                </p>
-              </div>
-              <div className="home-next-action">
-                {link(
-                  user ? '/trips' : '/login',
-                  user ? 'Mở chuyến đi của tôi ↗' : 'Đăng nhập ↗',
-                  'button button-outline',
-                )}
-              </div>
+              )}
             </section>
           </>
         ) : path === '/login' || path === '/register' ? (
@@ -503,7 +703,7 @@ export function App() {
                 {message}{' '}
                 <button
                   type="button"
-                  onClick={() => setRetry((v) => v + 1)}
+                  onClick={() => setTripsRetry((v) => v + 1)}
                   className="text-button"
                 >
                   Thử lại
@@ -511,7 +711,22 @@ export function App() {
               </Notice>
             )}
 
-            {!user ? (
+            {!user && sessionStatus !== 'ready' ? (
+              <Notice>
+                {sessionStatus === 'loading'
+                  ? 'Đang kiểm tra phiên…'
+                  : 'Chưa kiểm tra được phiên đăng nhập.'}{' '}
+                {sessionStatus === 'error' && (
+                  <button
+                    type="button"
+                    onClick={() => setSessionRetry((v) => v + 1)}
+                    className="text-button"
+                  >
+                    Thử lại
+                  </button>
+                )}
+              </Notice>
+            ) : !user ? (
               <div className="empty-state panel">
                 <Goe size="medium" />
                 <h2>Những chuyến đi đang chờ bạn.</h2>
@@ -522,8 +737,19 @@ export function App() {
                   'button button-primary',
                 )}
               </div>
-            ) : busy ? (
+            ) : tripsStatus === 'loading' ? (
               <Notice>Đang mở những chuyến đi…</Notice>
+            ) : tripsStatus === 'error' ? (
+              <Notice error>
+                Chưa tải được danh sách chuyến đi.{' '}
+                <button
+                  type="button"
+                  onClick={() => setTripsRetry((v) => v + 1)}
+                  className="text-button"
+                >
+                  Thử lại
+                </button>
+              </Notice>
             ) : list.length ? (
               <div className="trip-grid">
                 {list.map((trip) => (
@@ -632,7 +858,7 @@ export function App() {
                 <button
                   type="button"
                   className="text-button"
-                  onClick={() => setRetry((v) => v + 1)}
+                  onClick={() => setDetailRetry((v) => v + 1)}
                 >
                   Thử lại
                 </button>
@@ -656,20 +882,24 @@ export function App() {
       </main>
 
       {/* Clean, quiet footer */}
-      <footer className="site-footer">
-        <div className="container footer-inner">
-          <div className="footer-brand-line">
-            <Brand />
-            <span className="footer-tagline">
-              Ít loay hoay hơn. Nhiều trải nghiệm hơn.
+      {!isWelcome && (
+        <footer className="site-footer">
+          <div className="container footer-inner">
+            <div className="footer-brand-line">
+              <Brand />
+              <span className="footer-tagline">
+                Ít loay hoay hơn. Nhiều trải nghiệm hơn.
+              </span>
+            </div>
+            <span className="footer-note">
+              Made for your next little escape.
             </span>
           </div>
-          <span className="footer-note">Made for your next little escape.</span>
-        </div>
-      </footer>
+        </footer>
+      )}
 
       {/* Mobile persistent bottom navigation bar */}
-      {!isAuth && (
+      {!isAuth && !isWelcome && (
         <nav className="mobile-bottom-nav" aria-label="Điều hướng di động">
           {link(
             '/',

@@ -209,11 +209,81 @@ test('real browser account, manual trip, failed save preservation, reload and re
   test.setTimeout(90000);
   const email = `browser-${Date.now()}@example.invalid`;
   const password = 'Browser-only-local-test-2026';
+  const storageBlockedPage = await browser.newPage();
+  await storageBlockedPage.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new Error('Storage blocked');
+      },
+    });
+  });
+  await storageBlockedPage.goto('/');
+  await expect(storageBlockedPage).toHaveURL(/\/welcome$/);
+  await storageBlockedPage
+    .getByRole('link', { name: 'Khám phá trước' })
+    .click();
+  await expect(
+    storageBlockedPage.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
+  ).toBeVisible();
+  await storageBlockedPage.close();
   await page.goto('/');
+  await expect(page).toHaveURL(/\/welcome$/);
+  await expect(
+    page.getByRole('heading', {
+      name: 'Những hành trình đẹp bắt đầu từ một ý tưởng nhỏ.',
+    }),
+  ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: 'test-results/welcome-mobile-390.png',
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({
+    path: 'test-results/welcome-desktop-1440.png',
+    fullPage: true,
+  });
+  await page.getByRole('link', { name: 'Khám phá trước' }).click();
   await expect(
     page.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
   ).toBeVisible();
-  await page.getByRole('link', { name: 'Đăng nhập', exact: true }).click();
+  await page.reload();
+  await expect(
+    page.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
+  ).toBeVisible();
+  await page.getByLabel('Tìm điểm đến theo tên').fill('Da Nang');
+  await expect(
+    page.getByRole('button', { name: /Đà Nẵng.*Lên kế hoạch tại đây/ }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: /Đà Nẵng.*Lên kế hoạch tại đây/ })
+    .click();
+  await expect(page).toHaveURL(/\/trips\/new$/);
+  await expect(page.getByLabel('Điểm đến', { exact: true })).toHaveValue(/./);
+  await page.getByRole('link', { name: 'Trang chủ', exact: true }).click();
+  await page.getByLabel('Tìm điểm đến theo tên').fill('khong co dia diem nay');
+  await expect(
+    page.getByText('Không tìm thấy điểm đến phù hợp.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Xóa từ khóa' }).click();
+  await expect(
+    page.getByRole('button', { name: /Đà Nẵng.*Lên kế hoạch tại đây/ }),
+  ).toBeVisible();
+  await page.route('**/api/v1/destinations', (route) => route.abort());
+  await page.reload();
+  await expect(
+    page.getByText('Chưa tải được danh mục điểm đến.'),
+  ).toBeVisible();
+  await page.unroute('**/api/v1/destinations');
+  await page.getByRole('button', { name: 'Thử lại' }).last().click();
+  await expect(
+    page.getByRole('button', { name: /Đà Nẵng.*Lên kế hoạch tại đây/ }),
+  ).toBeVisible();
+  await page
+    .getByRole('banner')
+    .getByRole('link', { name: 'Đăng nhập', exact: true })
+    .click();
   await page.getByRole('link', { name: 'Tạo tài khoản', exact: false }).click();
   await page
     .getByLabel('Tên của bạn', { exact: true })
@@ -234,6 +304,9 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await expect(
     page.getByRole('heading', { name: 'Chuyến đi của tôi', exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByText('Chuyến đi đầu tiên, bắt đầu thôi.'),
+  ).toBeVisible();
   async function login() {
     await page.getByLabel('Email', { exact: true }).fill(email);
     await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
@@ -242,6 +315,7 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await expect(
     page.getByRole('heading', { name: 'Chuyến đi của tôi', exact: true }),
   ).toBeVisible();
+  page.once('dialog', (dialog) => dialog.accept());
   await page
     .getByRole('button', { name: '＋ Tạo chuyến đi', exact: true })
     .click();
@@ -294,6 +368,31 @@ test('real browser account, manual trip, failed save preservation, reload and re
     'Đã lưu',
   );
   const savedUrl = page.url();
+  await page.getByRole('link', { name: 'Trang chủ', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Hai ngày thư thả ở Đà Nẵng' }),
+  ).toBeVisible();
+  await page.route('**/api/v1/trips', (route) => route.abort());
+  await page.reload();
+  await expect(page.getByText('Chưa tải được chuyến đi.')).toBeVisible();
+  await page.unroute('**/api/v1/trips');
+  await page.getByRole('button', { name: 'Thử lại' }).last().click();
+  await expect(
+    page.getByRole('heading', { name: 'Hai ngày thư thả ở Đà Nẵng' }),
+  ).toBeVisible();
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: `test-results/home-${width}.png`,
+      fullPage: true,
+    });
+  }
+  await page.goto(savedUrl);
   await page.reload();
   await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
     'Đã lưu',
@@ -403,6 +502,12 @@ test('real browser account, manual trip, failed save preservation, reload and re
     await expect(
       otherPage.getByLabel('Tên chuyến đi', { exact: true }),
     ).toHaveCount(0);
+    await otherPage.goto('/');
+    await expect(otherPage.getByText('Chào, Tài khoản khác')).toBeVisible();
+    await expect(otherPage.getByText('Chưa có chuyến đi nào')).toBeVisible();
+    await expect(otherPage.getByText('Hai ngày thư thả ở Đà Nẵng')).toHaveCount(
+      0,
+    );
     expect(
       (
         await request.patch(origin + `/api/v1/trips/${_id}`, {
