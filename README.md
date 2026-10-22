@@ -195,4 +195,6 @@ Integration dùng fixture replica set riêng trên 27021 và giữ dữ liệu t
 
 ## Gemini AI planner (local)
 
-Customer itinerary proposals are connected to the server Gemini adapter. Set server-only GEMINI_API_KEY; see [setup, contract, quotas and verification limits](docs/AI-PLANNER.md). Goe chat remains a demo.
+Customer itinerary proposals are connected to the server Gemini adapter. Set server-only GEMINI_API_KEY; see [setup, contract, quotas and verification limits](docs/AI-PLANNER.md). Goe supports selected-day itinerary adjustment with explicit confirmation.
+
+Goe chat can now adjust a selected day of a saved Hội An trip: choose trip/day → send a request → review before/after → confirm save. Read [Goe scope and contracts](docs/AI-PLANNER.md#goe-adjustment-customer-flow--2026-10-23).

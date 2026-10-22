@@ -7,6 +7,8 @@ import {
   registerSchema,
   tripInputSchema,
   plannerRequestSchema,
+  goeRequestSchema,
+  goeApplySchema,
 } from '@goease/contracts';
 import type { Config } from './config.js';
 import { authService, userDto } from './features/auth/auth.service.js';
@@ -61,6 +63,10 @@ export function createProduct(connection: Connection, config: Config) {
       res.locals.logRoute = '/api/v1/places/:id';
     if (/^\/me\/places\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/me/places/:id';
+    if (/^\/trips\/[^/]+\/goe-proposal$/.test(req.path))
+      res.locals.logRoute = '/api/v1/trips/:id/goe-proposal';
+    if (/^\/trips\/[^/]+\/goe-apply$/.test(req.path))
+      res.locals.logRoute = '/api/v1/trips/:id/goe-apply';
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -220,6 +226,40 @@ export function createProduct(connection: Connection, config: Config) {
       data: await trips.read(String(req.params.id), res.locals.authUser._id),
     }),
   );
+  router.post('/trips/:id/goe-proposal', async (req, res) => {
+    const value = parse(goeRequestSchema, req.body);
+    const key = parse(
+      z.string().regex(uuidPattern),
+      req.get('Idempotency-Key'),
+    );
+    await planner.reconcile();
+    res.json({
+      ok: true,
+      data: await planner.chat(
+        res.locals.authUser._id,
+        String(req.params.id),
+        value,
+        key,
+      ),
+    });
+  });
+  router.post('/trips/:id/goe-apply', async (req, res) => {
+    const value = parse(goeApplySchema, req.body);
+    const key = parse(
+      z.string().regex(uuidPattern),
+      req.get('Idempotency-Key'),
+    );
+    res.json({
+      ok: true,
+      data: await planner.apply(
+        res.locals.authUser._id,
+        String(req.params.id),
+        value.runId,
+        value.expectedRevision,
+        key,
+      ),
+    });
+  });
   const createSchema = z.strictObject({ trip: tripInputSchema });
   const updateSchema = createSchema.extend({
     expectedRevision: z

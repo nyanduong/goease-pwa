@@ -1084,7 +1084,8 @@
       "retention": "Proposal ngắn hạn đề xuất 24h; metadata 90 ngày là đề xuất. Snapshot applied nằm trip_revisions với retention trip.",
       "brRefs": ["AI-01", "AI-02", "AI-03", "AI-04", "AI-06", "AI-07"],
       "implementationStatus": "Local Gemini planner subset implemented; exact runtime fields/indexes differ from generic baseline below; see AI-PLANNER.md. Generic remaining fields are planned; registry is not executable schema.",
-      "runtimeContract": "AI-PLANNER.md#runtime-storage-authoritative-implemented-subset"
+      "runtimeContract": "AI-PLANNER.md#runtime-storage-authoritative-implemented-subset",
+      "goeRuntime": "promptVersion goe-v1; bounded validated proposal extends with before/dayId/baseRevision; messages not persisted; apply requires owned successful run, target trip and expectedRevision. See AI-PLANNER.md."
     },
     {
       "name": "usage_buckets",

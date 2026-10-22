@@ -130,3 +130,7 @@ Mongoose Connection.transaction dùng session caller xuyên suốt fixture/audit
 ## Implemented Gemini adapter (2026-10-23)
 
 `features/ai/gemini.ts` isolates the fixed-origin REST provider; `planner.ts` owns catalog constraints, output validation, run/idempotency/quota state. Shared contracts expose only planner request/proposal DTOs. No provider key/model implementation is imported by React. Generation does not write trips; explicit customer apply uses existing revision-checked save and server provenance checks. See [AI-PLANNER.md](AI-PLANNER.md) for scope and open production requirements.
+
+### Goe adjustment consumer
+
+GoeChat now consumes owned trip read plus goe-proposal/goe-apply endpoints. plannerService reuses Gemini/quota, merges one day while preserving other days and retained data, and resolves the stored validated proposal on apply. No separate chat service, external tool execution, weather lookup or chat persistence introduced.

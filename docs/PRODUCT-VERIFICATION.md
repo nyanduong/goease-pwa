@@ -149,3 +149,13 @@ Kiểm chứng:12 unit/HTTP tests,20 integration checks (kể cả subtests) và
 Implemented customer proposal/preview/apply to draft, server catalog/time validation, safe Gemini adapter, provenance/revision save checks and atomic quota/run storage. See [AI-PLANNER.md](AI-PLANNER.md) for exact scope and limits. Key configured for requested Google account/free-tier project; models endpoint returned200 and exposed the configured model. This task has not run automated tests or live generation/save acceptance; prior passing results above predate these changes. Goe chat remains a demonstration.
 
 Build, typecheck, lint, formatting of changed implementation files and git diff --check passed. Running local API reported database connected. The real generation/provider-response and end-to-end save path still need acceptance testing; a successful models request is only credential/model availability evidence.
+
+## Gemini live acceptance — 2026-10-23
+
+The prior unverified-generation note is superseded by the live acceptance in [AI-PLANNER.md](AI-PLANNER.md#live-acceptance--2026-10-23). Real Gemini→preview→apply→save201→reload passed with preserved AI provenance and unknown costs. Same-key recovery, manual edit, stale revision409, forged source400, other-owner404/409 and simulated quota429 preservation also passed.14 unit/HTTP checks,20 integration checks,13 default browser checks and1 explicitly enabled live browser test passed. Tests used isolated MongoDB27020/27021; application27019 records were untouched. Build/typecheck/lint passed. One intermediate browser timeout occurred alongside a watched-contract rebuild; serial rerun passed. Do not rebuild watched packages during browser acceptance.
+
+## Goe customer adjustment — 2026-10-23
+
+Goe demo replaced with real Gemini selected-day proposals and explicit server apply. Scope/contracts/retention are in AI-PLANNER.md. Live test generated a3day trip, requested slower day1, inspected before/after, confirmed other days unchanged, simulated a lost apply response after commit, retried successfully without a second revision, rejected stale reapply409 and reloaded the exact saved schedule. Browser screenshots reviewed at `.local/ai-preview/goe-real-proposal.png` and `goe-saved-reloaded.png`.
+
+Verification after implementation:14 unit/HTTP tests,20 integration checks,13 default browser tests passed; the separate LIVE_GEMINI opt-in browser test passed with real provider calls for both initial generation and Goe adjustment. Build/typecheck/lint passed. Default tests do not consume Gemini quota. No app DB reset, key committed, paid billing activation or public deployment. Conversation history is ephemeral; live weather/prices and general-purpose chat remain unavailable.

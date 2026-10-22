@@ -296,3 +296,7 @@ Email/password đăng ký và đăng nhập bằng API/MongoDB, không phụ thu
 ### AI customer implementation — 2026-10-23
 
 AI-01–AI-06 have a local planner subset detailed in [AI-PLANNER.md](AI-PLANNER.md): Gemini, Hội An1–7days, catalog-only structured proposals, explicit draft apply and revision-checked save, server provenance, no invented prices, atomic quota reservations and conservative unknown-outcome recovery. Local technical defaults (5/user/day,20/global/day UTC; 2/3/6 stops for pace;30minute buffers) are configurable development guardrails/heuristics, not an approved paid policy or real routing guarantee. AI-07 analytics, AI chat, provider-cost reconciliation, production retention and paid quota policy remain planned. Google provider selected explicitly by owner; provider data use follows the selected tier terms, no assumption of zero retention/training.
+
+### Goe customer adjustment — 2026-10-23
+
+AI-01–AI-06 now also cover selected-day adjustment from customer messages: server reads the owned saved trip, sends bounded message plus allowed catalog/context, preserves other days and retained prices/notes, validates output, then explicitly previews before/after and applies through revision/idempotency transaction only on customer confirmation. Weather/price facts remain unavailable; unknown costs cannot be asserted as savings. Conversation history is local UI memory only. See AI-PLANNER.md for endpoints and limits.

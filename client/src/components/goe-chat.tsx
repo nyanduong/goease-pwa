@@ -1,54 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowDown,
   ArrowLeft,
   CalendarDays,
   Check,
   Coins,
-  Info,
-  Landmark,
   Leaf,
-  MoreHorizontal,
   Send,
-  Sun,
   X,
 } from 'lucide-react';
-import type { TripDto } from '@goease/contracts';
+import type { TripDto, GoeProposal, GoeRequest } from '@goease/contracts';
 import { api } from '../api';
+import { moneyText } from '../trip-draft';
 
-type Topic = 'rain' | 'budget' | 'slow';
-type ChatLine = {
-  id: number;
-  role: 'user' | 'goe';
-  text: string;
-  topic?: Topic;
-};
-const responses: Record<
-  Topic,
-  { text: string; before: string; after: string }
-> = {
-  rain: {
-    text: 'Mình gợi ý đổi điểm ngoài trời sang một nơi trong nhà.',
-    before: '15:00 · Hoạt động ngoài trời',
-    after: '15:00 · Ghé bảo tàng',
-  },
-  budget: {
-    text: 'Mình gợi ý thay một trải nghiệm có phí bằng thời gian tự dạo phố.',
-    before: '15:00 · Trải nghiệm có phí',
-    after: '15:00 · Tự dạo phố',
-  },
-  slow: {
-    text: 'Mình gợi ý dành thêm một khoảng nghỉ, để bạn tận hưởng thong thả hơn.',
-    before: '15:00 · Điểm dừng tiếp theo',
-    after: '15:00 · Nghỉ chân, uống trà',
-  },
-};
-const initialLines: ChatLine[] = [
-  { id: 1, role: 'goe', text: 'Bạn muốn chuyến đi thư thả hơn một chút?' },
-  { id: 2, role: 'user', text: 'Nếu chiều mưa thì đi đâu?' },
-  { id: 3, role: 'goe', text: responses.rain.text, topic: 'rain' },
-];
-
+type Line = { id: number; role: 'user' | 'goe'; text: string };
 export function GoeChat({
   signedIn,
   onNavigate,
@@ -57,93 +21,160 @@ export function GoeChat({
   onNavigate: (path: string) => void;
 }) {
   const params = new URLSearchParams(location.search);
-  const tripId = params.get('trip');
-  const [trip, setTrip] = useState<TripDto | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
-    tripId ? 'loading' : 'ready',
-  );
-  const [retry, setRetry] = useState(0);
+  const [tripId, setTripId] = useState(params.get('trip') ?? '');
+  const [trip, setTrip] = useState<TripDto | null>(null),
+    [choices, setChoices] = useState<TripDto[]>([]);
   const [dayIndex, setDayIndex] = useState(
-    Math.min(30, Math.max(0, Math.floor(Number(params.get('day') ?? 1) || 0))),
+    Math.max(0, Math.min(30, Math.floor(Number(params.get('day') ?? 0) || 0))),
   );
-  const [lines, setLines] = useState(initialLines);
-  const [input, setInput] = useState('');
-  const [preview, setPreview] = useState<Topic | null>(null);
-  const [resolution, setResolution] = useState<Record<number, string>>({});
-  const [selectedMessage, setSelectedMessage] = useState(3);
-  const [menu, setMenu] = useState(false);
-  const [context, setContext] = useState(false);
+  const [retry, setRetry] = useState(0),
+    [loading, setLoading] = useState(false),
+    [busy, setBusy] = useState(false);
+  const [error, setError] = useState(''),
+    [input, setInput] = useState('');
+  const [lines, setLines] = useState<Line[]>([]),
+    [proposal, setProposal] = useState<GoeProposal | null>(null);
+  const [preview, setPreview] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
-  const latest = useRef<HTMLDivElement>(null);
-  const counter = useRef(4);
+  const sequence = useRef(0),
+    generationKey = useRef<{
+      tripId: string;
+      body: GoeRequest;
+      key: string;
+    } | null>(null),
+    applyKey = useRef('');
   useEffect(() => {
-    if (!tripId || !signedIn) return;
+    if (!signedIn) return;
     let active = true;
-    void api<{ trip: TripDto }>(`/trips/${tripId}`)
-      .then((r) => {
-        if (active) {
-          setTrip(r.trip);
-          setStatus('ready');
-        }
+    setLoading(true);
+    setError('');
+    setProposal(null);
+    setTrip(null);
+    setLines([]);
+    generationKey.current = null;
+    const load = tripId
+      ? api<{ trip: TripDto }>(`/trips/${tripId}`).then((r) => {
+          if (active) setTrip(r.trip);
+        })
+      : api<{ items: TripDto[] }>('/trips').then((r) => {
+          if (active) setChoices(r.items);
+        });
+    void load
+      .catch((e) => {
+        if (active)
+          setError(e instanceof Error ? e.message : 'Chưa mở được chuyến đi.');
       })
-      .catch(() => {
-        if (active) setStatus('error');
+      .finally(() => {
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
     };
   }, [tripId, signedIn, retry]);
   useEffect(() => {
-    if (lines.length > 3)
-      latest.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [lines]);
-  useEffect(() => {
     if (!preview) return;
-    const element = dialog.current;
-    const prior = document.activeElement as HTMLElement | null;
+    const element = dialog.current,
+      prior = document.activeElement as HTMLElement | null;
     element?.showModal();
     return () => {
       element?.close();
       prior?.focus();
     };
   }, [preview]);
-  const day = trip?.days[Math.min(dayIndex, Math.max(0, trip.days.length - 1))];
+  const index = Math.min(dayIndex, Math.max(0, (trip?.days.length ?? 1) - 1)),
+    day = trip?.days[index];
   const contextName = trip
-    ? `${trip.destinationName} · Ngày ${Math.min(dayIndex + 1, trip.days.length)}`
-    : 'Hội An · Ngày 2 (minh họa)';
-  function send(text: string, topic?: Topic) {
-    const clean = text.trim();
-    if (!clean) return;
-    const selected =
-      topic ??
-      (/mưa|trời/i.test(clean)
-        ? 'rain'
-        : /tiền|phí|rẻ|ngân sách/i.test(clean)
-          ? 'budget'
-          : /chậm|nghỉ|thư thả/i.test(clean)
-            ? 'slow'
-            : undefined);
-    const userId = counter.current++;
-    const replyId = counter.current++;
+    ? `${trip.destinationName} · Ngày ${index + 1}`
+    : 'Chọn chuyến đi của bạn';
+  function add(role: Line['role'], text: string) {
     setLines((old) => [
-      ...old.slice(-10),
-      { id: userId, role: 'user' as const, text: clean },
-      {
-        id: replyId,
-        role: 'goe' as const,
-        text: selected
-          ? responses[selected].text
-          : 'Mình đang ở chế độ minh họa. Bạn thử “Nếu chiều mưa”, “Giảm chi phí” hoặc “Đi chậm hơn” để xem cách Goe đề xuất thay đổi nhé.',
-        ...(selected ? { topic: selected } : {}),
-      },
+      ...old.slice(-19),
+      { id: ++sequence.current, role, text },
     ]);
-    setInput('');
   }
+  async function send(text: string, recover = false) {
+    if (!trip || !day || busy || !text.trim()) return;
+    const request = recover
+      ? generationKey.current
+      : {
+          tripId: trip.id,
+          key: crypto.randomUUID(),
+          body: {
+            message: text.trim(),
+            dayId: day.dayId,
+            expectedRevision: trip.revision,
+            consent: true as const,
+          },
+        };
+    if (!request) return;
+    generationKey.current = request;
+    setBusy(true);
+    setError('');
+    setProposal(null);
+    if (!recover) add('user', request.body.message);
+    try {
+      const result = await api<GoeProposal>(
+        `/trips/${request.tripId}/goe-proposal`,
+        {
+          method: 'POST',
+          headers: { 'Idempotency-Key': request.key },
+          body: JSON.stringify(request.body),
+          signal: AbortSignal.timeout(60000),
+        },
+      );
+      setProposal(result);
+      applyKey.current = crypto.randomUUID();
+      setInput('');
+      add(
+        'goe',
+        'Mình đã chuẩn bị đề xuất cho ngày bạn chọn. Bạn xem lịch trước và sau rồi quyết định nhé.',
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : 'Goe chưa trả lời được. Lịch cũ vẫn được giữ.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function apply() {
+    if (!proposal || !trip || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const result = await api<{ trip: TripDto }>(
+        `/trips/${trip.id}/goe-apply`,
+        {
+          method: 'POST',
+          headers: { 'Idempotency-Key': applyKey.current },
+          body: JSON.stringify({
+            runId: proposal.runId,
+            expectedRevision: proposal.baseRevision,
+          }),
+        },
+      );
+      setTrip(result.trip);
+      setPreview(false);
+      setProposal(null);
+      generationKey.current = null;
+      add('goe', 'Đã lưu thay đổi vào chuyến đi. Ngân sách đã được tính lại.');
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : 'Chưa lưu được thay đổi. Hãy thử lại.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  const after = proposal?.trip.days.find((d) => d.dayId === proposal.dayId);
   return (
     <section className="goe-chat-page">
       <header className="goe-chat-header">
         <button
           aria-label="Quay lại"
+          disabled={busy}
           onClick={() => onNavigate(trip ? `/trips/${trip.id}` : '/')}
         >
           <ArrowLeft size={21} />
@@ -153,179 +184,183 @@ export function GoeChat({
           <strong>Goe</strong>
           <small>Bạn đồng hành chuyến đi</small>
         </div>
-        <button
-          aria-label="Tùy chọn hội thoại"
-          aria-expanded={menu}
-          onClick={() => setMenu(!menu)}
-        >
-          <MoreHorizontal size={22} />
-        </button>
       </header>
-      {menu && (
-        <div className="goe-chat-menu">
-          <button
-            onClick={() => {
-              setLines(initialLines);
-              setResolution({});
-              setInput('');
-              setMenu(false);
-            }}
-          >
-            Bắt đầu lại bản minh họa
-          </button>
-          <button
-            onClick={() =>
-              onNavigate(trip ? `/trips/${trip.id}?view=cost` : '/trips')
-            }
-          >
-            {trip
-              ? 'Xem ngân sách chuyến đi'
-              : 'Chọn chuyến đi để xem ngân sách'}
-          </button>
-        </div>
-      )}
-      <button
-        className="goe-context-chip"
-        onClick={() => setContext(!context)}
-        aria-expanded={context}
-      >
+      <div className="goe-context-chip">
         <CalendarDays size={16} />
         Đang xem: {contextName}
-      </button>
-      {context && (
-        <div className="goe-context-panel">
-          {trip ? (
-            <label>
-              Chọn ngày
-              <select
-                aria-label="Ngày đang xem"
-                value={Math.min(dayIndex, trip.days.length - 1)}
-                onChange={(e) => setDayIndex(Number(e.target.value))}
-              >
-                {trip.days.map((d, i) => (
-                  <option key={d.dayId} value={i}>
-                    Ngày {i + 1} · {d.date}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <p>
-              Đây là hành trình minh họa. Mở Goe từ một chuyến đi để xem ngữ
-              cảnh của bạn.
-            </p>
-          )}
-          <button onClick={() => onNavigate('/trips')}>
-            Chọn chuyến đi khác →
-          </button>
-        </div>
-      )}
-      {tripId &&
-        (!signedIn ? (
-          <p className="goe-context-notice">
-            Đăng nhập để mở ngữ cảnh chuyến đi.{' '}
-            <button onClick={() => onNavigate('/login')}>Đăng nhập</button>
-          </p>
-        ) : status === 'loading' ? (
-          <p role="status" className="goe-context-notice">
-            Đang mở chuyến đi…
-          </p>
-        ) : status === 'error' ? (
-          <p role="alert" className="goe-context-notice">
-            Chưa mở được chuyến đi.{' '}
-            <button
-              onClick={() => {
-                setStatus('loading');
-                setRetry((v) => v + 1);
-              }}
-            >
-              Thử lại
-            </button>
-          </p>
-        ) : null)}
+      </div>
       <h1>
         Mình cùng
         <br />
         điều chỉnh nhé.<i aria-hidden="true">✦</i>
       </h1>
-      <p className="goe-demo-note">Hội thoại minh họa · Chưa kết nối AI</p>
+      {!signedIn ? (
+        <p className="goe-context-notice">
+          Đăng nhập để Goe đọc chuyến đi của bạn.{' '}
+          <button onClick={() => onNavigate('/login')}>Đăng nhập</button>
+        </p>
+      ) : loading ? (
+        <p role="status">Đang mở chuyến đi…</p>
+      ) : !tripId ? (
+        <div className="goe-context-panel">
+          <h2>Chọn chuyến đi</h2>
+          {choices.length ? (
+            choices.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setTripId(t.id);
+                  setDayIndex(0);
+                  history.replaceState({}, '', `/goe?trip=${t.id}&day=0`);
+                }}
+              >
+                {t.title} →
+              </button>
+            ))
+          ) : (
+            <button onClick={() => onNavigate('/trips')}>
+              Tạo chuyến đi trước khi hỏi Goe →
+            </button>
+          )}
+        </div>
+      ) : null}
+      {trip && (
+        <div className="goe-context-panel">
+          <label>
+            Ngày đang xem{' '}
+            <select
+              aria-label="Ngày đang xem"
+              disabled={busy || preview}
+              value={index}
+              onChange={(e) => {
+                setDayIndex(Number(e.target.value));
+                setProposal(null);
+                generationKey.current = null;
+                setError('');
+              }}
+            >
+              {trip.days.map((d, i) => (
+                <option key={d.dayId} value={i}>
+                  Ngày {i + 1} · {d.date}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            disabled={busy}
+            onClick={() => onNavigate(`/trips/${trip.id}?view=cost`)}
+          >
+            Xem ngân sách chuyến đi
+          </button>
+          <button
+            disabled={busy}
+            onClick={() => {
+              setTripId('');
+              history.replaceState({}, '', '/goe');
+            }}
+          >
+            Chọn chuyến đi khác
+          </button>
+        </div>
+      )}
+      <p className="goe-demo-note">
+        Goe dùng Gemini để đề xuất thay đổi. Khi gửi, nội dung tin nhắn, lịch
+        theo mã địa điểm, ngày đi, số người, ngân sách và sở thích được gửi tới
+        Google. Không gửi tên tài khoản hay ghi chú riêng. Đừng nhập thông tin
+        nhạy cảm.
+      </p>
+      {error && !preview && (
+        <div role="alert" className="goe-context-notice">
+          <p>{error}</p>
+          {generationKey.current && (
+            <button
+              disabled={busy}
+              onClick={() =>
+                void send(generationKey.current!.body.message, true)
+              }
+            >
+              Lấy lại kết quả lượt vừa gửi
+            </button>
+          )}
+          <button disabled={busy} onClick={() => setRetry((v) => v + 1)}>
+            Tải lại chuyến đi
+          </button>
+        </div>
+      )}
       <div
         className="goe-chat-messages"
         role="log"
         aria-label="Hội thoại với Goe"
         aria-live="polite"
       >
+        <div className="goe-chat-line goe">
+          <img src="/images/goe-mascot-cutout.png" alt="" />
+          <div className="goe-chat-bubble">
+            <p>
+              Bạn muốn đi thư thả hơn, đổi điểm dừng hay thêm một món ăn? Mình
+              sẽ đề xuất cho ngày đang xem; bạn xác nhận rồi mới lưu.
+            </p>
+          </div>
+        </div>
         {lines.map((line) => (
           <div key={line.id} className={`goe-chat-line ${line.role}`}>
             {line.role === 'goe' && (
               <img src="/images/goe-mascot-cutout.png" alt="" />
             )}
-            <div
-              className={`goe-chat-bubble ${line.topic ? 'has-suggestion' : ''}`}
-            >
+            <div className="goe-chat-bubble">
               <p>{line.text}</p>
-              {line.topic && (
-                <>
-                  <div className="goe-proposal">
-                    <strong>Gợi ý thay đổi</strong>
-                    <span className="goe-before">
-                      <Sun size={18} />
-                      <s>{responses[line.topic].before}</s>
-                    </span>
-                    <ArrowDown size={17} />
-                    <span className="goe-after">
-                      <Landmark size={20} />
-                      {responses[line.topic].after}
-                    </span>
-                  </div>
-                  <p className="goe-keep-note">
-                    <Info size={15} />
-                    Giữ nguyên các điểm còn lại.
-                  </p>
-                  {resolution[line.id] ? (
-                    <p className="goe-resolution" role="status">
-                      <Check size={16} />
-                      {resolution[line.id]}
-                    </p>
-                  ) : (
-                    <div className="goe-proposal-actions">
-                      <button
-                        onClick={() => {
-                          setSelectedMessage(line.id);
-                          setPreview(line.topic!);
-                        }}
-                      >
-                        Xem thay đổi
-                      </button>
-                      <button
-                        onClick={() =>
-                          setResolution((r) => ({
-                            ...r,
-                            [line.id]: 'Đã giữ lịch cũ trong bản xem trước.',
-                          }))
-                        }
-                      >
-                        Giữ lịch cũ
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
             </div>
           </div>
         ))}
-        <div ref={latest} />
+        {busy && (
+          <p role="status">Goe đang xử lý… Lịch hiện tại vẫn được giữ.</p>
+        )}
+        {proposal && (
+          <div className="goe-proposal">
+            <strong>Đề xuất chưa áp dụng</strong>
+            <p>
+              {proposal.before.activities.length} điểm dừng →{' '}
+              {after?.activities.length} điểm dừng
+            </p>
+            <div className="goe-proposal-actions">
+              <button disabled={busy} onClick={() => setPreview(true)}>
+                Xem thay đổi
+              </button>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  setProposal(null);
+                  add('goe', 'Đã giữ lịch cũ.');
+                }}
+              >
+                Giữ lịch cũ
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-      <p className="goe-consider">Gợi ý để bạn cân nhắc.</p>
+      <p className="goe-consider">
+        Chưa có thời tiết hoặc giá trực tiếp. Chi phí thiếu vẫn được ghi rõ.
+      </p>
       <div className="goe-composer-area">
         <div className="goe-quick-prompts">
           <button
-            onClick={() => send('Giảm chi phí cho chuyến đi nhé.', 'budget')}
+            disabled={!trip || busy}
+            onClick={() =>
+              void send(
+                'Đề xuất giảm chi phí trong ngày này, không đoán giá khi chưa biết.',
+              )
+            }
           >
             <Coins size={16} />
             Giảm chi phí
           </button>
-          <button onClick={() => send('Mình muốn đi chậm hơn.', 'slow')}>
+          <button
+            disabled={!trip || busy}
+            onClick={() =>
+              void send('Mình muốn đi chậm hơn, bớt điểm dừng trong ngày này.')
+            }
+          >
             <Leaf size={16} />
             Đi chậm hơn
           </button>
@@ -334,80 +369,102 @@ export function GoeChat({
           className="goe-composer"
           onSubmit={(e) => {
             e.preventDefault();
-            send(input);
+            void send(input);
           }}
         >
           <input
             aria-label="Hỏi Goe về chuyến đi"
             placeholder="Hỏi Goe về chuyến đi…"
             maxLength={500}
+            disabled={!trip || busy}
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />
           <button
             type="submit"
             aria-label="Gửi tin nhắn"
-            disabled={!input.trim()}
+            disabled={!trip || busy || !input.trim()}
           >
             <Send size={20} />
           </button>
         </form>
       </div>
-      {preview && (
+      {preview && proposal && (
         <dialog
           ref={dialog}
           className="journey-sheet goe-preview-sheet"
           aria-label="Xem trước thay đổi"
           onCancel={(e) => {
             e.preventDefault();
-            setPreview(null);
+            if (!busy) setPreview(false);
           }}
         >
           <header>
             <h2>Xem trước thay đổi</h2>
-            <button aria-label="Đóng" onClick={() => setPreview(null)}>
+            <button
+              disabled={busy}
+              aria-label="Đóng"
+              onClick={() => setPreview(false)}
+            >
               <X size={20} />
             </button>
           </header>
-          <p className="goe-preview-label">
-            MINH HỌA · KHÔNG SỬA CHUYẾN ĐI ĐÃ LƯU
-          </p>
-          <h3>{contextName}</h3>
-          {day && (
-            <p className="goe-actual-context">
-              Ngày này có {day.activities.length} điểm dừng trong lịch đã lưu.
-              Đề xuất bên dưới là ví dụ giao diện.
-            </p>
-          )}
+          <h3>{proposal.before.date}</h3>
           <div className="goe-preview-change">
-            <span>
-              <Sun size={20} />
-              {responses[preview].before}
-            </span>
-            <ArrowDown size={21} />
-            <strong>
-              <Landmark size={22} />
-              {responses[preview].after}
-            </strong>
+            {[
+              { title: 'Trước', value: proposal.before },
+              { title: 'Sau', value: after },
+            ].map(({ title, value }) => (
+              <section key={title}>
+                <h3>{title}</h3>
+                <ul>
+                  {value?.activities.map((a) => (
+                    <li key={a.activityId}>
+                      {a.startLocalTime ?? 'Chưa đặt giờ'} · {a.title}
+                    </li>
+                  ))}
+                </ul>
+                {!value?.activities.length && <p>Chưa có điểm dừng.</p>}
+              </section>
+            ))}
           </div>
-          <p className="goe-preview-help">
-            Khi tính năng được kết nối, bạn sẽ xem thay đổi ở đây trước khi xác
-            nhận cập nhật lịch trình.
+          <p>
+            Chi phí đã biết:{' '}
+            {moneyText(trip?.budgetSummary?.knownEstimatedMinor ?? 0)} →{' '}
+            {moneyText(proposal.budget.knownEstimatedMinor)}. Còn{' '}
+            {proposal.budget.missingCostCount} điểm chưa rõ chi phí.
           </p>
+          {proposal.warnings.map((w) => (
+            <p key={w}>{w}</p>
+          ))}
+          {error && (
+            <div role="alert">
+              <p>{error}</p>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  setPreview(false);
+                  setRetry((v) => v + 1);
+                }}
+              >
+                Tải lại chuyến đi
+              </button>
+            </div>
+          )}
           <button
             className="journey-primary"
-            onClick={() => {
-              setResolution((r) => ({
-                ...r,
-                [selectedMessage]: 'Đã áp dụng vào bản minh họa.',
-              }));
-              setPreview(null);
-            }}
+            disabled={busy}
+            onClick={() => void apply()}
           >
-            Áp dụng vào bản minh họa <Check size={17} />
+            {busy ? 'Đang lưu…' : 'Xác nhận và lưu thay đổi'}{' '}
+            <Check size={17} />
           </button>
-          <button className="journey-outline" onClick={() => setPreview(null)}>
-            Quay lại hội thoại
+          <button
+            className="journey-outline"
+            disabled={busy}
+            onClick={() => setPreview(false)}
+          >
+            Giữ lịch cũ
           </button>
         </dialog>
       )}

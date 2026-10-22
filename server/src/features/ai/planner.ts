@@ -5,6 +5,8 @@ import {
   type PlannerRequest,
   type PlannerProposal,
   type PlaceDto,
+  type GoeRequest,
+  type GoeProposal,
 } from '@goease/contracts';
 import type { Config } from '../../config.js';
 import { HttpError } from '../../http-error.js';
@@ -196,6 +198,68 @@ export function plannerService(
   }
   return {
     models: { Run, Bucket },
+    async chat(
+      owner: Types.ObjectId,
+      tripId: string,
+      value: GoeRequest,
+      key: string,
+    ): Promise<GoeProposal> {
+      const { trip: stored } = await trips.read(tripId, owner);
+      const trip = tripInputSchema.parse({
+        title: stored.title,
+        destinations: stored.destinations,
+        startDate: stored.startDate,
+        endDate: stored.endDate,
+        timezone: stored.timezone,
+        travelers: stored.travelers,
+        budget: stored.budget,
+        preferences: stored.preferences,
+        generationMode: stored.generationMode,
+        ...(stored.aiRunId ? { aiRunId: stored.aiRunId } : {}),
+        days: stored.days,
+        notes: stored.notes,
+      });
+      const proposal = await this.propose(
+        owner,
+        {
+          trip,
+          tripId,
+          expectedRevision: value.expectedRevision,
+          consent: true,
+          adjustment: value,
+        },
+        key,
+      );
+      return proposal as GoeProposal;
+    },
+    async apply(
+      owner: Types.ObjectId,
+      tripId: string,
+      runId: string,
+      expectedRevision: number,
+      key: string,
+    ) {
+      const run = await Run.findOne({
+        runId,
+        userId: owner,
+        tripId,
+        status: 'succeeded',
+        promptVersion: 'goe-v1',
+      });
+      if (!run || run.expectedRevision !== expectedRevision)
+        throw new HttpError(
+          409,
+          'AI_PROPOSAL_STALE',
+          'Đề xuất không còn phù hợp. Hãy tải lại chuyến đi và hỏi Goe lần nữa.',
+        );
+      return trips.save(
+        owner,
+        tripInputSchema.parse(run.proposal.trip),
+        expectedRevision,
+        key,
+        tripId,
+      );
+    },
     async reconcile() {
       // A crashed/timed-out call may have been billed. Keep the reservation counted.
       await Run.updateMany(
@@ -210,7 +274,11 @@ export function plannerService(
         },
       );
     },
-    async propose(owner: Types.ObjectId, input: PlannerRequest, key: string) {
+    async propose(
+      owner: Types.ObjectId,
+      input: PlannerRequest & { adjustment?: GoeRequest },
+      key: string,
+    ): Promise<PlannerProposal> {
       if (!config.GEMINI_API_KEY)
         throw new HttpError(
           503,
@@ -244,6 +312,15 @@ export function plannerService(
         limit: 30,
       });
       const places = items.filter((p) => p.planning);
+      const selected = input.adjustment
+        ? input.trip.days.find((d) => d.dayId === input.adjustment!.dayId)
+        : undefined;
+      if (input.adjustment && !selected)
+        throw new HttpError(
+          400,
+          'INVALID_DAY',
+          'Ngày đang xem không còn trong chuyến đi.',
+        );
       if (!places.length)
         throw new HttpError(
           503,
@@ -292,7 +369,7 @@ export function plannerService(
             tripId: input.tripId,
             expectedRevision: input.expectedRevision,
             model: config.GEMINI_MODEL,
-            promptVersion: 'hoian-v1',
+            promptVersion: input.adjustment ? 'goe-v1' : 'hoian-v1',
             plannerVersion: '1',
             status: 'pending',
             quotaState: 'reserved',
@@ -316,7 +393,24 @@ export function plannerService(
       try {
         const result = await generate({
           destination: 'Hội An',
-          dates: input.trip.days.map((d) => d.date),
+          dates: selected
+            ? [selected.date]
+            : input.trip.days.map((d) => d.date),
+          ...(selected
+            ? {
+                adjustment: {
+                  request: input.adjustment!.message,
+                  currentStops: selected.activities.map((a) => ({
+                    placeId: a.placeId ?? null,
+                    start: a.startLocalTime,
+                    end: a.endLocalTime,
+                    locked: !places.some((p) => p.id === a.placeId),
+                  })),
+                  instruction:
+                    'Modify ONLY this day according to the request. Preserve unchanged stops. Locked stops are retained by the server; do not overlap them and do not include them in output. If request is unsupported (weather facts, guaranteed savings, unavailable places), keep current eligible stops. For slower pace reduce stops or spread them out. Never claim real weather, prices or savings. Output only supplied catalog IDs.',
+                },
+              }
+            : {}),
           travelers: input.trip.travelers.totalCount,
           budget: input.trip.budget,
           preferences: input.trip.preferences,
@@ -328,7 +422,69 @@ export function plannerService(
             location: p.planning!.locationQuery,
           })),
         });
-        proposal = validatePlan(result, input, places, runId);
+        if (selected) {
+          const single = {
+            ...input,
+            trip: {
+              ...input.trip,
+              startDate: selected.date,
+              endDate: selected.date,
+              days: [selected],
+            },
+          };
+          const generated = validatePlan(result, single, places, runId);
+          const kept = selected.activities.filter(
+            (a) => !places.some((p) => p.id === a.placeId),
+          );
+          const activities = [
+            ...generated.trip.days[0]!.activities.map((a) => {
+              const previous = selected.activities.find(
+                (old) => old.placeId === a.placeId,
+              );
+              return previous
+                ? {
+                    ...previous,
+                    startLocalTime: a.startLocalTime,
+                    endLocalTime: a.endLocalTime,
+                  }
+                : a;
+            }),
+            ...kept,
+          ]
+            .sort((a, b) =>
+              (a.startLocalTime ?? '99:99').localeCompare(
+                b.startLocalTime ?? '99:99',
+              ),
+            )
+            .map((a, order) => ({ ...a, order }));
+          let end = '';
+          for (const a of activities)
+            if (a.startLocalTime && a.endLocalTime) {
+              if (a.startLocalTime < end)
+                throw new Error('Locked activity overlap');
+              end = a.endLocalTime;
+            }
+          const trip = tripInputSchema.parse({
+            ...input.trip,
+            generationMode: 'ai',
+            aiRunId: runId,
+            days: input.trip.days.map((d) =>
+              d.dayId === selected.dayId ? { ...d, activities } : d,
+            ),
+          });
+          proposal = {
+            ...generated,
+            trip,
+            budget: calculateBudget(trip),
+            baseRevision: input.expectedRevision!,
+            dayId: selected.dayId,
+            before: selected,
+            warnings: [
+              'Chỉ điều chỉnh ngày đã chọn; các ngày khác giữ nguyên. Giá và ghi chú của điểm giữ lại được bảo toàn.',
+              'Goe chưa có dữ liệu thời tiết, giờ mở cửa hoặc giá trực tiếp. Không bảo đảm tiết kiệm khi còn khoản chưa rõ. Điểm mới chưa có giá cần bạn bổ sung.',
+            ],
+          } as GoeProposal;
+        } else proposal = validatePlan(result, input, places, runId);
       } catch (e) {
         const code = e instanceof HttpError ? e.code : 'AI_INVALID_OUTPUT';
         const rejected = code === 'AI_PROVIDER_REJECTED',

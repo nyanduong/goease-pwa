@@ -469,11 +469,10 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await expect(page.locator('.goe-context-chip')).toContainText(
     'Hội An · Ngày 2',
   );
-  await page.getByRole('button', { name: 'Xem thay đổi', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText(
-    'Ngày này có 1 điểm dừng',
-  );
-  await page.getByRole('button', { name: 'Áp dụng vào bản minh họa' }).click();
+  await expect(
+    page.getByLabel('Hỏi Goe về chuyến đi', { exact: true }),
+  ).toBeEnabled();
+  await expect(page.getByRole('log')).toContainText('bạn xác nhận rồi mới lưu');
   const unchanged = await page.request.get(path);
   expect((await unchanged.json()).data.trip.revision).toBe(
     stored.data.trip.revision,
@@ -732,6 +731,7 @@ test('Hoi An catalog journey and server budget stay connected across save and re
 
 test('live Gemini proposal applies saves reloads and preserves AI provenance', async ({
   page,
+  browser,
 }) => {
   test.skip(
     process.env.LIVE_GEMINI !== '1',
@@ -840,4 +840,161 @@ test('live Gemini proposal applies saves reloads and preserves AI provenance', a
   });
   expect(recovered.status()).toBe(200);
   expect((await recovered.json()).data.runId).toBe(stored.aiRunId);
+  const origin = new URL(page.url()).origin;
+  const headers = () => ({
+    Origin: origin,
+    'X-GoEase-Client': 'web',
+    'Idempotency-Key': crypto.randomUUID(),
+  });
+  const forged = inputFromTrip(stored);
+  forged.days = structuredClone(forged.days);
+  forged.days[0]!.activities[0]!.activityId = crypto.randomUUID();
+  expect(
+    (
+      await page.request.patch(endpoint, {
+        headers: headers(),
+        data: { trip: forged, expectedRevision: stored.revision },
+      })
+    ).status(),
+  ).toBe(400);
+  const edited = {
+    ...inputFromTrip(stored),
+    title: 'Hội An – Gemini đã chỉnh sửa',
+  };
+  expect(
+    (
+      await page.request.patch(endpoint, {
+        headers: headers(),
+        data: { trip: edited, expectedRevision: stored.revision },
+      })
+    ).status(),
+  ).toBe(200);
+  expect(
+    (
+      await page.request.patch(endpoint, {
+        headers: headers(),
+        data: { trip: edited, expectedRevision: stored.revision },
+      })
+    ).status(),
+  ).toBe(409);
+  const other = await browser.newContext();
+  try {
+    expect(
+      (
+        await other.request.post(origin + '/api/v1/auth/register', {
+          headers: headers(),
+          data: {
+            displayName: 'Other test traveler',
+            email: `other-ai-${Date.now()}@example.invalid`,
+            password: 'Other-AI-test-password-2026',
+          },
+        })
+      ).status(),
+    ).toBe(201);
+    expect((await other.request.get(origin + endpoint)).status()).toBe(404);
+    expect(
+      (
+        await other.request.post(origin + '/api/v1/trips', {
+          headers: headers(),
+          data: { trip: inputFromTrip(stored) },
+        })
+      ).status(),
+    ).toBe(409);
+  } finally {
+    await other.close();
+  }
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page.route('**/api/v1/trips/ai-proposal', (r) =>
+    r.fulfill({
+      status: 429,
+      json: {
+        ok: false,
+        error: { code: 'AI_QUOTA', message: 'Đã hết lượt Goe AI hôm nay.' },
+      },
+    }),
+  );
+  await page
+    .getByRole('button', { name: 'Tạo đề xuất bằng Gemini', exact: true })
+    .click();
+  await expect(page.locator('.ai-planner').getByRole('alert')).toContainText(
+    'Đã hết lượt',
+  );
+  await expect(
+    page.getByText('Đề xuất của Goe · Chưa áp dụng', { exact: true }),
+  ).toHaveCount(0);
+  const unchanged = (await (await page.request.get(endpoint)).json()).data
+    .trip as TripDto;
+  expect(unchanged.days).toEqual(stored.days);
+  expect(unchanged.revision).toBe(stored.revision + 1);
+  // Real Goe adjustment reuses Gemini but only changes the selected day.
+  await page.goto(`/goe?trip=${stored.id}&day=0`);
+  await expect(
+    page.getByLabel('Hỏi Goe về chuyến đi', { exact: true }),
+  ).toBeEnabled();
+  const chatResponse = page.waitForResponse('**/goe-proposal', {
+    timeout: 65000,
+  });
+  await page.getByRole('button', { name: 'Đi chậm hơn', exact: true }).click();
+  const chat = await chatResponse;
+  const chatBody = await chat.json();
+  expect(chat.status(), JSON.stringify(chatBody.error ?? {})).toBe(200);
+  expect(chatBody.data.trip.days.slice(1)).toEqual(unchanged.days.slice(1));
+  expect(
+    (await (await page.request.get(endpoint)).json()).data.trip.revision,
+  ).toBe(unchanged.revision);
+  await page.getByRole('button', { name: 'Xem thay đổi', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('Trước');
+  await expect(page.getByRole('dialog')).toContainText('Sau');
+  await page.screenshot({
+    path: '.local/ai-preview/goe-real-proposal.png',
+    fullPage: true,
+  });
+  // Simulate a lost response after the transaction committed, then retry same key.
+  await page.route('**/goe-apply', async (route) => {
+    await route.fetch();
+    await route.abort();
+  });
+  await page
+    .getByRole('button', { name: 'Xác nhận và lưu thay đổi', exact: true })
+    .click();
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+    'Không kết nối',
+  );
+  await page.unroute('**/goe-apply');
+  await page
+    .getByRole('button', { name: 'Xác nhận và lưu thay đổi', exact: true })
+    .click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('log')).toContainText('Đã lưu thay đổi');
+  const adjusted = (await (await page.request.get(endpoint)).json()).data
+    .trip as TripDto;
+  expect(adjusted.revision).toBe(unchanged.revision + 1);
+  expect(adjusted.days).toEqual(chatBody.data.trip.days);
+  expect(adjusted.aiRunId).toBe(chatBody.data.runId);
+  expect(
+    (
+      await page.request.post(endpoint + '/goe-apply', {
+        headers: headers(),
+        data: {
+          runId: chatBody.data.runId,
+          expectedRevision: chatBody.data.baseRevision,
+        },
+      })
+    ).status(),
+  ).toBe(409);
+  await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
+    'Đã lưu',
+  );
+  expect(
+    (await (await page.request.get(endpoint)).json()).data.trip.days,
+  ).toEqual(adjusted.days);
+  await page.screenshot({
+    path: '.local/ai-preview/goe-saved-reloaded.png',
+    fullPage: true,
+  });
 });

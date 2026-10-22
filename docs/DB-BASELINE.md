@@ -1193,3 +1193,7 @@ Các field runtime cụ thể xem `server/src/features/auth/auth.models.ts`, `se
 ## Gemini runtime subset — 2026-10-23
 
 `ai_runs` and `usage_buckets` now have local runtime consumers; their exact implemented fields, bounds, indexes and state transitions are documented in [AI-PLANNER.md](AI-PLANNER.md#runtime-storage-authoritative-implemented-subset). Earlier generic baseline fields remain design targets and are not claims about runtime. Trips/revisions support optional aiRunId and ai/manual origins; ownership and successful proposal provenance are checked in the save transaction. Old manual documents remain compatible. No TTL/retention policy or provider token/cost accounting is implemented.
+
+### Goe run proposal extension (2026-10-23)
+
+Existing ai_runs bounded validated proposal may additionally include before (one original day), dayId UUID and baseRevision integer for promptVersion goe-v1. These server-created fields support before/after preview; apply resolves run owner/target/revision and uses existing trip transaction. Same indexes and collections; no raw chat message collection or migration. Exact runtime contract: AI-PLANNER.md.

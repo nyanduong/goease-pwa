@@ -61,68 +61,36 @@ test('budget preview: categories, responsive layout, missing and exceeded budget
   }
 });
 
-test('Goe preview: preserve, review, apply demo and send without writing a trip', async ({
+test('Goe requires a saved trip before sending and stays responsive', async ({
   page,
 }) => {
   await setup(page);
+  await page.route('**/api/v1/trips', (r) =>
+    r.fulfill({ json: { ok: true, data: { items: [] } } }),
+  );
   const writes: string[] = [];
   page.on('request', (r) => {
-    if (
-      r.url().includes('/api/') &&
-      ['POST', 'PATCH', 'DELETE'].includes(r.method())
-    )
+    if (r.url().includes('/api/') && r.method() === 'POST')
       writes.push(r.url());
   });
   await page.goto('/goe');
   await expect(
     page.getByRole('heading', { name: 'Mình cùng điều chỉnh nhé.' }),
   ).toBeVisible();
-  await expect(page.locator('.goe-demo-note')).toContainText('Chưa kết nối AI');
-  await page.evaluate(() => document.fonts.ready);
-  await expect
-    .poll(() =>
-      page
-        .locator('.goe-chat-page img')
-        .evaluateAll((imgs) =>
-          imgs.every(
-            (img) =>
-              (img as HTMLImageElement).complete &&
-              (img as HTMLImageElement).naturalWidth > 0,
-          ),
-        ),
-    )
-    .toBe(true);
-  await mkdir('.local/mvp-preview', { recursive: true });
-  await page.screenshot({ path: '.local/mvp-preview/goe-390.png' });
+  await expect(
+    page.getByLabel('Hỏi Goe về chuyến đi', { exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: 'Gửi tin nhắn' }),
+  ).toBeDisabled();
+  await expect(page.locator('.goe-demo-note')).toContainText('Gemini');
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 844 });
-    await expect
-      .poll(() =>
-        page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-      )
-      .toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
   }
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Giữ lịch cũ', exact: true }).click();
-  await expect(page.locator('.goe-resolution')).toContainText('Đã giữ lịch cũ');
-  await page.getByRole('button', { name: 'Giảm chi phí', exact: true }).click();
-  await page.getByRole('button', { name: 'Xem thay đổi', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText(
-    'KHÔNG SỬA CHUYẾN ĐI ĐÃ LƯU',
-  );
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Xem thay đổi', exact: true }).click();
-  await page.getByRole('button', { name: 'Áp dụng vào bản minh họa' }).click();
-  await expect(page.locator('.goe-resolution').last()).toContainText(
-    'Đã áp dụng vào bản minh họa',
-  );
-  await page
-    .getByLabel('Hỏi Goe về chuyến đi', { exact: true })
-    .fill('Xin chào');
-  await page.getByRole('button', { name: 'Gửi tin nhắn' }).click();
-  await expect(page.getByRole('log')).toContainText(
-    'Mình đang ở chế độ minh họa',
-  );
   expect(writes).toEqual([]);
 });
