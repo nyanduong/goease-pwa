@@ -37,6 +37,8 @@ const fieldsSchema = z.object({
       '/api/v1/health/db',
       '/api/v1/auth/options',
       '/api/v1/auth/me',
+      '/api/v1/me/profile',
+      '/api/v1/me/password',
       '/api/v1/auth/register',
       '/api/v1/auth/login',
       '/api/v1/auth/logout',

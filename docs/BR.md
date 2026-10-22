@@ -313,3 +313,7 @@ Implemented: owner-only create/edit/soft-delete of independent trip expenses; po
 ## TRIP-03/05/08/09/10/12/13 — Quản lý chuyến đi customer
 
 Phân loại sắp/đang/đã kết thúc theo ngày Việt Nam, không là trạng thái xác nhận đã đi. Dời ngày giữ lịch theo ordinal/stable IDs; chặn rút ngày có hoạt động và PATCH đổi ngày làm mất activity. Expense không dịch ngày theo lịch. Duplicate owner-only tạo lịch manual riêng, không clone thực chi; xóa mềm có revision/audit/idempotency và ẩn mọi expense qua quyền trip. Tổng kết dùng dự toán đã biết và thực chi đã ghi, không báo chắc chắn tiết kiệm. API, giới hạn và policy triển khai ở TRIP-MANAGEMENT.md; restore/purge chưa triển khai.
+
+## Customer account — 2026-10-23
+
+AUTH-03/04/07/08/09: customer sửa tên/avatar qua endpoint profile xác thực và revision, email chỉ đọc. Avatar HTTPS hoặc null, upload chưa triển khai; Google login không ghi đè lựa chọn ảnh hiện có. Đổi mật khẩu phải xác minh password cũ, mới12–128 ký tự và khác cũ; giữ phiên hiện tại, thu hồi mọi phiên khác bằng securityVersion/revokedAt. Google-only không tự đặt password. Replay lần đổi gần nhất bound session/key và hash mới, không lưu request chứa mật khẩu. Chi tiết ACCOUNT-PROFILE.md.

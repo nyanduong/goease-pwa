@@ -247,10 +247,6 @@ export function googleAuth(
           }
           if (!user || !identity)
             throw new Error('Google identity unavailable');
-          if (!user.avatarUrl && accountAvatarUrl(payload.picture)) {
-            user.avatarUrl = accountAvatarUrl(payload.picture);
-            await user.save({ session });
-          }
           const token = await auth.createSession(
             user,
             identity._id,

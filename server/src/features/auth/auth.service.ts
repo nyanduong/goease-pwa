@@ -124,6 +124,46 @@ export function authService(
     );
     return token;
   }
+  async function requireAccount(req: Request) {
+    const value = await authenticate(req);
+    if (!value)
+      throw new HttpError(
+        401,
+        'AUTH_REQUIRED',
+        'Đăng nhập để quản lý tài khoản.',
+      );
+    return value;
+  }
+  async function activeAccount(req: Request, tx: ClientSession) {
+    const token = cookie(req, 'goease_session');
+    const now = new Date();
+    const current = token
+      ? await Session.findOne({
+          sessionTokenHash: tokenHash(token),
+          revokedAt: null,
+          expiresAt: { $gt: now },
+          idleExpiresAt: { $gt: now },
+        }).session(tx)
+      : null;
+    const user = current
+      ? await User.findOne({
+          _id: current.userId,
+          status: 'active',
+          deletedAt: null,
+          securityVersion: current.securityVersionAtIssue,
+        }).session(tx)
+      : null;
+    const linked = current
+      ? await Identity.exists({
+          _id: current.identityId,
+          userId: current.userId,
+          unlinkedAt: null,
+        }).session(tx)
+      : null;
+    if (!user || !current || !linked)
+      throw new HttpError(401, 'SESSION_EXPIRED', 'Vui lòng đăng nhập lại.');
+    return { user, current };
+  }
   return {
     models,
     hasSessionCookie(req: Request) {
@@ -145,6 +185,138 @@ export function authService(
       res.cookie('goease_session', token, {
         ...cookieOptions,
         maxAge: config.SESSION_TTL_SECONDS * 1000,
+      });
+    },
+    async account(req: Request) {
+      const value = await requireAccount(req);
+      const canChangePassword = Boolean(
+        await Identity.exists({
+          userId: value.user._id,
+          provider: 'password',
+          unlinkedAt: null,
+        }),
+      );
+      return {
+        user: userDto(value.user),
+        revision: value.user.revision,
+        canChangePassword,
+      };
+    },
+    async updateProfile(
+      req: Request,
+      value: {
+        displayName: string;
+        avatarUrl: string | null;
+        expectedRevision: number;
+      },
+    ) {
+      await requireAccount(req);
+      const reqId = requestId(),
+        operationId = randomUUID();
+      await connection.transaction(async (tx) => {
+        const { user } = await activeAccount(req, tx);
+        const avatar =
+          value.avatarUrl === null ? null : accountAvatarUrl(value.avatarUrl);
+        if (
+          user.displayName === value.displayName &&
+          (user.avatarUrl ?? null) === avatar
+        )
+          return;
+        if (user.revision !== value.expectedRevision)
+          throw new HttpError(
+            409,
+            'PROFILE_CONFLICT',
+            'Hồ sơ đã thay đổi ở nơi khác. Nội dung đang nhập vẫn được giữ; tải lại trước khi sửa.',
+          );
+        user.displayName = value.displayName;
+        user.avatarUrl = avatar;
+        user.revision++;
+        user.updatedBy = user._id;
+        user.updatedByType = 'user';
+        await user.save({ session: tx });
+        await audit.append(
+          {
+            action: 'profile.updated',
+            actorUserId: String(user._id),
+            entityId: String(user._id),
+            entityRevision: user.revision,
+            requestId: reqId,
+            operationId,
+          },
+          tx,
+        );
+      });
+      return this.account(req);
+    },
+    async changePassword(
+      req: Request,
+      value: { currentPassword: string; newPassword: string },
+      key: string,
+    ) {
+      const account = await requireAccount(req);
+      limit(req, `password-change:${account.user._id}`);
+      const passwordHash = await hash(value.newPassword, argonOptions);
+      const reqId = requestId(),
+        operationId = randomUUID();
+      return connection.transaction(async (tx) => {
+        const { user, current } = await activeAccount(req, tx);
+        const identity = await Identity.findOne({
+          userId: user._id,
+          provider: 'password',
+          unlinkedAt: null,
+        })
+          .select('+passwordHash')
+          .session(tx);
+        if (!identity?.passwordHash)
+          throw new HttpError(
+            400,
+            'PASSWORD_NOT_AVAILABLE',
+            'Tài khoản này dùng Google và chưa có mật khẩu.',
+          );
+        if (current.passwordChangeKey === key) {
+          if (!(await verify(identity.passwordHash, value.newPassword)))
+            throw new HttpError(
+              409,
+              'IDEMPOTENCY_CONFLICT',
+              'Nội dung đổi mật khẩu đã thay đổi.',
+            );
+          return { changed: true };
+        }
+        if (!(await verify(identity.passwordHash, value.currentPassword)))
+          throw new HttpError(
+            400,
+            'PASSWORD_INCORRECT',
+            'Mật khẩu hiện tại chưa đúng.',
+          );
+        identity.passwordHash = passwordHash;
+        identity.passwordChangedAt = new Date();
+        await identity.save({ session: tx });
+        user.securityVersion++;
+        await user.save({ session: tx });
+        current.securityVersionAtIssue = user.securityVersion;
+        current.passwordChangeKey = key;
+        await current.save({ session: tx });
+        await Session.updateMany(
+          { userId: user._id, _id: { $ne: current._id }, revokedAt: null },
+          {
+            $set: {
+              revokedAt: new Date(),
+              revocationReason: 'password_changed',
+            },
+          },
+          { session: tx },
+        );
+        await audit.append(
+          {
+            action: 'password.changed',
+            actorUserId: String(user._id),
+            entityId: String(user._id),
+            requestId: reqId,
+            operationId,
+          },
+          tx,
+        );
+        return { changed: true };
       });
     },
     async register(
@@ -327,6 +499,23 @@ export function authService(
             401,
             'SESSION_EXPIRED',
             'Vui lòng đăng nhập lại.',
+          );
+        // Recheck the credential verified before the transaction and serialize against a password change.
+        const verifiedIdentity = await Identity.findOneAndUpdate(
+          {
+            _id: identity._id,
+            userId: current._id,
+            unlinkedAt: null,
+            passwordHash: identity.passwordHash!,
+          },
+          { $set: { lastUsedAt: new Date() } },
+          { session, returnDocument: 'after' },
+        );
+        if (!verifiedIdentity)
+          throw new HttpError(
+            401,
+            'INVALID_CREDENTIALS',
+            'Email hoặc mật khẩu chưa đúng.',
           );
         return createSession(
           current,

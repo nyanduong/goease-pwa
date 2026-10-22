@@ -7,6 +7,8 @@ const id = z.string().regex(/^[a-f0-9]{24}$/);
 const input = z.strictObject({
   action: z.enum([
     'auth.registered',
+    'profile.updated',
+    'password.changed',
     'auth.email_verified',
     'auth.failed',
     'session.created',
@@ -43,7 +45,11 @@ export function businessAudit(
       const trip = v.action.startsWith('trip.') || expense;
       const authSession = v.action.startsWith('session.');
       if (
-        (trip || authSession || v.action === 'auth.email_verified') &&
+        (trip ||
+          authSession ||
+          v.action === 'auth.email_verified' ||
+          v.action === 'profile.updated' ||
+          v.action === 'password.changed') &&
         !v.actorUserId
       )
         throw new Error('Audit actor required');

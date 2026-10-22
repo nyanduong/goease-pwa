@@ -38,7 +38,7 @@
           "avatarUrl",
           "string?",
           "null",
-          "IMPLEMENTED: HTTPS URL tối đa 2048 ký tự, không credentials; nguồn hồ sơ hoặc claim Google đã xác minh; DTO invalid -> null; fallback ảnh local (AUTH-09). Upload/chỉnh avatar chưa triển khai."
+          "IMPLEMENTED HTTPS max2048, no credentials; owner PATCH profile can set/null with revision. Google claim only on new account. No file upload. See ACCOUNT-PROFILE.md."
         ],
         [
           "status",
@@ -99,7 +99,7 @@
       "rules": "Không soft-delete rồi tạo user mới cùng email để kế thừa trip cũ. Trong grace period dùng flow khôi phục; sau purge tạo account mới có ID mới. Không lưu CCCD, ngày sinh, giới tính, số điện thoại chỉ để đầy profile.",
       "retention": "Profile cho đến yêu cầu xóa hoặc policy inactivity đã duyệt; audit và tài chính xử lý riêng.",
       "brRefs": ["AUTH-01", "AUTH-06", "AUTH-08", "DATA-06", "AUTH-09"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; account runtime 2026-10-23: owner revision profile update; securityVersion bump at password change"
     },
     {
       "name": "auth_identities",
@@ -151,7 +151,7 @@
       "rules": "Điều kiện trường theo discriminator; không lưu access/refresh token Google nếu chỉ login. Linking phải re-auth; không unlink identity cuối cùng còn dùng được. Race linking xử lý E11000 an toàn. Khi unlink, bản cũ không được dùng xác thực.",
       "retention": "Hash/xác thực xóa theo deletion policy; audit chỉ giữ hành động và ID tham chiếu cần thiết.",
       "brRefs": ["AUTH-01", "AUTH-02", "AUTH-03"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; account runtime 2026-10-23: passwordChangedAt on password change; lastUsedAt serializes login with hash changes"
     },
     {
       "name": "auth_sessions",
@@ -212,13 +212,19 @@
           "object? restricted",
           "null",
           "coarse user agent/IP HMAC theo policy; không raw token/cookie."
+        ],
+        [
+          "passwordChangeKey",
+          "UUID string?",
+          "null",
+          "Last password change receipt on this session; replay validates new password hash; no request/password stored."
         ]
       ],
       "indexes": "Unique sessionTokenHash; {userId,revokedAt,lastSeenAt:-1}; TTL expiresAt (expireAfterSeconds:0).",
       "rules": "Cookie HttpOnly/SameSite; production Secure/HTTPS và CSRF/Origin checks phù hợp. Không ép JWT vì mobile. Tách TTL session khỏi log bảo mật cần giữ lâu hơn.",
       "retention": "Session hết hạn được dọn; audit sự kiện login/logout tồn tại theo security retention.",
       "brRefs": ["AUTH-04", "AUTH-06", "AUTH-07"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; account runtime 2026-10-23: passwordChangeKey; password_changed revocation reason; keep current session version and revoke others"
     },
     {
       "name": "auth_challenges",
@@ -2120,7 +2126,7 @@
         "qualification": "DB-BASELINE.md#12-audit-subset-f1-b-đã-triển-khai",
         "productionReady": false
       },
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only; account runtime 2026-10-23: profile.updated/password.changed; identifiers only, no PII/secrets"
     },
     {
       "name": "analytics_events",

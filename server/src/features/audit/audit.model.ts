@@ -57,6 +57,8 @@ export function auditModel(connection: Connection) {
         enum: [
           'system.audit_probe',
           'auth.registered',
+          'profile.updated',
+          'password.changed',
           'auth.email_verified',
           'auth.failed',
           'session.created',

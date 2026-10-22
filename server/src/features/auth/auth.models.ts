@@ -146,7 +146,12 @@ export function authModels(connection: Connection) {
       expiresAt: { type: Date, required: true },
       idleExpiresAt: { type: Date, required: true },
       revokedAt: { type: Date, default: null },
-      revocationReason: { type: String, enum: ['logout'], default: null },
+      revocationReason: {
+        type: String,
+        enum: ['logout', 'password_changed'],
+        default: null,
+      },
+      passwordChangeKey: { type: String, default: null },
     },
     {
       collection: 'auth_sessions',

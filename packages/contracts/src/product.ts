@@ -227,3 +227,34 @@ export function shiftTripDays(
     })),
   };
 }
+
+export const profileUpdateSchema = z.strictObject({
+  displayName: z.string().trim().min(1).max(100),
+  avatarUrl: z
+    .string()
+    .trim()
+    .max(2048)
+    .refine((value) => {
+      try {
+        const u = new URL(value);
+        return u.protocol === 'https:' && !u.username && !u.password;
+      } catch {
+        return false;
+      }
+    })
+    .nullable(),
+  expectedRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+});
+export const passwordChangeSchema = z
+  .strictObject({
+    currentPassword: z.string().min(1).max(128),
+    newPassword: z.string().min(12).max(128),
+  })
+  .refine((v) => v.currentPassword !== v.newPassword, {
+    message: 'Mật khẩu mới phải khác mật khẩu hiện tại.',
+  });
+export type AccountDto = {
+  user: UserDto;
+  revision: number;
+  canChangePassword: boolean;
+};

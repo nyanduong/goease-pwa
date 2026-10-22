@@ -1323,6 +1323,195 @@ test('trip management reschedules without data loss duplicates deletes and summa
   ).toBeVisible();
 });
 
+test('customer profile and password persist and revoke other browser sessions', async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const email = `profile-${Date.now()}@example.invalid`,
+    password = 'Profile-browser-old-2026',
+    next = 'Profile-browser-new-2026';
+  await page.goto('/register');
+  await page.getByLabel('Tên của bạn', { exact: true }).fill('Khách ban đầu');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  const origin = new URL(page.url()).origin;
+  const headers = { Origin: origin, 'X-GoEase-Client': 'web' };
+  const second = await browser.newContext({ baseURL: origin });
+  try {
+    expect(
+      (
+        await second.request.post('/api/v1/auth/login', {
+          headers,
+          data: { email, password },
+        })
+      ).status(),
+    ).toBe(200);
+    await page
+      .getByRole('button', { name: 'Hồ sơ cá nhân', exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/account$/);
+    await page
+      .getByLabel('Tên hiển thị', { exact: true })
+      .fill('Người du lịch mới');
+    await page.route('https://example.com/avatar.png', (r) =>
+      r.fulfill({
+        path: resolve('client/public/images/default-traveler-avatar.png'),
+        contentType: 'image/png',
+      }),
+    );
+    await page
+      .getByLabel('URL ảnh đại diện', { exact: true })
+      .fill('https://example.com/avatar.png');
+    let drop = true;
+    await page.route('**/api/v1/me/profile', async (r) => {
+      if (r.request().method() !== 'PATCH') return r.continue();
+      const response = await r.fetch();
+      expect(response.status()).toBe(200);
+      if (drop) {
+        drop = false;
+        await r.abort();
+      } else await r.fulfill({ response });
+    });
+    await page.getByRole('button', { name: 'Lưu hồ sơ', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('Không kết nối');
+    await expect(page.getByLabel('Tên hiển thị', { exact: true })).toHaveValue(
+      'Người du lịch mới',
+    );
+    await page.getByRole('button', { name: 'Lưu hồ sơ', exact: true }).click();
+    await expect(
+      page.getByText('Đã lưu hồ sơ.', { exact: true }),
+    ).toBeVisible();
+    await page.unroute('**/api/v1/me/profile');
+    await expect(page.locator('.account-profile-head img')).toHaveAttribute(
+      'src',
+      'https://example.com/avatar.png',
+    );
+    await page.reload();
+    await expect(page.getByLabel('Tên hiển thị', { exact: true })).toHaveValue(
+      'Người du lịch mới',
+    );
+    // A concurrent profile edit must not overwrite the retained local input.
+    const profile = (
+      await (await second.request.get('/api/v1/me/profile')).json()
+    ).data;
+    expect(
+      (
+        await second.request.patch('/api/v1/me/profile', {
+          headers,
+          data: {
+            displayName: 'Tên từ phiên khác',
+            avatarUrl: null,
+            expectedRevision: profile.revision,
+          },
+        })
+      ).status(),
+    ).toBe(200);
+    await page.getByLabel('Tên hiển thị', { exact: true }).fill('Bản chưa lưu');
+    await page.getByRole('button', { name: 'Lưu hồ sơ', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('đã thay đổi');
+    await expect(page.getByLabel('Tên hiển thị', { exact: true })).toHaveValue(
+      'Bản chưa lưu',
+    );
+    page.once('dialog', (d) => d.accept());
+    await page
+      .getByRole('button', { name: 'Tải lại hồ sơ', exact: true })
+      .click();
+    await expect(page.getByLabel('Tên hiển thị', { exact: true })).toHaveValue(
+      'Tên từ phiên khác',
+    );
+    await expect(page.locator('.account-profile-head img')).toHaveAttribute(
+      'src',
+      '/images/default-traveler-avatar.png',
+    );
+    await page
+      .getByLabel('Mật khẩu hiện tại', { exact: true })
+      .fill('Wrong-browser-old-2026');
+    await page.getByLabel('Mật khẩu mới', { exact: true }).fill(next);
+    await page.getByLabel('Xác nhận mật khẩu mới', { exact: true }).fill(next);
+    await page
+      .getByRole('button', { name: 'Đổi mật khẩu', exact: true })
+      .click();
+    await expect(
+      page.getByText('Mật khẩu hiện tại chưa đúng.', { exact: true }),
+    ).toBeVisible();
+    await page.getByLabel('Mật khẩu hiện tại', { exact: true }).fill(password);
+    let passwordDrop = true;
+    const keys: string[] = [];
+    await page.route('**/api/v1/me/password', async (r) => {
+      keys.push(r.request().headers()['idempotency-key']!);
+      const response = await r.fetch();
+      expect(response.status()).toBe(200);
+      if (passwordDrop) {
+        passwordDrop = false;
+        await r.abort();
+      } else await r.fulfill({ response });
+    });
+    await page
+      .getByRole('button', { name: 'Đổi mật khẩu', exact: true })
+      .click();
+    await page
+      .getByRole('button', { name: 'Thử lại đổi mật khẩu', exact: true })
+      .click();
+    await expect(
+      page.getByText(
+        'Đã đổi mật khẩu và đăng xuất các phiên khác. Phiên hiện tại vẫn được giữ.',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    expect(keys.length).toBe(2);
+    expect(keys[0]).toBe(keys[1]);
+    await expect(
+      page.getByLabel('Mật khẩu hiện tại', { exact: true }),
+    ).toHaveValue('');
+    await expect(page.getByLabel('Mật khẩu mới', { exact: true })).toHaveValue(
+      '',
+    );
+    expect((await second.request.get('/api/v1/me/profile')).status()).toBe(401);
+    expect(
+      (
+        await second.request.post('/api/v1/auth/login', {
+          headers,
+          data: { email, password },
+        })
+      ).status(),
+    ).toBe(401);
+    expect(
+      (
+        await second.request.post('/api/v1/auth/login', {
+          headers,
+          data: { email, password: next },
+        })
+      ).status(),
+    ).toBe(200);
+    for (const width of [320, 390, 768]) {
+      await page.setViewportSize({ width, height: 844 });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mkdir('.local/account-preview', { recursive: true });
+    await page.screenshot({
+      path: '.local/account-preview/profile-390.png',
+      fullPage: true,
+    });
+    await page.reload();
+    await expect(page.getByLabel('Tên hiển thị', { exact: true })).toHaveValue(
+      'Tên từ phiên khác',
+    );
+  } finally {
+    await second.close();
+  }
+});
+
 test('live Gemini proposal applies saves reloads and preserves AI provenance', async ({
   page,
   browser,

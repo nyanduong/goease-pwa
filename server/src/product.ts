@@ -5,6 +5,8 @@ import { Router } from 'express';
 import mongoose, { type Connection } from 'mongoose';
 import { z } from 'zod';
 import {
+  profileUpdateSchema,
+  passwordChangeSchema,
   tripActionSchema,
   tripDuplicateSchema,
   tripListQuerySchema,
@@ -54,6 +56,8 @@ export function createProduct(connection: Connection, config: Config) {
     const publicTemplates = [
       '/auth/options',
       '/auth/me',
+      '/me/profile',
+      '/me/password',
       '/auth/register',
       '/auth/login',
       '/auth/logout',
@@ -163,6 +167,25 @@ export function createProduct(connection: Connection, config: Config) {
     await auth.logout(req, res);
     res.json({ ok: true, data: { loggedOut: true } });
   });
+  router.get('/me/profile', async (req, res) =>
+    res.json({ ok: true, data: await auth.account(req) }),
+  );
+  router.patch('/me/profile', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await auth.updateProfile(req, parse(profileUpdateSchema, req.body)),
+    }),
+  );
+  router.post('/me/password', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await auth.changePassword(
+        req,
+        parse(passwordChangeSchema, req.body),
+        parse(z.string().regex(uuidPattern), req.get('Idempotency-Key')),
+      ),
+    }),
+  );
   router.get('/auth/google', google.begin);
   router.get('/auth/google/callback', google.callback);
   router.get('/destinations', async (_req, res) =>

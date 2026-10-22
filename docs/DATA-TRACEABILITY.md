@@ -240,3 +240,7 @@ Expense runtime: trip_expenses records private descriptions, VND amounts and dat
 ## Trip management — 2026-10-23
 
 Owned source snapshot → duplicate mới với clonedFromTripId nội bộ, manual source và ID mới; không copy expenses/ai_runs/history/access. Soft delete giữ expense/history nhưng chặn truy cập bằng active owned parent; audit ghi actor/entity/revision, không tên/notes. Không có purge, restore hay share-links runtime. Dời ngày không đổi ngày chi thực tế. Chi tiết TRIP-MANAGEMENT.md.
+
+## Customer account — 2026-10-23
+
+Profile data chỉ customer đã xác thực đọc/sửa. Password chỉ trong request/memory và Argon2id hash hiện có; không ghi requestHash từ mật khẩu hoặc receipt payload. Session giữ UUID key gần nhất để retry, mất khi session bị dọn. Audit profile.updated/password.changed chỉ actor/entity/action/revision, không tên/avatar/password/hash. URL ảnh chỉ browser tải với no-referrer; không proxy server. Quên mật khẩu/email delivery/upload media chưa triển khai. ACCOUNT-PROFILE.md ghi chi tiết.

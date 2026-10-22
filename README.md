@@ -208,3 +208,7 @@ Chi tiêu thực tế: mở chuyến đi đã lưu → Chi phí → Thực chi �
 ## Quản lý chuyến đi
 
 Trang Chuyến đi có bộ lọc Sắp đi / Đang đi / Đã kết thúc và phân trang. Mở chuyến → Thông tin chuyến đi để chỉnh tên/ngày/người/ngân sách, nhân bản hoặc xóa; tab Tổng kết so sánh dự toán và thực chi. Dời ngày giữ lịch và thực chi; rút ngắn ngày có hoạt động bị chặn. Xem [hợp đồng và giới hạn](docs/TRIP-MANAGEMENT.md).
+
+## Customer account — 2026-10-23
+
+Bấm avatar Trang chủ để mở Hồ sơ & bảo mật: sửa tên, URL ảnh HTTPS/xóa ảnh và đổi mật khẩu với password hiện tại. Các phiên khác được thu hồi; phiên hiện tại giữ nguyên. Google-only không có form đổi mật khẩu GoEase. Chưa hỗ trợ upload ảnh hoặc quên mật khẩu. Xem [hợp đồng và giới hạn](docs/ACCOUNT-PROFILE.md).

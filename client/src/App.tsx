@@ -1,3 +1,4 @@
+import { AccountPage } from './components/account-page';
 import { ExplorePage, PlaceDetail, placeActivity } from './components/explore';
 import { AccountAvatar } from './components/account-avatar';
 import { Compass, Map, House, Bird, Bookmark } from 'lucide-react';
@@ -400,7 +401,13 @@ export function App() {
                     <span role="status">Đang kiểm tra phiên…</span>
                   ) : user ? (
                     <div className="user-menu">
-                      <AccountAvatar user={user} />
+                      <button
+                        type="button"
+                        aria-label="Hồ sơ cá nhân"
+                        onClick={() => go('/account')}
+                      >
+                        <AccountAvatar user={user} />
+                      </button>
                       <button
                         type="button"
                         className="button button-subtle button-small"
@@ -673,6 +680,16 @@ export function App() {
             onStart={(id) => (id ? startWithDestination(id) : start())}
             onNavigate={go}
           />
+        ) : path === '/account' ? (
+          sessionStatus === 'loading' ? (
+            <Notice>Đang kiểm tra phiên…</Notice>
+          ) : user ? (
+            <AccountPage key={user.id} onSaved={setUser} />
+          ) : (
+            <Notice>
+              Đăng nhập để quản lý hồ sơ. {link('/login', 'Đăng nhập')}
+            </Notice>
+          )
         ) : path === '/login' || path === '/register' ? (
           <AuthPage
             key={path}
