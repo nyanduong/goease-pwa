@@ -55,6 +55,8 @@ Backend xác định actor từ phiên đã xác thực. Role không lấy từ 
 | AUTH-07 | Chống lạm dụng                      | Đăng nhập, reset, xác minh và AI có hạn mức tại server. Reset response không tiết lộ email tồn tại. Token reset dùng một lần, lưu hash, có hạn dùng.                                                                 |
 | AUTH-08 | Nguyên tắc quyền                    | Mọi read/update/delete/export kiểm tra quyền. Request không được tự đặt ownerId, roles, createdBy, revision, status paid hoặc thời gian audit.                                                                       |
 
+| AUTH-09 | Trang chủ sau đăng nhập và ảnh đại diện | Đăng nhập/đăng ký thành công đưa người dùng về Trang chủ `/`, không tự mở chuyến đi hay tiếp tục `next=/trips/new`. Avatar dùng URL HTTPS của tài khoản nếu có; khi thiếu hoặc tải lỗi dùng avatar người du lịch mặc định. URL ảnh Google chỉ nhận từ claim đã xác minh; không chấp nhận avatar do client tự gửi trong login/register. |
+
 ### B. Danh mục, nguồn dữ liệu và nội dung
 
 | Mã     | Quy tắc                        | Yêu cầu kiểm tra/thiết kế                                                                                                                                                         |

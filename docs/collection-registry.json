@@ -35,6 +35,12 @@
           "Tham chiếu media_assets; không sao chép provider image khi chưa rõ quyền."
         ],
         [
+          "avatarUrl",
+          "string?",
+          "null",
+          "IMPLEMENTED: HTTPS URL tối đa 2048 ký tự, không credentials; nguồn hồ sơ hoặc claim Google đã xác minh; DTO invalid -> null; fallback ảnh local (AUTH-09). Upload/chỉnh avatar chưa triển khai."
+        ],
+        [
           "status",
           "enum",
           "active for new email/password account",
@@ -92,7 +98,7 @@
       "indexes": "Unique partial emailNormalized khi là string, KHÔNG giới hạn deletedAt; {status:1,createdAt:-1}.",
       "rules": "Không soft-delete rồi tạo user mới cùng email để kế thừa trip cũ. Trong grace period dùng flow khôi phục; sau purge tạo account mới có ID mới. Không lưu CCCD, ngày sinh, giới tính, số điện thoại chỉ để đầy profile.",
       "retention": "Profile cho đến yêu cầu xóa hoặc policy inactivity đã duyệt; audit và tài chính xử lý riêng.",
-      "brRefs": ["AUTH-01", "AUTH-06", "AUTH-08", "DATA-06"],
+      "brRefs": ["AUTH-01", "AUTH-06", "AUTH-08", "DATA-06", "AUTH-09"],
       "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {

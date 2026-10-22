@@ -1,0 +1,12 @@
+/** Only public HTTPS image URLs are exposed; old accounts may have no avatar. */
+export function accountAvatarUrl(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length > 2048) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}

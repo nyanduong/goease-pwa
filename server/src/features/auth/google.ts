@@ -1,3 +1,4 @@
+import { accountAvatarUrl } from './avatar.js';
 import {
   createCipheriv,
   createDecipheriv,
@@ -231,6 +232,7 @@ export function googleAuth(
                 typeof payload.name === 'string'
                   ? payload.name.slice(0, 100) || 'Bạn đồng hành'
                   : 'Bạn đồng hành',
+              avatarUrl: accountAvatarUrl(payload.picture),
               status: 'active',
               emailVerifiedAt: new Date(),
             }).save({ session });
@@ -245,6 +247,10 @@ export function googleAuth(
           }
           if (!user || !identity)
             throw new Error('Google identity unavailable');
+          if (!user.avatarUrl && accountAvatarUrl(payload.picture)) {
+            user.avatarUrl = accountAvatarUrl(payload.picture);
+            await user.save({ session });
+          }
           const token = await auth.createSession(
             user,
             identity._id,
@@ -255,7 +261,7 @@ export function googleAuth(
           return { token, user: userDto(user) };
         });
         auth.setCookie(res, result.token);
-        res.redirect(`${config.CLIENT_ORIGIN}/trips`);
+        res.redirect(`${config.CLIENT_ORIGIN}/`);
       } catch (error) {
         res.redirect(
           `${config.CLIENT_ORIGIN}/login?google=${error instanceof HttpError && error.code === 'ACCOUNT_LINK_REQUIRED' ? 'link_required' : 'failed'}`,

@@ -281,6 +281,11 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await page
     .getByRole('button', { name: 'Tạo tài khoản', exact: false })
     .click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
+  ).toBeVisible();
+  await page.goto('/trips');
   await expect(
     page.getByRole('heading', { name: 'Chuyến đi của tôi', exact: true }),
   ).toBeVisible();
@@ -462,6 +467,8 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await page.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
   await page.goto('/login');
   await login();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto('/trips');
   await page.getByRole('link', { name: 'Mở lịch trình' }).click();
   await page.getByRole('tab', { name: 'Ngày 2' }).click();
   await expect(page.getByLabel('Tên hoạt động', { exact: true })).toHaveValue(

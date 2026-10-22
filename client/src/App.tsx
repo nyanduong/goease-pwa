@@ -1,3 +1,6 @@
+import { AccountAvatar } from './components/account-avatar';
+import { Compass, Map, House, Bird, Bookmark } from 'lucide-react';
+import { HomeDiscovery } from './components/home-discovery';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   tripInputSchema,
@@ -35,7 +38,6 @@ export function App() {
   const [destinationStatus, setDestinationStatus] = useState<
     'loading' | 'ready' | 'error'
   >('loading');
-  const [destinationQuery, setDestinationQuery] = useState('');
   const [tripsStatus, setTripsStatus] = useState<
     'idle' | 'loading' | 'ready' | 'error'
   >('idle');
@@ -323,6 +325,7 @@ export function App() {
     path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path);
   const isAuth = path === '/login' || path === '/register';
   const isWelcome = path === '/welcome';
+  const isDiscovery = ['/', '/explore', '/saved', '/goe'].includes(path);
   const setOnboardingSeen = (seen: boolean) => {
     setWelcomeSeenInMemory(seen);
     try {
@@ -332,16 +335,6 @@ export function App() {
     }
   };
   const markWelcomeSeen = () => setOnboardingSeen(true);
-  const fold = (value: string) =>
-    value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .toLocaleLowerCase('vi');
-  const visibleDestinations = destinations.filter((d) =>
-    fold(d.name).includes(fold(destinationQuery)),
-  );
 
   return (
     <div
@@ -381,16 +374,7 @@ export function App() {
                     <span role="status">Đang kiểm tra phiên…</span>
                   ) : user ? (
                     <div className="user-menu">
-                      <span
-                        className="home-avatar"
-                        title={user.displayName}
-                        aria-label={user.displayName}
-                      >
-                        {user.displayName
-                          .trim()
-                          .slice(0, 1)
-                          .toLocaleUpperCase('vi')}
-                      </span>
+                      <AccountAvatar user={user} />
                       <button
                         type="button"
                         className="button button-subtle button-small"
@@ -419,14 +403,7 @@ export function App() {
                       Thử kết nối lại
                     </button>
                   ) : (
-                    link(
-                      '/login',
-                      <img
-                        src="/images/goe-mascot-cutout.png"
-                        alt="Đăng nhập"
-                      />,
-                      'home-avatar-link',
-                    )
+                    link('/login', <AccountAvatar />, 'home-avatar-link')
                   )}
                 </div>
               </>
@@ -452,10 +429,21 @@ export function App() {
         </div>
       )}
 
+      {isEditor && destinationStatus === 'error' && (
+        <Notice error>
+          Chưa tải được danh mục điểm đến.{' '}
+          <button
+            className="text-button"
+            onClick={() => setDestinationRetry((v) => v + 1)}
+          >
+            Thử lại
+          </button>
+        </Notice>
+      )}
       <main
-        className="container main-content-wrap"
+        className={isWelcome ? 'welcome-main' : 'container main-content-wrap'}
         onClickCapture={
-          path === '/' && sessionStatus === 'ready' && !user
+          isDiscovery && sessionStatus === 'ready' && !user
             ? (event) => {
                 const target = event.target as HTMLElement;
                 if (
@@ -494,34 +482,59 @@ export function App() {
           </section>
         ) : path === '/welcome' ? (
           <section className="welcome-page" aria-labelledby="welcome-title">
-            <div className="welcome-copy">
-              <Brand />
-              <h1 id="welcome-title">
-                Just go.
-                <br />
-                <em>We’ll plan.</em>
-              </h1>
-              <p className="welcome-subtitle">Việt Nam, theo cách của bạn.</p>
-              <div
-                className="welcome-scene"
-                role="img"
-                aria-label="Vịnh Hạ Long trong ánh bình minh, cùng Goe"
-              >
-                <img
-                  className="welcome-landscape"
-                  src="/images/welcome-halong-bay.png"
-                  alt="Vịnh Hạ Long trong ánh bình minh"
-                />
-                <img
-                  className="welcome-mascot"
-                  src="/images/goe-mascot-cutout.png"
-                  alt="Goe, linh thú du lịch GoEase"
-                />
+            <div className="welcome-hero">
+              <img
+                className="welcome-landscape"
+                src="/images/welcome-halong-bay.png"
+                alt=""
+              />
+              <div className="welcome-heading">
+                <Brand />
+                <h1 id="welcome-title">
+                  Just go.
+                  <br />
+                  <em>We’ll plan.</em>
+                </h1>
+                <p className="welcome-subtitle">Việt Nam, theo cách của bạn.</p>
               </div>
+              <svg
+                className="welcome-route"
+                viewBox="0 0 320 240"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M22 210C35 179 104 205 130 152S213 134 250 41"
+                  stroke="#fffdf3"
+                  strokeWidth="2"
+                  strokeDasharray="6 6"
+                  strokeLinecap="round"
+                />
+                {[
+                  { x: 22, y: 205 },
+                  { x: 140, y: 146 },
+                  { x: 250, y: 36 },
+                ].map(({ x, y }) => (
+                  <g key={x} transform={`translate(${x} ${y})`}>
+                    <path
+                      d="M0 5C-3 1-8-4-8-9a8 8 0 1 1 16 0c0 5-5 10-8 14Z"
+                      fill="#fffdf3"
+                    />
+                    <circle cy="-9" r="3" fill="#c9d1ba" />
+                  </g>
+                ))}
+              </svg>
+              <img
+                className="welcome-mascot"
+                src="/images/goe-mascot-cutout.png"
+                alt="Goe, linh thú du lịch GoEase"
+              />
+            </div>
+            <div className="welcome-actions">
               <p className="welcome-promise">
                 Bạn chọn niềm vui.
                 <br />
-                GoEase giúp bạn tự tay lên kế hoạch.
+                Goe lo phần kế hoạch.
               </p>
               <button
                 className="button button-primary"
@@ -530,7 +543,7 @@ export function App() {
                   go('/');
                 }}
               >
-                Bắt đầu hành trình ↗
+                Bắt đầu hành trình →
               </button>
               <a
                 href="/"
@@ -543,187 +556,29 @@ export function App() {
               >
                 Khám phá trước
               </a>
-              <small>Không cần tài khoản để khám phá GoEase.</small>
+              <small>Không cần tài khoản để bắt đầu</small>
             </div>
-            {!user &&
-              link(
-                '/login',
-                'Đăng nhập',
-                'button button-small button-outline welcome-login',
-              )}
           </section>
-        ) : path === '/' ? (
-          <>
-            <section className="home-intro" aria-label="Chào bạn, mình là Goe">
-              <p className="eyebrow">
-                <span /> CHÀO BẠN, MÌNH LÀ GOE
-              </p>
-              <h1>
-                Hôm nay, mình
-                <br />
-                đi đâu?
-              </h1>
-              <label className="home-search">
-                <span aria-hidden="true">⌕</span>
-                <input
-                  aria-label="Tìm điểm đến ở Việt Nam"
-                  type="search"
-                  value={destinationQuery}
-                  onChange={(e) => setDestinationQuery(e.target.value)}
-                  placeholder="Tìm điểm đến ở Việt Nam"
-                />
-              </label>
-            </section>
-
-            <section className="home-plan-banner" aria-label="Tạo chuyến đi">
-              <div className="home-plan-copy">
-                <h2>
-                  Một ý tưởng.
-                  <br />
-                  Cả một hành trình.
-                </h2>
-                <p>Theo sở thích và lịch trình của bạn</p>
-                <button
-                  type="button"
-                  className="button button-primary"
-                  onClick={start}
-                >
-                  Tạo chuyến đi <span>↗</span>
-                </button>
-              </div>
-              <img
-                src="/images/goe-mascot-cutout.png"
-                alt="Goe, linh thú du lịch GoEase"
-                className="home-plan-mascot"
-              />
-              <span className="home-plan-glass" aria-hidden="true" />
-            </section>
-
-            {/* Destination catalog comes from the API; no category labels are invented. */}
-            <section className="home-destinations" aria-label="Điểm đến gợi ý">
-              <div className="section-header-compact">
-                <div>
-                  <p className="eyebrow">
-                    <span /> GỢI Ý ĐIỂM ĐẾN
-                  </p>
-                  <h2>Đi gần hay đi xa?</h2>
-                </div>
-                <span className="muted-text">
-                  Tìm trong các điểm đến đang có trên GoEase
-                </span>
-              </div>
-              {destinationStatus === 'loading' ? (
-                <Notice>Đang tải điểm đến…</Notice>
-              ) : destinationStatus === 'error' ? (
-                <Notice error>
-                  Chưa tải được danh mục điểm đến.{' '}
-                  <button
-                    className="text-button"
-                    onClick={() => setDestinationRetry((v) => v + 1)}
-                  >
-                    Thử lại
-                  </button>
-                </Notice>
-              ) : destinations.length === 0 ? (
-                <p>Danh mục điểm đến hiện chưa có dữ liệu.</p>
-              ) : visibleDestinations.length === 0 ? (
-                <p>
-                  Không tìm thấy điểm đến phù hợp.{' '}
-                  <button
-                    className="text-button"
-                    onClick={() => setDestinationQuery('')}
-                  >
-                    Xóa từ khóa
-                  </button>
-                </p>
-              ) : (
-                <div className="destinations-pills-row">
-                  {visibleDestinations.map((d) => (
-                    <button
-                      type="button"
-                      key={d.id}
-                      className="destination-chip-card"
-                      onClick={() => startWithDestination(d.id)}
-                    >
-                      <span className="dest-chip-name">{d.name}</span>
-                      <span className="dest-chip-arrow">↗</span>
-                      <small>Lên kế hoạch tại đây</small>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {user ? (
-              <section
-                className="home-recent-trips"
-                aria-label="Chuyến đi của bạn"
-              >
-                <div className="section-header-compact">
-                  <div>
-                    <p className="eyebrow">
-                      <span /> CHUYẾN ĐI CỦA BẠN
-                    </p>
-                    <h2>Những kế hoạch gần đây</h2>
-                  </div>
-                  {link('/trips', 'Xem tất cả ↗', 'text-button')}
-                </div>
-                {tripsStatus === 'loading' ? (
-                  <Notice>Đang tải chuyến đi…</Notice>
-                ) : tripsStatus === 'error' ? (
-                  <Notice error>
-                    Chưa tải được chuyến đi.{' '}
-                    <button
-                      className="text-button"
-                      onClick={() => setTripsRetry((v) => v + 1)}
-                    >
-                      Thử lại
-                    </button>
-                  </Notice>
-                ) : list.length === 0 ? (
-                  <div className="empty-state panel">
-                    <Goe size="small" />
-                    <h2>Chưa có chuyến đi nào</h2>
-                    <p>Tạo lịch trình đầu tiên và lưu vào tài khoản.</p>
-                    <button className="button button-primary" onClick={start}>
-                      Tạo chuyến đi
-                    </button>
-                  </div>
-                ) : (
-                  <div className="trip-grid recent-trip-grid">
-                    {list.slice(0, 3).map((trip) => (
-                      <article className="trip-card" key={trip.id}>
-                        <div className="trip-card-art">
-                          <span className="trip-card-art-arrow">↗</span>
-                          <span className="trip-card-art-dest">
-                            {trip.destinationName}
-                          </span>
-                        </div>
-                        <div className="trip-card-body">
-                          <h2>{link(`/trips/${trip.id}`, trip.title)}</h2>
-                          <p>
-                            {trip.destinationName} · {trip.startDate} →{' '}
-                            {trip.endDate} · {trip.travelers.totalCount} người
-                          </p>
-                          {link(
-                            `/trips/${trip.id}`,
-                            'Mở lịch trình ↗',
-                            'text-button',
-                          )}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-            ) : (
-              <section className="home-recent-trips guest-trips">
-                <h2>Chuyến đi của bạn</h2>
-                <p>Đăng nhập để lưu và mở lại lịch trình của riêng mình.</p>
-                {link('/login', 'Đăng nhập', 'button button-outline')}
-              </section>
-            )}
-          </>
+        ) : isDiscovery ? (
+          <HomeDiscovery
+            key={user?.id ?? 'guest'}
+            mode={
+              path === '/explore'
+                ? 'explore'
+                : path === '/saved'
+                  ? 'saved'
+                  : path === '/goe'
+                    ? 'goe'
+                    : 'home'
+            }
+            user={user}
+            destinations={destinations}
+            trips={list}
+            tripsStatus={tripsStatus}
+            onRetry={() => setTripsRetry((v) => v + 1)}
+            onStart={(id) => (id ? startWithDestination(id) : start())}
+            onNavigate={go}
+          />
         ) : path === '/login' || path === '/register' ? (
           <AuthPage
             key={path}
@@ -733,13 +588,7 @@ export function App() {
               setUser(v);
               setExpiredSession(false);
               setOnboardingSeen(false);
-              go(
-                new URLSearchParams(location.search).get('next') ===
-                  '/trips/new' ||
-                  (!loaded && draft.title)
-                  ? '/trips/new'
-                  : '/trips',
-              );
+              go('/');
             }}
           />
         ) : path === '/trips' ? (
@@ -964,26 +813,33 @@ export function App() {
       {/* Mobile persistent bottom navigation bar */}
       {!isAuth && !isWelcome && (
         <nav className="mobile-bottom-nav" aria-label="Điều hướng di động">
-          {link(
-            '/',
-            <>
-              <span className="bottom-nav-icon" aria-hidden="true">
-                ⌂
+          {[
+            { to: '/explore', label: 'Khám phá', Icon: Compass },
+            { to: '/trips', label: 'Chuyến đi', Icon: Map },
+            { to: '/', label: 'Trang chủ', Icon: House },
+            { to: '/goe', label: 'Goe', Icon: Bird },
+            { to: '/saved', label: 'Đã lưu', Icon: Bookmark },
+          ].map(({ to, label, Icon }) => (
+            <a
+              key={to}
+              href={to}
+              aria-current={
+                path === to || (to === '/trips' && path.startsWith('/trips'))
+                  ? 'page'
+                  : undefined
+              }
+              className={`mobile-nav-item ${to === '/' ? 'mobile-nav-home' : ''} ${path === to || (to === '/trips' && path.startsWith('/trips')) ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                go(!user && to !== '/' ? '/login' : to);
+              }}
+            >
+              <span className="bottom-nav-icon">
+                <Icon size={22} strokeWidth={1.6} aria-hidden="true" />
               </span>
-              <span>Trang chủ</span>
-            </>,
-            `mobile-nav-item ${path === '/' ? 'active' : ''}`,
-          )}
-          {link(
-            '/trips',
-            <>
-              <span className="bottom-nav-icon" aria-hidden="true">
-                ↗
-              </span>
-              <span>Chuyến đi của tôi</span>
-            </>,
-            `mobile-nav-item ${path.startsWith('/trips') ? 'active' : ''}`,
-          )}
+              <span>{label}</span>
+            </a>
+          ))}
         </nav>
       )}
     </div>

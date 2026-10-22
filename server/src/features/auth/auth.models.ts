@@ -1,3 +1,4 @@
+import { accountAvatarUrl } from './avatar.js';
 import { Schema, type Connection, type Types } from 'mongoose';
 
 export interface UserRecord {
@@ -5,6 +6,7 @@ export interface UserRecord {
   emailNormalized: string;
   emailVerifiedAt?: Date | null;
   displayName: string;
+  avatarUrl?: string | null;
   status:
     | 'pending_verification'
     | 'active'
@@ -32,6 +34,13 @@ export function authModels(connection: Connection) {
       emailNormalized: { type: String, required: true, maxlength: 254 },
       emailVerifiedAt: { type: Date, default: null },
       displayName: { type: String, required: true, maxlength: 100 },
+      avatarUrl: {
+        type: String,
+        default: null,
+        maxlength: 2048,
+        validate: (value: string | null) =>
+          value === null || accountAvatarUrl(value) !== null,
+      },
       status: {
         type: String,
         enum: [

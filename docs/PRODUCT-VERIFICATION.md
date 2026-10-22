@@ -67,3 +67,25 @@ Các mặc định kỹ thuật: session tuyệt đối 7 ngày/idle 1 ngày (co
 - **Email verification thật:** chưa có provider/flow. Tài khoản email/password vẫn usable với email chưa xác minh; không dùng email đó để merge/link hoặc cấp quyền đặc biệt. Production yêu cầu HTTPS/Secure cookie; live deployment chưa được kiểm chứng.
 - Chưa có link/unlink identity, password recovery, quản lý thiết bị, logout-all UI; chưa có restore/merge lịch sử, xóa chuyến, sharing/map, discovery/AI, commerce hoặc offline cache. Không bị loại khỏi hướng sản phẩm tương lai.
 - Chưa chạy kiểm thử provider live, Atlas, deployment, tải/concurrency nhiều instance hoặc audit retention/purge job. In-memory limiter cần thay thế trước khi scale nhiều API instance.
+
+## Tinh chỉnh màn chào mừng mobile — 2026-10-22
+
+Đã tách `/welcome` khỏi container/padding dùng chung của ứng dụng; thay các rule welcome trùng lặp bằng một bố cục hero và phần hành động. Nền Hạ Long mới được tạo bằng ImageGen theo reference của chủ sản phẩm; logo GoEase và mascot PNG trong suốt được giữ riêng. Tiêu đề nằm trên ảnh, Goe nằm ở góc phải trên mép phần hành động; lời hứa, nút và chú thích căn giữa. Không dựng thanh trạng thái điện thoại giả.
+
+Đã quan sát trực tiếp trên Chrome ở 318×706 và 390×844: ảnh tải đủ, kích thước document bằng viewport, dòng chú thích cuối nằm trong màn hình. Đã click “Bắt đầu hành trình” đến `/`, sau đó click “Tạo chuyến đi” với khách và thấy `/login`. Typecheck, lint, format và build đạt. Ảnh browser local lưu ở `test-results/welcome-refined-318.png` và `test-results/welcome-refined-390.png` (không commit artifacts). Đây là kiểm tra UI local, chưa triển khai lên môi trường public.
+
+## Trang chủ mobile theo reference — 2026-10-22
+
+Trang chủ có lời chào, tìm kiếm, banner kính xanh với Goe, bộ lọc Tất cả/Thiên nhiên/Văn hóa, thẻ gợi ý Hội An và Sa Pa, cùng danh sách chuyến đi thật hoặc trạng thái khách/rỗng/lỗi. Ảnh minh họa AI lưu local tại `client/public/images/destination-hoian.png` và `destination-sapa.png`; URL được khai báo trong `client/src/components/home-discovery.tsx` để đổi sang Cloudinary sau. Thẻ gợi ý là nội dung khám phá, không phải chuyến đi của người dùng. Nếu địa điểm chưa có trong catalog API, thẻ mở form tạo chuyến để người dùng chọn địa điểm hợp lệ.
+
+Thanh mobile có năm mục theo thứ tự Khám phá, Chuyến đi, **Trang chủ**, Goe, Đã lưu. Trang chủ ở giữa và có aria-current đúng. `/explore` hiển thị bộ lọc gợi ý; `/saved` hiển thị dấu trang lưu local theo user ID và nói rõ lưu trên trình duyệt, chưa đồng bộ server; `/goe` nêu rõ trợ lý gợi ý hành trình chưa triển khai, có CTA tạo lịch thủ công. Khách tương tác ở Trang chủ hoặc chọn mục khác trên thanh dưới được chuyển tới login. Không giả avatar người thật hoặc chuyến đi có sẵn.
+
+Kiểm chứng: typecheck, lint, format, build đạt; đã quan sát Chrome ở 390×844 và 325×713, ảnh tải thành công, thứ tự và trạng thái thanh điều hướng đúng. Kích hoạt thẻ Hội An bằng bàn phím khi chưa đăng nhập đã tới `/login`. Ảnh browser local ở `test-results/home-redesign-390.png` và `home-redesign-325.png`. Chưa kiểm chứng bookmark qua nhiều lần đăng nhập hoặc triển khai Cloudinary/public.
+
+## Sau đăng nhập và avatar — 2026-10-22
+
+AUTH-09: email/password register/login và callback Google thành công về `/`; không tự chuyển tới `/trips` hoặc `/trips/new` từ query `next` hay nháp đang có. Header đọc `UserDto.avatarUrl`; tài khoản cũ thiếu field vẫn dùng được. `users.avatarUrl` nullable, kiểm tra HTTPS/độ dài/credentials ở server. Callback chỉ lấy picture từ token Google đã xác minh và giữ avatar đã có; Google live chưa kiểm chứng vì chưa cấu hình provider. Chưa có chức năng upload/chỉnh ảnh.
+
+Avatar người du lịch được tạo bằng ImageGen, lưu `client/public/images/default-traveler-avatar.png`. Thiếu URL hoặc lỗi tải chuyển về ảnh này; ảnh không gửi referrer. Ảnh mặc định cũng dùng cho nút đăng nhập của khách.
+
+Kiểm chứng: 9 unit/HTTP tests đạt; 3 browser tests với auth response mô phỏng đạt cho không có avatar, có avatar và avatar tải lỗi; cả ba kiểm tra login có `next=/trips/new` vẫn về Trang chủ và reload giữ Trang chủ. Đây là kiểm tra routing/ảnh ở UI, không phải login Google live. Các kiểm tra typecheck/lint/build và format được chạy cho thay đổi này.

@@ -145,6 +145,7 @@ export type UserDto = {
   displayName: string;
   email: string;
   emailVerified: boolean;
+  avatarUrl?: string | null;
 };
 export type TripDto = TripInput & {
   id: string;

@@ -1,3 +1,4 @@
+import { accountAvatarUrl } from './avatar.js';
 import { randomUUID } from 'node:crypto';
 import { hash, verify, Algorithm } from '@node-rs/argon2';
 import { Types, type ClientSession, type Connection } from 'mongoose';
@@ -13,6 +14,7 @@ import type { businessAudit } from '../audit/business-audit.js';
 export const userDto = (user: UserRecord): UserDto => ({
   id: user._id.toHexString(),
   displayName: user.displayName,
+  avatarUrl: accountAvatarUrl(user.avatarUrl),
   email: user.emailNormalized,
   emailVerified: Boolean(user.emailVerifiedAt),
 });
