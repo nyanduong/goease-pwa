@@ -104,6 +104,7 @@ export function tripModels(connection: Connection) {
       ...mutableFields,
       ...inputFields,
       ownerId: { type: Schema.Types.ObjectId, required: true },
+      clonedFromTripId: { type: Schema.Types.ObjectId, default: null },
       expenseRevision: { type: Number, default: 0 },
       status: { type: String, enum: ['draft'], default: 'draft' },
       visibility: { type: String, enum: ['private'], default: 'private' },
@@ -139,7 +140,11 @@ export function tripModels(connection: Connection) {
       revision: { type: Number, required: true },
       previousRevision: { type: Number, default: null },
       tripSchemaVersion: { type: Number, default: 1 },
-      action: { type: String, enum: ['created', 'saved'], required: true },
+      action: {
+        type: String,
+        enum: ['created', 'saved', 'deleted'],
+        required: true,
+      },
       snapshot: { type: snapshot, required: true },
       changedFieldPaths: {
         type: [String],

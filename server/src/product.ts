@@ -1,9 +1,13 @@
+import { tripManagement } from './features/trips/trip-management.js';
 import { expenseService } from './features/expenses/expense.service.js';
 import { exploreService } from './features/explore/explore.service.js';
 import { Router } from 'express';
 import mongoose, { type Connection } from 'mongoose';
 import { z } from 'zod';
 import {
+  tripActionSchema,
+  tripDuplicateSchema,
+  tripListQuerySchema,
   expenseCreateSchema,
   expenseUpdateSchema,
   expenseRevisionSchema,
@@ -39,6 +43,7 @@ export function createProduct(connection: Connection, config: Config) {
   const audit = businessAudit(connection, config.NODE_ENV);
   const auth = authService(connection, config, audit);
   const trips = tripService(connection, audit);
+  const manageTrip = tripManagement(connection, trips, audit);
   const expenses = expenseService(connection, trips, audit);
   const explore = exploreService(connection);
   const planner = plannerService(connection, config, trips, explore);
@@ -65,6 +70,8 @@ export function createProduct(connection: Connection, config: Config) {
       res.locals.logRoute = '/api/v1' + req.path;
     else if (/^\/trips\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/trips/:id';
+    if (/^\/trips\/[^/]+\/duplicate$/.test(req.path))
+      res.locals.logRoute = '/api/v1/trips/:id/duplicate';
     if (/^\/trips\/[^/]+\/expenses$/.test(req.path))
       res.locals.logRoute = '/api/v1/trips/:id/expenses';
     if (/^\/trips\/[^/]+\/expenses\/[^/]+$/.test(req.path))
@@ -254,9 +261,50 @@ export function createProduct(connection: Connection, config: Config) {
         .json({ ok: true, data: result });
     });
   }
-  router.get('/trips', async (_req, res) =>
-    res.json({ ok: true, data: await trips.list(res.locals.authUser._id) }),
+  router.get('/trips', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await trips.list(
+        res.locals.authUser._id,
+        parse(tripListQuerySchema, req.query),
+      ),
+    }),
   );
+  router.post('/trips/:id/duplicate', async (req, res) => {
+    const value = parse(tripDuplicateSchema, req.body);
+    const key = parse(
+      z.string().regex(uuidPattern),
+      req.get('Idempotency-Key'),
+    );
+    res.status(201).json({
+      ok: true,
+      data: await manageTrip(
+        res.locals.authUser._id,
+        String(req.params.id),
+        'duplicate',
+        value.expectedRevision,
+        key,
+        value.startDate,
+      ),
+    });
+  });
+  router.delete('/trips/:id', async (req, res) => {
+    const value = parse(tripActionSchema, req.body);
+    const key = parse(
+      z.string().regex(uuidPattern),
+      req.get('Idempotency-Key'),
+    );
+    res.json({
+      ok: true,
+      data: await manageTrip(
+        res.locals.authUser._id,
+        String(req.params.id),
+        'delete',
+        value.expectedRevision,
+        key,
+      ),
+    });
+  });
   router.post('/trips/budget-preview', (req, res) => {
     const { trip } = parse(z.strictObject({ trip: tripInputSchema }), req.body);
     res.json({ ok: true, data: { budget: calculateBudget(trip) } });

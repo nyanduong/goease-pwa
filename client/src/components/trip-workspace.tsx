@@ -1,3 +1,4 @@
+import { TripManagement } from './trip-management';
 import { Sheet } from './journey-sheet';
 import { TripExpenses } from './trip-expenses';
 import { TripBudget } from './budget-screen';
@@ -35,6 +36,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import {
+  shiftTripDays,
+  tripLifecycle,
   activityInputSchema,
   tripInputSchema,
   type ActivityInput,
@@ -94,6 +97,12 @@ export function JourneyList({
   signedIn,
   onRetry,
   onStart,
+  phase,
+  onPhase,
+  hasMore,
+  onMore,
+  offset,
+  onPrevious,
   onNavigate,
 }: {
   trips: TripDto[];
@@ -102,6 +111,12 @@ export function JourneyList({
   signedIn: boolean;
   onRetry: () => void;
   onStart: () => void;
+  phase: string;
+  onPhase: (phase: string) => void;
+  hasMore: boolean;
+  onMore: () => void;
+  offset: number;
+  onPrevious: () => void;
   onNavigate: (path: string) => void;
 }) {
   return (
@@ -138,6 +153,24 @@ export function JourneyList({
           <span>{trips.length} chuyến đi</span>
         )}
       </div>
+      {signedIn && (
+        <div className="trip-phase-tabs" aria-label="Lọc chuyến đi">
+          {Object.entries({
+            all: 'Tất cả',
+            upcoming: 'Sắp đi',
+            ongoing: 'Đang đi',
+            completed: 'Đã kết thúc',
+          }).map(([value, label]) => (
+            <button
+              key={value}
+              aria-pressed={phase === value}
+              onClick={() => onPhase(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {loading ? (
         <p className="journey-empty" role="status">
           Đang mở những chuyến đi…
@@ -161,7 +194,11 @@ export function JourneyList({
       ) : !trips.length ? (
         <div className="journey-empty">
           <Map size={30} />
-          <h3>Một nơi bạn luôn muốn đến?</h3>
+          <h3>
+            {phase === 'all'
+              ? 'Một nơi bạn luôn muốn đến?'
+              : 'Chưa có chuyến đi trong mục này.'}
+          </h3>
           <p>Chuyến đi đầu tiên bắt đầu từ một ý tưởng nhỏ.</p>
           <button className="journey-primary" onClick={onStart}>
             Tạo chuyến đi đầu tiên <ArrowRight size={18} />
@@ -186,6 +223,15 @@ export function JourneyList({
                 </span>
               </div>
               <div className="journey-saved-copy">
+                <small>
+                  {
+                    {
+                      upcoming: 'Sắp đi',
+                      ongoing: 'Đang đi',
+                      completed: 'Đã kết thúc',
+                    }[tripLifecycle(trip)]
+                  }
+                </small>
                 <h3>{trip.title}</h3>
                 <p>
                   <CalendarDays size={14} />
@@ -206,6 +252,20 @@ export function JourneyList({
           ))}
         </div>
       )}
+      {offset > 0 && (
+        <button
+          className="journey-outline"
+          disabled={loading}
+          onClick={onPrevious}
+        >
+          Trang trước
+        </button>
+      )}
+      {hasMore && !loading && !error && (
+        <button className="journey-outline" onClick={onMore}>
+          Trang tiếp theo
+        </button>
+      )}
       <p className="journey-caption">
         Ảnh minh họa AI · Lịch trình riêng tư của bạn
       </p>
@@ -225,6 +285,8 @@ export function TripWorkspace({
   onSave,
   onBack,
   onOpenGoe,
+  onNavigate,
+  onReload,
 }: {
   draft: TripInput;
   onChange: (value: TripInput) => void;
@@ -235,6 +297,8 @@ export function TripWorkspace({
   message: string;
   signedIn: boolean;
   onOpenGoe: (day: number) => void;
+  onNavigate: (path: string) => void;
+  onReload: () => void;
   onSave: () => void;
   onBack: () => void;
 }) {
@@ -242,7 +306,7 @@ export function TripWorkspace({
   const [step, setStep] = useState(
     draft.days.some((d) => d.activities.length) ? 2 : 1,
   );
-  const [tab, setTab] = useState<'schedule' | 'map' | 'cost'>(
+  const [tab, setTab] = useState<'schedule' | 'map' | 'cost' | 'summary'>(
     new URLSearchParams(location.search).get('view') === 'cost'
       ? 'cost'
       : 'schedule',
@@ -358,7 +422,18 @@ export function TripWorkspace({
       setError('Ngân sách phải là số nguyên từ 0 đến 1.000.000.000.000 ₫.');
       return;
     }
-    let next = withDays(pending);
+    let next: TripInput;
+    try {
+      next =
+        field === 'dates'
+          ? shiftTripDays(pending, pending.startDate, pending.endDate, () =>
+              crypto.randomUUID(),
+            )
+          : withDays(pending);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Không thể đổi ngày.');
+      return;
+    }
     const changedDestination =
       draft.destinations[0]?.destinationId !==
       next.destinations[0]?.destinationId;
@@ -571,7 +646,7 @@ export function TripWorkspace({
           aria-label="Quay lại"
           onClick={() => {
             if (settings) setSettings(false);
-            else if (tab === 'cost') setTab('schedule');
+            else if (tab === 'cost' || tab === 'summary') setTab('schedule');
             else if (!loaded && step > 1) {
               setStep(step - 1);
               setError('');
@@ -582,11 +657,13 @@ export function TripWorkspace({
         </button>
         <div>
           <strong>
-            {tab === 'cost' && !showSettings
-              ? 'Chi phí chuyến đi'
-              : loaded
-                ? destinationName
-                : 'Tạo chuyến đi'}
+            {tab === 'summary' && !showSettings
+              ? 'Tổng kết chuyến đi'
+              : tab === 'cost' && !showSettings
+                ? 'Chi phí chuyến đi'
+                : loaded
+                  ? destinationName
+                  : 'Tạo chuyến đi'}
           </strong>
           {loaded && tab !== 'cost' && (
             <small>
@@ -649,6 +726,23 @@ export function TripWorkspace({
                   }
                 />
               </label>
+            )}
+            {loaded && (
+              <TripManagement
+                trip={loaded}
+                unsaved={saveState !== 'saved'}
+                onNavigate={onNavigate}
+                onReload={onReload}
+              />
+            )}
+            {loaded && (
+              <button
+                className="journey-primary"
+                disabled={busy || saveState === 'saved'}
+                onClick={onSave}
+              >
+                Lưu thay đổi <Check size={18} />
+              </button>
             )}
             <Companion>Bạn có thể đổi mọi thứ sau.</Companion>
             <AiPlanner
@@ -756,6 +850,9 @@ export function TripWorkspace({
                       { code: 'schedule', label: 'Lịch trình' },
                       { code: 'map', label: 'Bản đồ' },
                       { code: 'cost', label: 'Chi phí' },
+                      ...(loaded
+                        ? [{ code: 'summary' as const, label: 'Tổng kết' }]
+                        : []),
                     ] as const
                   ).map(({ code, label }) => (
                     <button
@@ -769,7 +866,28 @@ export function TripWorkspace({
                 </div>
               </>
             )}
-            {tab === 'cost' ? (
+            {tab === 'summary' && loaded ? (
+              <div>
+                <h1>Tổng kết hành trình</h1>
+                <p>
+                  {loaded.title} · {loaded.days.length} ngày ·{' '}
+                  {loaded.travelers.totalCount} người ·{' '}
+                  {loaded.days.reduce((n, d) => n + d.activities.length, 0)}{' '}
+                  điểm dừng
+                </p>
+                <p>
+                  {tripLifecycle(loaded) === 'completed'
+                    ? 'Chuyến đi đã kết thúc theo ngày đã lưu.'
+                    : 'Tổng kết tạm thời theo dữ liệu đã lưu.'}
+                </p>
+                <TripExpenses
+                  tripId={loaded.id}
+                  tripRevision={loaded.revision}
+                  unsaved={saveState !== 'saved'}
+                  summaryOnly
+                />
+              </div>
+            ) : tab === 'cost' ? (
               <div className="journey-budget-view">
                 <div
                   className="expense-view-tabs"

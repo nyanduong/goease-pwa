@@ -57,6 +57,7 @@ const fieldsSchema = z.object({
       '/api/v1/trips/:id/goe-proposal',
       '/api/v1/trips/:id/goe-apply',
       '/api/v1/trips/:id',
+      '/api/v1/trips/:id/duplicate',
       'unmatched',
     ])
     .optional(),

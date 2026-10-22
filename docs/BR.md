@@ -309,3 +309,7 @@ AI-01–AI-06 now also cover selected-day adjustment from customer messages: ser
 ## TRIP-08 / TRIP-13 — Customer actual expenses, 2026-10-23
 
 Implemented: owner-only create/edit/soft-delete of independent trip expenses; positive integer VND group totals and date-only spentOn (outside itinerary dates allowed). Compare recorded actuals against saved budget and known estimate; retain unknown-cost warnings. Revision conflicts cannot overwrite silently; same-key retries deduplicate within retained key window. No activity cascade, wallet, receipts, split settlement or payment confirmation. Details/contracts: [TRIP-EXPENSES.md](TRIP-EXPENSES.md).
+
+## TRIP-03/05/08/09/10/12/13 — Quản lý chuyến đi customer
+
+Phân loại sắp/đang/đã kết thúc theo ngày Việt Nam, không là trạng thái xác nhận đã đi. Dời ngày giữ lịch theo ordinal/stable IDs; chặn rút ngày có hoạt động và PATCH đổi ngày làm mất activity. Expense không dịch ngày theo lịch. Duplicate owner-only tạo lịch manual riêng, không clone thực chi; xóa mềm có revision/audit/idempotency và ẩn mọi expense qua quyền trip. Tổng kết dùng dự toán đã biết và thực chi đã ghi, không báo chắc chắn tiết kiệm. API, giới hạn và policy triển khai ở TRIP-MANAGEMENT.md; restore/purge chưa triển khai.

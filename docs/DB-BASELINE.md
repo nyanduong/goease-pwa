@@ -1187,3 +1187,7 @@ Các field runtime cụ thể xem `server/src/features/auth/auth.models.ts`, `se
 ### Goe run proposal extension (2026-10-23)
 
 Existing ai_runs bounded validated proposal may additionally include before (one original day), dayId UUID and baseRevision integer for promptVersion goe-v1. These server-created fields support before/after preview; apply resolves run owner/target/revision and uses existing trip transaction. Same indexes and collections; no raw chat message collection or migration. Exact runtime contract: AI-PLANNER.md.
+
+## Runtime trip management — 2026-10-23
+
+trips.clonedFromTripId: ObjectId?, default null, server-only source reference; expenseRevision còn dùng serialize duplicate nguồn. trip_revisions.action thêm deleted (snapshot cuối, revision tăng); bản sao tạo revision0/action created và ID mới. audit_logs.action thêm trip.deleted/trip.duplicated, entityType trip, không payload tên/notes. idempotency_keys.operation thêm trip.delete/trip.duplicate, resourceType trip; TTL24h hiện có. phase date-derived chỉ filter/hiển thị, không thêm enum/status hay cron. Không thêm collection/index hoặc raw DB validator. API/validation: TRIP-MANAGEMENT.md.

@@ -5148,3 +5148,43 @@ body:has(.journey-shell) {
   text-decoration: underline;
   padding: 8px;
 }
+.trip-phase-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.trip-phase-tabs button {
+  flex: 1;
+  min-width: 70px;
+  padding: 10px 6px;
+  border-radius: 16px;
+  background: #ecefe4;
+  font-size: 12px;
+}
+.trip-phase-tabs button[aria-pressed='true'] {
+  background: #18574a;
+  color: white;
+}
+.trip-management {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid #214b3b25;
+  border-radius: 18px;
+}
+.trip-management h2 {
+  font:
+    600 24px Georgia,
+    serif;
+}
+.trip-management p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.trip-management .expense-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.trip-management button:disabled {
+  opacity: 0.5;
+}

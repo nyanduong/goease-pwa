@@ -1,6 +1,7 @@
 import mongoose, { Types, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import {
+  tripListQuerySchema,
   tripInputSchema,
   type TripDto,
   type TripInput,
@@ -86,6 +87,7 @@ export function tripService(
   return {
     models,
     dto,
+    toInput,
     async destinations() {
       return {
         items: (
@@ -103,13 +105,29 @@ export function tripService(
         })),
       };
     },
-    async list(ownerId: Types.ObjectId) {
+    async list(ownerId: Types.ObjectId, query = tripListQuerySchema.parse({})) {
+      const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+      }).format(new Date());
+      const filter = {
+        ownerId,
+        deletedAt: null,
+        ...(query.phase === 'upcoming'
+          ? { startDate: { $gt: today } }
+          : query.phase === 'completed'
+            ? { endDate: { $lt: today } }
+            : query.phase === 'ongoing'
+              ? { startDate: { $lte: today }, endDate: { $gte: today } }
+              : {}),
+      };
+      const items = await Trip.find(filter)
+        .sort({ updatedAt: -1, _id: -1 })
+        .skip(query.offset)
+        .limit(query.limit + 1);
       return {
-        items: (
-          await Trip.find({ ownerId, deletedAt: null })
-            .sort({ updatedAt: -1, _id: -1 })
-            .limit(50)
-        ).map(dto),
+        items: items.slice(0, query.limit).map(dto),
+        hasMore: items.length > query.limit,
+        offset: query.offset,
       };
     },
     async read(id: string, ownerId: Types.ObjectId) {
@@ -191,6 +209,27 @@ export function tripService(
                 'REVISION_CONFLICT',
                 'Chuyến đi đã có bản mới hơn. Bản đang nhập vẫn được giữ; hãy mở bản server ở tab khác trước khi cập nhật.',
               );
+            if (
+              current &&
+              (value.startDate !== current.startDate ||
+                value.endDate !== current.endDate)
+            ) {
+              const retained = new Set(
+                value.days.flatMap((d) =>
+                  d.activities.map((a) => a.activityId),
+                ),
+              );
+              if (
+                current.days.some((d) =>
+                  d.activities.some((a) => !retained.has(a.activityId)),
+                )
+              )
+                throw new HttpError(
+                  400,
+                  'DATE_CHANGE_LOSES_ACTIVITIES',
+                  'Đổi ngày phải giữ mọi điểm dừng. Hãy chuyển điểm dừng hoặc lưu việc xóa riêng trước khi đổi ngày.',
+                );
+            }
             const now = new Date();
             // AI provenance is resolved on the server; the browser cannot invent it.
             if (value.generationMode === 'ai') {

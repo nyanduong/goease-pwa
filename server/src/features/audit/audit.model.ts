@@ -63,6 +63,8 @@ export function auditModel(connection: Connection) {
           'session.revoked',
           'trip.created',
           'trip.updated',
+          'trip.deleted',
+          'trip.duplicated',
           'expense.created',
           'expense.updated',
           'expense.deleted',

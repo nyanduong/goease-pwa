@@ -73,7 +73,7 @@ export function withDays(value: TripInput): TripInput {
       const date = new Date(Date.parse(value.startDate) + i * 86400000)
         .toISOString()
         .slice(0, 10);
-      const old = value.days.find((d) => d.date === date);
+      const old = value.days[i];
       return {
         dayId: old?.dayId ?? crypto.randomUUID(),
         date,

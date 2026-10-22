@@ -171,3 +171,59 @@ export const registerSchema = z.strictObject({
   password: z.string().min(12).max(128),
 });
 export const loginSchema = registerSchema.omit({ displayName: true });
+
+export const tripLifecycle = (
+  trip: { startDate: string; endDate: string },
+  today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date()),
+): 'upcoming' | 'ongoing' | 'completed' =>
+  today < trip.startDate
+    ? 'upcoming'
+    : today > trip.endDate
+      ? 'completed'
+      : 'ongoing';
+export const tripListQuerySchema = z.strictObject({
+  offset: z.coerce.number().int().min(0).max(1000000).default(0),
+  limit: z.coerce.number().int().min(1).max(50).default(50),
+  phase: z.enum(['all', 'upcoming', 'ongoing', 'completed']).default('all'),
+});
+export const tripActionSchema = z.strictObject({
+  expectedRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+});
+export const tripDuplicateSchema = tripActionSchema.extend({
+  startDate: localDate,
+});
+export function shiftTripDays(
+  value: TripInput,
+  startDate: string,
+  endDate: string,
+  makeId: () => string,
+): TripInput {
+  const count = (Date.parse(endDate) - Date.parse(startDate)) / 86400000 + 1;
+  if (
+    !localDate.safeParse(startDate).success ||
+    !localDate.safeParse(endDate).success ||
+    !Number.isInteger(count) ||
+    count < 1 ||
+    count > 31
+  )
+    throw new Error('Chọn khoảng thời gian hợp lệ, từ 1 đến 31 ngày.');
+  if (value.days.slice(count).some((d) => d.activities.length))
+    throw new Error(
+      'Ngày bị rút bớt vẫn có hoạt động. Giữ số ngày hoặc chuyển các điểm dừng trước khi rút ngắn.',
+    );
+  return {
+    ...value,
+    startDate,
+    endDate,
+    days: Array.from({ length: count }, (_, i) => ({
+      dayId: value.days[i]?.dayId ?? makeId(),
+      date: new Date(Date.parse(startDate) + i * 86400000)
+        .toISOString()
+        .slice(0, 10),
+      destinationId: value.destinations[0]!.destinationId,
+      activities: value.days[i]?.activities ?? [],
+    })),
+  };
+}

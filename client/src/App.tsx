@@ -51,6 +51,9 @@ export function App() {
   const [message, setMessage] = useState('');
   const [sessionRetry, setSessionRetry] = useState(0);
   const [destinationRetry, setDestinationRetry] = useState(0);
+  const [tripPhase, setTripPhase] = useState('all');
+  const [tripOffset, setTripOffset] = useState(0);
+  const [tripHasMore, setTripHasMore] = useState(false);
   const [tripsRetry, setTripsRetry] = useState(0);
   const [detailRetry, setDetailRetry] = useState(0);
   const [saveState, setSaveState] = useState<
@@ -169,6 +172,8 @@ export function App() {
 
   useEffect(() => {
     setList([]);
+    setTripOffset(0);
+    setTripPhase('all');
     setTripsStatus('idle');
   }, [user?.id]);
 
@@ -180,7 +185,11 @@ export function App() {
     }
     let active = true;
     setTripsStatus('loading');
-    void api<{ items: TripDto[] }>('/trips')
+    void api<{ items: TripDto[]; hasMore?: boolean }>(
+      path === '/trips'
+        ? `/trips?phase=${tripPhase}&offset=${tripOffset}`
+        : '/trips',
+    )
       .then((v) => {
         if (active) {
           setList(
@@ -188,6 +197,7 @@ export function App() {
               (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''),
             ),
           );
+          setTripHasMore(Boolean(v.hasMore));
           setTripsStatus('ready');
         }
       })
@@ -200,7 +210,7 @@ export function App() {
     return () => {
       active = false;
     };
-  }, [path, user, tripsRetry]);
+  }, [path, user, tripsRetry, tripPhase, tripOffset]);
 
   // Fetch individual trip when visiting /trips/:id
   useEffect(() => {
@@ -677,6 +687,15 @@ export function App() {
           />
         ) : path === '/trips' ? (
           <JourneyList
+            offset={tripOffset}
+            onPrevious={() => setTripOffset((v) => Math.max(0, v - 50))}
+            phase={tripPhase}
+            onPhase={(value) => {
+              setTripPhase(value);
+              setTripOffset(0);
+            }}
+            hasMore={tripHasMore}
+            onMore={() => setTripOffset((v) => v + 50)}
             trips={list}
             signedIn={Boolean(user)}
             loading={
@@ -719,6 +738,8 @@ export function App() {
           ) : (
             <TripWorkspace
               key={loaded?.id ?? 'new'}
+              onNavigate={go}
+              onReload={() => setDetailRetry((v) => v + 1)}
               draft={draft}
               onChange={changeDraft}
               destinations={destinations}

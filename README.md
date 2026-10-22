@@ -204,3 +204,7 @@ Goe chat can now adjust a selected day of a saved Hội An trip: choose trip/day
 ## Trip expenses — 2026-10-23
 
 Chi tiêu thực tế: mở chuyến đi đã lưu → Chi phí → Thực chi để nhập/sửa/xóa khoản chi, xem tổng nhóm, bình quân, ngân sách còn lại và chênh lệch với dự toán đã biết. Dùng MongoDB/session hiện có, không cần provider key hay seed mới. API và giới hạn: [docs/TRIP-EXPENSES.md](docs/TRIP-EXPENSES.md).
+
+## Quản lý chuyến đi
+
+Trang Chuyến đi có bộ lọc Sắp đi / Đang đi / Đã kết thúc và phân trang. Mở chuyến → Thông tin chuyến đi để chỉnh tên/ngày/người/ngân sách, nhân bản hoặc xóa; tab Tổng kết so sánh dự toán và thực chi. Dời ngày giữ lịch và thực chi; rút ngắn ngày có hoạt động bị chặn. Xem [hợp đồng và giới hạn](docs/TRIP-MANAGEMENT.md).

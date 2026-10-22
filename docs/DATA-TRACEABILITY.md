@@ -236,3 +236,7 @@ Bản đồ Hội An2026-10-23: mapLocation có nguồn/checkedAt và nhãn area
 ## Trip expenses — 2026-10-23
 
 Expense runtime: trip_expenses records private descriptions, VND amounts and date-only spentOn for the trip owner. Session derives recordedBy/updatedBy/deletedBy; list/mutations verify active owned trip. Audit records identifiers/action/revision only, never description/amount. Soft delete hides records and excludes totals; no retention/purge job, receipt storage, activity link or payment proof. See TRIP-EXPENSES.md.
+
+## Trip management — 2026-10-23
+
+Owned source snapshot → duplicate mới với clonedFromTripId nội bộ, manual source và ID mới; không copy expenses/ai_runs/history/access. Soft delete giữ expense/history nhưng chặn truy cập bằng active owned parent; audit ghi actor/entity/revision, không tên/notes. Không có purge, restore hay share-links runtime. Dời ngày không đổi ngày chi thực tế. Chi tiết TRIP-MANAGEMENT.md.

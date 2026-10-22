@@ -1072,6 +1072,257 @@ test('real expenses create retry edit conflict delete and persist independently 
   await expect(page.locator('.expense-total')).toContainText('0');
 });
 
+test('trip management reschedules without data loss duplicates deletes and summarizes', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/register');
+  const email = `management-browser-${Date.now()}@example.invalid`,
+    password = 'Expenses-browser-only-2026';
+  await page
+    .getByLabel('Tên của bạn', { exact: true })
+    .fill('Người ghi chi tiêu');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  const headers = () => ({
+    Origin: new URL(page.url()).origin,
+    'X-GoEase-Client': 'web',
+    'Idempotency-Key': crypto.randomUUID(),
+  });
+  const destinationId = '000000000000000000000004';
+  const input: TripInput = {
+    title: 'Hội An và chi tiêu',
+    destinations: [{ destinationId, order: 0 }],
+    startDate: '2026-11-12',
+    endDate: '2026-11-12',
+    timezone: 'Asia/Ho_Chi_Minh',
+    travelers: { totalCount: 4 },
+    budget: {
+      amountMinor: 1000000,
+      currency: 'VND',
+      scope: 'group_total',
+      includedCategories: [],
+    },
+    preferences: { interestCodes: [], pace: 'relaxed', transportModes: [] },
+    generationMode: 'manual',
+    notes: '',
+    days: [
+      {
+        dayId: crypto.randomUUID(),
+        date: '2026-11-12',
+        destinationId,
+        activities: [100000, null].map((amountMinor, order) => ({
+          activityId: crypto.randomUUID(),
+          kind: 'visit',
+          title: `Điểm ${order + 1}`,
+          timezone: 'Asia/Ho_Chi_Minh',
+          order,
+          notes: '',
+          source: 'manual',
+          estimatedCost: {
+            amountMinor,
+            currency: 'VND',
+            basis: 'group_total',
+            quantity: 1,
+            confidence: 'user_entered',
+          },
+        })),
+      },
+    ],
+  };
+  input.endDate = '2026-11-14';
+  input.days = [0, 1, 2].map((i) => ({
+    ...input.days[0]!,
+    dayId: crypto.randomUUID(),
+    date: `2026-11-${12 + i}`,
+    activities: input.days[0]!.activities.map((a) => ({
+      ...a,
+      activityId: crypto.randomUUID(),
+    })),
+  }));
+  const created = await page.request.post('/api/v1/trips', {
+    headers: headers(),
+    data: { trip: input },
+  });
+  expect(created.status()).toBe(201);
+  const trip: TripDto = (await created.json()).data.trip;
+  const path = `/api/v1/trips/${trip.id}`;
+  expect(
+    (
+      await page.request.post(path + '/expenses', {
+        headers: headers(),
+        data: {
+          expense: {
+            description: 'Giữ khoản chi',
+            category: 'meal',
+            amountMinor: 240000,
+            currency: 'VND',
+            spentOn: '2026-11-11',
+            timezone: 'Asia/Ho_Chi_Minh',
+          },
+        },
+      })
+    ).status(),
+  ).toBe(201);
+  await page.goto(`/trips/${trip.id}`);
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page.getByRole('button', { name: /Thời gian/ }).click();
+  await page.getByLabel('Ngày đi', { exact: true }).fill('2027-02-01');
+  await page.getByLabel('Ngày về', { exact: true }).fill('2027-02-02');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+    'vẫn có hoạt động',
+  );
+  await page.getByLabel('Ngày về', { exact: true }).fill('2027-02-03');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await page
+    .getByLabel('Tên chuyến đi', { exact: true })
+    .fill('Hội An đã dời ngày');
+  await expect(
+    page.getByRole('button', { name: 'Nhân bản chuyến đi', exact: true }),
+  ).toBeDisabled();
+  await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Nhân bản chuyến đi', exact: true }),
+  ).toBeEnabled();
+  const saved: TripDto = (await (await page.request.get(path)).json()).data
+    .trip;
+  expect(saved.startDate).toBe('2027-02-01');
+  expect(saved.endDate).toBe('2027-02-03');
+  expect(saved.days.map((d) => d.dayId)).toEqual(trip.days.map((d) => d.dayId));
+  expect(saved.days.map((d) => d.activities)).toEqual(
+    trip.days.map((d) => d.activities),
+  );
+  const costs = (await (await page.request.get(path + '/expenses')).json())
+    .data;
+  expect(costs.actual.amountMinor).toBe(240000);
+  expect(costs.items[0].spentOn).toBe('2026-11-11');
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Tổng kết', exact: true }).click();
+  await expect(page.locator('.expense-total')).toContainText('240.000');
+  await expect(page.locator('.expense-remaining')).toContainText('760.000');
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mkdir('.local/management-preview', { recursive: true });
+  await page.screenshot({
+    path: '.local/management-preview/summary-390.png',
+    fullPage: true,
+  });
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Nhân bản chuyến đi', exact: true })
+    .click();
+  await page
+    .getByLabel('Ngày bắt đầu bản sao', { exact: true })
+    .fill('2027-05-01');
+  let dropped = false;
+  const keys: string[] = [];
+  await page.route(`**${path}/duplicate`, async (r) => {
+    keys.push(r.request().headers()['idempotency-key']!);
+    const response = await r.fetch();
+    expect(response.status()).toBe(201);
+    if (!dropped) {
+      dropped = true;
+      await r.abort();
+    } else await r.fulfill({ response });
+  });
+  await page.getByRole('button', { name: 'Tạo bản sao', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Thử lại thao tác', exact: true })
+    .click();
+  await expect(page).not.toHaveURL(new RegExp(`${trip.id}$`));
+  expect(keys.length).toBe(2);
+  expect(keys[0]).toBe(keys[1]);
+  await page.unroute(`**${path}/duplicate`);
+  const copyId = page.url().split('/').pop()!;
+  const copy: TripDto = (
+    await (await page.request.get(`/api/v1/trips/${copyId}`)).json()
+  ).data.trip;
+  expect(copy.startDate).toBe('2027-05-01');
+  expect(copy.days[0]!.activities[0]!.activityId).not.toBe(
+    trip.days[0]!.activities[0]!.activityId,
+  );
+  expect(
+    (await (await page.request.get(`/api/v1/trips/${copyId}/expenses`)).json())
+      .data.totalCount,
+  ).toBe(0);
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Xóa chuyến đi', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Đóng', exact: true }).click();
+  expect((await page.request.get(`/api/v1/trips/${copyId}`)).status()).toBe(
+    200,
+  );
+  await page
+    .getByRole('button', { name: 'Xóa chuyến đi', exact: true })
+    .click();
+  let deleteDropped = false;
+  const deleteKeys: string[] = [];
+  await page.route(`**/api/v1/trips/${copyId}`, async (r) => {
+    if (r.request().method() !== 'DELETE') return r.continue();
+    deleteKeys.push(r.request().headers()['idempotency-key']!);
+    const response = await r.fetch();
+    expect(response.status()).toBe(200);
+    if (!deleteDropped) {
+      deleteDropped = true;
+      await r.abort();
+    } else await r.fulfill({ response });
+  });
+  await page
+    .getByRole('button', { name: 'Xác nhận xóa chuyến đi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Thử lại thao tác', exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/trips$/);
+  expect(deleteKeys[0]).toBe(deleteKeys[1]);
+  await page.unroute(`**/api/v1/trips/${copyId}`);
+  await expect(
+    page.getByRole('heading', { name: 'Hội An đã dời ngày', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: /bản sao/ })).toHaveCount(0);
+  expect(
+    (await page.request.get(`/api/v1/trips/${copyId}/expenses`)).status(),
+  ).toBe(404);
+  await page.getByRole('button', { name: 'Đã kết thúc', exact: true }).click();
+  await expect(
+    page.getByText('Chưa có chuyến đi trong mục này.', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Sắp đi', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Hội An đã dời ngày', exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: '.local/management-preview/list-390.png',
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(
+    page.getByRole('heading', { name: 'Hội An đã dời ngày', exact: true }),
+  ).toBeVisible();
+});
+
 test('live Gemini proposal applies saves reloads and preserves AI provenance', async ({
   page,
   browser,

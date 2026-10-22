@@ -33,10 +33,12 @@ export function TripExpenses({
   tripId,
   tripRevision,
   unsaved,
+  summaryOnly = false,
 }: {
   tripId: string;
   tripRevision: number;
   unsaved: boolean;
+  summaryOnly?: boolean;
 }) {
   const [data, setData] = useState<ExpenseListDto | null>(null);
   const [offset, setOffset] = useState(0);
@@ -282,80 +284,84 @@ export function TripExpenses({
               </div>
             ))}
           </div>
-          <div className="expense-list-heading">
-            <h2>
-              Các khoản đã chi <small>({data.totalCount})</small>
-            </h2>
-            <button
-              className="button button-primary"
-              disabled={locked}
-              onClick={() => open(null)}
-            >
-              + Thêm khoản chi
-            </button>
-          </div>
-          {!data.items.length ? (
-            <p className="expense-empty">
-              Chưa ghi nhận khoản chi nào. Thêm khoản đầu tiên khi bạn đã chi
-              tiền.
-            </p>
-          ) : (
-            <ul className="expense-list">
-              {data.items.map((item) => (
-                <li key={item.id}>
-                  <div>
-                    <strong>{item.description}</strong>
-                    <small>
-                      {categories[item.category]} ·{' '}
-                      {item.spentOn.split('-').reverse().join('/')}
-                    </small>
-                  </div>
-                  <b>{moneyText(item.amountMinor)}</b>
-                  <div className="expense-actions">
-                    <button
-                      disabled={locked}
-                      aria-label={`Sửa ${item.description}`}
-                      onClick={() => open(item)}
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      disabled={locked}
-                      aria-label={`Xóa ${item.description}`}
-                      onClick={() => {
-                        if (confirm(`Xóa khoản chi “${item.description}”?`))
-                          void execute({
-                            url: `${base}/${item.id}`,
-                            method: 'DELETE',
-                            body: JSON.stringify({
-                              expectedRevision: item.revision,
-                            }),
-                            key: crypto.randomUUID(),
-                          });
-                      }}
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          {!summaryOnly && (
+            <>
+              <div className="expense-list-heading">
+                <h2>
+                  Các khoản đã chi <small>({data.totalCount})</small>
+                </h2>
+                <button
+                  className="button button-primary"
+                  disabled={locked}
+                  onClick={() => open(null)}
+                >
+                  + Thêm khoản chi
+                </button>
+              </div>
+              {!data.items.length ? (
+                <p className="expense-empty">
+                  Chưa ghi nhận khoản chi nào. Thêm khoản đầu tiên khi bạn đã
+                  chi tiền.
+                </p>
+              ) : (
+                <ul className="expense-list">
+                  {data.items.map((item) => (
+                    <li key={item.id}>
+                      <div>
+                        <strong>{item.description}</strong>
+                        <small>
+                          {categories[item.category]} ·{' '}
+                          {item.spentOn.split('-').reverse().join('/')}
+                        </small>
+                      </div>
+                      <b>{moneyText(item.amountMinor)}</b>
+                      <div className="expense-actions">
+                        <button
+                          disabled={locked}
+                          aria-label={`Sửa ${item.description}`}
+                          onClick={() => open(item)}
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          disabled={locked}
+                          aria-label={`Xóa ${item.description}`}
+                          onClick={() => {
+                            if (confirm(`Xóa khoản chi “${item.description}”?`))
+                              void execute({
+                                url: `${base}/${item.id}`,
+                                method: 'DELETE',
+                                body: JSON.stringify({
+                                  expectedRevision: item.revision,
+                                }),
+                                key: crypto.randomUUID(),
+                              });
+                          }}
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="expense-pagination">
+                <button
+                  disabled={locked || offset === 0}
+                  onClick={() => setOffset((v) => Math.max(0, v - 25))}
+                >
+                  Trang trước
+                </button>
+                <span>Trang {Math.floor(offset / 25) + 1}</span>
+                <button
+                  disabled={locked || !data.hasMore}
+                  onClick={() => setOffset((v) => v + 25)}
+                >
+                  Trang sau
+                </button>
+              </div>
+            </>
           )}
-          <div className="expense-pagination">
-            <button
-              disabled={locked || offset === 0}
-              onClick={() => setOffset((v) => Math.max(0, v - 25))}
-            >
-              Trang trước
-            </button>
-            <span>Trang {Math.floor(offset / 25) + 1}</span>
-            <button
-              disabled={locked || !data.hasMore}
-              onClick={() => setOffset((v) => v + 25)}
-            >
-              Trang sau
-            </button>
-          </div>
         </>
       )}
       {editing !== undefined && (

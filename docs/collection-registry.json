@@ -731,7 +731,7 @@
         "TRIP-09",
         "TRIP-12"
       ],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expenseRevision internal serialization counter, no itinerary revision/snapshot changes",
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expenseRevision internal serialization counter, no itinerary revision/snapshot changes; trip management local 2026-10-23: owner-only duplicate/soft-delete/date-loss guard; derived phase pagination",
       "runtimeFields": [
         [
           "days[].activities[].placeId",
@@ -750,6 +750,12 @@
           "response-only object",
           "computed; not stored",
           "Server subtotal, missingCostCount, activityCount, perPersonMinor, budgetMinor, remainingMinor, usedPercent and categories; null budget distinct from zero. Existing stored summaryTotals subset retained."
+        ],
+        [
+          "clonedFromTripId",
+          "ObjectId?",
+          "null",
+          "Implemented server-only owned clone reference; fresh manual snapshot/IDs, no expenses. Lifecycle phase date-derived, status unchanged."
         ]
       ],
       "aiPlannerRuntime": "optional aiRunId UUID; generationMode/source ai|manual; server resolves successful owned proposal, validates activity ID/place pairs, new proposal base revision checked at save."
@@ -813,7 +819,7 @@
       "rules": "Không lưu từng phím gõ. Snapshot được kiểm soát kích thước; mỗi version độc lập dễ restore. Nếu sau này chuyển patch phải có anchor snapshot và kiểm thử reconstruction.",
       "retention": "Cùng thời hạn trip, không giữ private notes vĩnh viễn chỉ vì gọi là log.",
       "brRefs": ["TRIP-09", "TRIP-10", "TRIP-12"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md",
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; trip management local 2026-10-23: deleted action snapshot; clone revision0 created",
       "runtimeFields": [
         [
           "snapshot.days[].activities[].placeId",
@@ -2114,7 +2120,7 @@
         "qualification": "DB-BASELINE.md#12-audit-subset-f1-b-đã-triển-khai",
         "productionReady": false
       },
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only"
     },
     {
       "name": "analytics_events",
@@ -2283,7 +2289,7 @@
       "rules": "Idempotency không thay authorization: trả cached result vẫn kiểm tra actor/current access. Race duplicate-key phải đọc record hiện có.",
       "retention": "Đề xuất 24h cho trip create; payment không dựa TTL ngắn để ngăn thanh toán/cấp quyền trùng lâu dài.",
       "brRefs": ["TRIP-09", "COM-04"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted, resourceType trip_expense, 24h TTL"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted, resourceType trip_expense, 24h TTL; trip management local 2026-10-23: trip.delete/trip.duplicate, TTL24h, reauthorize replay"
     },
     {
       "name": "schema_migrations",
