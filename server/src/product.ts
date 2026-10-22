@@ -19,6 +19,7 @@ import {
   tripActionSchema,
   tripDuplicateSchema,
   tripListQuerySchema,
+  tripTrashQuerySchema,
   expenseCreateSchema,
   expenseUpdateSchema,
   expenseRevisionSchema,
@@ -92,6 +93,7 @@ export function createProduct(
       '/places',
       '/me/places',
       '/trips',
+      '/trips/trash',
       '/trips/budget-preview',
       '/trips/ai-proposal',
     ];
@@ -99,6 +101,8 @@ export function createProduct(
       res.locals.logRoute = '/api/v1' + req.path;
     else if (/^\/trips\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/trips/:id';
+    if (/^\/trips\/[^/]+\/restore$/.test(req.path))
+      res.locals.logRoute = '/api/v1/trips/:id/restore';
     if (/^\/trips\/[^/]+\/duplicate$/.test(req.path))
       res.locals.logRoute = '/api/v1/trips/:id/duplicate';
     if (/^\/trips\/[^/]+\/expenses$/.test(req.path))
@@ -374,6 +378,32 @@ export function createProduct(
       ),
     }),
   );
+  router.get('/trips/trash', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await trips.trash(
+        res.locals.authUser._id,
+        parse(tripTrashQuerySchema, req.query),
+      ),
+    }),
+  );
+  router.post('/trips/:id/restore', async (req, res) => {
+    const value = parse(tripActionSchema, req.body);
+    const key = parse(
+      z.string().regex(uuidPattern),
+      req.get('Idempotency-Key'),
+    );
+    res.json({
+      ok: true,
+      data: await manageTrip(
+        res.locals.authUser._id,
+        String(req.params.id),
+        'restore',
+        value.expectedRevision,
+        key,
+      ),
+    });
+  });
   router.post('/trips/:id/duplicate', async (req, res) => {
     const value = parse(tripDuplicateSchema, req.body);
     const key = parse(

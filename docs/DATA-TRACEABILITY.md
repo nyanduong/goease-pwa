@@ -239,7 +239,7 @@ Expense runtime: trip_expenses records private descriptions, VND amounts and dat
 
 ## Trip management — 2026-10-23
 
-Owned source snapshot → duplicate mới với clonedFromTripId nội bộ, manual source và ID mới; không copy expenses/ai_runs/history/access. Soft delete giữ expense/history nhưng chặn truy cập bằng active owned parent; audit ghi actor/entity/revision, không tên/notes. Không có purge, restore hay share-links runtime. Dời ngày không đổi ngày chi thực tế. Chi tiết TRIP-MANAGEMENT.md.
+Owned source snapshot → duplicate mới với clonedFromTripId nội bộ, manual source và ID mới; không copy expenses/ai_runs/history/access. Soft delete giữ expense/history nhưng chặn truy cập bằng active owned parent; audit ghi actor/entity/revision, không tên/notes. Purge chưa có; share-links và restore đã triển khai ở các phần cập nhật bên dưới. Dời ngày không đổi ngày chi thực tế. Chi tiết TRIP-MANAGEMENT.md.
 
 ## Customer account — 2026-10-23
 
@@ -252,3 +252,7 @@ TRIP-11/TRIP-12 → `trip_share_links` → `tripSharing` → `/shared-trip` expl
 ## Password recovery trace — 2026-10-23
 
 AUTH-03/04/07/08 → auth_challenges(reset_password) → passwordRecovery → forgot/reset-password API → SMTP adapter. Request email binds existing password identity/active user; cannot select another user via payload. Raw random token only exists in delivery-task memory/message fragment; DB stores SHA-256, identity/securityVersion/delivery state and expiry. No reset target email in challenge, no token/email/password in audit/log/DTO. Successful reset emits password.reset, actor bound to token user, entity=user, changedFields accountState, changes empty. Transaction rollback covers consume/password/version/revocation/audit. Pending mail is unusable; failed delivery revokes it. TTL is cleanup only. No new retention/purge or durable raw-token queue. Owner deferred SMTP configuration, live delivery unverified.
+
+## Trip trash — 2026-10-23
+
+TRIP-09/10/12/13 → owned tombstone → tripManagement restore → same trip + new trip_revisions/restored + audit trip.restored + receipt trip.restore trong transaction. Owner từ session, không nhận owner/notes/amount từ restore body. Danh sách thùng rác chỉ metadata, không snapshot riêng. Actual expense documents giữ nguyên; expense đã xóa riêng vẫn ẩn. Share revokedAt không bao giờ clear. Log chỉ route template/action/IDs, không tên/ghi chú. Chưa có purge/retention job; TRIP-MANAGEMENT.md mô tả giới hạn.

@@ -218,3 +218,5 @@ Chia sẻ lịch trình: mở chuyến đã lưu → Thông tin chuyến đi →
 ## Quên mật khẩu qua SMTP
 
 Đăng nhập → Quên mật khẩu → email → link15phút dùng một lần → mật khẩu mới → đăng nhập lại. Reset thu hồi tất cả phiên cũ. Điền SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM trong server/.env và khởi động lại API; ví dụ an toàn trong server/.env.example. Owner sẽ cung cấp credentials sau; hiện chưa kiểm chứng thư thật, thiếu cấu hình trả503 rõ ràng. Xem [PASSWORD-RECOVERY](docs/PASSWORD-RECOVERY.md) cho setup, API và giới hạn gửi nền.
+
+Thùng rác: **Chuyến đi → Thùng rác → Khôi phục chuyến đi**. Giữ nguyên lịch và thực chi, link chia sẻ cũ vẫn bị thu hồi. Xem [quản lý chuyến đi](docs/TRIP-MANAGEMENT.md).

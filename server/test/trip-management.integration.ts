@@ -534,6 +534,21 @@ test(
           }
         },
       );
+      const shareToken = 'd'.repeat(64);
+      assert.equal(
+        (
+          await call(
+            path + '/shares',
+            'POST',
+            { token: shareToken, expiresInDays: 7 },
+            a,
+          )
+        ).status,
+        201,
+      );
+      const expenseBefore = await product.expenses.models.Expense.findOne({
+        tripId: trip.id,
+      }).lean();
       await t.test(
         'delete soft hides trip and expenses and old saves cannot resurrect it',
         async () => {
@@ -598,6 +613,235 @@ test(
             list.some((v: TripDto) => v.id === trip.id),
             false,
           );
+        },
+      );
+      await t.test(
+        'trash is private paginated and restore preserves all content, costs and revocations',
+        async () => {
+          assert.equal((await call('/trips/trash')).status, 401);
+          assert.equal(
+            (await call('/trips/trash?limit=0', 'GET', undefined, a)).status,
+            400,
+          );
+          assert.equal(
+            (await call('/trips/trash?ownerId=anything', 'GET', undefined, a))
+              .status,
+            400,
+          );
+          assert.deepEqual(
+            (
+              await readJson<{ items: unknown[] }>(
+                await call('/trips/trash', 'GET', undefined, b),
+              )
+            ).items,
+            [],
+          );
+          const trash = await readJson<{
+            items: (TripDto & { deletedAt: string })[];
+            hasMore: boolean;
+          }>(await call('/trips/trash?limit=1', 'GET', undefined, a));
+          assert.equal(trash.items[0]!.id, trip.id);
+          assert.ok(trash.items[0]!.deletedAt);
+          assert.equal(trash.hasMore, false);
+          assert.deepEqual(
+            (
+              await readJson<{ items: unknown[] }>(
+                await call('/trips/trash?offset=1', 'GET', undefined, a),
+              )
+            ).items,
+            [],
+          );
+          const payload = { expectedRevision: current.revision + 1 },
+            key = randomUUID();
+          assert.equal(
+            (await call(path + '/restore', 'POST', payload)).status,
+            401,
+          );
+          assert.equal(
+            (await call(path + '/restore', 'POST', payload, b)).status,
+            404,
+          );
+          assert.equal(
+            (await call('/trips/invalid/restore', 'POST', payload, a)).status,
+            404,
+          );
+          assert.equal(
+            (
+              await call(
+                path + '/restore',
+                'POST',
+                { ...payload, expectedRevision: -1 },
+                a,
+              )
+            ).status,
+            400,
+          );
+          assert.equal(
+            (
+              await call(
+                path + '/restore',
+                'POST',
+                { expectedRevision: 999 },
+                a,
+              )
+            ).status,
+            409,
+          );
+          const audit = harness.connection.collection('audit_logs');
+          const existing = await audit.findOne({ action: 'trip.deleted' });
+          await audit.createIndex(
+            { requestId: 1 },
+            {
+              unique: true,
+              partialFilterExpression: { requestId: existing!.requestId },
+              name: 'restore_audit_failure',
+            },
+          );
+          try {
+            assert.equal(
+              (
+                await call(
+                  path + '/restore',
+                  'POST',
+                  payload,
+                  a,
+                  key,
+                  existing!.requestId,
+                )
+              ).status,
+              500,
+            );
+            assert.ok(
+              (await product.trips.models.Trip.findById(trip.id))!.deletedAt,
+            );
+            assert.equal(
+              await product.trips.models.Key.countDocuments({ key }),
+              0,
+            );
+            assert.equal(
+              await product.trips.models.Revision.countDocuments({
+                tripId: trip.id,
+                action: 'restored',
+              }),
+              0,
+            );
+          } finally {
+            await audit.dropIndex('restore_audit_failure');
+          }
+          const replies = await Promise.all([
+            call(path + '/restore', 'POST', payload, a, key),
+            call(path + '/restore', 'POST', payload, a, key),
+          ]);
+          assert.deepEqual(
+            replies.map((r) => r.status),
+            [200, 200],
+          );
+          const restored = (await readJson<{ trip: TripDto }>(replies[0]!))
+            .trip;
+          assert.deepEqual(restored.days, current.days);
+          assert.deepEqual(restored.budget, current.budget);
+          assert.deepEqual(restored.summaryTotals, current.summaryTotals);
+          assert.equal(restored.notes, current.notes);
+          assert.equal(restored.id, current.id);
+          assert.equal(restored.revision, current.revision + 2);
+          assert.deepEqual(
+            await product.expenses.models.Expense.findOne({
+              tripId: trip.id,
+            }).lean(),
+            expenseBefore,
+          );
+          assert.equal(
+            (await call(path + '/expenses', 'GET', undefined, a)).status,
+            200,
+          );
+          assert.equal(
+            await product.trips.models.Revision.countDocuments({
+              tripId: trip.id,
+              action: 'restored',
+            }),
+            1,
+          );
+          assert.equal(
+            await audit.countDocuments({
+              entityId: trip.id,
+              action: 'trip.restored',
+            }),
+            1,
+          );
+          assert.deepEqual(
+            (
+              await readJson<{ items: unknown[] }>(
+                await call('/trips/trash', 'GET', undefined, a),
+              )
+            ).items,
+            [],
+          );
+          assert.equal(
+            (
+              await fetch(base + '/shared-trip', {
+                headers: { Authorization: 'Bearer ' + shareToken },
+              })
+            ).status,
+            404,
+          );
+          assert.equal(
+            (await call(path + '/restore', 'POST', payload, a)).status,
+            409,
+          );
+          assert.equal(
+            (
+              await call(
+                path + '/restore',
+                'POST',
+                { expectedRevision: 999 },
+                a,
+                key,
+              )
+            ).status,
+            409,
+          );
+          const deleteKey = randomUUID();
+          assert.equal(
+            (
+              await call(
+                path,
+                'DELETE',
+                { expectedRevision: restored.revision },
+                a,
+                deleteKey,
+              )
+            ).status,
+            200,
+          );
+          assert.equal(
+            (await call(path + '/restore', 'POST', payload, a, key)).status,
+            409,
+          );
+          assert.equal((await call(path, 'GET', undefined, a)).status, 404);
+          assert.equal(
+            (
+              await call(
+                path + '/restore',
+                'POST',
+                { expectedRevision: restored.revision + 1 },
+                a,
+              )
+            ).status,
+            200,
+          );
+          assert.equal(
+            (
+              await call(
+                path,
+                'DELETE',
+                { expectedRevision: restored.revision },
+                a,
+                deleteKey,
+              )
+            ).status,
+            409,
+          );
+          assert.equal((await call(path, 'GET', undefined, a)).status, 200);
         },
       );
     } finally {

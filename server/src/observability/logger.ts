@@ -57,6 +57,8 @@ const fieldsSchema = z.object({
       '/api/v1/me/places',
       '/api/v1/me/places/:id',
       '/api/v1/trips',
+      '/api/v1/trips/trash',
+      '/api/v1/trips/:id/restore',
       '/api/v1/shared-trip',
       '/api/v1/trips/:id/shares',
       '/api/v1/trips/:id/shares/:shareId',

@@ -142,7 +142,7 @@ export function tripModels(connection: Connection) {
       tripSchemaVersion: { type: Number, default: 1 },
       action: {
         type: String,
-        enum: ['created', 'saved', 'deleted'],
+        enum: ['created', 'saved', 'deleted', 'restored'],
         required: true,
       },
       snapshot: { type: snapshot, required: true },

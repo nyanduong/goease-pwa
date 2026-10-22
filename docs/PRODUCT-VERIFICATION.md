@@ -225,3 +225,16 @@ Observed final checks:
 - Responsive320/390/768widths checked without horizontal overflow; screenshot `.local/recovery-preview/reset-390.png` inspected, local artifacts ignored.
 
 No application Mongo27019 changes; no live email/Gemini/Google/provider deployment or public-host test. Delivery uses bounded process memory outside transactions, not durable outbox; crash can lose a pending send and requires a new request after cooldown. Account-existence responses are generic with timing floor, not a constant-time guarantee under DB load. Rate limits remain per process. Real provider validation is the remaining step after the owner configures SMTP.
+
+## 2026-10-23 — Trip trash and restore
+
+TRIP-09/10/11/12/13 implemented: Chuyến đi → Thùng rác, owner-scoped metadata pagination and revision-checked POST restore. Reuses trip management transactions and deletion fields; same trip/day/activity IDs and all itinerary content, estimates/budget/notes preserved. Expense documents unchanged. Existing share links remain revoked; restore revokes any legacy unrevoked link rather than restoring access. No permanent delete, automatic retention job or historical revision rollback.
+
+Observed checks:
+
+- npm run typecheck, npm test (22 PASS), npm run build, npm run lint, npm run format:check, git diff --check: PASS.
+- npm run test:integration:52 PASS, isolated Mongo27021. Added trash auth/owner isolation, query validation/pagination, stale revision, concurrent same-key restore, audit-failure rollback (including receipt/revision), exact persisted expense/content preservation, old-link denial after restore, repeat delete/restore and stale receipt protection.
+- npx playwright test:21 PASS,1 opt-in live Gemini skipped, API3011/web5191/Mongo27020. Extended management journey deletes trip with existing actual expenses, opens Trash, restores after committed response is dropped, retries same key, reloads and compares full days/expense DTOs, then restores second trip and checks empty state.
+- Responsive320/390/768px no horizontal overflow. Inspected local screenshots .local/management-preview/trash-390.png and list-390.png; ignored artifacts not committed.
+
+No application Mongo27019 changes, external provider call, production deployment or physical-device test. First typecheck caught nullable Mongoose date inference and an intermediate test-edit syntax error; both corrected before final PASS runs. No SMTP/Gemini live acceptance claimed.

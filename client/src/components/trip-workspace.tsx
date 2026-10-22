@@ -149,6 +149,14 @@ export function JourneyList({
       </button>
       <div className="journey-section-title">
         <h2>Hành trình của bạn</h2>
+        {signedIn && (
+          <button
+            className="trip-trash-link"
+            onClick={() => onNavigate('/trips/trash')}
+          >
+            <Trash2 size={17} /> Thùng rác
+          </button>
+        )}
         {signedIn && !loading && !error && (
           <span>{trips.length} chuyến đi</span>
         )}

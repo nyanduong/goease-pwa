@@ -2,6 +2,8 @@ import mongoose, { Types, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import {
   tripListQuerySchema,
+  tripTrashQuerySchema,
+  type TripTrashDto,
   tripInputSchema,
   type TripDto,
   type TripInput,
@@ -126,6 +128,28 @@ export function tripService(
         .limit(query.limit + 1);
       return {
         items: items.slice(0, query.limit).map(dto),
+        hasMore: items.length > query.limit,
+        offset: query.offset,
+      };
+    },
+    async trash(
+      ownerId: Types.ObjectId,
+      query = tripTrashQuerySchema.parse({}),
+    ): Promise<TripTrashDto> {
+      const items = await Trip.find({ ownerId, deletedAt: { $ne: null } })
+        .sort({ deletedAt: -1, _id: -1 })
+        .skip(query.offset)
+        .limit(query.limit + 1);
+      return {
+        items: items.slice(0, query.limit).map((doc) => ({
+          id: String(doc._id),
+          title: doc.title,
+          revision: doc.revision,
+          startDate: doc.startDate!,
+          endDate: doc.endDate!,
+          destinationName: doc.destinations[0]?.nameSnapshot ?? '',
+          deletedAt: doc.deletedAt!.toISOString(),
+        })),
         hasMore: items.length > query.limit,
         offset: query.offset,
       };

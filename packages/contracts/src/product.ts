@@ -188,6 +188,16 @@ export const tripListQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(50).default(50),
   phase: z.enum(['all', 'upcoming', 'ongoing', 'completed']).default('all'),
 });
+export const tripTrashQuerySchema = tripListQuerySchema.omit({ phase: true });
+export type TrashedTripDto = Pick<
+  TripDto,
+  'id' | 'title' | 'revision' | 'startDate' | 'endDate' | 'destinationName'
+> & { deletedAt: string };
+export type TripTrashDto = {
+  items: TrashedTripDto[];
+  hasMore: boolean;
+  offset: number;
+};
 export const tripActionSchema = z.strictObject({
   expectedRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 });

@@ -1,3 +1,4 @@
+import { TripTrash } from './components/trip-trash';
 import { PasswordRecovery } from './components/password-recovery';
 import { AccountPage } from './components/account-page';
 import { ExplorePage, PlaceDetail, placeActivity } from './components/explore';
@@ -344,7 +345,8 @@ export function App() {
 
   const isEditor =
     path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path);
-  const isJourney = isEditor || ['/trips', '/budget', '/goe'].includes(path);
+  const isJourney =
+    isEditor || ['/trips', '/trips/trash', '/budget', '/goe'].includes(path);
   const isAuth = [
     '/login',
     '/register',
@@ -718,6 +720,23 @@ export function App() {
               go('/');
             }}
           />
+        ) : path === '/trips/trash' ? (
+          sessionStatus === 'loading' ? (
+            <Notice>Đang kiểm tra phiên…</Notice>
+          ) : sessionStatus === 'error' ? (
+            <div role="alert">
+              Chưa kiểm tra được phiên.
+              <button onClick={() => setSessionRetry((v) => v + 1)}>
+                Thử lại
+              </button>
+            </div>
+          ) : (
+            <TripTrash
+              key={user?.id ?? 'guest'}
+              signedIn={Boolean(user)}
+              onNavigate={go}
+            />
+          )
         ) : path === '/trips' ? (
           <JourneyList
             offset={tripOffset}

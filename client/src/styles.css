@@ -5327,3 +5327,42 @@ body:has(.journey-shell) {
   display: grid;
   gap: 20px;
 }
+
+.trip-trash-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #18564c;
+  font-size: 0.85rem;
+}
+.trip-trash-cards {
+  display: grid;
+  gap: 1rem;
+}
+.trip-trash-card {
+  padding: 1rem;
+  border: 1px solid #dce2d7;
+  border-radius: 20px;
+  background: #fffdf7;
+  overflow-wrap: anywhere;
+}
+.trip-trash-card h2 {
+  font-size: 1.35rem;
+  margin: 0 0 0.5rem;
+}
+.trip-trash-card p,
+.trip-trash-card small {
+  color: #607471;
+}
+.trip-trash-card .journey-outline {
+  width: 100%;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.trip-trash button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}

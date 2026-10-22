@@ -126,7 +126,7 @@ export function TripManagement({
             <p>
               {action === 'duplicate'
                 ? 'Sao chép lịch, ghi chú và dự toán sang chuyến riêng mới. Thực chi không được sao chép. Các hoạt động được giữ làm kế hoạch thủ công.'
-                : 'Chuyến đi sẽ được ẩn khỏi danh sách; lịch và thực chi không còn truy cập được. Hiện chưa có chức năng khôi phục.'}
+                : 'Chuyến đi sẽ chuyển vào Thùng rác. Bạn có thể khôi phục nguyên lịch và thực chi. Các link chia sẻ cũ bị thu hồi và không mở lại khi khôi phục.'}
             </p>
             <strong>{trip.title}</strong>
             {action === 'duplicate' && (

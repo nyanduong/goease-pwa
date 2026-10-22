@@ -1322,6 +1322,76 @@ test('trip management reschedules without data loss duplicates deletes and summa
   await expect(
     page.getByRole('heading', { name: 'Hội An đã dời ngày', exact: true }),
   ).toBeVisible();
+  // Restore the original trip with real expenses; retry a committed response lost in transit.
+  expect(
+    (
+      await page.request.delete(path, {
+        headers: headers(),
+        data: { expectedRevision: saved.revision },
+      })
+    ).status(),
+  ).toBe(200);
+  await page.getByRole('button', { name: 'Thùng rác', exact: true }).click();
+  await expect(page).toHaveURL(/\/trips\/trash$/);
+  const originalCard = page.locator('.trip-trash-card').filter({
+    has: page.getByRole('heading', {
+      name: 'Hội An đã dời ngày',
+      exact: true,
+    }),
+  });
+  await expect(originalCard).toBeVisible();
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: '.local/management-preview/trash-390.png',
+    fullPage: true,
+  });
+  let restoreDropped = false;
+  const restoreKeys: string[] = [];
+  await page.route('**' + path + '/restore', async (route) => {
+    restoreKeys.push(route.request().headers()['idempotency-key']!);
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    if (!restoreDropped) {
+      restoreDropped = true;
+      await route.abort();
+    } else await route.fulfill({ response });
+  });
+  await originalCard
+    .getByRole('button', { name: 'Khôi phục chuyến đi', exact: true })
+    .click();
+  await originalCard
+    .getByRole('button', { name: 'Thử lại khôi phục', exact: true })
+    .click();
+  await expect(page).toHaveURL(new RegExp('/trips/' + trip.id + '$'));
+  expect(restoreKeys[0]).toBe(restoreKeys[1]);
+  await page.unroute('**' + path + '/restore');
+  await page.reload();
+  const restored: TripDto = (await (await page.request.get(path)).json()).data
+    .trip;
+  expect(restored.days).toEqual(saved.days);
+  expect(
+    (await (await page.request.get(path + '/expenses')).json()).data.items,
+  ).toEqual(costs.items);
+  await page.goto('/trips/trash');
+  await expect(
+    page.getByRole('heading', { name: 'Hội An đã dời ngày', exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Khôi phục chuyến đi', exact: true })
+    .click();
+  await expect(page).toHaveURL(new RegExp('/trips/' + copyId + '$'));
+  await page.goto('/trips/trash');
+  await expect(
+    page.getByRole('heading', { name: 'Thùng rác đang trống' }),
+  ).toBeVisible();
 });
 
 test('customer profile and password persist and revoke other browser sessions', async ({

@@ -17,7 +17,7 @@ export function tripManagement(
   return async (
     ownerId: Types.ObjectId,
     id: string,
-    action: 'delete' | 'duplicate',
+    action: 'delete' | 'duplicate' | 'restore',
     expectedRevision: number,
     key: string,
     startDate?: string,
@@ -50,7 +50,21 @@ export function tripManagement(
                 'IDEMPOTENCY_CONFLICT',
                 'Nội dung thao tác đã đổi. Hãy tạo thao tác mới.',
               );
-            if (action === 'delete') return { deleted: true };
+            if (action === 'delete') {
+              if (!source.deletedAt)
+                throw new HttpError(
+                  409,
+                  'TRIP_STATE_CHANGED',
+                  'Chuyến đi đã được khôi phục. Hãy tải lại danh sách.',
+                );
+              return { deleted: true };
+            }
+            if (action === 'restore' && source.deletedAt)
+              throw new HttpError(
+                409,
+                'TRIP_STATE_CHANGED',
+                'Chuyến đi đã bị xóa lại. Hãy tải lại thùng rác.',
+              );
             if (source.deletedAt) throw missing();
             const copy = await Trip.findOne({
               _id: cached.resourceId,
@@ -60,7 +74,14 @@ export function tripManagement(
             if (!copy) throw missing();
             return { trip: trips.dto(copy) };
           }
-          if (source.deletedAt) throw missing();
+          if (action === 'restore') {
+            if (!source.deletedAt)
+              throw new HttpError(
+                409,
+                'TRIP_NOT_DELETED',
+                'Chuyến đi đã ở trong danh sách hoạt động.',
+              );
+          } else if (source.deletedAt) throw missing();
           if (source.revision !== expectedRevision)
             throw new HttpError(
               409,
@@ -76,6 +97,21 @@ export function tripManagement(
             source.revision++;
             source.updatedBy = ownerId;
             await source.save({ session });
+            await connection
+              .collection('trip_share_links')
+              .updateMany(
+                { tripId: source._id, revokedAt: null },
+                { $set: { revokedAt: now } },
+                { session },
+              );
+          } else if (action === 'restore') {
+            source.deletedAt = null;
+            source.deletedBy = null;
+            source.deletionReasonCode = null;
+            source.revision++;
+            source.updatedBy = ownerId;
+            await source.save({ session });
+            // Restore content only; never restore public access, including legacy links.
             await connection
               .collection('trip_share_links')
               .updateMany(
@@ -146,8 +182,13 @@ export function tripManagement(
             tripId: target._id,
             ownerIdAtWrite: ownerId,
             revision: target.revision,
-            previousRevision: action === 'delete' ? expectedRevision : null,
-            action: action === 'delete' ? 'deleted' : 'created',
+            previousRevision: action !== 'duplicate' ? expectedRevision : null,
+            action:
+              action === 'delete'
+                ? 'deleted'
+                : action === 'restore'
+                  ? 'restored'
+                  : 'created',
             snapshot: trips.toInput(target),
             actorId: ownerId,
             requestId: reqId,
@@ -155,7 +196,12 @@ export function tripManagement(
           }).save({ session });
           await audit.append(
             {
-              action: action === 'delete' ? 'trip.deleted' : 'trip.duplicated',
+              action:
+                action === 'delete'
+                  ? 'trip.deleted'
+                  : action === 'restore'
+                    ? 'trip.restored'
+                    : 'trip.duplicated',
               actorUserId: String(ownerId),
               entityId: String(target._id),
               entityRevision: target.revision,
@@ -171,7 +217,7 @@ export function tripManagement(
             requestHash,
             status: 'completed',
             resourceId: String(target._id),
-            responseStatus: action === 'delete' ? 200 : 201,
+            responseStatus: action === 'duplicate' ? 201 : 200,
             expiresAt: new Date(Date.now() + 86400000),
           }).save({ session });
           return action === 'delete'

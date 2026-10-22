@@ -312,7 +312,7 @@ Implemented: owner-only create/edit/soft-delete of independent trip expenses; po
 
 ## TRIP-03/05/08/09/10/12/13 — Quản lý chuyến đi customer
 
-Phân loại sắp/đang/đã kết thúc theo ngày Việt Nam, không là trạng thái xác nhận đã đi. Dời ngày giữ lịch theo ordinal/stable IDs; chặn rút ngày có hoạt động và PATCH đổi ngày làm mất activity. Expense không dịch ngày theo lịch. Duplicate owner-only tạo lịch manual riêng, không clone thực chi; xóa mềm có revision/audit/idempotency và ẩn mọi expense qua quyền trip. Tổng kết dùng dự toán đã biết và thực chi đã ghi, không báo chắc chắn tiết kiệm. API, giới hạn và policy triển khai ở TRIP-MANAGEMENT.md; restore/purge chưa triển khai.
+Phân loại sắp/đang/đã kết thúc theo ngày Việt Nam, không là trạng thái xác nhận đã đi. Dời ngày giữ lịch theo ordinal/stable IDs; chặn rút ngày có hoạt động và PATCH đổi ngày làm mất activity. Expense không dịch ngày theo lịch. Duplicate owner-only tạo lịch manual riêng, không clone thực chi; xóa mềm có revision/audit/idempotency và ẩn mọi expense qua quyền trip. Tổng kết dùng dự toán đã biết và thực chi đã ghi, không báo chắc chắn tiết kiệm. API, giới hạn và policy triển khai ở TRIP-MANAGEMENT.md; thùng rác/restore đã triển khai; purge chưa triển khai.
 
 ## Customer account — 2026-10-23
 
@@ -329,3 +329,7 @@ Token Web Crypto 256-bit truyền trong fragment `/share#token`, gửi API bằn
 ### Quên mật khẩu — 2026-10-23 (AUTH-03/04/07/08)
 
 Đã triển khai email/password recovery cho account active không bị xóa, có password identity đang liên kết. Chủ sản phẩm sẽ cung cấp cấu hình SMTP sau; chưa xác nhận gửi/nhận email thật. Link server-random, chỉ lưu hash, hạn mặc định15phút (cấu hình5–60phút), consume một lần trong transaction cùng đổi mật khẩu/thu hồi mọi phiên/audit. Không đánh dấu emailVerifiedAt hoặc tạo/link identity Google. Request có response chung, cooldown60giây/user, rate limit server; SMTP lỗi không được báo là đã giao thư. Token securityVersion binding khiến đổi mật khẩu trước đó vô hiệu link. Xem PASSWORD-RECOVERY.md cho hợp đồng, queue trong bộ nhớ và giới hạn chưa có durable retry. Policy reset mới này khác đổi password trong hồ sơ: reset thu hồi cả phiên hiện tại.
+
+### TRIP-09/10/11/12/13 — Thùng rác customer (2026-10-23)
+
+Owner xem thùng rác và khôi phục chuyến của mình bằng revision hiện tại. Khôi phục cùng ID, giữ nguyên lịch/ngày/ghi chú/dự toán/source và thực chi, tạo revision mới cùng audit; không phục hồi expense đã xóa riêng. Link chia sẻ cũ vẫn thu hồi, kể cả sau restore. Chưa có purge tự động hoặc restore về revision lịch sử tùy chọn. Xem TRIP-MANAGEMENT.md.

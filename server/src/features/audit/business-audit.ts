@@ -17,6 +17,7 @@ const input = z.strictObject({
     'trip.created',
     'trip.updated',
     'trip.deleted',
+    'trip.restored',
     'trip.duplicated',
     'trip.share_created',
     'trip.share_revoked',

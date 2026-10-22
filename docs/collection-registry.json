@@ -765,7 +765,7 @@
         "TRIP-09",
         "TRIP-12"
       ],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expenseRevision internal serialization counter, no itinerary revision/snapshot changes; trip management local 2026-10-23: owner-only duplicate/soft-delete/date-loss guard; derived phase pagination",
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expenseRevision internal serialization counter, no itinerary revision/snapshot changes; trip management local 2026-10-23: owner-only duplicate/soft-delete/date-loss guard; derived phase pagination; Trash/restore runtime: owner-only listing, clear deletion metadata and increment revision, preserve all content; no purge.",
       "runtimeFields": [
         [
           "days[].activities[].placeId",
@@ -853,7 +853,7 @@
       "rules": "Không lưu từng phím gõ. Snapshot được kiểm soát kích thước; mỗi version độc lập dễ restore. Nếu sau này chuyển patch phải có anchor snapshot và kiểm thử reconstruction.",
       "retention": "Cùng thời hạn trip, không giữ private notes vĩnh viễn chỉ vì gọi là log.",
       "brRefs": ["TRIP-09", "TRIP-10", "TRIP-12"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; trip management local 2026-10-23: deleted action snapshot; clone revision0 created",
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; trip management local 2026-10-23: deleted action snapshot; clone revision0 created; Runtime action restored with previousRevision, append-only snapshot; not historical revision rollback.",
       "runtimeFields": [
         [
           "snapshot.days[].activities[].placeId",
@@ -955,7 +955,7 @@
       "rules": "TRIP-11/TRIP-12: owner create/list/revoke; at most10 active links per trip; live saved itinerary allowlist excludes notes, costs, account and AI data. Revoke/delete atomic with audit; restored trips do not reactivate links.",
       "retention": "No cleanup/TTL/purge job; expiry enforced by API, revocation retained.",
       "brRefs": ["TRIP-11", "TRIP-12"],
-      "implementationStatus": "Implemented local read-only sharing; see TRIP-SHARING.md. Listed fields/indexes are runtime; general MUTABLE metadata and purge jobs are not implemented."
+      "implementationStatus": "Implemented local read-only sharing; see TRIP-SHARING.md. Listed fields/indexes are runtime; general MUTABLE metadata and purge jobs are not implemented.; Trip restore keeps existing revokedAt; revokes any legacy active link; never reactivates old tokens."
     },
     {
       "name": "trip_expenses",
@@ -1005,7 +1005,7 @@
       "rules": "TRIP-08/TRIP-13 owner-only; atomic expense/audit/idempotency writes; safe integer aggregate; no receipts, paidBy, activity link or wallet. Runtime uses spentOn, not proposed spentAt.",
       "retention": "Soft delete implemented; purge/retention jobs not implemented.",
       "brRefs": ["TRIP-08", "TRIP-13"],
-      "implementationStatus": "implemented-local-owner-only-expense-crud; runtime fields/index below; receipt/activity/payment extensions not implemented; see TRIP-EXPENSES.md"
+      "implementationStatus": "implemented-local-owner-only-expense-crud; runtime fields/index below; receipt/activity/payment extensions not implemented; see TRIP-EXPENSES.md; Trip trash restore never changes expenses or restores individually deleted expenses."
     },
     {
       "name": "favorites",
@@ -2161,7 +2161,7 @@
         "qualification": "DB-BASELINE.md#12-audit-subset-f1-b-đã-triển-khai",
         "productionReady": false
       },
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only; account runtime 2026-10-23: profile.updated/password.changed; identifiers only, no PII/secrets; password.reset implemented transactionally, actor from validated challenge user, no credentials or token in changes"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only; account runtime 2026-10-23: profile.updated/password.changed; identifiers only, no PII/secrets; password.reset implemented transactionally, actor from validated challenge user, no credentials or token in changes; Runtime trip.restored, trip entity, no content/expense payload."
     },
     {
       "name": "analytics_events",
@@ -2330,7 +2330,7 @@
       "rules": "Idempotency không thay authorization: trả cached result vẫn kiểm tra actor/current access. Race duplicate-key phải đọc record hiện có.",
       "retention": "Đề xuất 24h cho trip create; payment không dựa TTL ngắn để ngăn thanh toán/cấp quyền trùng lâu dài.",
       "brRefs": ["TRIP-09", "COM-04"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted, resourceType trip_expense, 24h TTL; trip management local 2026-10-23: trip.delete/trip.duplicate, TTL24h, reauthorize replay"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted, resourceType trip_expense, 24h TTL; trip management local 2026-10-23: trip.delete/trip.duplicate, TTL24h, reauthorize replay; Runtime trip.restore, 200, TTL24h; reauthorize and reject replay when trip deleted again."
     },
     {
       "name": "schema_migrations",
