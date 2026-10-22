@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdtemp, mkdir } from 'node:fs/promises';
@@ -1932,6 +1933,168 @@ test('share link creation retry guest view map and revocation', async ({
     await expect(
       view.getByRole('heading', { name: 'Hội An chia sẻ', exact: true }),
     ).toHaveCount(0);
+  } finally {
+    await guest.close();
+  }
+});
+
+test('password recovery UI with explicit delivered-token database fixture and unavailable SMTP', async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/register');
+  const email = `recovery-browser-${Date.now()}@example.invalid`,
+    password = 'Recovery-browser-old-2026',
+    next = 'Recovery-browser-new-2026';
+  await page
+    .getByLabel('Tên của bạn', { exact: true })
+    .fill('Recovery traveler');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  const origin = new URL(page.url()).origin;
+  const guest = await browser.newContext({ baseURL: origin });
+  const recover = await guest.newPage();
+  try {
+    await recover.goto('/login');
+    await recover
+      .getByRole('link', { name: 'Quên mật khẩu?', exact: true })
+      .click();
+    await recover.getByLabel('Email đăng ký', { exact: true }).fill(email);
+    await recover
+      .getByRole('button', { name: 'Gửi yêu cầu đặt lại', exact: true })
+      .click();
+    await expect(recover.getByRole('alert')).toContainText(
+      'Gửi email chưa được cấu hình',
+    );
+    await expect(
+      recover.getByLabel('Email đăng ký', { exact: true }),
+    ).toHaveValue(email);
+    // This fixture tests reset persistence/consume/UI only, not actual email delivery.
+    const seedDeliveredToken = async () => {
+      const token = randomBytes(32).toString('base64url');
+      const connection = await mongoose
+        .createConnection(
+          'mongodb://127.0.0.1:27020/goease_f0_test?replicaSet=goease_e2e',
+        )
+        .asPromise();
+      try {
+        const user = (await connection
+          .collection('users')
+          .findOne({ emailNormalized: email }))!;
+        const identity = (await connection
+          .collection('auth_identities')
+          .findOne({ userId: user._id, provider: 'password' }))!;
+        await connection.collection('auth_challenges').insertOne({
+          schemaVersion: 1,
+          userId: user._id,
+          purpose: 'reset_password',
+          tokenHash: createHash('sha256').update(token).digest('hex'),
+          context: {
+            identityId: identity._id,
+            securityVersionAtIssue: user.securityVersion,
+            deliveryState: 'sent',
+          },
+          expiresAt: new Date(Date.now() + 900000),
+          consumedAt: null,
+          revokedAt: null,
+          attemptCount: 0,
+          maxAttempts: 1,
+          requestId: crypto.randomUUID(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } finally {
+        await connection.close();
+      }
+      return token;
+    };
+    const token = await seedDeliveredToken();
+    await recover.goto(`/reset-password#${token}`);
+    await recover.getByLabel('Mật khẩu mới', { exact: true }).fill(next);
+    await recover
+      .getByLabel('Xác nhận mật khẩu mới', { exact: true })
+      .fill('Wrong-confirmation-2026');
+    await recover
+      .getByRole('button', { name: 'Lưu mật khẩu mới', exact: true })
+      .click();
+    await expect(recover.getByRole('alert')).toContainText('trùng khớp');
+    await recover
+      .getByLabel('Xác nhận mật khẩu mới', { exact: true })
+      .fill(next);
+    await mkdir('.local/recovery-preview', { recursive: true });
+    for (const width of [320, 390, 768]) {
+      await recover.setViewportSize({ width, height: 844 });
+      expect(
+        await recover.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      await recover.screenshot({
+        path: `.local/recovery-preview/reset-${width}.png`,
+        fullPage: true,
+      });
+    }
+    // Simulate the reset committing, then losing its HTTP response. A retry must not reset twice.
+    await recover.route('**/api/v1/auth/reset-password', async (route) => {
+      await route.fetch();
+      await route.abort();
+    });
+    await recover
+      .getByRole('button', { name: 'Lưu mật khẩu mới', exact: true })
+      .click();
+    await expect(recover.getByRole('alert')).toContainText('Không kết nối');
+    await recover.unroute('**/api/v1/auth/reset-password');
+    await recover
+      .getByRole('button', { name: 'Lưu mật khẩu mới', exact: true })
+      .click();
+    await expect(recover.getByRole('alert')).toContainText(
+      'đã dùng hoặc đã hết hạn',
+    );
+    expect((await page.request.get('/api/v1/me/profile')).status()).toBe(401);
+    const headers = { Origin: origin, 'X-GoEase-Client': 'web' };
+    expect(
+      (
+        await guest.request.post('/api/v1/auth/login', {
+          headers,
+          data: { email, password },
+        })
+      ).status(),
+    ).toBe(401);
+    await recover
+      .getByRole('link', { name: 'Về đăng nhập', exact: true })
+      .click();
+    await recover.getByLabel('Email', { exact: true }).fill(email);
+    await recover.getByLabel('Mật khẩu', { exact: true }).fill(next);
+    await recover
+      .getByRole('button', { name: 'Đăng nhập', exact: false })
+      .click();
+    await expect(recover).toHaveURL(/\/$/);
+    const finalToken = await seedDeliveredToken();
+    await recover.goto(`/reset-password#${finalToken}`);
+    await recover
+      .getByLabel('Mật khẩu mới', { exact: true })
+      .fill('Recovery-browser-final-2026');
+    await recover
+      .getByLabel('Xác nhận mật khẩu mới', { exact: true })
+      .fill('Recovery-browser-final-2026');
+    await recover
+      .getByRole('button', { name: 'Lưu mật khẩu mới', exact: true })
+      .click();
+    await expect(recover.getByRole('status')).toContainText(
+      'Đã đặt lại mật khẩu',
+    );
+    await expect(recover).toHaveURL(/\/reset-password$/);
+    await expect(
+      recover.getByLabel('Mật khẩu mới', { exact: true }),
+    ).toHaveCount(0);
+    await recover.goto('/reset-password');
+    await expect(recover.getByRole('alert')).toContainText('Link không hợp lệ');
   } finally {
     await guest.close();
   }

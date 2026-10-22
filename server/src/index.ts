@@ -9,7 +9,7 @@ const logger = createLogger(process.env.NODE_ENV);
 async function main() {
   const config = parseConfig(process.env);
   const database = createDatabase(config.MONGODB_URI, logger);
-  const product = createProduct(database.connection, config);
+  const product = createProduct(database.connection, config, { logger });
   database.connection.on('connected', () => {
     void product.initialize().catch(() => logger.write('product.init_failed'));
   });
@@ -27,6 +27,7 @@ async function main() {
     deadline.unref();
     server.closeIdleConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
+    await product.recovery.drain();
     await database.close();
     clearTimeout(deadline);
   }

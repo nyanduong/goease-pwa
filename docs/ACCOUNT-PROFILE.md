@@ -4,7 +4,7 @@
 
 Bấm avatar góc phải Trang chủ → /account. Sửa tên hiển thị, đặt URL ảnh HTTPS hoặc chọn avatar mặc định rồi Lưu hồ sơ. Ảnh lỗi dùng fallback hiện có. Chưa tải file lên Cloudinary hoặc lưu media; email hiển thị chỉ đọc, không thay đổi trạng thái xác minh. Hồ sơ tải lại/cập nhật đồng bộ với avatar và tên của ứng dụng.
 
-Mật khẩu hiện tại bắt buộc; mật khẩu mới12–128 ký tự, khác mật khẩu cũ và UI yêu cầu nhập lại trùng khớp. Sau thành công xóa các ô mật khẩu. Chỉ identity password đang liên kết được đổi; Google-only nhận hướng dẫn quản lý tại Google, không tự tạo password identity. Đổi thành công giữ phiên hiện tại, thu hồi mọi phiên khác. Quên/reset mật khẩu, liên kết identity, đổi email và upload ảnh chưa triển khai.
+Mật khẩu hiện tại bắt buộc; mật khẩu mới12–128 ký tự, khác mật khẩu cũ và UI yêu cầu nhập lại trùng khớp. Sau thành công xóa các ô mật khẩu. Chỉ identity password đang liên kết được đổi; Google-only nhận hướng dẫn quản lý tại Google, không tự tạo password identity. Đổi thành công giữ phiên hiện tại, thu hồi mọi phiên khác. Quên/reset mật khẩu qua SMTP đã bổ sung trong [PASSWORD-RECOVERY](PASSWORD-RECOVERY.md); owner chưa cung cấp credentials để kiểm chứng mail thật. Liên kết identity, đổi email và upload ảnh chưa triển khai.
 
 ## API
 

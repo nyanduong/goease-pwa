@@ -134,3 +134,7 @@ Mongoose Connection.transaction dùng session caller xuyên suốt fixture/audit
 ### Goe adjustment consumer
 
 GoeChat now consumes owned trip read plus goe-proposal/goe-apply endpoints. plannerService reuses Gemini/quota, merges one day while preserving other days and retained data, and resolves the stored validated proposal on apply. No separate chat service, external tool execution, weather lookup or chat persistence introduced.
+
+## Password recovery SMTP slice (2026-10-23)
+
+Auth feature reuses existing users/identities/sessions/challenges and audit. Nodemailer is a server-only adapter; pending delivery is bounded in memory outside retriable DB transactions, while DB stores only hashed token and delivery state. No provider key in client, no public mailbox, no durable outbox. See [PASSWORD-RECOVERY](PASSWORD-RECOVERY.md) for contract and explicitly deferred live-mail verification.

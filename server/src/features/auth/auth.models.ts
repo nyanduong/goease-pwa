@@ -54,6 +54,7 @@ export function authModels(connection: Connection) {
       },
       roles: { type: [String], enum: ['traveler'], default: ['traveler'] },
       securityVersion: { type: Number, default: 1 },
+      recoverySequence: { type: Number, default: 0 },
       deletedAt: { type: Date, default: null },
       deletedBy: { type: Schema.Types.ObjectId, default: null },
       deletionReasonCode: { type: String, default: null },
@@ -148,7 +149,7 @@ export function authModels(connection: Connection) {
       revokedAt: { type: Date, default: null },
       revocationReason: {
         type: String,
-        enum: ['logout', 'password_changed'],
+        enum: ['logout', 'password_changed', 'password_reset'],
         default: null,
       },
       passwordChangeKey: { type: String, default: null },
@@ -168,6 +169,8 @@ export function authModels(connection: Connection) {
   const context = new Schema(
     {
       identityId: Schema.Types.ObjectId,
+      securityVersionAtIssue: Number,
+      deliveryState: { type: String, enum: ['pending', 'sent', 'failed'] },
       nonceHash: String,
       encryptedPkceVerifier: String,
       bindingHash: String,
@@ -180,7 +183,7 @@ export function authModels(connection: Connection) {
       userId: Schema.Types.ObjectId,
       purpose: {
         type: String,
-        enum: ['verify_email', 'oauth_state'],
+        enum: ['verify_email', 'oauth_state', 'reset_password'],
         required: true,
       },
       tokenHash: { type: String, required: true, select: false },
@@ -202,6 +205,20 @@ export function authModels(connection: Connection) {
       autoCreate: false,
     },
   );
+  challengeSchema.pre('validate', function () {
+    if (
+      this.purpose === 'reset_password' &&
+      (!this.userId ||
+        !this.context?.identityId ||
+        !Number.isInteger(this.context.securityVersionAtIssue) ||
+        (this.context.securityVersionAtIssue ?? 0) < 1 ||
+        !this.context.deliveryState)
+    )
+      this.invalidate(
+        'context',
+        'Reset challenge requires identity, security version and delivery binding',
+      );
+  });
   challengeSchema.index({ tokenHash: 1 }, { unique: true });
   challengeSchema.index({ userId: 1, purpose: 1, createdAt: -1 });
   challengeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

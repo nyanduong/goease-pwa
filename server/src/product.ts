@@ -1,3 +1,10 @@
+import { passwordRecovery } from './features/auth/password-recovery.js';
+import {
+  resetEmailSender,
+  type ResetEmailSender,
+} from './features/auth/reset-email.js';
+import { createLogger, type Logger } from './observability/logger.js';
+import { forgotPasswordSchema, resetPasswordSchema } from '@goease/contracts';
 import { tripSharing } from './features/trips/trip-sharing.js';
 import { shareCreateSchema } from '@goease/contracts';
 import { tripManagement } from './features/trips/trip-management.js';
@@ -43,9 +50,21 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
     );
   return parsed.data;
 }
-export function createProduct(connection: Connection, config: Config) {
+export function createProduct(
+  connection: Connection,
+  config: Config,
+  dependencies: { resetEmail?: ResetEmailSender; logger?: Logger } = {},
+) {
   const audit = businessAudit(connection, config.NODE_ENV);
   const auth = authService(connection, config, audit);
+  const recovery = passwordRecovery(
+    connection,
+    config,
+    auth,
+    audit,
+    dependencies.resetEmail ?? resetEmailSender(config),
+    dependencies.logger ?? createLogger(config.NODE_ENV),
+  );
   const trips = tripService(connection, audit);
   const sharing = tripSharing(connection, trips, audit);
   const manageTrip = tripManagement(connection, trips, audit);
@@ -64,6 +83,8 @@ export function createProduct(connection: Connection, config: Config) {
       '/me/password',
       '/auth/register',
       '/auth/login',
+      '/auth/forgot-password',
+      '/auth/reset-password',
       '/auth/logout',
       '/auth/google',
       '/auth/google/callback',
@@ -170,6 +191,23 @@ export function createProduct(connection: Connection, config: Config) {
     const value = await auth.login(req, parse(loginSchema, req.body));
     auth.setCookie(res, value.token);
     res.json({ ok: true, data: { user: value.user } });
+  });
+  router.post('/auth/forgot-password', async (req, res) =>
+    res.status(202).json({
+      ok: true,
+      data: await recovery.request(
+        req,
+        parse(forgotPasswordSchema, req.body).email,
+      ),
+    }),
+  );
+  router.post('/auth/reset-password', async (req, res) => {
+    const data = await recovery.reset(
+      req,
+      parse(resetPasswordSchema, req.body),
+    );
+    auth.clearSessionCookie(res);
+    res.json({ ok: true, data });
   });
   router.post('/auth/logout', async (req, res) => {
     await auth.logout(req, res);
@@ -471,6 +509,7 @@ export function createProduct(connection: Connection, config: Config) {
   return {
     router,
     auth,
+    recovery,
     trips,
     explore,
     expenses,

@@ -1192,3 +1192,11 @@ trips.clonedFromTripId: ObjectId?, default null, server-only source reference; e
 ## Customer account — 2026-10-23
 
 users.displayName/avatarUrl/revision sử dụng PATCH profile, audit profile.updated; profile identical-state retry không tăng revision. auth_identities.passwordChangedAt/lastUsedAt được dùng khi đổi mật khẩu/login. auth_sessions.passwordChangeKey string UUID nullable, giữ receipt lần đổi gần nhất tới khi hết session; revocationReason enum thêm password_changed. users.securityVersion tăng, current session.securityVersionAtIssue được cập nhật, others revoked. audit_logs thêm profile.updated/password.changed, không secrets/PII payload. Không thêm collection/index. Xem ACCOUNT-PROFILE.md.
+
+## Password recovery runtime extension — 2026-10-23
+
+AUTH-03/04/07/08: users.recoverySequence (Number default0, internal) serializes issuance with reset/change-password; does not alter profile revision. auth_sessions.revocationReason supports password_reset; every active session revoked on successful reset. Existing indexes reused, no new collection/index/migration.
+
+`auth_challenges` adds reset_password to runtime purpose. For that purpose userId is required; context requires identityId (ObjectId), securityVersionAtIssue (positive integer), deliveryState (pending/sent/failed). Save validates binding. tokenHash is server random256-bit token SHA-256 with select:false; no target email/raw token retained for reset. expiresAt server time + configured300–3600seconds(default900), consumedAt/revokedAt null, attemptCount0/maxAttempts1. Existing unique tokenHash, user/purpose/createdAt and expiresAt TTL reused. Runtime reads check purpose/expiry/consume/revoke/delivery/identity/active user/securityVersion independently of TTL. Context nonce/PKCE/binding remains OAuth-only. Other proposed purposes remain unimplemented.
+
+Issuance uses cooldown60seconds and atomically revokes previous unused reset challenges. Delivery failure revokes the new challenge. Consume, identity password update, user securityVersion increment, all-session revocation, sibling-token revocation and password.reset audit commit together. SMTP executes outside retryable transactions; no durable queue/token persistence. See PASSWORD-RECOVERY.md.

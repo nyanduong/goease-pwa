@@ -1,3 +1,4 @@
+import { PasswordRecovery } from './components/password-recovery';
 import { AccountPage } from './components/account-page';
 import { ExplorePage, PlaceDetail, placeActivity } from './components/explore';
 import { AccountAvatar } from './components/account-avatar';
@@ -344,7 +345,12 @@ export function App() {
   const isEditor =
     path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path);
   const isJourney = isEditor || ['/trips', '/budget', '/goe'].includes(path);
-  const isAuth = path === '/login' || path === '/register';
+  const isAuth = [
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+  ].includes(path);
   const isWelcome = path === '/welcome';
   const isPlaceDetail = path.startsWith('/places/');
   const isExplore = path === '/explore';
@@ -690,6 +696,16 @@ export function App() {
               Đăng nhập để quản lý hồ sơ. {link('/login', 'Đăng nhập')}
             </Notice>
           )
+        ) : path === '/forgot-password' || path === '/reset-password' ? (
+          <PasswordRecovery
+            key={path}
+            reset={path === '/reset-password'}
+            link={link}
+            onReset={() => {
+              setUser(null);
+              setExpiredSession(false);
+            }}
+          />
         ) : path === '/login' || path === '/register' ? (
           <AuthPage
             key={path}

@@ -19,7 +19,7 @@ export const userDto = (user: UserRecord): UserDto => ({
   emailVerified: Boolean(user.emailVerifiedAt),
 });
 export const requestId = () => getRequestContext()?.requestId ?? randomUUID();
-const argonOptions = {
+export const argonOptions = {
   algorithm: Algorithm.Argon2id,
   memoryCost: 19456,
   timeCost: 2,

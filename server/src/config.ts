@@ -28,6 +28,17 @@ const schema = z.object({
     .default(86400),
   AUTH_MAX_ATTEMPTS: z.coerce.number().int().min(3).max(100).default(10),
   AUTH_WINDOW_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
+  SMTP_HOST: z.string().max(253).optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(465),
+  SMTP_USER: z.string().max(254).optional(),
+  SMTP_PASS: z.string().max(4096).optional(),
+  MAIL_FROM: z.union([z.email().max(254), z.literal('')]).optional(),
+  RESET_TOKEN_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(300)
+    .max(3600)
+    .default(900),
   GOOGLE_CLIENT_ID: z.string().max(512).optional(),
   GOOGLE_CLIENT_SECRET: z.string().max(4096).optional(),
   GOOGLE_PKCE_KEY: z.string().optional(),
@@ -51,6 +62,13 @@ export function parseConfig(env: NodeJS.ProcessEnv) {
       `Invalid environment: ${result.error.issues.map((issue) => issue.path.join('.')).join(', ')}`,
     );
   }
+  if (
+    result.data.NODE_ENV === 'production' &&
+    !result.data.CLIENT_ORIGIN.startsWith('https://')
+  )
+    throw new Error(
+      'Invalid environment: CLIENT_ORIGIN requires HTTPS in production',
+    );
   return result.data;
 }
 export type Config = ReturnType<typeof parseConfig>;

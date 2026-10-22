@@ -211,3 +211,17 @@ Observed final checks on Windows / Node24 / local isolated MongoDB:
 - Screenshot `.local/share-preview/shared-390.png` inspected;320/390/768screenshots retained locally, not committed. No horizontal overflow observed.
 
 No live Gemini, external deployment, public-domain access, clipboard permission automation, email provider or map-tile availability claim. Application MongoDB27019 and existing user data left untouched. Share URLs generated on localhost are only usable on the same machine until public hosting is configured. Revocation blocks subsequent API reads; it cannot erase previously viewed/copied content. No realtime revocation push, collaborator editing or cleanup job.
+
+## 2026-10-23 — Password recovery via SMTP adapter
+
+AUTH-03/04/07/08 implemented: forgot/reset screens, SMTP TLS adapter, server-generated hashed15-minute single-use token, transactional password/securityVersion/session/token revocation and password.reset audit. Existing auth/session/challenge/limiter reused. Owner explicitly deferred SMTP credentials; **no real email was sent or received during acceptance**. Missing SMTP returns503 rather than delivery success. Safe placeholders in server/.env.example; local ignored server/.env has blank SMTP keys ready to fill. See [PASSWORD-RECOVERY](PASSWORD-RECOVERY.md).
+
+Observed final checks:
+
+- `npm run typecheck`, `npm run build`, `npm run lint`, `npm run format:check`, `git diff --check`: PASS. Nodemailer10.2.1 and types8.0.2 pinned in single npm lockfile. Install reported0vulnerabilities; this is not a full security audit.
+- `npm test`:22 unit/HTTP PASS. Strict reset contracts, abuse limiter, mocked SMTP transport TLS options/fixed recipient/content/error sanitization.
+- `npm run test:integration`:51 PASS on isolated Mongo27021. Injected mail sender covers eligible/unknown/Google-only/suspended responses, cooldown, issuance races, single consume under concurrent reset, expiry/pending/revoked/wrong purpose/security-version binding, all-session revocation, login old/new, provider failure, audit rollback and secret scanning of logs/audit. This is DB/API evidence with an injected mail sender, not real SMTP or inbox evidence.
+- `npx playwright test` on API3011/web5191/Mongo27020:21 PASS,1liveGemini opt-in skipped. Browser tests missing SMTP503 and email preservation, explicit delivered-token DB fixture, confirmation validation, success and cleared fields, lost HTTP response after commit/retry refusal, old-session401, old-password failure and new-password login. First run caught duplicate status live regions; removed duplicate wrapper and full rerun PASS.
+- Responsive320/390/768widths checked without horizontal overflow; screenshot `.local/recovery-preview/reset-390.png` inspected, local artifacts ignored.
+
+No application Mongo27019 changes; no live email/Gemini/Google/provider deployment or public-host test. Delivery uses bounded process memory outside transactions, not durable outbox; crash can lose a pending send and requires a new request after cooldown. Account-existence responses are generic with timing floor, not a constant-time guarantee under DB load. Rate limits remain per process. Real provider validation is the remaining step after the owner configures SMTP.

@@ -59,6 +59,7 @@ export function auditModel(connection: Connection) {
           'auth.registered',
           'profile.updated',
           'password.changed',
+          'password.reset',
           'auth.email_verified',
           'auth.failed',
           'session.created',

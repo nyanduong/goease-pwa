@@ -13,6 +13,10 @@ export default defineConfig({
       timeout: 30000,
       env: {
         NODE_ENV: 'development',
+        SMTP_HOST: '',
+        SMTP_USER: '',
+        SMTP_PASS: '',
+        MAIL_FROM: '',
         // The full suite shares one loopback IP across many isolated accounts.
         AUTH_MAX_ATTEMPTS: '100',
         CLIENT_ORIGIN: e2eWebOrigin,

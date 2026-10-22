@@ -160,6 +160,11 @@ export function AuthPage({
           </button>
         </form>
 
+        {!register && (
+          <p className="auth-switch">
+            {link('/forgot-password', 'Quên mật khẩu?', 'text-link')}
+          </p>
+        )}
         <p className="auth-switch">
           {register ? 'Đã có tài khoản? ' : 'Bạn mới đến? '}
           {link(

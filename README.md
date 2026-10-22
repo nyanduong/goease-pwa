@@ -211,6 +211,10 @@ Trang Chuyến đi có bộ lọc Sắp đi / Đang đi / Đã kết thúc và p
 
 ## Customer account — 2026-10-23
 
-Bấm avatar Trang chủ để mở Hồ sơ & bảo mật: sửa tên, URL ảnh HTTPS/xóa ảnh và đổi mật khẩu với password hiện tại. Các phiên khác được thu hồi; phiên hiện tại giữ nguyên. Google-only không có form đổi mật khẩu GoEase. Chưa hỗ trợ upload ảnh hoặc quên mật khẩu. Xem [hợp đồng và giới hạn](docs/ACCOUNT-PROFILE.md).
+Bấm avatar Trang chủ để mở Hồ sơ & bảo mật: sửa tên, URL ảnh HTTPS/xóa ảnh và đổi mật khẩu với password hiện tại. Các phiên khác được thu hồi; phiên hiện tại giữ nguyên. Google-only không có form đổi mật khẩu GoEase. Chưa hỗ trợ upload ảnh. Quên mật khẩu qua SMTP xem phần dưới. Xem [hợp đồng và giới hạn](docs/ACCOUNT-PROFILE.md).
 
 Chia sẻ lịch trình: mở chuyến đã lưu → Thông tin chuyến đi → Chia sẻ lịch trình. Link chỉ xem, hạn 1/7/30 ngày và thu hồi; ẩn ghi chú và mọi chi phí. Xem [TRIP-SHARING](docs/TRIP-SHARING.md) cho API, quyền và giới hạn localhost.
+
+## Quên mật khẩu qua SMTP
+
+Đăng nhập → Quên mật khẩu → email → link15phút dùng một lần → mật khẩu mới → đăng nhập lại. Reset thu hồi tất cả phiên cũ. Điền SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_FROM trong server/.env và khởi động lại API; ví dụ an toàn trong server/.env.example. Owner sẽ cung cấp credentials sau; hiện chưa kiểm chứng thư thật, thiếu cấu hình trả503 rõ ràng. Xem [PASSWORD-RECOVERY](docs/PASSWORD-RECOVERY.md) cho setup, API và giới hạn gửi nền.

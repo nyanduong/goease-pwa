@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { getRequestContext, uuidPattern } from './context.js';
 
 const levels = {
+  'email.reset_accepted': 'info',
+  'email.reset_failed': 'error',
+  'email.reset_cleanup_failed': 'error',
   'http.completed': 'info',
   'http.error': 'error',
   'database.connected': 'info',
@@ -41,6 +44,8 @@ const fieldsSchema = z.object({
       '/api/v1/me/password',
       '/api/v1/auth/register',
       '/api/v1/auth/login',
+      '/api/v1/auth/forgot-password',
+      '/api/v1/auth/reset-password',
       '/api/v1/auth/logout',
       '/api/v1/auth/verify-email',
       '/api/v1/auth/google',

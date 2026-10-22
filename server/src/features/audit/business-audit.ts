@@ -9,6 +9,7 @@ const input = z.strictObject({
     'auth.registered',
     'profile.updated',
     'password.changed',
+    'password.reset',
     'auth.email_verified',
     'auth.failed',
     'session.created',
@@ -51,7 +52,8 @@ export function businessAudit(
           authSession ||
           v.action === 'auth.email_verified' ||
           v.action === 'profile.updated' ||
-          v.action === 'password.changed') &&
+          v.action === 'password.changed' ||
+          v.action === 'password.reset') &&
         !v.actorUserId
       )
         throw new Error('Audit actor required');

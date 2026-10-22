@@ -99,7 +99,15 @@
       "rules": "Không soft-delete rồi tạo user mới cùng email để kế thừa trip cũ. Trong grace period dùng flow khôi phục; sau purge tạo account mới có ID mới. Không lưu CCCD, ngày sinh, giới tính, số điện thoại chỉ để đầy profile.",
       "retention": "Profile cho đến yêu cầu xóa hoặc policy inactivity đã duyệt; audit và tài chính xử lý riêng.",
       "brRefs": ["AUTH-01", "AUTH-06", "AUTH-08", "DATA-06", "AUTH-09"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; account runtime 2026-10-23: owner revision profile update; securityVersion bump at password change"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; account runtime 2026-10-23: owner revision profile update; securityVersion bump at password change",
+      "runtimeFields": [
+        [
+          "recoverySequence",
+          "integer",
+          "0",
+          "Internal password recovery issuance serialization counter; not profile revision."
+        ]
+      ]
     },
     {
       "name": "auth_identities",
@@ -224,7 +232,7 @@
       "rules": "Cookie HttpOnly/SameSite; production Secure/HTTPS và CSRF/Origin checks phù hợp. Không ép JWT vì mobile. Tách TTL session khỏi log bảo mật cần giữ lâu hơn.",
       "retention": "Session hết hạn được dọn; audit sự kiện login/logout tồn tại theo security retention.",
       "brRefs": ["AUTH-04", "AUTH-06", "AUTH-07"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; account runtime 2026-10-23: passwordChangeKey; password_changed revocation reason; keep current session version and revoke others"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; account runtime 2026-10-23: passwordChangeKey; password_changed revocation reason; keep current session version and revoke others; reset_password revokes all sessions with password_reset reason, securityVersion increment; no session kept"
     },
     {
       "name": "auth_challenges",
@@ -281,7 +289,27 @@
       "rules": "Kiểm tra purpose, expiry, consumed và user binding. Không tin returnTo tùy ý. PKCE verifier nếu cần phải encrypt để dùng lại, không chỉ hash rồi mất khả năng đổi code.",
       "retention": "Thời gian ngắn theo purpose; không dùng challenge collection làm lịch sử bảo mật.",
       "brRefs": ["AUTH-02", "AUTH-03", "AUTH-07"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
+      "implementationStatus": "OAuth plus reset_password implemented local. Reset SMTP adapter implemented; credentials deferred by owner, live delivery unverified. Other proposed purposes not implemented. See PASSWORD-RECOVERY.md.",
+      "runtimeFields": [
+        [
+          "context.identityId; context.securityVersionAtIssue",
+          "ObjectId; positive integer",
+          "Required for reset_password",
+          "Binding to active password identity/user version; checked at consume."
+        ],
+        [
+          "context.deliveryState",
+          "pending|sent|failed",
+          "Required for reset_password",
+          "Only sent can consume; SMTP errors revoke."
+        ],
+        [
+          "reset expiry / attempts",
+          "Date; integer",
+          "900seconds configurable300–3600; attemptCount0/maxAttempts1",
+          "Strict one-use transaction; independent of TTL."
+        ]
+      ]
     },
     {
       "name": "consent_events",
@@ -2133,7 +2161,7 @@
         "qualification": "DB-BASELINE.md#12-audit-subset-f1-b-đã-triển-khai",
         "productionReady": false
       },
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only; account runtime 2026-10-23: profile.updated/password.changed; identifiers only, no PII/secrets"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only; account runtime 2026-10-23: profile.updated/password.changed; identifiers only, no PII/secrets; password.reset implemented transactionally, actor from validated challenge user, no credentials or token in changes"
     },
     {
       "name": "analytics_events",

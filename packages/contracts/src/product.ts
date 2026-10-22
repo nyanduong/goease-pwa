@@ -293,3 +293,11 @@ export type SharedTripDto = {
     activities: SharedActivity[];
   }[];
 };
+
+export const forgotPasswordSchema = loginSchema.pick({ email: true });
+export const resetPasswordSchema = z.strictObject({
+  token: z.string().regex(/^[a-zA-Z0-9_-]{43}$/),
+  newPassword: z.string().min(12).max(128),
+});
+export const resetRequestMessage =
+  'Đã tiếp nhận yêu cầu. Nếu email có tài khoản mật khẩu đủ điều kiện, hệ thống sẽ thử gửi link đặt lại. Kiểm tra cả thư rác; nếu chưa nhận, thử lại sau ít nhất một phút.';
