@@ -83,12 +83,25 @@ npm test
 npm run build
 npm run db:check
 $env:MONGOD_BINARY = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
+npm run test:integration
 npm run test:e2e
 ```
 
-E2E cần cổng **3000**, **5180**, **27020** trống; hãy dừng `npm run dev` trước. Test dùng Edge headless, API build thật và Vite dev server, khởi chạy MongoDB riêng trên 27020 với dbpath mới trong `.local`. Test thực sự dừng process MongoDB do chính nó tạo rồi khởi động lại, kiểm tra 503 và phục hồi trên cùng API. Không dừng MongoDB của người dùng trên 27017/27019. Dữ liệu E2E giữ trong `.local` để kiểm tra khi cần. Screenshot ở `test-results/`; không commit artifacts này.
+Integration cần `MONGOD_BINARY` và cổng **27021** trống. `npm run test:integration` tự tạo mongod replica set một node có tên/ngữ cảnh riêng, dbpath mới `.local/f1b-mongo-*` và database `goease_f1b_test_<runId>`. Harness xác minh dbpath/set name của process do nó tạo trước khi init; chờ primary rồi kiểm chứng transaction và index thật. Guard từ chối production, URI remote/credential/database ứng dụng và target không đúng run ID. Không dùng `.env` để chọn URI test; không drop database, syncIndexes hoặc reconfigure rs0 ứng dụng. Test chỉ dừng process do nó tạo, giữ dbpath test để kiểm tra. Thiếu binary/database readiness là lỗi lệnh, không skip rồi báo PASS.
 
-`npm test` kiểm tra HTTP thật với dependency ping được điều khiển để kiểm tra hợp đồng lỗi, validation và guard database test; đây không phải bằng chứng kết nối MongoDB. Bằng chứng MongoDB thật đến từ `db:check` và E2E. Test lỗi mạng dùng browser fault injection và được đặt tên rõ.
+E2E mặc định cần cổng **3000**, **5180**, **27020** trống. Không dừng tiến trình của người dùng để lấy cổng. Nếu web/API development đang chạy, dùng cổng localhost riêng cho harness:
+
+```powershell
+$env:E2E_API_PORT = '3001'
+$env:E2E_WEB_PORT = '5181'
+npm run test:e2e
+# Xóa hai override khi muốn quay lại cổng E2E mặc định:
+Remove-Item Env:E2E_API_PORT, Env:E2E_WEB_PORT
+```
+
+Các override chỉ áp dụng Playwright và `tests/vite.config.mts`; không đổi cổng development hoặc config client. Port phải là số 1024–65535, khác nhau và khác cổng MongoDB. `reuseExistingServer:false` từ chối web/API test port đã bị chiếm. Test dùng Edge headless, API build thật và Vite dev server/proxy, khởi chạy MongoDB riêng trên 27020 với dbpath mới trong `.local`. Test thực sự dừng process MongoDB do chính nó tạo rồi khởi động lại, kiểm tra 503 và phục hồi trên cùng API. Không dừng MongoDB của người dùng trên 27017/27019. Dữ liệu E2E giữ trong `.local` để kiểm tra khi cần. Screenshot ở `test-results/`; không commit artifacts này. E2E standalone không thay bằng chứng transaction từ integration replica set.
+
+`npm test` kiểm tra HTTP thật với dependency ping được điều khiển, request context/concurrency, stdout/stderr JSON có scanner bí mật, startup/database error và guard database test; đây không phải bằng chứng kết nối MongoDB. Bằng chứng MongoDB thật đến từ `db:check`, integration và E2E. Test lỗi mạng dùng browser fault injection và được đặt tên rõ.
 
 `npm run build` tạo `client/dist`, `server/dist`, `packages/contracts/dist`. Sau build có thể chạy API bằng `npm run start --workspace @goease/server`; `npm run preview --workspace @goease/client` chỉ xem bundle (không có dev proxy, cần cấu hình public API URL hoặc reverse proxy để gọi API).
 
@@ -120,7 +133,7 @@ docs/                      BR, kiến trúc, bằng chứng F0
 .github/workflows/ci.yml    Kiểm tra tái lập từ lockfile
 ```
 
-Health hiện chỉ cần routes gọi dependency ping; chưa có domain logic cần tách controller/service/model. Thêm các lớp đó khi triển khai nghiệp vụ thật. Không có import source trực tiếp giữa web và API.
+Health giữ routes gọi dependency ping. F1-B thêm `server/src/observability/` và `server/src/features/audit/` cho append/read probe có giới hạn; app không khởi tạo model hoặc ghi audit khi startup. Thêm các lớp đó khi triển khai nghiệp vụ thật. Không có import source trực tiếp giữa web và API.
 
 ## Tài liệu và bước tiếp theo
 
@@ -133,6 +146,20 @@ Baseline thiết kế v0.2 đã được chủ dự án chấp thuận; F0 là p
 
 [Bản nhập BR lưu trữ](docs/archive/BR-v0.2-draft.md) chỉ để đối chiếu; nguồn nghiệp vụ duy nhất là BR.md. Sửa nghiệp vụ phải cập nhật mã BR, schema/dictionary/contracts và tests liên quan; ghi rõ phần chưa triển khai. Registry không phải schema executable.
 
-Bước tiếp theo **F1-B READY trong phạm vi context/log an toàn/audit tối thiểu**; xem acceptance và gate trong handoff. Tiếp theo F1-C (Google + email/password đã chốt) rồi CORE-1 owner trip. Quyền guest, provider/email config, retention và caps còn cần quyết định theo tính năng; commerce chưa chốt không chặn công việc độc lập. F1-A dừng ở tài liệu.
+**F1-B đã triển khai và kiểm chứng local**; xem [bằng chứng F1-B](docs/F1-B-VERIFICATION.md) và giới hạn/gate trong handoff. Chưa phải audit production-ready. Tiếp theo F1-C (Google + email/password đã chốt) rồi CORE-1 owner trip. Quyền guest, provider/email config, retention và caps còn cần quyết định theo tính năng; commerce chưa chốt không chặn công việc độc lập. F1-B dừng sau context/log/audit; chưa triển khai authentication.
 
 Nguồn kỹ thuật: [Node.js LTS](https://github.com/nodejs/Release), [Vite](https://vite.dev/guide/), [Tailwind Vite plugin](https://tailwindcss.com/docs/installation/using-vite), [Mongoose connections](https://mongoosejs.com/docs/connections.html), [MongoDB replica set](https://www.mongodb.com/docs/manual/tutorial/convert-standalone-to-replica-set/).
+
+## RequestId và technical logs (F1-B)
+
+Mỗi request qua Express có context AsyncLocalStorage riêng, chỉ chứa requestId/correlationId, không actor/user/role. `X-Request-Id` hợp lệ là UUIDv4 dài đúng 36 ký tự, được chuẩn hóa chữ thường; thiếu/sai/quá dài/duplicate thì server tạo UUIDv4 mới và không log giá trị cũ. `X-Correlation-Id` dùng cùng định dạng, sai thì bỏ qua; chỉ liên kết flow, không cấp quyền. `X-Request-Id` được trả qua header và expose qua CORS, kể cả JSON validation lỗi/404; health/error body giữ nguyên.
+
+```powershell
+$r = Invoke-WebRequest http://localhost:3000/api/v1/health
+$r.Headers['X-Request-Id']
+# Tìm cùng requestId ở dòng JSON event http.completed của API.
+```
+
+Logger JSON ghi stdout theo allowlist: timestamp, level, event, service, environment, appVersion, requestId?, correlationId?, method?, route?, statusCode?, durationMs?. Event/route/method đều là enum trong `server/src/observability/logger.ts`; route hiện chỉ health/db health hoặc `unmatched`, không URL/query. Status 100–599, duration 0–3.600.000 ms; không nhận arbitrary metadata/req/res/Error. Field không có trong allowlist bị bỏ, field hợp lệ sai kiểu/giới hạn dẫn tới logger.invalid_input với nội dung cố định. Startup/database/error dùng cùng logger và mã cố định; không có IP/device/analytics. Sink lỗi bị chặn, không log đệ quy; lỗi audit vẫn propagate.
+
+OperationId khác requestId: caller backend cấp một UUIDv4 cho thao tác, giữ nguyên qua mọi lần retry/transaction callback. F1-B chưa có business endpoint/idempotency store nên không nhận operationId/actor từ HTTP. Audit service chỉ chấp nhận system.audit_probe trong DB test riêng; không có HTTP audit endpoint hay startup probe.

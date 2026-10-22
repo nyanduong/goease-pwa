@@ -1,6 +1,6 @@
 # GoEase — kiến trúc v0.2
 
-**Trạng thái:** Stack đã chốt; nền tảng F0 đã được triển khai ngày 22/10/2026. Xem README và docs/F0-VERIFICATION.md để biết cách chạy và bằng chứng kiểm tra. Baseline thiết kế v0.2 đã được chủ dự án chấp thuận; policy đánh dấu đề xuất/cần duyệt vẫn còn mở. F1 chưa triển khai. Nguồn nghiệp vụ là [BR](BR.md), field/index là [DB-BASELINE](DB-BASELINE.md), truy vết là [DATA-TRACEABILITY](DATA-TRACEABILITY.md), review/gates là [F1-HANDOFF](F1-HANDOFF.md).
+**Trạng thái:** Stack đã chốt; nền tảng F0 đã được triển khai ngày 22/10/2026. Xem README và docs/F0-VERIFICATION.md để biết cách chạy và bằng chứng kiểm tra. Baseline thiết kế v0.2 đã được chủ dự án chấp thuận; policy đánh dấu đề xuất/cần duyệt vẫn còn mở. F1-B context/log/audit probe đã triển khai và kiểm chứng local; F1-C/CORE chưa triển khai. Xem [F1-B verification](F1-B-VERIFICATION.md). Nguồn nghiệp vụ là [BR](BR.md), field/index là [DB-BASELINE](DB-BASELINE.md), truy vết là [DATA-TRACEABILITY](DATA-TRACEABILITY.md), review/gates là [F1-HANDOFF](F1-HANDOFF.md).
 
 ## 1. Ranh giới hệ thống
 
@@ -111,10 +111,18 @@ Không cần đợi Q-02/Q-04 trong BR để hoàn thành nền tảng này. Vi�
 
 ## 8. F0 hiện có và F1/CORE dự kiến
 
-F0 thực có một client health, Express health routes/error handler/config validation, Mongoose lifecycle/retry/ping, npm workspace/contracts Zod, dev/build/check scripts và CI. Source hiện chưa có request context/audit service, auth/session, trip CRUD, migration runner, provider hay PWA offline/service worker. F0 E2E khởi động mongod standalone test trên 27020; không chứng minh transaction trên rs0.
+F0 thực có một client health, Express health routes/error handler/config validation, Mongoose lifecycle/retry/ping, npm workspace/contracts Zod, dev/build/check scripts và CI. F1-B đã thêm request context/logger và audit service test-only; source hiện chưa có auth/session, trip CRUD, migration runner, provider hay PWA offline/service worker. F0 E2E khởi động mongod standalone test trên 27020; không chứng minh transaction trên rs0.
 
 [F1-HANDOFF](F1-HANDOFF.md) chốt bước nhỏ: F1-B context/log/audit tối thiểu → F1-C identity/auth → CORE-1 owner trip persistence manual. Chỉ thêm module route/service/model khi có consumer. Audit trực tiếp trong transaction đủ cho slice đầu; outbox chỉ khi delivery thật cần retry, migration runner chỉ khi có migration cụ thể. Không tạo framework nội bộ hoặc toàn bộ 40 collections.
 
 Trip embeds days/activities có giới hạn; revisions và audit riêng. Mutation/revision/audit/idempotency completion cần session transaction chung, actor từ server, expectedRevision chống lost update. schemaVersion khác revision. Tên/field/index chuẩn ở DB baseline; registry là mirror không executable. Lịch sử phục hồi không được bật lại quyền/share đã revoke. Retention/purge đề xuất phải xét cả dữ liệu dẫn xuất và backup trước khi bật job.
 
 Commerce giữ order/payment/booking/entitlement độc lập itinerary. Các gate provider, state/required theo loại, tiền, hủy/hoàn và retention nằm trong BR/handoff; không chặn context/auth/trip độc lập. Chưa thu optional analytics chỉ vì đã có schema.
+
+## 9. F1-B đã triển khai
+
+`observability/context.ts` dùng AsyncLocalStorage cho tracing UUIDv4, không authentication. Middleware chạy trước CORS/JSON; response header nối với access log. `observability/logger.ts` dùng Zod sẵn có và stdout sink mỏng; enum/field allowlist, không serialize req/res/Error hay raw URL. Technical sink failure bị chặn, không thay thế audit bắt buộc.
+
+`features/audit` chỉ model audit_logs và append/read service. Không được import/khởi tạo trong app startup; action system.audit_probe chỉ có trong database test trên loopback 27021. Actor/source/time gán từ code backend; trường caller không có actor/source/retention tùy ý. APPEND không updatedAt/deletedAt/versionKey, không update/delete API. Index tạo explicit, additive trong test, không autoIndex/syncIndexes.
+
+Mongoose Connection.transaction dùng session caller xuyên suốt fixture/audit. Audit failure propagate; dedupe outside transaction xử lý đúng E11000 keyPattern rồi so nội dung. Race làm transaction abort được báo AuditTransactionRaceError, caller chỉ retry toàn callback sau abort với cùng operationId; không fallback ngoài session. Chi tiết canonical payload và giới hạn ở DB/traceability, bằng chứng thật ở F1-B-VERIFICATION. Chưa cấu hình DB privileges production hay retention/purge.

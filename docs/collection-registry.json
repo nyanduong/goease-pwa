@@ -2001,7 +2001,15 @@
       "indexes": "Unique {operationId,action,entityType,entityId}; {entityType,entityId,occurredAt:-1}; {actor.userId,occurredAt:-1}; {requestId:1}.",
       "rules": "Ứng dụng chỉ insert/read được cấp. Mutation quan trọng cùng transaction audit; thất bại transaction không tự tạo audit thành công. Migration/privileged bypass cần actor và runId riêng.",
       "retention": "Append-only nghiệp vụ không đồng nghĩa giữ vĩnh viễn; purge/redact đặc quyền có policy và log độc lập.",
-      "brRefs": ["DATA-02", "DATA-03", "DATA-04", "DATA-07", "DATA-09"]
+      "brRefs": ["DATA-02", "DATA-03", "DATA-04", "DATA-07", "DATA-09"],
+      "implementation": {
+        "phase": "F1-B",
+        "status": "implemented-test-only",
+        "actions": ["system.audit_probe"],
+        "source": "server/src/features/audit/audit.service.ts",
+        "qualification": "DB-BASELINE.md#12-audit-subset-f1-b-đã-triển-khai",
+        "productionReady": false
+      }
     },
     {
       "name": "analytics_events",

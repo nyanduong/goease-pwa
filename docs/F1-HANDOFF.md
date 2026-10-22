@@ -1,6 +1,6 @@
 # GoEase — F1-A review và bàn giao F1 v0.2
 
-Ngày review: **22/10/2026**. Baseline thiết kế được chủ dự án chấp thuận; **chưa triển khai F1-B/F1-C/CORE-1**. F1-A chỉ chỉnh tài liệu, không thay source, dependencies, scripts, secrets hoặc MongoDB.
+Ngày review: **22/10/2026**. Baseline thiết kế được chủ dự án chấp thuận; **F1-B đã triển khai/kiểm chứng local; F1-C/CORE-1 chưa triển khai**. F1-A chỉ chỉnh tài liệu, không thay source, dependencies, scripts, secrets hoặc MongoDB.
 
 ## 1. Trạng thái repository và nguồn chính
 
@@ -51,7 +51,7 @@ Nguồn đối chiếu F1-A: [MongoDB unique](https://www.mongodb.com/docs/manua
 
 ## 3. F1-B — context, log an toàn và audit tối thiểu
 
-**Trạng thái: READY cho phạm vi dưới đây.** R-04–R-09 không chặn context/audit test không chứa PII, không chạy purge, không mở signup hay thu analytics. READY không phải đã triển khai/PASS; hoàn thành F1-A không tự cho phép thực hiện F1-B trong cùng task.
+**Trạng thái: IMPLEMENTED / VERIFIED LOCAL cho phạm vi F1-B; chưa production-ready.** Xem [F1-B-VERIFICATION](F1-B-VERIFICATION.md). Các mô tả “task tiếp theo/READY” bên dưới là phạm vi phê duyệt ban đầu của F1-A. R-04–R-09 không chặn context/audit test không chứa PII, không chạy purge, không mở signup hay thu analytics. READY không phải đã triển khai/PASS; hoàn thành F1-A không tự cho phép thực hiện F1-B trong cùng task.
 
 **Mục tiêu:** request có requestId hợp lệ; log allowlist không lộ bí mật; primitive mỏng ghi audit cùng transaction và chứng minh rollback trên local replica set.
 
@@ -102,3 +102,11 @@ CORE-2 mới thêm places/ai_runs/usage_buckets với provider/data rights/quota
 Kiểm tra tài liệu: JSON parse; mirror 40 tên/phase/base/field/type/default/index/rule/retention với dictionary; BR codes/mapping/registry references; liên kết nội bộ, đường dẫn cũ, trạng thái design-only; format từng file thay đổi; git diff chỉ tài liệu. Kết quả đã quan sát: PASS Python JSON/mirror check cho 40 collection và brRefs; PASS giữ 68 rule rows v0.2 + 10 rule rows BR cũ; PASS 32 liên kết Markdown nội bộ và registry authority paths/anchor; không còn đường dẫn tên cũ trong tài liệu hiện hành. Prettier check với --ignore-path NUL đã kiểm cả BR/AGENTS vốn nằm trong ignore mặc định; PASS git diff --check và phạm vi chỉ tài liệu. Đã đối chiếu remote main ở fddcf66 trước commit; trạng thái push được báo sau thao tác thực tế. F0-VERIFICATION giữ nguyên byte và bằng chứng pnpm/npm lịch sử. Registry bổ sung brRefs cho cả 40 collection để kiểm tra mã BR có đích; DB-BASELINE vẫn là nguồn field/index, BR là nguồn nghiệp vụ.
 
 Không chạy application tests, migration, syncIndexes, db:check, provider hoặc thay MongoDB trong F1-A. Chưa có bằng chứng auth/trip/transaction/AI/payment/PWA hoạt động từ task này. Commit SHA và push được báo ở bàn giao sau khi quan sát Git, không ghi SHA tự tham chiếu vào nội dung commit.
+
+## 8. Bàn giao F1-B
+
+Đã thêm context UUIDv4 tách request, safe logger JSON cho HTTP/startup/database/error, audit_logs model/service append/read test-only và integration harness replica set riêng. Không thêm dependency; contracts/client runtime không đổi, health/error body giữ nguyên. Playwright có optional localhost ports và test-only Vite proxy config để giữ dev server đang chạy.
+
+Đã kiểm chứng unit/HTTP, scan stdout/stderr, concurrency, index thật, commit/rollback/audit write failure, sequential/concurrent dedupe và conflict; chi tiết lệnh/môi trường ở verification. F1-B không ghi audit lúc app startup, không HTTP audit API, không auth/trip/analytics/outbox/migration/purge. Fixture và probe chỉ nằm trong DB test riêng, cleanup không đụng rs0 ứng dụng.
+
+F1-C vẫn cần Q-06/R-04/R-05: email delivery provider; Google OAuth client/redirect/config; session/rate-limit thông số, email collision/re-auth/link/recovery UX, ma trận challenge binding; Q-02 cho quyền account chưa verify và Q-07 cho notice/policy trước public signup. Google + email/password đã chốt, không hỏi lại phương thức login. F1-B không tự chọn các policy đó và dừng tại đây.

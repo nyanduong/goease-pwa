@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.tools.json --noEmit",
     "test": "tsx --test test/*.test.ts",
     "db:check": "tsx scripts/db-check.ts",
-    "db:init": "tsx scripts/db-init.ts"
+    "db:init": "tsx scripts/db-init.ts",
+    "test:integration": "tsx --test test/*.integration.ts"
   },
   "dependencies": {
     "@goease/contracts": "*",

@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
+import { createLogger, type Logger } from './observability/logger.js';
 
-export function createDatabase(uri: string) {
+export function createDatabase(uri: string, logger: Logger = createLogger()) {
   const connection = mongoose.createConnection();
-  connection.on('error', () => console.error('MongoDB connection error'));
-  connection.on('disconnected', () => console.warn('MongoDB disconnected'));
-  connection.on('connected', () => console.info('MongoDB connected'));
+  connection.on('error', () => logger.write('database.error'));
+  connection.on('disconnected', () => logger.write('database.disconnected'));
+  connection.on('connected', () => logger.write('database.connected'));
   let stopped = false;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -18,7 +19,7 @@ export function createDatabase(uri: string) {
         bufferCommands: false,
       });
     } catch {
-      console.warn('MongoDB unavailable; retrying in 3 seconds');
+      logger.write('database.retry');
       if (!stopped) retryTimer = setTimeout(() => void connect(), 3000);
     }
   }

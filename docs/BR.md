@@ -2,7 +2,7 @@
 
 Ngày thiết kế: **22/10/2026**. Repository: `nyanduong/goease-pwa`. Nền source đã đối chiếu: `685552e549a474bc300d361c9343a82c3a7c181b`.
 
-**Trạng thái:** Chủ dự án chấp thuận baseline thiết kế v0.2 trong F1-A ngày 22/10/2026; chức năng tương ứng **chưa được triển khai**. Quyết định ở mục 1 đã xác nhận; policy ghi đề xuất/cần duyệt vẫn còn mở. Đây là nguồn nghiệp vụ chính; [bản nhập lưu trữ](archive/BR-v0.2-draft.md) chỉ để tham chiếu.
+**Trạng thái:** Chủ dự án chấp thuận baseline thiết kế v0.2 trong F1-A ngày 22/10/2026; chức năng sản phẩm tương ứng **chưa được triển khai**. F1-B đã triển khai phần kỹ thuật context/log/audit probe test-only, xem [bằng chứng](F1-B-VERIFICATION.md); không đồng nghĩa auth/trip hoặc audit production đã hoàn thành. Quyết định ở mục 1 đã xác nhận; policy ghi đề xuất/cần duyệt vẫn còn mở. Đây là nguồn nghiệp vụ chính; [bản nhập lưu trữ](archive/BR-v0.2-draft.md) chỉ để tham chiếu.
 
 Đọc cùng [DB baseline](DB-BASELINE.md), [truy vết](DATA-TRACEABILITY.md), [bàn giao/review](F1-HANDOFF.md) và [registry](collection-registry.json). F0 đã có health/tooling; xem [bằng chứng lịch sử](F0-VERIFICATION.md).
 

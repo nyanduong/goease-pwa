@@ -3,6 +3,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdtemp, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { once } from 'node:events';
+import { e2eApiOrigin } from './ports.js';
 
 let mongo: ChildProcess;
 let dbPath: string;
@@ -23,7 +24,7 @@ async function startMongo() {
       async () => {
         if (mongo.exitCode !== null)
           throw new Error('Dedicated test mongod exited; check port 27020');
-        return (await fetch('http://localhost:3000/api/v1/health/db')).status;
+        return (await fetch(`${e2eApiOrigin}/api/v1/health/db`)).status;
       },
       { timeout: 20000 },
     )
@@ -53,8 +54,12 @@ test('browser uses live API and database health at desktop and mobile sizes', as
     const api = page.waitForResponse('**/api/v1/health');
     const database = page.waitForResponse('**/api/v1/health/db');
     await page.goto('/');
-    expect((await api).status()).toBe(200);
-    expect((await database).status()).toBe(200);
+    const apiResponse = await api;
+    const dbResponse = await database;
+    expect(apiResponse.status()).toBe(200);
+    expect(dbResponse.status()).toBe(200);
+    for (const response of [apiResponse, dbResponse])
+      expect(response.headers()['x-request-id']).toMatch(/^[0-9a-f-]{36}$/);
     await expect(
       page.getByRole('region', { name: 'Database', exact: true }),
     ).toContainText('Hoạt động');

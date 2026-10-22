@@ -8,12 +8,14 @@ import type {
 export function healthRouter(ping: () => Promise<void>) {
   const router = Router();
   router.get('/', (_req, res) => {
+    res.locals.logRoute = '/api/v1/health';
     res.json({
       ok: true,
       data: { status: 'up', service: 'goease-api' },
     } satisfies HealthResponse);
   });
   router.get('/db', async (_req, res) => {
+    res.locals.logRoute = '/api/v1/health/db';
     try {
       await ping();
       res.json({

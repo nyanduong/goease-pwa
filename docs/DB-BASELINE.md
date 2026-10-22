@@ -1,6 +1,6 @@
 # GoEase — MongoDB Schema Baseline v0.2 / Baseline thiết kế
 
-Ngày: **22/10/2026**. Baseline thiết kế được chủ dự án chấp thuận; chưa triển khai models/collections. Nguồn chính cho field/type/index; [BR](BR.md) quyết định nghiệp vụ, [handoff](F1-HANDOFF.md) ghi phạm vi và khoảng trống. [Registry](collection-registry.json) là bản đọc máy, không executable. Đây là **từ điển dữ liệu mục tiêu**, không phải yêu cầu tạo tất cả collections/models ngay ở F1. Chỉ khởi tạo khi module được bật có consumer thật. Field phụ thuộc provider/hoạt động tài chính được ghi điều kiện rõ, không hứa schema đã bao phủ mọi nghiệp vụ tương lai.
+Ngày: **22/10/2026**. Baseline thiết kế được chủ dự án chấp thuận; chỉ audit_logs được triển khai trong F1-B với action test-only; các models/collections sản phẩm khác chưa triển khai. Nguồn chính cho field/type/index; [BR](BR.md) quyết định nghiệp vụ, [handoff](F1-HANDOFF.md) ghi phạm vi và khoảng trống. [Registry](collection-registry.json) là bản đọc máy, không executable. Đây là **từ điển dữ liệu mục tiêu**, không phải yêu cầu tạo tất cả collections/models ngay ở F1. Chỉ khởi tạo khi module được bật có consumer thật. Field phụ thuộc provider/hoạt động tài chính được ghi điều kiện rõ, không hứa schema đã bao phủ mọi nghiệp vụ tương lai.
 
 Stack giữ nguyên: npm workspaces; React/Vite/TypeScript/Tailwind; Express/TypeScript; MongoDB local replica set + Mongoose; web/API localhost. Sau này Atlas/mobile không làm đổi ownership và IDs nội bộ.
 
@@ -18,13 +18,13 @@ Stack giữ nguyên: npm workspaces; React/Vite/TypeScript/Tailwind; Express/Typ
 
 ## 2. Các bộ field dùng chung
 
-| Bộ             | Field                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| MUTABLE        | `_id`, `schemaVersion:1`, `revision:0`, `createdAt`, `updatedAt`, `createdBy:ObjectId                                                       | null`, `updatedBy:ObjectId  | null`, `createdByType:user/admin/system/provider`, `updatedByType:user/admin/system/provider` |
-| MUTABLE_SOFT   | MUTABLE + `deletedAt:Date                                                                                                                   | null`, `deletedBy:ObjectId  | null`, `deletionReasonCode:enum                                                               | null` |
-| MUTABLE_RETAIN | MUTABLE + `archivedAt:Date                                                                                                                  | null`, `retentionUntil:Date | null`, `legalHold:boolean=false`; **không deletedAt để xóa lịch sử tài chính**                |
-| EPHEMERAL      | `_id`, `schemaVersion:1`, `createdAt`, `updatedAt`; vòng đời bằng expiry/consumed/revoked và update có điều kiện, không generic soft delete |
-| APPEND         | `_id`, `eventId:UUID`, `schemaVersion:1`, `createdAt`; **không updatedAt/deletedAt cho sửa/xóa thông thường**; occurredAt/actor theo event  |
+| Bộ             | Field                                                                                                                                                                                                            |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MUTABLE        | `_id`, `schemaVersion:1`, `revision:0`, `createdAt`, `updatedAt`, `createdBy:ObjectId\|null`, `updatedBy:ObjectId\|null`, `createdByType:user/admin/system/provider`, `updatedByType:user/admin/system/provider` |
+| MUTABLE_SOFT   | MUTABLE + `deletedAt:Date\|null`, `deletedBy:ObjectId\|null`, `deletionReasonCode:enum\|null`                                                                                                                    |
+| MUTABLE_RETAIN | MUTABLE + `archivedAt:Date\|null`, `retentionUntil:Date\|null`, `legalHold:boolean=false`; **không deletedAt để xóa lịch sử tài chính**                                                                          |
+| EPHEMERAL      | `_id`, `schemaVersion:1`, `createdAt`, `updatedAt`; vòng đời bằng expiry/consumed/revoked và update có điều kiện, không generic soft delete                                                                      |
+| APPEND         | `_id`, `eventId:UUID`, `schemaVersion:1`, `createdAt`; **không updatedAt/deletedAt cho sửa/xóa thông thường**; occurredAt/actor theo event                                                                       |
 
 Mongoose `timestamps:true` tạo `createdAt` và `updatedAt`, không tự tạo `deletedAt` [S1]. APPEND có thể bật riêng createdAt/tắt updatedAt. Actor metadata phải gán từ request context đáng tin, không từ request body. `createdAt/createdBy` bất biến trong API bình thường; import/migration có đường đặc quyền, evidence riêng. Tránh replacement update tùy ý vì replacement có thể đổi createdAt [S1].
 
@@ -1154,3 +1154,13 @@ Trip embeds days/activities vì đọc/lưu cùng nhau và phải bounded; lịc
 ### Khoảng trống còn mở
 
 R-04–R-09 trong [F1-HANDOFF](F1-HANDOFF.md) ghi tác động và đề xuất cho email collision, challenge binding, state/provider fields, purge dẫn xuất, caps/retention và phụ thuộc catalog. Các mục đó là gate trước consumer tương ứng, không phải lỗi đã được giải quyết bằng tài liệu.
+
+## 12. Audit subset F1-B đã triển khai
+
+Model/service server chỉ dùng audit_logs; target rộng ở mục 5 vẫn là baseline cho các phase sau. Không tạo model/collection ở app startup. Gate service: không production, connection loopback 127.0.0.1:27021 và DB name `goease_f1b_test_<32 lowercase hex>`. Harness còn kiểm tra URI/set name/run ID/dbpath trước init; không hỗ trợ remote/app database.
+
+Subset hiện tại: action system.audit_probe/category system/entityType system_probe; entityId string ObjectId lowercase 24 hex; entityRevision optional safe integer >=0; actor cố định system + serviceName goease-integration-test. Source server/integration_test/test, appVersion 0.0.0 từ code. Outcome succeeded/failed, reasonCode optional probe_completed/probe_failed khớp outcome. changedFields/changes mặc định [], tối đa 1 phần tử path probeState, before optional và after required chỉ pending/verified, redacted=false. Không có arbitrary Mixed/securityContext/free text/user actor trong subset này. Thời gian server; APPEND eventId UUIDv4/schemaVersion 1/createdAt, không updatedAt/deletedAt/__v, nested versionKey cũng tắt. retentionClass integration_test, retentionUntil null, legalHold false; không phê duyệt retention production.
+
+Service trả eventId/deduplicated và có read theo operation/entity; không update/delete. initialize tạo collection/index explicit trong DB test, ngoài transaction; autoIndex/autoCreate tắt, không syncIndexes. Index thực gồm unique eventId, unique operationId/action/entityType/entityId và ba index tra cứu theo baseline; không TTL. Index actor.userId giữ baseline, subset chưa phát sinh user actor.
+
+Dedupe so canonical JSON với thứ tự field cố định: action/category/entityType/entityId/entityRevision (missing thành null), outcome/reasonCode (missing thành null), changedFields và changes path/before/after/redacted. Actor/source/retentionClass phải khớp constants backend. Không so eventId/createdAt/occurredAt/recordedAt/requestId/correlationId/appVersion của từng attempt; bản đầu được giữ. Cùng key khác nội dung ném AuditConflictError, không update. E11000 chỉ được xử lý như dedupe nếu keyPattern đúng cả bốn field; lỗi index khác propagate. Trong transaction bị race, ném AuditTransactionRaceError để caller abort rồi retry toàn transaction, không query/ghi bù ngoài session.

@@ -1,6 +1,6 @@
 # GoEase — Truy vết, Analytics và Vòng đời dữ liệu v0.2
 
-Ngày: **22/10/2026** · Baseline thiết kế v0.2 được chấp thuận; chưa triển khai. Nguồn chính về truy vết/vòng đời; đọc [BR](BR.md), [dictionary](DB-BASELINE.md) và [review/gates](F1-HANDOFF.md). Các thời hạn trong tài liệu là **đề xuất kỹ thuật để review**, không phải thời hạn pháp luật đã xác nhận. Không triển khai theo dõi người dùng không thông báo chỉ vì schema có sẵn.
+Ngày: **22/10/2026** · Baseline thiết kế v0.2 được chấp thuận; F1-B đã triển khai context/log/audit probe test-only; phần analytics/vòng đời sản phẩm chưa triển khai. Nguồn chính về truy vết/vòng đời; đọc [BR](BR.md), [dictionary](DB-BASELINE.md) và [review/gates](F1-HANDOFF.md). Các thời hạn trong tài liệu là **đề xuất kỹ thuật để review**, không phải thời hạn pháp luật đã xác nhận. Không triển khai theo dõi người dùng không thông báo chỉ vì schema có sẵn.
 
 ## 1. Bốn nhóm dữ liệu khác nhau
 
@@ -206,3 +206,11 @@ Transaction save trip phải nối trips/trip_revisions/audit_logs bằng operat
 Purge không chỉ xóa trips: phải lập inventory trip_revisions, trip_access, trip_share_links, trip_expenses, private media/object storage, server drafts, ai_runs.inputSummary/validatedProposal, idempotency result references, pending/delivered outbox, analytics raw/aggregates có thể nhận diện, exports/cache và downstream vendor. Từng mục có consumer/phạm vi/hold/retention riêng; không tự cascade sang orders/bookings/payments. Snapshot phục hồi không được làm sống lại link, quyền hoặc nội dung đã bị redaction do quyền nguồn.
 
 Đây là inventory cần hoàn thiện trước purge, **không phê duyệt cách xóa/căn cứ/thời hạn mới**. R-07/R-08 trong handoff ghi gate. Thời hạn 24h/7/30/90/180 ngày trong bộ tài liệu vẫn là đề xuất. Public launch cần policy đã duyệt; F1-A không chạy purge, không xác nhận tuân thủ pháp lý. Backup restore cần áp dụng suppression trước khi mở truy cập; legal hold phải có căn cứ và review.
+
+## 11. Context/log/audit F1-B thực tế
+
+X-Request-Id và X-Correlation-Id chỉ UUIDv4 36 ký tự, chuẩn hóa lowercase; requestId không hợp lệ được thay mới, correlationId không hợp lệ bị bỏ. AsyncLocalStorage chỉ lưu hai ID này, không actor. Middleware bao phủ validation/404, response header X-Request-Id được expose CORS; bodies F0 giữ nguyên. Logger allowlist/event enum và giới hạn field được mô tả trong README/code; unmatched route là nhãn cố định, không raw URL/query/IP/body/headers/Error/cause. Không thu analytics hay lưu access log vào MongoDB. Sink technical lỗi không log vòng lặp; audit mandatory error vẫn throw.
+
+OperationId do caller backend cấp độc lập requestId và giữ qua retry. F1-B audit test-only gán actor/source/time từ code; không tin actor/role/header/body và không có HTTP audit endpoint. Canonical comparison trong DB mục 12 bỏ timestamp/request/correlation của attempt nhưng kiểm tra business fields cùng actor/source constants; conflict không là success. Một session caller được dùng cho cả read và append; transaction race E11000 phải abort trước khi retry toàn callback. Tất cả side effect bên ngoài vẫn cấm trong callback.
+
+APPEND không bảo vệ trước DBA trực tiếp và chưa cấu hình quyền DB production. Không có retention/purge/TTL production hoặc user audit trong F1-B. [Bằng chứng local](F1-B-VERIFICATION.md) không thay review privacy, deployment hay các acceptance auth/trip sau này.
