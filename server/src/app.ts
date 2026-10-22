@@ -1,4 +1,5 @@
-import express, { type ErrorRequestHandler } from 'express';
+import express, { type ErrorRequestHandler, type Router } from 'express';
+import { HttpError } from './http-error.js';
 import cors from 'cors';
 import type { ApiError } from '@goease/contracts';
 import type { Config } from './config.js';
@@ -14,6 +15,7 @@ export function createApp(
   config: Pick<Config, 'CLIENT_ORIGIN'> & Partial<Pick<Config, 'NODE_ENV'>>,
   ping: () => Promise<void>,
   logger: Logger = createLogger(config.NODE_ENV),
+  productRouter?: Router,
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -41,10 +43,16 @@ export function createApp(
     next();
   });
   app.use(
-    cors({ origin: config.CLIENT_ORIGIN, exposedHeaders: ['X-Request-Id'] }),
+    cors({
+      origin: config.CLIENT_ORIGIN,
+      credentials: true,
+      exposedHeaders: ['X-Request-Id'],
+    }),
   );
+  if (productRouter) app.use('/api/v1/trips', express.json({ limit: '256kb' }));
   app.use(express.json({ limit: '16kb' }));
   app.use('/api/v1/health', healthRouter(ping));
+  if (productRouter) app.use('/api/v1', productRouter);
   app.use((_req, res) => {
     res.status(404).json({
       ok: false,
@@ -57,6 +65,13 @@ export function createApp(
     res,
     _next,
   ) => {
+    if (error instanceof HttpError) {
+      res.status(error.status).json({
+        ok: false,
+        error: { code: error.code, message: error.message },
+      });
+      return;
+    }
     const status =
       typeof error === 'object' && error !== null && 'status' in error
         ? error.status

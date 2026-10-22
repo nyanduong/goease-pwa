@@ -12,8 +12,10 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 30000,
       env: {
+        NODE_ENV: 'development',
         CLIENT_ORIGIN: e2eWebOrigin,
-        MONGODB_URI: 'mongodb://127.0.0.1:27020/goease_f0_test',
+        MONGODB_URI:
+          'mongodb://127.0.0.1:27020/goease_f0_test?replicaSet=goease_e2e',
         PORT: String(e2eApiPort),
         HOST: 'localhost',
       },

@@ -1,0 +1,48 @@
+GOEASE — BỘ CONCEPT ĐỊNH HÌNH SẢN PHẨM
+
+Mở goease-concept-gallery.html để xem cả bộ. Bấm vào từng ảnh để phóng lớn.
+8 ảnh PNG gồm 12 màn hình mobile, 1 giao diện desktop PWA và 1 bảng ứng dụng linh thú.
+Đây là concept hình ảnh để thống nhất hướng sản phẩm trước khi triển khai. Các ảnh được tạo bằng công cụ image_gen tích hợp; chưa phải prototype tương tác hoặc bộ thành phần Figma.
+
+1. HƯỚNG THIẾT KẾ
+Giữ tinh thần landing page hiện tại: kem ấm, xanh rừng, vàng mật ong; tiêu đề serif, chữ chức năng sans serif; ảnh Việt Nam có ánh sáng tự nhiên; giao diện rộng rãi và thư thả.
+Palette đề xuất để phát triển tiếp: #FBF7EE / #184C43 / #E7EDE2 / #E7BA70 / #C78163.
+Đây là palette đề xuất theo giao diện quan sát được, không phải các mã màu trích trực tiếp từ mã nguồn.
+Giữ nguyên màu xanh dương của linh thú. Tên tạm: Goe. Tên và wordmark cách điệu trong ảnh là phương án concept, chưa thay thế bộ logo gốc của bạn.
+
+2. LUỒNG CHÍNH
+Khám phá điểm đến → nhập chuyến đi → nhận lịch trình → điều chỉnh từng ngày → xem ngân sách → lưu chuyến đi.
+Goe xuất hiện theo ngữ cảnh: giúp bắt đầu, giải thích gợi ý, đề xuất đổi khi mưa hoặc cân lại chi phí. Cho người dùng xem và áp dụng thay đổi. Không cần xây chatbot đa năng ngay từ đầu.
+
+3. THỨ TỰ LÀM ĐỂ ĐỠ NGỘP
+PWA ĐẦU: Trang chủ và thư viện điểm đến có chọn lọc; tạo chuyến theo ngày, nhóm, gu và ngân sách; lịch trình chỉnh được; chi phí ước tính; lưu chuyến đi; Goe gợi ý theo chuyến hiện tại.
+BẮT ĐẦU HẸP: Chọn một địa bàn thí điểm, ví dụ Hội An như trong bộ ảnh. Cho phép khám phá và soạn chuyến trước, hỏi đăng nhập khi cần lưu hoặc đồng bộ.
+SAU KHI CÓ NGƯỜI DÙNG: Nhật ký cộng đồng, người hướng dẫn địa phương, yêu cầu trải nghiệm, đặt chỗ và thanh toán, cộng tác nhóm, nội dung mở rộng.
+KHI LÊN MOBILE: Giữ luồng và hệ thống hình ảnh; thiết kế lại tương tác theo nền tảng khi cần. Khả năng dùng chung mã nguồn sẽ phụ thuộc kiến trúc bạn chọn sau này.
+
+4. CÁCH ĐỌC BỘ ẢNH
+01 — Chào mừng & trang chủ: cảm giác thương hiệu, điểm bắt đầu.
+02 — Khám phá & chi tiết địa điểm: tìm nơi hợp gu và thêm vào chuyến.
+03 — Tạo chuyến & lịch trình: giá trị cốt lõi, nên ưu tiên khi xây.
+04 — Chi phí & Goe: hiểu dự toán và chỉnh lịch theo ngữ cảnh.
+05 — Cộng đồng & người địa phương: hình dung phần mở rộng.
+06 — Desktop PWA: dùng cùng hệ thống giao diện trên màn hình lớn.
+07 — Goe: gợi ý vai trò và biểu cảm của linh thú.
+08 — Đặt chỗ & chuyến đi của tôi: mở rộng khi có đối tác và thanh toán.
+
+5. KỊCH BẢN MINH HỌA NHẤT QUÁN
+Hội An, 12–14/11/2026, 3 ngày, 4 người.
+Ngân sách cả nhóm: 10.000.000đ.
+Dự toán cả nhóm: 8.200.000đ = Di chuyển 2.000.000đ + Lưu trú 3.200.000đ + Ăn uống 2.000.000đ + Trải nghiệm 1.000.000đ.
+Bình quân 2.050.000đ/người; còn dự phòng 1.800.000đ.
+Giá, người hướng dẫn, bài viết và lịch trình đều là dữ liệu minh họa, chưa phải báo giá hoặc dịch vụ đã hoạt động. Bản đồ là minh họa bố cục. Khi triển khai cần dùng dữ liệu địa điểm và đơn vị hành chính được cập nhật.
+Thông điệp hỗ trợ offline hoặc cài đặt PWA chỉ nên xuất hiện khi chức năng đó thực sự đã được triển khai và kiểm tra.
+
+6. THAM CHIẾU ĐÃ XEM
+ChillGo | Rocket Boost: tài liệu Canva 52 trang, có trang MVP ở trang 27; đã đọc nội dung và xem thumbnail toàn bộ tài liệu. Đây là tài liệu giới thiệu và các ảnh MVP, không phải quyền truy cập một ứng dụng ChillGo đang chạy.
+https://www.canva.com/design/DAGUyTggWn0/DvctWKVUAEkWT2Uu-p_xMg/edit
+Landing GoEase: đã xem trực tiếp giao diện, nội dung và phần demo lập chuyến đi trên trình duyệt.
+https://nyanduong.github.io/goease-introduce/
+Linh thú: ảnh gốc bạn đính kèm, dùng làm tham chiếu giữ nhận diện.
+
+PROMPTS.txt chứa toàn bộ bộ prompt để tiếp tục chỉnh ảnh. PNG là ảnh phẳng. Dùng làm hướng thiết kế; khi triển khai cần dựng lại typography, icon, component và các trạng thái lỗi / rỗng / tải dữ liệu trong công cụ thiết kế hoặc mã nguồn.

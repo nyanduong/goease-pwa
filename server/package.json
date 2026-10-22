@@ -11,13 +11,16 @@
     "test": "tsx --test test/*.test.ts",
     "db:check": "tsx scripts/db-check.ts",
     "db:init": "tsx scripts/db-init.ts",
-    "test:integration": "tsx --test test/*.integration.ts"
+    "test:integration": "tsx --test --test-concurrency=1 test/*.integration.ts",
+    "db:seed": "tsx scripts/db-seed.ts"
   },
   "dependencies": {
     "@goease/contracts": "*",
+    "@node-rs/argon2": "2.2.2",
     "cors": "2.8.6",
     "dotenv": "18.0.8",
     "express": "5.3.0",
+    "jose": "6.2.13",
     "mongoose": "9.11.3",
     "zod": "4.6.7"
   },

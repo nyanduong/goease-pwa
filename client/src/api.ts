@@ -1,0 +1,44 @@
+export class ApiFailure extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message);
+  }
+}
+export async function api<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/v1${path}`,
+      {
+        ...options,
+        credentials: 'include',
+        signal: AbortSignal.timeout(15000),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GoEase-Client': 'web',
+          ...options.headers,
+        },
+      },
+    );
+  } catch {
+    throw new Error(
+      'Không kết nối được máy chủ. Dữ liệu bạn đang nhập vẫn được giữ; hãy thử lại.',
+    );
+  }
+  const result = (await response.json().catch(() => null)) as {
+    ok?: boolean;
+    data?: T;
+    error?: { message?: string };
+  } | null;
+  if (!response.ok || !result?.ok)
+    throw new ApiFailure(
+      result?.error?.message ?? 'Không thể hoàn tất yêu cầu. Hãy thử lại.',
+      response.status,
+    );
+  return result.data as T;
+}

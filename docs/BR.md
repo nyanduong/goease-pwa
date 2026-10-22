@@ -2,7 +2,7 @@
 
 Ngày thiết kế: **22/10/2026**. Repository: `nyanduong/goease-pwa`. Nền source đã đối chiếu: `685552e549a474bc300d361c9343a82c3a7c181b`.
 
-**Trạng thái:** Chủ dự án chấp thuận baseline thiết kế v0.2 trong F1-A ngày 22/10/2026; chức năng sản phẩm tương ứng **chưa được triển khai**. F1-B đã triển khai phần kỹ thuật context/log/audit probe test-only, xem [bằng chứng](F1-B-VERIFICATION.md); không đồng nghĩa auth/trip hoặc audit production đã hoàn thành. Quyết định ở mục 1 đã xác nhận; policy ghi đề xuất/cần duyệt vẫn còn mở. Đây là nguồn nghiệp vụ chính; [bản nhập lưu trữ](archive/BR-v0.2-draft.md) chỉ để tham chiếu.
+**Trạng thái:** Baseline thiết kế v0.2 được chấp thuận trong F1-A. Task sản phẩm sau F1-B đã triển khai tài khoản local và lịch trình thủ công; xem [phạm vi và nghiệm thu](PRODUCT-VERIFICATION.md). Các module còn lại vẫn là thiết kế, không phải tính năng đã chạy. F1-B đã triển khai phần kỹ thuật context/log/audit probe test-only, xem [bằng chứng](F1-B-VERIFICATION.md); không đồng nghĩa auth/trip hoặc audit production đã hoàn thành. Quyết định ở mục 1 đã xác nhận; policy ghi đề xuất/cần duyệt vẫn còn mở. Đây là nguồn nghiệp vụ chính; [bản nhập lưu trữ](archive/BR-v0.2-draft.md) chỉ để tham chiếu.
 
 Đọc cùng [DB baseline](DB-BASELINE.md), [truy vết](DATA-TRACEABILITY.md), [bàn giao/review](F1-HANDOFF.md) và [registry](collection-registry.json). F0 đã có health/tooling; xem [bằng chứng lịch sử](F0-VERIFICATION.md).
 
@@ -273,3 +273,9 @@ Sửa nghiệp vụ phải cập nhật mã BR, dictionary/schema/contracts và 
 - https://canva.link/vq7dcojad4x9fby
 - https://canva.link/0nf2jh8ukc9fi23
 - https://canva.link/5kpkekj5ywd8b7n
+
+## Phạm vi thực thi sau F1-B — ưu tiên sản phẩm 22/10/2026
+
+Theo yêu cầu mới nhất của chủ sản phẩm, đi trực tiếp từ UI tới tài khoản và chuyến đi đầu tiên, không chờ triển khai mọi gate/collection. Guest được phác thảo trong bộ nhớ trang; lưu server cần phiên đã xác minh. Không tự ghi nháp vào tài khoản sau đăng nhập. Trips mặc định private/manual/draft, ownership từ session; revision conflict trả 409 và giữ input. Ngân sách/chi phí hiện là VND tổng nhóm, số dư dự phòng = ngân sách trừ chi phí đã nhập; bình quân chia số người và làm tròn tới đồng. Khoản null vẫn chưa biết, tổng/số dư được ghi rõ chưa đầy đủ khi có khoản thiếu. Đây không phải giá xác nhận/thực chi.
+
+Email/password hoạt động local bằng hộp thư development có token dùng một lần/hết hạn; chưa có provider email thật. Google chỉ bật khi cấu hình đủ và vẫn phải xác minh OIDC. Không tự merge theo email. Link/unlink/reset/logout-all chưa có UI/API trong task này. AI/discovery và commerce vẫn thuộc hướng sản phẩm, chưa hiện thành chức năng giả. Các giới hạn kỹ thuật và thời hạn session/challenge hiện tại nằm trong README/handoff, không xác nhận policy retention/phát hành toàn nền tảng.

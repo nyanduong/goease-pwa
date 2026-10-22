@@ -1,6 +1,6 @@
 # GoEase — Truy vết, Analytics và Vòng đời dữ liệu v0.2
 
-Ngày: **22/10/2026** · Baseline thiết kế v0.2 được chấp thuận; F1-B đã triển khai context/log/audit probe test-only; phần analytics/vòng đời sản phẩm chưa triển khai. Nguồn chính về truy vết/vòng đời; đọc [BR](BR.md), [dictionary](DB-BASELINE.md) và [review/gates](F1-HANDOFF.md). Các thời hạn trong tài liệu là **đề xuất kỹ thuật để review**, không phải thời hạn pháp luật đã xác nhận. Không triển khai theo dõi người dùng không thông báo chỉ vì schema có sẵn.
+Ngày: **22/10/2026** · Baseline thiết kế v0.2 được chấp thuận; F1-B đã triển khai context/log/audit probe test-only; task sản phẩm tiếp theo thêm audit tài khoản/phiên/trip và trip_revisions cùng transaction. Analytics và quy trình retention/purge toàn nền tảng chưa triển khai. Xem [nghiệm thu](PRODUCT-VERIFICATION.md). Nguồn chính về truy vết/vòng đời; đọc [BR](BR.md), [dictionary](DB-BASELINE.md) và [review/gates](F1-HANDOFF.md). Các thời hạn trong tài liệu là **đề xuất kỹ thuật để review**, không phải thời hạn pháp luật đã xác nhận. Không triển khai theo dõi người dùng không thông báo chỉ vì schema có sẵn.
 
 ## 1. Bốn nhóm dữ liệu khác nhau
 

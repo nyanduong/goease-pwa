@@ -2,7 +2,7 @@
   "version": "0.2",
   "date": "2026-10-22",
   "sourceCommit": "685552e549a474bc300d361c9343a82c3a7c181b",
-  "status": "accepted-design-baseline-not-implemented",
+  "status": "accepted-design-baseline-with-local-product-subset",
   "collections": [
     {
       "name": "users",
@@ -92,7 +92,8 @@
       "indexes": "Unique partial emailNormalized khi là string, KHÔNG giới hạn deletedAt; {status:1,createdAt:-1}.",
       "rules": "Không soft-delete rồi tạo user mới cùng email để kế thừa trip cũ. Trong grace period dùng flow khôi phục; sau purge tạo account mới có ID mới. Không lưu CCCD, ngày sinh, giới tính, số điện thoại chỉ để đầy profile.",
       "retention": "Profile cho đến yêu cầu xóa hoặc policy inactivity đã duyệt; audit và tài chính xử lý riêng.",
-      "brRefs": ["AUTH-01", "AUTH-06", "AUTH-08", "DATA-06"]
+      "brRefs": ["AUTH-01", "AUTH-06", "AUTH-08", "DATA-06"],
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {
       "name": "auth_identities",
@@ -143,7 +144,8 @@
       "indexes": "Unique partial {provider,issuer,providerSubject} cho google đang liên kết; unique partial {provider,loginEmailNormalized} cho password đang liên kết; unique partial {userId,provider} cho unlinkedAt:null.",
       "rules": "Điều kiện trường theo discriminator; không lưu access/refresh token Google nếu chỉ login. Linking phải re-auth; không unlink identity cuối cùng còn dùng được. Race linking xử lý E11000 an toàn. Khi unlink, bản cũ không được dùng xác thực.",
       "retention": "Hash/xác thực xóa theo deletion policy; audit chỉ giữ hành động và ID tham chiếu cần thiết.",
-      "brRefs": ["AUTH-01", "AUTH-02", "AUTH-03"]
+      "brRefs": ["AUTH-01", "AUTH-02", "AUTH-03"],
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {
       "name": "auth_sessions",
@@ -209,7 +211,8 @@
       "indexes": "Unique sessionTokenHash; {userId,revokedAt,lastSeenAt:-1}; TTL expiresAt (expireAfterSeconds:0).",
       "rules": "Cookie HttpOnly/SameSite; production Secure/HTTPS và CSRF/Origin checks phù hợp. Không ép JWT vì mobile. Tách TTL session khỏi log bảo mật cần giữ lâu hơn.",
       "retention": "Session hết hạn được dọn; audit sự kiện login/logout tồn tại theo security retention.",
-      "brRefs": ["AUTH-04", "AUTH-06", "AUTH-07"]
+      "brRefs": ["AUTH-04", "AUTH-06", "AUTH-07"],
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {
       "name": "auth_challenges",
@@ -265,7 +268,8 @@
       "indexes": "Unique tokenHash; {userId,purpose,createdAt:-1}; TTL expiresAt.",
       "rules": "Kiểm tra purpose, expiry, consumed và user binding. Không tin returnTo tùy ý. PKCE verifier nếu cần phải encrypt để dùng lại, không chỉ hash rồi mất khả năng đổi code.",
       "retention": "Thời gian ngắn theo purpose; không dùng challenge collection làm lịch sử bảo mật.",
-      "brRefs": ["AUTH-02", "AUTH-03", "AUTH-07"]
+      "brRefs": ["AUTH-02", "AUTH-03", "AUTH-07"],
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {
       "name": "consent_events",
@@ -498,7 +502,8 @@
       "indexes": "Unique active slug; {publicationStatus,deletedAt}; optional 2dsphere center nếu có query gần.",
       "rules": "Không suy ra cả vùng là một POI. Không để đổi tên/codes làm đổi ID trip cũ.",
       "retention": "Nội dung nội bộ theo lifecycle; nguồn ngoài theo license.",
-      "brRefs": ["CAT-01", "CAT-02", "CAT-05"]
+      "brRefs": ["CAT-01", "CAT-02", "CAT-05"],
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {
       "name": "places",
@@ -680,7 +685,8 @@
         "TRIP-08",
         "TRIP-09",
         "TRIP-12"
-      ]
+      ],
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {
       "name": "trip_revisions",
@@ -740,7 +746,8 @@
       "indexes": "Unique {tripId,revision}; {tripId,createdAt:-1}.",
       "rules": "Không lưu từng phím gõ. Snapshot được kiểm soát kích thước; mỗi version độc lập dễ restore. Nếu sau này chuyển patch phải có anchor snapshot và kiểm thử reconstruction.",
       "retention": "Cùng thời hạn trip, không giữ private notes vĩnh viễn chỉ vì gọi là log.",
-      "brRefs": ["TRIP-09", "TRIP-10", "TRIP-12"]
+      "brRefs": ["TRIP-09", "TRIP-10", "TRIP-12"],
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {
       "name": "trip_access",
@@ -2009,7 +2016,8 @@
         "source": "server/src/features/audit/audit.service.ts",
         "qualification": "DB-BASELINE.md#12-audit-subset-f1-b-đã-triển-khai",
         "productionReady": false
-      }
+      },
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {
       "name": "analytics_events",
@@ -2177,7 +2185,8 @@
       "indexes": "Unique {actorId,operation,key}; TTL expiresAt.",
       "rules": "Idempotency không thay authorization: trả cached result vẫn kiểm tra actor/current access. Race duplicate-key phải đọc record hiện có.",
       "retention": "Đề xuất 24h cho trip create; payment không dựa TTL ngắn để ngăn thanh toán/cấp quyền trùng lâu dài.",
-      "brRefs": ["TRIP-09", "COM-04"]
+      "brRefs": ["TRIP-09", "COM-04"],
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
     },
     {
       "name": "schema_migrations",
@@ -2231,5 +2240,6 @@
     "reviewAndGates": "F1-HANDOFF.md"
   },
   "executable": false,
-  "reviewHead": "fddcf6643f67356dde151d432338fc4b7cb616f8"
+  "reviewHead": "fddcf6643f67356dde151d432338fc4b7cb616f8",
+  "implementationEvidence": "PRODUCT-VERIFICATION.md"
 }

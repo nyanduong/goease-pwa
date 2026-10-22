@@ -2,13 +2,18 @@ import { createApp } from './app.js';
 import { parseConfig } from './config.js';
 import { createDatabase } from './database.js';
 import { createLogger } from './observability/logger.js';
+import { createProduct } from './product.js';
 
 const logger = createLogger(process.env.NODE_ENV);
 
 async function main() {
   const config = parseConfig(process.env);
   const database = createDatabase(config.MONGODB_URI, logger);
-  const app = createApp(config, database.ping, logger);
+  const product = createProduct(database.connection, config);
+  database.connection.on('connected', () => {
+    void product.initialize().catch(() => logger.write('product.init_failed'));
+  });
+  const app = createApp(config, database.ping, logger, product.router);
   const server = app.listen(config.PORT, config.HOST, () => {
     logger.write('api.started');
   });

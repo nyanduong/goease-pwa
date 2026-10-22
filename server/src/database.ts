@@ -25,6 +25,7 @@ export function createDatabase(uri: string, logger: Logger = createLogger()) {
   }
 
   return {
+    connection,
     start: connect,
     async ping() {
       if (connection.readyState !== 1 || !connection.db)

@@ -14,6 +14,26 @@ const schema = z.object({
   MONGODB_URI: z
     .string()
     .regex(/^mongodb:\/\//, 'Expected a local MongoDB URI'),
+  SESSION_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(300)
+    .max(2592000)
+    .default(604800),
+  SESSION_IDLE_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(60)
+    .max(604800)
+    .default(86400),
+  AUTH_MAX_ATTEMPTS: z.coerce.number().int().min(3).max(100).default(10),
+  AUTH_WINDOW_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
+  GOOGLE_CLIENT_ID: z.string().max(512).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().max(4096).optional(),
+  GOOGLE_PKCE_KEY: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z
+    .url()
+    .default('http://localhost:3000/api/v1/auth/google/callback'),
 });
 
 export function parseConfig(env: NodeJS.ProcessEnv) {

@@ -1,0 +1,65 @@
+{
+  "project": "GoEase",
+  "date": "2026-10-22",
+  "method": "Built-in image_gen",
+  "boards": 8,
+  "mobile_screens": 12,
+  "images": [
+    {
+      "file": "01-chao-mung-trang-chu.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 2075947,
+      "sha256": "b405ecc40c73fe98142c842b575051f6b3fe627ee1264c5cda5ab872c55a663d"
+    },
+    {
+      "file": "02-kham-pha-dia-diem.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1851074,
+      "sha256": "4122c747943c4f71884afbea21d83049d9b25b0579bc393012a75385fde3e42e"
+    },
+    {
+      "file": "03-tao-chuyen-lich-trinh.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 2007516,
+      "sha256": "7a57ab5fcb1d67aae60dd1a62aace2b3d0582b3149ca99aba519eaf05780bf40"
+    },
+    {
+      "file": "04-ngan-sach-goe-ai.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1644953,
+      "sha256": "d9a0dfa9d756826bf1fc0e2d153faaa74aa22956b629d4329bf4c925fcc92eda"
+    },
+    {
+      "file": "05-cong-dong-huong-dan-vien.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1868213,
+      "sha256": "45e73061d529d59dce5f71410b89530ee1a4e51c50f547e4feec1278b705f913"
+    },
+    {
+      "file": "06-pwa-desktop.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1940482,
+      "sha256": "491896ade2a474896ddd5aa1c60837b9edc9f7d86e7aaf1c534d3511ac545bcd"
+    },
+    {
+      "file": "07-goe-ban-dong-hanh.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1735120,
+      "sha256": "ec28a8f381988de200b7d4e1169f499dc3777a25224ae0e00c3b1d38ced61fa2"
+    },
+    {
+      "file": "08-dat-cho-chuyen-di.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 2086572,
+      "sha256": "048b535ec4795fece986db65dc20487dd73fc448dbf903e7a549b45760f9c529"
+    }
+  ]
+}

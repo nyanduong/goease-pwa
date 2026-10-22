@@ -6,3 +6,6 @@ playwright-report
 test-results
 docs/BR.md
 AGENTS.md
+
+# Imported visual references; preserve the original gallery and source notes.
+docs/design/

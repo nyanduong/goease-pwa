@@ -17,7 +17,8 @@
     "test:e2e": "npm run build && playwright test",
     "db:check": "npm run db:check --workspace @goease/server",
     "db:init": "npm run db:init --workspace @goease/server",
-    "test:integration": "npm run test:integration --workspace @goease/server"
+    "test:integration": "npm run test:integration --workspace @goease/server",
+    "db:seed": "npm run db:seed --workspace @goease/server"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

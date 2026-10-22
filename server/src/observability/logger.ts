@@ -15,6 +15,7 @@ const levels = {
   'api.startup_failed': 'error',
   'api.shutdown_failed': 'error',
   'logger.invalid_input': 'warn',
+  'product.init_failed': 'error',
 } as const;
 export const httpMethods = [
   'GET',
@@ -31,7 +32,23 @@ const fieldsSchema = z.object({
   correlationId: z.string().regex(uuidPattern).optional(),
   method: z.enum(httpMethods).optional(),
   route: z
-    .enum(['/api/v1/health', '/api/v1/health/db', 'unmatched'])
+    .enum([
+      '/api/v1/health',
+      '/api/v1/health/db',
+      '/api/v1/auth/options',
+      '/api/v1/auth/me',
+      '/api/v1/auth/register',
+      '/api/v1/auth/login',
+      '/api/v1/auth/logout',
+      '/api/v1/auth/verify-email',
+      '/api/v1/auth/google',
+      '/api/v1/auth/google/callback',
+      '/api/v1/dev/mailbox',
+      '/api/v1/destinations',
+      '/api/v1/trips',
+      '/api/v1/trips/:id',
+      'unmatched',
+    ])
     .optional(),
   statusCode: z.number().int().min(100).max(599).optional(),
   durationMs: z.number().finite().min(0).max(3_600_000).optional(),

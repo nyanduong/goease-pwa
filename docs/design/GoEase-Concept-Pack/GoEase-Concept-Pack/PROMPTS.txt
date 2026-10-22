@@ -1,0 +1,269 @@
+GOEASE — IMAGE GENERATION PROMPTS
+
+Tool: built-in image_gen. No fallback CLI used.
+Primary references: reference/goe-original.png; 01-chao-mung-trang-chu.png as the style anchor after the first generation.
+Finals are selected and visually reviewed concept boards; prices, people, and maps are illustrative.
+
+BOARD 01 — 01-chao-mung-trang-chu.png
+
+Use case: ui-mockup.
+Project: GoEase, a Vietnam travel planning PWA, eventual native mobile app. Create a professional product design concept image, not a marketing landing page.
+BRAND SYSTEM: warm ivory #FBF7EE background, deep forest green #184C43 primary and text, muted sage #E7EDE2 secondary surfaces, honey gold #E7BA70 buttons, subtle terracotta #C78163 accents, warm gray #7F857B body text. These colors match the user's existing GoEase landing page. Large elegant literary serif headings (like Cormorant Garamond), clean Vietnamese-capable sans serif (like Be Vietnam Pro) for UI. Rounded cards 20px, very fine warm borders, understated shadows, thin outline icons, large readable type, generous spacing, travel magazine atmosphere, real Vietnam destination photography, muted warm natural light. NO purple neon, NO dominant blue UI.
+REFERENCE IMAGE ROLE: the attached blue 3D bird is GoEase's mascot Goe. Preserve its recognizable blue feathers, cream heart-shaped face, large navy eyes, yellow beak and feet, travel scarf with white route marks, blue satchel. Keep it BLUE. Do not redesign its identity. It is a small warm companion within the calm brand, never fills information-heavy screens.
+BOARD FORMAT: high-resolution landscape 2560 x 1600. Clean cream presentation canvas with GoEase wordmark at upper left, small board number and title, restrained editorial layout. Display TWO large perfectly upright flat mobile UI artboards side-by-side, both with the same 390x844 aspect ratio, thin sage border and soft radius, no heavy physical phones, no perspective distortion. Both screens must be fully visible and unclipped including bottom navigation and safe area. Labels outside artboards are small and neat. Spend most of the image area on legible UI, minimal external explanation. Mobile views are installed PWAs with no browser address bar. Small 9:41 OS status bar is allowed. Consistent persistent bottom navigation on main screens: "Khám phá", "Chuyến đi", "Goe", "Đã lưu", with simple outline compass, itinerary, mascot/spark, bookmark icons. Active state forest green.
+Language: accurately accented Vietnamese. Exact GoEase capitalization. Show only the specified concise copy. Avoid tiny paragraphs, illegible filler text and excessive labels.
+All destination names, costs, photos and community examples are illustrative. Never imply an operational product or real availability; small footer on the BOARD reads "GOEASE · PRODUCT CONCEPT · DỮ LIỆU MINH HỌA". Do not put developer or implementation notes within app UI.
+BOARD 01 title: "Khởi đầu nhẹ tênh"
+LEFT SCREEN, welcome / onboarding:
+Small GoEase logo at top. Elegant large green serif heading "Just go." and italic second line "We'll plan."
+Subline "Việt Nam, theo cách của bạn."
+A beautifully composed warm photographic landscape collage of Hạ Long limestone islands fading gently into ivory, with a small faithful 3D Goe bird by a dotted travel route at lower right, maximum 22% of screen. The visual feels airy and sophisticated.
+Copy below image: "Bạn chọn niềm vui.\nGoe lo phần kế hoạch."
+Large honey gold rounded button "Bắt đầu hành trình" with arrow, secondary quiet text action "Khám phá trước", small note "Không cần tài khoản để bắt đầu".
+No bottom navigation on onboarding.
+RIGHT SCREEN, home / discovery:
+GoEase wordmark top left, circular small profile avatar right. Small label "CHÀO BẠN, MÌNH LÀ GOE", large serif heading "Hôm nay, mình\nđi đâu?"
+Search field "Tìm điểm đến ở Việt Nam" with search icon.
+Wide forest-green AI trip planner card: small faithful Goe in right quarter, title "Một ý tưởng.\nCả một hành trình.", short line "Theo sở thích & ngân sách của bạn", honey small action "Tạo chuyến đi →".
+Section "Đi gần hay đi xa?" with chips "Tất cả" active, "Thiên nhiên", "Văn hóa".
+Two portrait destination photo cards side by side: "Hội An" with "Phố cổ & ánh đèn"; "Sa Pa" with "Núi rừng & mây trời". Tiny bookmark controls.
+Small editorial row "Chuyến đi của bạn" and one compact existing trip card "Hội An · 3 ngày · 4 người".
+Consistent bottom nav with "Khám phá" active.
+Outside labels: "01 / Chào mừng" and "02 / Trang chủ".
+
+================================================================================
+
+BOARD 02 — 02-kham-pha-dia-diem.png
+
+Use case: ui-mockup.
+Project: GoEase, a Vietnam travel planning PWA, eventual native mobile app. Create a professional product design concept image, not a marketing landing page.
+BRAND SYSTEM: warm ivory #FBF7EE background, deep forest green #184C43 primary and text, muted sage #E7EDE2 secondary surfaces, honey gold #E7BA70 buttons, subtle terracotta #C78163 accents, warm gray #7F857B body text. These colors match the user's existing GoEase landing page. Large elegant literary serif headings (like Cormorant Garamond), clean Vietnamese-capable sans serif (like Be Vietnam Pro) for UI. Rounded cards 20px, very fine warm borders, understated shadows, thin outline icons, large readable type, generous spacing, travel magazine atmosphere, real Vietnam destination photography, muted warm natural light. NO purple neon, NO dominant blue UI.
+REFERENCE IMAGE ROLE: the attached blue 3D bird is GoEase's mascot Goe. Preserve its recognizable blue feathers, cream heart-shaped face, large navy eyes, yellow beak and feet, travel scarf with white route marks, blue satchel. Keep it BLUE. Do not redesign its identity. It is a small warm companion within the calm brand, never fills information-heavy screens.
+BOARD FORMAT: high-resolution landscape 2560 x 1600. Clean cream presentation canvas with GoEase wordmark at upper left, small board number and title, restrained editorial layout. Display TWO large perfectly upright flat mobile UI artboards side-by-side, both with the same 390x844 aspect ratio, thin sage border and soft radius, no heavy physical phones, no perspective distortion. Both screens must be fully visible and unclipped including bottom navigation and safe area. Labels outside artboards are small and neat. Spend most of the image area on legible UI, minimal external explanation. Mobile views are installed PWAs with no browser address bar. Small 9:41 OS status bar is allowed. Consistent persistent bottom navigation on main screens: "Khám phá", "Chuyến đi", "Goe", "Đã lưu", with simple outline compass, itinerary, mascot/spark, bookmark icons. Active state forest green.
+Language: accurately accented Vietnamese. Exact GoEase capitalization. Show only the specified concise copy. Avoid tiny paragraphs, illegible filler text and excessive labels.
+All destination names, costs, photos and community examples are illustrative. Never imply an operational product or real availability; small footer on the BOARD reads "GOEASE · PRODUCT CONCEPT · DỮ LIỆU MINH HỌA". Do not put developer or implementation notes within app UI.
+BOARD 02 title: "Khám phá có chọn lọc"
+LEFT SCREEN: destination discovery in Hội An.
+Top bar back arrow and "Khám phá". Large green serif "Một Hội An\ncủa riêng bạn."
+Small subtitle "Tìm nơi hợp gu, lưu cho chuyến tới."
+Search "Tìm quán, nơi chơi, trải nghiệm".
+Filter chips "Tất cả" active, "Ẩm thực", "Văn hóa", "Thiên nhiên".
+Thin map/list toggle "Danh sách" active and "Bản đồ".
+One beautiful large photo card of old town ochre facades and river at golden hour with small tag "Văn hóa", heading "Phố cổ Hội An", caption "Đi bộ chậm. Ngắm phố lâu.", bookmark.
+Below two smaller cards with authentic warm photos: "Cơm gà Hội An" and "Làng rau Trà Quế". Do not put fabricated ratings or distances.
+Bottom navigation: Khám phá active.
+RIGHT SCREEN: detail of Phố cổ Hội An.
+Full-bleed warm photo in upper third, back circular button upper left and bookmark upper right. Label "HỘI AN · VĂN HÓA", large serif heading "Phố cổ Hội An".
+Three tiny summary chips "Đi bộ", "2–3 giờ", "Hợp buổi chiều".
+Short copy "Những mái ngói cũ, con hẻm nhỏ và một nhịp sống để bạn chậm lại."
+Small soft sage suggestion card with small faithful Goe avatar: "Goe gợi ý" and "Ghé phố lúc chiều muộn, rồi dạo bên sông Hoài."
+Section "Một vòng ghé thăm" with three clean rows "Chùa Cầu", "Nhà cổ", "Sông Hoài", thin small location icons.
+Section "Ghi chú của bạn" and one blank light bordered note area "Điều muốn nhớ về nơi này…".
+Sticky bottom large honey gold CTA "Thêm vào chuyến đi" and secondary bookmark icon. No main bottom navigation on this focused detail view.
+Outside labels: "03 / Khám phá" and "04 / Chi tiết địa điểm".
+INPUT ROLES: Image 1 is the approved GoEase welcome/home UI, use it as the design system and typography consistency reference. Image 2 is the definitive blue bird mascot. Keep the same warm cream, forest and honey visual language, card shapes, wordmark style and high polish. Outside UI artboards prefer quiet ivory negative space, avoiding large decorative landscape cutouts or handwritten notes, to keep focus on functional screen content. Do not copy the welcome/home screen contents into these new screens.
+
+================================================================================
+
+BOARD 03 — 03-tao-chuyen-lich-trinh.png
+
+Use case: ui-mockup.
+Project: GoEase, a Vietnam travel planning PWA, eventual native mobile app. Create a professional product design concept image, not a marketing landing page.
+BRAND SYSTEM: warm ivory #FBF7EE background, deep forest green #184C43 primary and text, muted sage #E7EDE2 secondary surfaces, honey gold #E7BA70 buttons, subtle terracotta #C78163 accents, warm gray #7F857B body text. These colors match the user's existing GoEase landing page. Large elegant literary serif headings (like Cormorant Garamond), clean Vietnamese-capable sans serif (like Be Vietnam Pro) for UI. Rounded cards 20px, very fine warm borders, understated shadows, thin outline icons, large readable type, generous spacing, travel magazine atmosphere, real Vietnam destination photography, muted warm natural light. NO purple neon, NO dominant blue UI.
+REFERENCE IMAGE ROLE: the attached blue 3D bird is GoEase's mascot Goe. Preserve its recognizable blue feathers, cream heart-shaped face, large navy eyes, yellow beak and feet, travel scarf with white route marks, blue satchel. Keep it BLUE. Do not redesign its identity. It is a small warm companion within the calm brand, never fills information-heavy screens.
+BOARD FORMAT: high-resolution landscape 2560 x 1600. Clean cream presentation canvas with GoEase wordmark at upper left, small board number and title, restrained editorial layout. Display TWO large perfectly upright flat mobile UI artboards side-by-side, both with the same 390x844 aspect ratio, thin sage border and soft radius, no heavy physical phones, no perspective distortion. Both screens must be fully visible and unclipped including bottom navigation and safe area. Labels outside artboards are small and neat. Spend most of the image area on legible UI, minimal external explanation. Mobile views are installed PWAs with no browser address bar. Small 9:41 OS status bar is allowed. Consistent persistent bottom navigation on main screens: "Khám phá", "Chuyến đi", "Goe", "Đã lưu", with simple outline compass, itinerary, mascot/spark, bookmark icons. Active state forest green.
+Language: accurately accented Vietnamese. Exact GoEase capitalization. Show only the specified concise copy. Avoid tiny paragraphs, illegible filler text and excessive labels.
+All destination names, costs, photos and community examples are illustrative. Never imply an operational product or real availability; small footer on the BOARD reads "GOEASE · PRODUCT CONCEPT · DỮ LIỆU MINH HỌA". Do not put developer or implementation notes within app UI.
+BOARD 03 title: "Từ ý tưởng đến lịch trình"
+This is the core product board. Exact information consistent across every GoEase mockup: Hội An, 12–14/11/2026, 3 days, 4 travelers, total budget 10.000.000đ, estimated cost 8.200.000đ.
+LEFT SCREEN: create trip form.
+Top back arrow, "Tạo chuyến đi", small step text "Bước 1 / 3", understated 3-step progress line.
+Large serif heading "Bắt đầu từ\nđiều bạn thích."
+Four beautifully spaced form fields with outline icons: "Điểm đến" value "Hội An, Quảng Nam"; "Thời gian" value "12–14/11/2026 · 3 ngày"; "Đi cùng" value "4 người"; "Ngân sách cả nhóm" value "10.000.000đ".
+Section "Gu của chuyến đi" with compact selectable pills: "Ẩm thực" checked, "Văn hóa" checked, "Thiên nhiên", "Nghỉ dưỡng".
+Section "Nhịp độ" with three-segment control "Thư thả" selected, "Vừa phải", "Khám phá nhiều".
+Small Goe head in sage helper row "Bạn có thể đổi mọi thứ sau."
+Large honey button "Gợi ý lịch trình →".
+Do not show a main bottom navigation on this focused form.
+RIGHT SCREEN: editable day itinerary.
+Top back button and title "Hội An", overflow menu. Small "12–14/11 · 4 người" under title.
+Photo strip of Hội An above compact segmented tabs "Lịch trình" active, "Bản đồ", "Chi phí".
+Day tabs "Ngày 1" active, "Ngày 2", "Ngày 3". Heading "Chạm nhịp phố cổ".
+Editorial vertical timeline with four distinct clean cards. Each contains a warm rectangular photo thumbnail, time, clear title, small move handle:
+"08:30" "Dạo phố cổ" "Đi bộ · 90 phút"
+"11:30" "Cơm gà Hội An" "Nghỉ trưa thật thong thả"
+"15:00" "Cà phê bên hiên" "Một khoảng nghỉ nhỏ"
+"18:00" "Dạo sông Hoài" "Phố lên đèn"
+Small add stop text button "+ Thêm điểm dừng".
+Sage mini callout with tiny Goe "Muốn đổi nhịp? Hỏi Goe nhé."
+At bottom a save status chip "Đã lưu" plus main bottom navigation "Chuyến đi" active. This must feel like a usable app not an infographic.
+Outside labels: "05 / Tạo chuyến đi" and "06 / Lịch trình từng ngày".
+INPUT ROLES: Image 1 is the approved GoEase welcome/home UI, use it as the design system and typography consistency reference. Image 2 is the definitive blue bird mascot. Keep the same warm cream, forest and honey visual language, card shapes, wordmark style and high polish. Outside UI artboards prefer quiet ivory negative space, avoiding large decorative landscape cutouts or handwritten notes, to keep focus on functional screen content. Do not copy the welcome/home screen contents into these new screens.
+
+================================================================================
+
+BOARD 04 — 04-ngan-sach-goe-ai.png
+
+Use case: ui-mockup.
+Project: GoEase, a Vietnam travel planning PWA, eventual native mobile app. Create a professional product design concept image, not a marketing landing page.
+BRAND SYSTEM: warm ivory #FBF7EE background, deep forest green #184C43 primary and text, muted sage #E7EDE2 secondary surfaces, honey gold #E7BA70 buttons, subtle terracotta #C78163 accents, warm gray #7F857B body text. These colors match the user's existing GoEase landing page. Large elegant literary serif headings (like Cormorant Garamond), clean Vietnamese-capable sans serif (like Be Vietnam Pro) for UI. Rounded cards 20px, very fine warm borders, understated shadows, thin outline icons, large readable type, generous spacing, travel magazine atmosphere, real Vietnam destination photography, muted warm natural light. NO purple neon, NO dominant blue UI.
+REFERENCE IMAGE ROLE: the attached blue 3D bird is GoEase's mascot Goe. Preserve its recognizable blue feathers, cream heart-shaped face, large navy eyes, yellow beak and feet, travel scarf with white route marks, blue satchel. Keep it BLUE. Do not redesign its identity. It is a small warm companion within the calm brand, never fills information-heavy screens.
+BOARD FORMAT: high-resolution landscape 2560 x 1600. Clean cream presentation canvas with GoEase wordmark at upper left, small board number and title, restrained editorial layout. Display TWO large perfectly upright flat mobile UI artboards side-by-side, both with the same 390x844 aspect ratio, thin sage border and soft radius, no heavy physical phones, no perspective distortion. Both screens must be fully visible and unclipped including bottom navigation and safe area. Labels outside artboards are small and neat. Spend most of the image area on legible UI, minimal external explanation. Mobile views are installed PWAs with no browser address bar. Small 9:41 OS status bar is allowed. Consistent persistent bottom navigation on main screens: "Khám phá", "Chuyến đi", "Goe", "Đã lưu", with simple outline compass, itinerary, mascot/spark, bookmark icons. Active state forest green.
+Language: accurately accented Vietnamese. Exact GoEase capitalization. Show only the specified concise copy. Avoid tiny paragraphs, illegible filler text and excessive labels.
+All destination names, costs, photos and community examples are illustrative. Never imply an operational product or real availability; small footer on the BOARD reads "GOEASE · PRODUCT CONCEPT · DỮ LIỆU MINH HỌA". Do not put developer or implementation notes within app UI.
+BOARD 04 title: "Rõ chi phí. Nhẹ đầu hơn."
+Trip data: Hội An, 3 ngày, 4 người, budget 10.000.000đ, estimate 8.200.000đ, per person 2.050.000đ, reserve 1.800.000đ. Numbers must be exact, coherent and legible.
+LEFT SCREEN: budget estimate.
+Top back, "Chi phí chuyến đi". Small destination badge "Hội An · 3 ngày · 4 người".
+Serif heading "Vui trong\nngân sách."
+Large forest green total card "DỰ TOÁN CẢ NHÓM" "8.200.000đ" and smaller "2.050.000đ / người". Slim budget bar showing 82% used. Honey accent small pill "Còn 1.800.000đ dự phòng".
+A modest donut chart using forest, sage, honey, terracotta, with "4 người" in center, next to small category icons.
+Four category rows with exact amounts: "Di chuyển" "2.000.000đ"; "Lưu trú" "3.200.000đ"; "Ăn uống" "2.000.000đ"; "Trải nghiệm" "1.000.000đ".
+Fine muted line "Chi phí ước tính, chưa phải báo giá."
+Bottom action outline "Điều chỉnh ngân sách", consistent main bottom nav "Chuyến đi" active.
+RIGHT SCREEN: contextual AI assistant Goe.
+Top small faithful blue mascot portrait and name "Goe", subtitle "Bạn đồng hành chuyến đi", back arrow and more.
+Context chip "Đang xem: Hội An · Ngày 2".
+Serif greeting "Mình cùng\nđiều chỉnh nhé."
+One sage assistant bubble "Bạn muốn chuyến đi thư thả hơn một chút?"
+One right aligned forest green user bubble with cream text "Nếu chiều mưa thì đi đâu?"
+One assistant response in off-white bordered card: "Mình gợi ý đổi điểm ngoài trời sang một nơi trong nhà." Then a preview card headed "Gợi ý thay đổi" with simple before/after:
+"15:00 · Hoạt động ngoài trời" strikethrough light
+"15:00 · Ghé bảo tàng" in green.
+Small metadata "Giữ nguyên các điểm còn lại".
+Honey action button "Xem thay đổi" and outline small "Giữ lịch cũ". Do not falsely show a change applied without confirmation.
+Small contextual note "Gợi ý để bạn cân nhắc."
+Suggestion chips "Giảm chi phí", "Đi chậm hơn".
+At bottom message composer "Hỏi Goe về chuyến đi…" with send icon, and main bottom nav Goe active. Tiny Goe avatar accompanies one assistant message only.
+Outside labels: "07 / Dự toán ngân sách" and "08 / Goe đồng hành".
+INPUT ROLES: Image 1 is the approved GoEase welcome/home UI, use it as the design system and typography consistency reference. Image 2 is the definitive blue bird mascot. Keep the same warm cream, forest and honey visual language, card shapes, wordmark style and high polish. Outside UI artboards prefer quiet ivory negative space, avoiding large decorative landscape cutouts or handwritten notes, to keep focus on functional screen content. Do not copy the welcome/home screen contents into these new screens.
+
+================================================================================
+
+BOARD 05 — 05-cong-dong-huong-dan-vien.png
+
+Use case: ui-mockup.
+Project: GoEase, a Vietnam travel planning PWA, eventual native mobile app. Create a professional product design concept image, not a marketing landing page.
+BRAND SYSTEM: warm ivory #FBF7EE background, deep forest green #184C43 primary and text, muted sage #E7EDE2 secondary surfaces, honey gold #E7BA70 buttons, subtle terracotta #C78163 accents, warm gray #7F857B body text. These colors match the user's existing GoEase landing page. Large elegant literary serif headings (like Cormorant Garamond), clean Vietnamese-capable sans serif (like Be Vietnam Pro) for UI. Rounded cards 20px, very fine warm borders, understated shadows, thin outline icons, large readable type, generous spacing, travel magazine atmosphere, real Vietnam destination photography, muted warm natural light. NO purple neon, NO dominant blue UI.
+REFERENCE IMAGE ROLE: the attached blue 3D bird is GoEase's mascot Goe. Preserve its recognizable blue feathers, cream heart-shaped face, large navy eyes, yellow beak and feet, travel scarf with white route marks, blue satchel. Keep it BLUE. Do not redesign its identity. It is a small warm companion within the calm brand, never fills information-heavy screens.
+BOARD FORMAT: high-resolution landscape 2560 x 1600. Clean cream presentation canvas with GoEase wordmark at upper left, small board number and title, restrained editorial layout. Display TWO large perfectly upright flat mobile UI artboards side-by-side, both with the same 390x844 aspect ratio, thin sage border and soft radius, no heavy physical phones, no perspective distortion. Both screens must be fully visible and unclipped including bottom navigation and safe area. Labels outside artboards are small and neat. Spend most of the image area on legible UI, minimal external explanation. Mobile views are installed PWAs with no browser address bar. Small 9:41 OS status bar is allowed. Consistent persistent bottom navigation on main screens: "Khám phá", "Chuyến đi", "Goe", "Đã lưu", with simple outline compass, itinerary, mascot/spark, bookmark icons. Active state forest green.
+Language: accurately accented Vietnamese. Exact GoEase capitalization. Show only the specified concise copy. Avoid tiny paragraphs, illegible filler text and excessive labels.
+All destination names, costs, photos and community examples are illustrative. Never imply an operational product or real availability; small footer on the BOARD reads "GOEASE · PRODUCT CONCEPT · DỮ LIỆU MINH HỌA". Do not put developer or implementation notes within app UI.
+BOARD 05 title: "Những cuộc gặp trên đường"
+Small clearly visible BOARD-level badge "Ý TƯỞNG MỞ RỘNG · SAU BẢN PWA ĐẦU". It belongs outside app screens.
+LEFT SCREEN: community travel journal.
+Top GoEase wordmark and write icon. Large serif "Đi rồi,\nkể nhau nghe."
+Subheading "Nhật ký & góc nhìn người địa phương".
+Pill filter "Dành cho bạn" active, "Đang theo dõi", "Hội An".
+A beautiful editorial story card with photo of Hội An yellow facades and a bicycle, top small label "NHẬT KÝ CHUYẾN ĐI", headline "Một buổi chiều,\nkhông vội ở Hội An", avatar "An · 3 phút đọc", outline bookmark and heart, no huge engagement stats.
+Another compact story card with photo of Mekong boats and heading "Đi chợ sớm ở miền Tây", author "Linh".
+Sage small callout "Lưu câu chuyện vào chuyến đi" with bookmark icon.
+Main bottom nav same 4 items, Khám phá active.
+RIGHT SCREEN: local guide and experience proposal.
+Top photo of a Vietnamese local woman guiding a quiet walking group through old town, warm documentary travel photo, back and save icons.
+Label "TRẢI NGHIỆM CÙNG NGƯỜI ĐỊA PHƯƠNG".
+Serif headline "Nghe Hội An\nkể chuyện."
+Guide avatar and "Minh · Người kể chuyện Hội An". Short line "Một vòng phố cổ qua những câu chuyện nhỏ."
+Three small chips "2 giờ", "Đi bộ", "Nhóm nhỏ".
+Section "Mình sẽ cùng bạn" with 3 concise check rows: "Ghé những con hẻm yên tĩnh"; "Nghe chuyện phố & nếp sống"; "Dừng ở một quán quen".
+Small sage row "Chọn giờ, nhắn hỏi trước khi quyết định".
+Bottom honey button "Gửi yêu cầu trải nghiệm" with chat icon. Subtle footer "Thông tin trải nghiệm minh họa" and no fabricated verified marks, ratings, availability or payment checkout.
+Outside labels: "09 / Nhật ký cộng đồng" and "10 / Trải nghiệm địa phương".
+INPUT ROLES: Image 1 is the approved GoEase welcome/home UI, use it as the design system and typography consistency reference. Image 2 is the definitive blue bird mascot. Keep the same warm cream, forest and honey visual language, card shapes, wordmark style and high polish. Outside UI artboards prefer quiet ivory negative space, avoiding large decorative landscape cutouts or handwritten notes, to keep focus on functional screen content. Do not copy the welcome/home screen contents into these new screens.
+
+================================================================================
+
+BOARD 06 — 06-pwa-desktop.png
+
+Use case: ui-mockup.
+Project GoEase responsive desktop PWA product concept, same brand system as the attached GoEase mobile UI reference. This is a NEW desktop screen. Warm ivory #FBF7EE, forest #184C43, sage #E7EDE2, honey #E7BA70, terracotta #C78163, elegant serif headings and clean Vietnamese sans UI, thin borders, warm travel photos, beautiful highly readable hierarchy. Reference blue Goe mascot identity remains blue, cream face, scarf, satchel.
+High-resolution landscape 2560x1600 concept board. At top outside app: "GoEase" small wordmark, "06 / PWA trên màn hình lớn". Below: ONE very large polished desktop browser window with minimal neutral browser chrome and address "goease.app" (concept domain in mockup only). Show a unified spacious web app dashboard, no floating mobile phones.
+Desktop app layout with persistent slim left navigation, main itinerary workspace and fixed right map / assistant area. Fully legible large Vietnamese copy, no tiny fake text.
+LEFT SIDEBAR, about 210px wide at design scale: GoEase wordmark, nav "Khám phá", "Chuyến đi" selected, "Hỏi Goe", "Đã lưu". Below label "CHUYẾN GẦN ĐÂY" and selected "Hội An · 3 ngày". At bottom small profile "Bạn".
+MAIN HEADER: breadcrumb "Chuyến đi / Hội An", large editorial serif heading "Hội An, thong thả mà đi.", subtitle "12–14/11/2026 · 3 ngày · 4 người". Actions "Chia sẻ" outlined, "Đã lưu" green. Secondary subnav "Lịch trình" active, "Chi phí", "Ghi chú".
+THIN SUMMARY STRIP: budget card "Dự toán cả nhóm" "8.200.000đ"; "Ngân sách" "10.000.000đ"; sage small tag "Còn 1.800.000đ dự phòng".
+MAIN WORKSPACE about 55% window:
+Day selector "Ngày 1" selected, "Ngày 2", "Ngày 3". Heading "Chạm nhịp phố cổ". Four roomy vertical itinerary rows with warm small photos, small move handles and plus controls: "08:30 · Dạo phố cổ", "11:30 · Cơm gà Hội An", "15:00 · Cà phê bên hiên", "18:00 · Dạo sông Hoài". A small journey line connects the four. Bottom "+ Thêm điểm dừng".
+RIGHT PANEL: attractive subdued illustrated street map of central Hội An, cream land, sage park blocks, teal river, honey dotted route joining ONLY 4 numbered green markers. Map is illustrative, not navigation-accurate. Segment label "Bản đồ trong ngày". Beneath map a refined sage Goe assistant card, with faithful small original blue 3D bird in the corner, heading "Cần đổi một chút?", short text "Mình có thể giúp bạn đi chậm hơn hoặc cân lại chi phí.", honey button "Hỏi Goe".
+A very subtle banner at bottom of app "Lưu chuyến đi để xem lại" with bookmark icon, not unsupported offline or install claims.
+Outside bottom board note "CÙNG MỘT SẢN PHẨM · MOBILE & DESKTOP" and footer "GOEASE · PRODUCT CONCEPT · DỮ LIỆU MINH HỌA".
+Composition must be design-review quality flat UI, calm and practical, accurate readable Vietnamese, no overwhelming gradients, no neon, no bloated finance dashboard.
+INPUT ROLES: Image 1 is the approved GoEase mobile app UI, use it as the brand, typography, wordmark and component design system reference. Image 2 is the definitive blue mascot reference. Translate the same system to desktop.
+
+================================================================================
+
+BOARD 07 — 07-goe-ban-dong-hanh.png
+
+Use case: stylized-concept.
+Asset type: GoEase mascot application concept sheet.
+Create a premium 2560x1600 landscape brand companion usage board, warm ivory #FBF7EE canvas, deep forest green #184C43 typography, muted sage panels #E7EDE2, honey #E7BA70 subtle accents and delicate dotted travel routes. All text large and legible, elegant serif title and clean Vietnamese sans captions. Clean professional editorial grid.
+REFERENCE IMAGE 1 is the definitive mascot identity: cute glossy-soft 3D BLUE travel bird, cream heart-shaped face and belly, enormous navy-blue eyes, pink cheeks, yellow beak and feet, blue scarf decorated with white dotted airplane route, navy blue crossbody satchel and location tag, yellow glowing little route symbol on belly, feather tuft. Keep every identity detail faithfully, no species change, no recolor to green, no robot features, no humanoid costume.
+Main heading "Goe — bạn đồng hành nhỏ" and subline "Đúng lúc cần. Nhẹ nhàng trên mỗi hành trình."
+One larger welcoming waving Goe on left, attractive gentle daylight, no blue background, size at most 35% of board.
+On right, a carefully spaced 2x2 grid of four medium mascot pose vignettes, each same character at consistent scale, simple minimal supporting objects:
+1. Goe holding a folded cream map, curious attentive face. Caption "Gợi ý hành trình".
+2. Goe thinking with one wing under beak beside three small forest/sage dots, friendly calm, no huge UI. Caption "Đang tìm gợi ý".
+3. Goe carrying a small umbrella, kind reassuring smile. Caption "Đổi kế hoạch khi mưa".
+4. Goe holding a tiny honey checkmark card, happy but gentle. Caption "Sẵn sàng lên đường".
+Bottom narrow strip of TWO tasteful realistic in-product examples: small circular Goe avatar next to a sage assistant message "Mình cùng chọn bước tiếp theo nhé."; small welcome empty-state panel with tiny Goe and honey button "Tạo chuyến đi đầu tiên". Keep these separate and clearly secondary.
+Small brand principle at bottom "GIỮ MÀU XANH CỦA GOE · DÙNG TIẾT CHẾ TRONG GIAO DIỆN".
+Footer "GOEASE · MASCOT CONCEPT".
+The board should feel like a coherent character product integration design sheet, not a children's poster or a sprite sheet. The bird cannot cover app text, no crowded decoration, no other characters. Use original blue mascot identity faithfully.
+
+================================================================================
+
+BOARD 08 — 08-dat-cho-chuyen-di.png
+
+Use case: ui-mockup.
+Project: GoEase, a Vietnam travel planning PWA, eventual native mobile app. Create a professional product design concept image, not a marketing landing page.
+BRAND SYSTEM: warm ivory #FBF7EE background, deep forest green #184C43 primary and text, muted sage #E7EDE2 secondary surfaces, honey gold #E7BA70 buttons, subtle terracotta #C78163 accents, warm gray #7F857B body text. These colors match the user's existing GoEase landing page. Large elegant literary serif headings (like Cormorant Garamond), clean Vietnamese-capable sans serif (like Be Vietnam Pro) for UI. Rounded cards 20px, very fine warm borders, understated shadows, thin outline icons, large readable type, generous spacing, travel magazine atmosphere, real Vietnam destination photography, muted warm natural light. NO purple neon, NO dominant blue UI.
+REFERENCE IMAGE ROLE: the attached blue 3D bird is GoEase's mascot Goe. Preserve its recognizable blue feathers, cream heart-shaped face, large navy eyes, yellow beak and feet, travel scarf with white route marks, blue satchel. Keep it BLUE. Do not redesign its identity. It is a small warm companion within the calm brand, never fills information-heavy screens.
+BOARD FORMAT: high-resolution landscape 2560 x 1600. Clean cream presentation canvas with GoEase wordmark at upper left, small board number and title, restrained editorial layout. Display TWO large perfectly upright flat mobile UI artboards side-by-side, both with the same 390x844 aspect ratio, thin sage border and soft radius, no heavy physical phones, no perspective distortion. Both screens must be fully visible and unclipped including bottom navigation and safe area. Labels outside artboards are small and neat. Spend most of the image area on legible UI, minimal external explanation. Mobile views are installed PWAs with no browser address bar. Small 9:41 OS status bar is allowed. Consistent persistent bottom navigation on main screens: "Khám phá", "Chuyến đi", "Goe", "Đã lưu", with simple outline compass, itinerary, mascot/spark, bookmark icons. Active state forest green.
+Language: accurately accented Vietnamese. Exact GoEase capitalization. Show only the specified concise copy. Avoid tiny paragraphs, illegible filler text and excessive labels.
+All destination names, costs, photos and community examples are illustrative. Never imply an operational product or real availability; small footer on the BOARD reads "GOEASE · PRODUCT CONCEPT · DỮ LIỆU MINH HỌA". Do not put developer or implementation notes within app UI.
+BOARD 08 title: "Đặt chỗ & quản lý chuyến đi"
+Small BOARD-level badge "Ý TƯỞNG MỞ RỘNG · KHI CÓ ĐỐI TÁC & THANH TOÁN" outside screens.
+INPUT ROLES: Image 1 is approved GoEase welcome/home UI reference, follow its wordmark, colors, typography, clean card design. Image 2 is the definitive faithful blue Goe mascot. Use no large mascot on these functional screens.
+LEFT SCREEN: experience booking review and payment step.
+Top back arrow, "Đặt trải nghiệm", simple 3-step indicator "Thông tin" then "Thanh toán" active then "Xác nhận".
+Serif heading "Một cuộc hẹn\nvới Hội An."
+Compact photo summary card of a small guided walk through yellow old town facades, title "Nghe Hội An kể chuyện", subtitle "Cùng Minh · 2 giờ đi bộ".
+Three spacious rows with icons: "Ngày" "13/11/2026"; "Khung giờ" "08:30–10:30"; "Số người" "4 người".
+Section "Chi phí dự kiến": "Trải nghiệm cho nhóm" "600.000đ"; "Phí dịch vụ" "0đ"; total in larger forest text "Tổng cộng" "600.000đ".
+Section "Phương thức thanh toán" with two radio cards "Ví điện tử" selected and "Thẻ ngân hàng" unselected; no external provider logos.
+Small outlined row "Xem điều kiện đổi / hủy" with arrow. Bottom honey primary CTA "Tiếp tục thanh toán →". No main bottom navigation on this focused checkout.
+RIGHT SCREEN: My Trips / saved upcoming trip overview.
+GoEase header plus small outline plus button. Large serif heading "Những chuyến đi\nđang chờ bạn."
+Tabbed chips "Sắp đi" active, "Đã đi", "Bản nháp".
+Large warm photo card of Hội An riverside; heading "Hội An, thong thả mà đi."; metadata "12–14/11/2026 · 3 ngày · 4 người".
+Below photo card a neat 3-column summary: "Lịch trình" "4 điểm / ngày"; "Dự toán" "8.200.000đ"; "Đã lưu" with bookmark.
+A small linked experience row "Nghe Hội An kể chuyện" with muted honey badge "Chờ xác nhận", time "13/11 · 08:30", action "Xem yêu cầu".
+Forest full-width action "Mở lịch trình".
+Below a smaller draft card "Sa Pa · Bản nháp", subline "Ý tưởng cho chuyến đi tiếp theo".
+Bottom main nav Chuyến đi active.
+Do not confuse a pending request with a paid/confirmed booking. Do not include order numbers, false actual availability or transaction receipts.
+Outside labels: "11 / Đặt trải nghiệm" and "12 / Chuyến đi của tôi".
+
+================================================================================
+FINAL TARGETED EDITS
+
+06-pwa-desktop.png
+Use case: precise-object-edit. EDIT TARGET: the attached GoEase desktop PWA concept image.
+Make one tightly scoped correction to the RIGHT MAP so its four numbered pins match the four itinerary rows shown on the left.
+KEEP UNCHANGED: entire overall composition, dimensions/aspect ratio, app layout, all itinerary row text and times and photos, all headings, costs, buttons, wordmark, sidebar, blue mascot identity/pose, colors, visual style, photo surroundings. Do not redesign anything.
+Change ONLY the text labels associated with map markers 2 and 3 and keep map styling:
+Marker 1 label remains "Phố cổ Hội An".
+Marker 2 currently says "Chùa Cầu": replace with "Cơm gà Hội An".
+Marker 3 currently says "Nhà cổ Tấn Ký": replace with "Cà phê bên hiên".
+Marker 4 currently says "Bến thuyền sông Hoài": replace with "Dạo sông Hoài".
+Keep exactly four numbered map markers 1, 2, 3, 4. Preserve the cream and sage illustrative map, river, dotted honey route and existing positions. Any small landmark illustration can remain as ambient map illustration, but pin labels must correspond to the itinerary list. Accurately accented Vietnamese. The budget remains 8.200.000đ, 10.000.000đ and 1.800.000đ.
+Return the complete corrected board, same crop, no extra panels or explanatory text.
+
+07-goe-ban-dong-hanh.png
+Use case: precise-object-edit.
+INPUT IMAGE 1 is the GoEase mascot usage board to edit. INPUT IMAGE 2 is the GoEase welcome/home board and supplies the wordmark style reference.
+Make ONE small brand consistency edit to IMAGE 1: replace ONLY its small top-left "GoEase" logo with the SAME elegant dark forest green serif GoEase wordmark and tiny terracotta leaf flourish shown at the top-left of IMAGE 2. Remove the honey smile below the logo. Fit the replacement into the same top-left area without moving the large heading.
+Keep the rest of IMAGE 1 unchanged: exact blue bird identity and every pose, map/umbrella/check props, all Vietnamese text, all four panels, bottom chat and welcome examples, layout, warm cream and sage colors, sizes, spacing, aspect ratio and crop. No other redesigned elements, no new copy. Return the complete corrected IMAGE 1 only.
+
+08-dat-cho-chuyen-di.png
+Use case: precise-object-edit. Attached image is the finished GoEase booking and trips concept board. Change ONLY the small external left-side label near the upper-left margin that currently reads "08 / Đặt chỗ & quản lý chuyến đi". Replace it with "11 / Đặt trải nghiệm" on one or two clean lines, matching the existing small forest serif style and horizontal separator line. Keep the right external label "12 / Chuyến đi của tôi" unchanged. Preserve EVERYTHING else exactly: both full mobile screens, all text/numbers/photos/icons/buttons, wordmarks, outer background photos and handwritten notes, colors, layout, scale, aspect ratio and crop. No redesign or additional text. Return the complete corrected board.

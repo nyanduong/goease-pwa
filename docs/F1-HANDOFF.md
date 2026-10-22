@@ -1,6 +1,6 @@
 # GoEase — F1-A review và bàn giao F1 v0.2
 
-Ngày review: **22/10/2026**. Baseline thiết kế được chủ dự án chấp thuận; **F1-B đã triển khai/kiểm chứng local; F1-C/CORE-1 chưa triển khai**. F1-A chỉ chỉnh tài liệu, không thay source, dependencies, scripts, secrets hoặc MongoDB.
+Ngày review: **22/10/2026**. Baseline thiết kế được chủ dự án chấp thuận; **F1-B đã triển khai/kiểm chứng local; ưu tiên sản phẩm tiếp theo đã triển khai tài khoản local và manual trips**. [Handoff sản phẩm](PRODUCT-VERIFICATION.md) ghi phạm vi hiện tại; các kết quả F1-A bên dưới là lịch sử review. F1-A chỉ chỉnh tài liệu, không thay source, dependencies, scripts, secrets hoặc MongoDB.
 
 ## 1. Trạng thái repository và nguồn chính
 

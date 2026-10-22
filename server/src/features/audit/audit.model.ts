@@ -8,21 +8,29 @@ export const dedupeIndexName = 'audit_operation_entity_unique';
 export function auditModel(connection: Connection) {
   const actor = new Schema(
     {
-      type: { type: String, enum: ['system'], required: true },
+      type: { type: String, enum: ['system', 'user'], required: true },
       serviceName: {
         type: String,
-        enum: ['goease-integration-test'],
-        required: true,
+        enum: ['goease-integration-test', 'auth'],
       },
+      userId: { type: Schema.Types.ObjectId },
     },
     { _id: false, strict: 'throw', versionKey: false },
   );
   const source = new Schema(
     {
       appVersion: { type: String, enum: ['0.0.0'], required: true },
-      clientPlatform: { type: String, enum: ['server'], required: true },
-      channel: { type: String, enum: ['integration_test'], required: true },
-      environment: { type: String, enum: ['test'], required: true },
+      clientPlatform: { type: String, enum: ['server', 'web'], required: true },
+      channel: {
+        type: String,
+        enum: ['integration_test', 'api'],
+        required: true,
+      },
+      environment: {
+        type: String,
+        enum: ['test', 'development', 'production'],
+        required: true,
+      },
     },
     { _id: false, strict: 'throw', versionKey: false },
   );
@@ -44,10 +52,31 @@ export function auditModel(connection: Connection) {
     {
       eventId: { ...uuid, default: randomUUID, immutable: true },
       schemaVersion: { type: Number, enum: [1], default: 1, immutable: true },
-      action: { type: String, enum: ['system.audit_probe'], required: true },
-      category: { type: String, enum: ['system'], required: true },
+      action: {
+        type: String,
+        enum: [
+          'system.audit_probe',
+          'auth.registered',
+          'auth.email_verified',
+          'auth.failed',
+          'session.created',
+          'session.revoked',
+          'trip.created',
+          'trip.updated',
+        ],
+        required: true,
+      },
+      category: {
+        type: String,
+        enum: ['system', 'auth', 'trip'],
+        required: true,
+      },
       actor: { type: actor, required: true },
-      entityType: { type: String, enum: ['system_probe'], required: true },
+      entityType: {
+        type: String,
+        enum: ['system_probe', 'user', 'auth_session', 'trip'],
+        required: true,
+      },
       entityId: { type: String, match: /^[0-9a-f]{24}$/, required: true },
       entityRevision: { type: Number, min: 0, max: Number.MAX_SAFE_INTEGER },
       occurredAt: { type: Date, required: true },
@@ -58,7 +87,12 @@ export function auditModel(connection: Connection) {
       outcome: { type: String, enum: ['succeeded', 'failed'], required: true },
       reasonCode: { type: String, enum: ['probe_completed', 'probe_failed'] },
       changedFields: {
-        type: [{ type: String, enum: ['probeState'] }],
+        type: [
+          {
+            type: String,
+            enum: ['probeState', 'tripDetails', 'accountState', 'sessionState'],
+          },
+        ],
         default: [],
         validate: (v: string[]) => v.length <= 1,
       },
@@ -70,7 +104,7 @@ export function auditModel(connection: Connection) {
       source: { type: source, required: true },
       retentionClass: {
         type: String,
-        enum: ['integration_test'],
+        enum: ['integration_test', 'business_audit', 'security_audit'],
         required: true,
       },
       retentionUntil: { type: Date, default: null },

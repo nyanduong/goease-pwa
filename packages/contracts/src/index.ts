@@ -15,3 +15,5 @@ export const databaseHealthSchema = z.object({
 export type ApiError = z.infer<typeof apiErrorSchema>;
 export type HealthResponse = z.infer<typeof healthSchema>;
 export type DatabaseHealthResponse = z.infer<typeof databaseHealthSchema>;
+
+export * from './product.js';

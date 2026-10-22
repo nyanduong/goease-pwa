@@ -1,6 +1,6 @@
 # GoEase — kiến trúc v0.2
 
-**Trạng thái:** Stack đã chốt; nền tảng F0 đã được triển khai ngày 22/10/2026. Xem README và docs/F0-VERIFICATION.md để biết cách chạy và bằng chứng kiểm tra. Baseline thiết kế v0.2 đã được chủ dự án chấp thuận; policy đánh dấu đề xuất/cần duyệt vẫn còn mở. F1-B context/log/audit probe đã triển khai và kiểm chứng local; F1-C/CORE chưa triển khai. Xem [F1-B verification](F1-B-VERIFICATION.md). Nguồn nghiệp vụ là [BR](BR.md), field/index là [DB-BASELINE](DB-BASELINE.md), truy vết là [DATA-TRACEABILITY](DATA-TRACEABILITY.md), review/gates là [F1-HANDOFF](F1-HANDOFF.md).
+**Trạng thái:** Stack đã chốt; nền tảng F0 đã được triển khai ngày 22/10/2026. Xem README và docs/F0-VERIFICATION.md để biết cách chạy và bằng chứng kiểm tra. Baseline thiết kế v0.2 đã được chủ dự án chấp thuận; policy đánh dấu đề xuất/cần duyệt vẫn còn mở. F1-B context/log/audit probe đã triển khai và kiểm chứng local; Tài khoản local và manual trip đã triển khai theo ưu tiên sản phẩm sau F1-B; xem [nghiệm thu](PRODUCT-VERIFICATION.md). Các phần CORE khác chưa triển khai. Xem [F1-B verification](F1-B-VERIFICATION.md). Nguồn nghiệp vụ là [BR](BR.md), field/index là [DB-BASELINE](DB-BASELINE.md), truy vết là [DATA-TRACEABILITY](DATA-TRACEABILITY.md), review/gates là [F1-HANDOFF](F1-HANDOFF.md).
 
 ## 1. Ranh giới hệ thống
 
@@ -33,7 +33,7 @@ Chưa tạo thư mục mobile hoặc package UI đa nền tảng. Trong server, 
 
 ## 3. API và domain
 
-- F0 đã có prefix /api/v1, health/database health và envelope ok/data hoặc ok/error; request/response có kiểu dữ liệu và validation. Auth/trip endpoints thuộc F1/CORE dự kiến.
+- F0 đã có prefix /api/v1, health/database health và envelope ok/data hoặc ok/error; request/response có kiểu dữ liệu và validation. Auth/trip endpoints đã có trong task sản phẩm sau F1-B; xem phạm vi thực thi và hạn chế trong PRODUCT-VERIFICATION.md.
 - Chuẩn hóa ID dạng chuỗi; thời điểm hệ thống dùng ISO 8601; ngày du lịch cần mô hình ngày và múi giờ rõ để tránh lệch ngày.
 - Validation lúc chạy là bắt buộc ở ranh giới API. TypeScript không thay thế việc kiểm tra dữ liệu nhận từ mạng.
 - Services thực hiện quy tắc nghiệp vụ; controllers xử lý HTTP. Mongoose model ở server và được ánh xạ sang DTO trước khi trả về client.

@@ -2,7 +2,7 @@
 
 GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Phát triển bằng MongoDB local; Atlas là bước sau khi bản local hoàn thành. Mobile tương lai sử dụng cùng REST API và contracts thuần TypeScript.
 
-F0 cung cấp màn hình kỹ thuật, health API và tooling. Chưa triển khai auth, AI, trip CRUD, booking, payment, CMS, native mobile hoặc service worker/offline cache. Màn hình foundation không phải trang chủ sản phẩm.
+Đã có trang chủ sản phẩm, đăng ký/xác minh email local, đăng nhập/đăng xuất, phiên cookie và lịch trình thủ công lưu MongoDB theo tài khoản. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. AI, booking/payment, CMS, native mobile và offline cache chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
 
 ## Yêu cầu môi trường
 
@@ -49,6 +49,7 @@ Terminal thứ hai, tại root repo:
 npm run db:init
 # Sau lần init đầu, chờ vài giây để replica set bầu primary.
 npm run db:check
+npm run db:seed
 npm run dev
 ```
 
@@ -65,7 +66,7 @@ MONGODB_URI=mongodb://127.0.0.1:27019/goease?replicaSet=rs0
 MONGODB_TEST_URI=mongodb://127.0.0.1:27019/goease_f0_test?replicaSet=rs0
 ```
 
-`npm run db:init` chỉ khởi tạo `rs0` khi instance trên 27019 trả `NotYetInitialized`; không sửa cấu hình replica set có sẵn. URI chứa `replicaSet=rs0` không tự khởi tạo replica set. Single-node replica set này phục vụ development, chưa có dự phòng; transaction nghiệp vụ chưa được triển khai hay nghiệm thu trong F0.
+`npm run db:init` chỉ khởi tạo `rs0` khi instance trên 27019 trả `NotYetInitialized`; không sửa cấu hình replica set có sẵn. URI chứa `replicaSet=rs0` không tự khởi tạo replica set. Single-node replica set này phục vụ development, chưa có dự phòng; transaction nghiệp vụ chưa được triển khai hay nghiệm thu trong F0; task sản phẩm sau F1-B đã bổ sung kiểm thử riêng cho auth/trip/audit.
 
 `npm run db:check` dùng Mongoose ghi → đọc → xóa document có marker ngẫu nhiên, chỉ trong `goease_f0_test` trên loopback. Script từ chối tên database ứng dụng, host bên ngoài, credentials, URI SRV, query khác `replicaSet` và `NODE_ENV=production`; không drop database hay xóa dữ liệu khác.
 
@@ -163,3 +164,28 @@ $r.Headers['X-Request-Id']
 Logger JSON ghi stdout theo allowlist: timestamp, level, event, service, environment, appVersion, requestId?, correlationId?, method?, route?, statusCode?, durationMs?. Event/route/method đều là enum trong `server/src/observability/logger.ts`; route hiện chỉ health/db health hoặc `unmatched`, không URL/query. Status 100–599, duration 0–3.600.000 ms; không nhận arbitrary metadata/req/res/Error. Field không có trong allowlist bị bỏ, field hợp lệ sai kiểu/giới hạn dẫn tới logger.invalid_input với nội dung cố định. Startup/database/error dùng cùng logger và mã cố định; không có IP/device/analytics. Sink lỗi bị chặn, không log đệ quy; lỗi audit vẫn propagate.
 
 OperationId khác requestId: caller backend cấp một UUIDv4 cho thao tác, giữ nguyên qua mọi lần retry/transaction callback. F1-B chưa có business endpoint/idempotency store nên không nhận operationId/actor từ HTTP. Audit service chỉ chấp nhận system.audit_probe trong DB test riêng; không có HTTP audit endpoint hay startup probe.
+
+## Tài khoản và chuyến đi local
+
+- `/`: trang chủ; `/register`, `/login`: tài khoản; `/trips`: chuyến riêng; `/trips/new`: tạo lịch thủ công; `/trips/:id`: mở/chỉnh sửa.
+- Đăng ký bằng email thử và mật khẩu riêng tối thiểu 12 ký tự. Mở `/dev/mailbox`, chọn đúng email, xác minh rồi đăng nhập. Đây là hộp thư trên máy, **không gửi email thật**; không hoạt động ngoài development. Token dùng một lần, hết hạn sau một giờ, DB chỉ lưu hash. Không dùng dữ liệu/mật khẩu thật cho thử nghiệm local.
+- `npm run db:seed` thêm tối đa ba điểm đến do GoEase biên soạn (Đà Nẵng, Đà Lạt, Hà Nội), không ghi đè record đã có. Script chỉ nhận development và database `goease` tại loopback 27019/rs0. Không có giá/rating/ảnh provider trong seed.
+- Nháp trước login chỉ giữ trong bộ nhớ trang; đăng nhập rồi bấm tạo/lưu mới ghi MongoDB. Reload trước khi lưu làm mất nháp này. Khi API lỗi hoặc conflict, giữ input hiện tại; không reload nếu cần giữ bản đang sửa.
+- Trip hiện hỗ trợ một điểm đến, VND tổng nhóm, giờ Việt Nam trong cùng ngày. Giới hạn kỹ thuật trong contracts: 31 ngày, 50 hoạt động/ngày, 300/chuyến, 1.000 người; không phải quota thương mại. Chỉnh constants/validation cùng nhau nếu cần thay đổi.
+- Danh sách hiển thị tối đa 50 chuyến cập nhật gần nhất. Chưa có phân trang, xóa chuyến, chia sẻ, bản đồ, recovery hay quản lý thiết bị.
+
+Google cần `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PKCE_KEY` (32 byte ngẫu nhiên dạng base64) và redirect URI được đăng ký trong Google Console. Callback local mặc định `http://localhost:3000/api/v1/auth/google/callback`. Chỉ đặt secret ở server; không commit `.env`. Production yêu cầu HTTPS origin/callback. Google không tự liên kết với tài khoản trùng email. Chưa có UI link/unlink trong task này. Nhánh password bị đóng ngoài development cho đến khi có adapter gửi/xác minh email thật; không thể biến tài khoản verified bằng hộp thư dev thành bypass production.
+
+Session mặc định hết hạn tuyệt đối 7 ngày, idle 1 ngày; kiểm tra trên mỗi request, không chờ TTL. `SESSION_TTL_SECONDS`, `SESSION_IDLE_SECONDS`, `AUTH_MAX_ATTEMPTS`, `AUTH_WINDOW_SECONDS` có thể cấu hình server. Rate limit hiện theo tiến trình, không phục vụ triển khai nhiều API instance.
+
+E2E sử dụng replica set riêng `goease_e2e` trên 27020, dbpath mới dưới `.local/e2e-mongo-*`; chỉ dừng child do test tạo. Nếu dev đang chạy trên 3000/5180, chạy E2E bằng cổng 3001/5181:
+
+```powershell
+$env:MONGOD_BINARY = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
+$env:E2E_API_PORT = '3001'
+$env:E2E_WEB_PORT = '5181'
+npm run test:e2e
+npm run test:integration
+```
+
+Integration dùng fixture replica set riêng trên 27021 và giữ dữ liệu test dưới `.local`; không drop database ứng dụng. Các suite chạy tuần tự để tránh tranh cổng. Xem tài liệu nghiệm thu để biết bằng chứng đã quan sát và nhánh provider chưa kiểm chứng.
