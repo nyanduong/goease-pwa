@@ -1,7 +1,52 @@
+import { mapLocationSchema, type MapLocation } from '@goease/contracts';
 import { Types } from 'mongoose';
 import { normalizeSearch, type exploreService } from './explore.service.js';
 const ticketSource =
   'https://www.hoianworldheritage.org.vn/vi/news/Du-lich-Hoi-An/cap-nhat-ve-tham-quan-khu-pho-co-hoi-an-hanh-trinh-cham-ve-nguyen-ban-giua-long-di-san-3033.hwh';
+// Area reference points, not verified entrances. No coordinates for generic dishes.
+// OSM-derived points: © OpenStreetMap contributors, ODbL; see docs/TRIP-MAP.md.
+const mapLocations: Record<string, MapLocation> = {
+  '100000000000000000000001': {
+    latitude: 15.8771291,
+    longitude: 108.3286631,
+    label: 'Khu phố cổ Hội An',
+    precision: 'area',
+    sourceUrl: 'https://www.openstreetmap.org/node/4601279489',
+    checkedAt: '2026-10-23',
+  },
+  '100000000000000000000003': {
+    latitude: 15.9027147,
+    longitude: 108.3360222,
+    label: 'Khu vực làng rau Trà Quế',
+    precision: 'area',
+    sourceUrl: 'https://www.openstreetmap.org/node/3079969135',
+    checkedAt: '2026-10-23',
+  },
+  '100000000000000000000004': {
+    latitude: 15.9136072,
+    longitude: 108.3406489,
+    label: 'Khu vực bãi biển An Bàng',
+    precision: 'area',
+    sourceUrl: 'https://www.beachatlas.com/an-bang-2',
+    checkedAt: '2026-10-23',
+  },
+  '100000000000000000000005': {
+    latitude: 15.8762535,
+    longitude: 108.3660605,
+    label: 'Khu vực Cẩm Thanh, chưa xác định đơn vị trải nghiệm',
+    precision: 'area',
+    sourceUrl: 'https://geokeo.com/database/suburb/vn/5/',
+    checkedAt: '2026-10-23',
+  },
+  '100000000000000000000007': {
+    latitude: 15.8764915,
+    longitude: 108.3264631,
+    label: 'Khu vực cầu An Hội bên sông Hoài',
+    precision: 'area',
+    sourceUrl: 'https://www.openstreetmap.org/way/35952574',
+    checkedAt: '2026-10-23',
+  },
+};
 export async function seedPlaces(
   Place: ReturnType<typeof exploreService>['models']['Place'],
 ) {
@@ -151,6 +196,15 @@ export async function seedPlaces(
           }))
         : [],
     };
+    const mapLocation = mapLocations[id]
+      ? mapLocationSchema.parse(mapLocations[id])
+      : undefined;
+    if (mapLocation)
+      await Place.updateOne(
+        { _id: id, mapLocation: { $exists: false } },
+        { $set: { mapLocation } },
+        { runValidators: true },
+      );
     // Add metadata only when absent; preserve edited catalog text, prices and publication state.
     await Place.updateOne(
       { _id: id, planning: { $exists: false } },
@@ -159,6 +213,7 @@ export async function seedPlaces(
     if (await Place.exists({ _id: id })) continue;
     await new Place({
       ...entry,
+      ...(mapLocation ? { mapLocation } : {}),
       planning,
       _id: new Types.ObjectId(id),
       destinationId: new Types.ObjectId('000000000000000000000004'),

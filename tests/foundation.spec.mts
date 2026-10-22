@@ -783,6 +783,56 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   ).data.trip;
   expect(unchanged.revision).toBe(stored.revision);
   expect(unchanged.days[1].activities).toHaveLength(2);
+  await page.goto(tripUrl);
+  await page.getByRole('button', { name: 'Bản đồ', exact: true }).click();
+  await expect(page.locator('.trip-map-pin')).toHaveCount(1);
+  await expect(
+    page.getByRole('link', {
+      name: 'Chỉ đường đến Phố cổ Hội An',
+      exact: true,
+    }),
+  ).toHaveAttribute('href', /destination=15.8771291%2C108.3286631/);
+  await page.locator('.trip-map-pin').click();
+  await expect(page.locator('.trip-map-selected')).toContainText(
+    'Phố cổ Hội An',
+  );
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: '.local/hoian-preview/trip-map-live-390.png' });
+  await page.getByRole('tab', { name: 'Ngày 2', exact: true }).click();
+  await expect(page.locator('.trip-map-pin')).toHaveCount(1);
+  await expect(page.locator('.trip-map-stops')).toContainText('Chưa có tọa độ');
+  await expect(
+    page.getByRole('link', {
+      name: 'Tìm Cơm gà Hội An trên Google Maps',
+      exact: true,
+    }),
+  ).toHaveAttribute('href', /maps\/search/);
+  await expect(page.locator('.trip-map-selected')).toHaveCount(0);
+  await page.route('**/api/v1/places/100000000000000000000004', (r) =>
+    r.abort(),
+  );
+  await page.getByRole('tab', { name: 'Ngày 3', exact: true }).click();
+  await expect(page.getByText('Chưa tải được một số địa điểm.')).toBeVisible();
+  await page.unroute('**/api/v1/places/100000000000000000000004');
+  await page.route('https://tile.openstreetmap.org/**', (r) => r.abort());
+  await page.getByRole('button', { name: 'Thử lại vị trí' }).click();
+  await expect(page.locator('.trip-map-pin')).toHaveCount(1);
+  await expect(
+    page.getByRole('button', { name: 'Tải lại bản đồ' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Chỉ đường đến Biển An Bàng', exact: true }),
+  ).toBeVisible();
+  await page.unroute('https://tile.openstreetmap.org/**');
+
   await page.goto('/');
   await page.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
   await page.goto('/login');

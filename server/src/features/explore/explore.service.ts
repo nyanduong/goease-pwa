@@ -6,6 +6,7 @@ import mongoose, {
   type Model,
 } from 'mongoose';
 import {
+  mapLocationSchema,
   type PlaceDto,
   type PlaceStateDto,
   placeQuerySchema,
@@ -13,6 +14,10 @@ import {
 } from '@goease/contracts';
 import { HttpError } from '../../http-error.js';
 import { mutableFields } from '../auth/auth.models.js';
+const parseMapLocation = (v: unknown) =>
+  mapLocationSchema.safeParse(
+    v instanceof mongoose.Document ? v.toObject() : v,
+  );
 export const normalizeSearch = (s: string) =>
   s
     .toLowerCase()
@@ -51,6 +56,21 @@ export function exploreService(connection: Connection) {
         validate: (v: unknown[]) => v.length <= 8,
       },
       sourceUrl: { type: String, required: true, maxlength: 2048 },
+      mapLocation: {
+        type: new Schema(
+          {
+            latitude: { type: Number, required: true, min: -90, max: 90 },
+            longitude: { type: Number, required: true, min: -180, max: 180 },
+            label: { type: String, required: true, maxlength: 150 },
+            precision: { type: String, required: true, enum: ['area'] },
+            sourceUrl: { type: String, required: true, maxlength: 2048 },
+            checkedAt: { type: String, required: true },
+          },
+          { _id: false, strict: 'throw' },
+        ),
+        validate: (v: unknown) => v == null || parseMapLocation(v).success,
+        required: false,
+      },
       planning: {
         type: new Schema(
           {
@@ -167,6 +187,9 @@ export function exploreService(connection: Connection) {
     })),
     sourceUrl: doc.sourceUrl,
     imageCredit: doc.imageCredit,
+    ...(parseMapLocation(doc.mapLocation).success
+      ? { mapLocation: parseMapLocation(doc.mapLocation).data! }
+      : {}),
     ...(doc.planning
       ? {
           planning: {

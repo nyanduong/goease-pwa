@@ -93,6 +93,43 @@ test(
         await call(`/places?destinationId=${destinationId}`),
       );
       assert.equal(catalog.data.items.length, 7);
+      assert.equal(catalog.data.items.filter((p) => p.mapLocation).length, 5);
+      assert.equal(
+        catalog.data.items.find((p) => p.id.endsWith('002'))?.mapLocation,
+        undefined,
+      );
+      const original = (await product.explore.models.Place.findById(placeId))!
+        .mapLocation!;
+      assert.equal(original.latitude, 15.8771291);
+      await product.explore.models.Place.updateOne(
+        { _id: placeId },
+        { $set: { 'mapLocation.label': 'Edited map label' } },
+        { runValidators: true },
+      );
+      await seedPlaces(product.explore.models.Place);
+      assert.equal(
+        (await product.explore.models.Place.findById(placeId))!.mapLocation!
+          .label,
+        'Edited map label',
+      );
+      await assert.rejects(
+        product.explore.models.Place.updateOne(
+          { _id: placeId },
+          { $set: { 'mapLocation.latitude': 91 } },
+          { runValidators: true },
+        ),
+      );
+      await product.explore.models.Place.updateOne(
+        { _id: placeId },
+        { $unset: { mapLocation: 1 } },
+      );
+      await seedPlaces(product.explore.models.Place);
+      assert.equal(
+        (await product.explore.models.Place.findById(placeId))!.mapLocation!
+          .latitude,
+        15.8771291,
+      );
+
       assert.equal(
         catalog.data.items[0]!.planning!.priceOptions[0]!.amountMinor,
         80000,

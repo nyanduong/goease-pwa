@@ -585,7 +585,7 @@
       "rules": "Nguồn bị gỡ/expired phải refresh hoặc ẩn theo rights. Snapshots trong trip có policy riêng. Không coi source hợp lệ là thông tin bảo đảm luôn chính xác.",
       "retention": "Theo source permissions; không mặc định dump raw API response vĩnh viễn.",
       "brRefs": ["CAT-01", "CAT-02", "CAT-03", "CAT-04", "CAT-05", "CAT-07"],
-      "implementationStatus": "Local curated catalog: destinationId/destinationName/name/slug/description/category/subtitle/searchText/imageUrl/durationLabel/travelLabel/bestTimeLabel/tip/highlights/sourceUrl/imageCredit/publicationStatus/deletedAt and mutable metadata. Index destinationId/publicationStatus/deletedAt implemented. Remaining baseline fields/provider/geo/external indexes planned, not executable schema.",
+      "implementationStatus": "Local curated catalog: destinationId/destinationName/name/slug/description/category/subtitle/searchText/imageUrl/durationLabel/travelLabel/bestTimeLabel/tip/highlights/sourceUrl/imageCredit/publicationStatus/deletedAt and mutable metadata. Index destinationId/publicationStatus/deletedAt implemented. Remaining baseline fields/provider/geo/external indexes planned, not executable schema. Map runtime: optional mapLocation latitude/longitude/label/precision=area/sourceUrl/checkedAt with bounds and HTTPS/date validation; no geo index; absent-only backfill, see TRIP-MAP.md.",
       "runtimeFields": [
         [
           "destinationName; name; slug",

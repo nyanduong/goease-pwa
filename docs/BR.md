@@ -302,3 +302,6 @@ AI-01–AI-06 have a local planner subset detailed in [AI-PLANNER.md](AI-PLANNER
 ### Goe customer adjustment — 2026-10-23
 
 AI-01–AI-06 now also cover selected-day adjustment from customer messages: server reads the owned saved trip, sends bounded message plus allowed catalog/context, preserves other days and retained prices/notes, validates output, then explicitly previews before/after and applies through revision/idempotency transaction only on customer confirmation. Weather/price facts remain unavailable; unknown costs cannot be asserted as savings. Conversation history is local UI memory only. See AI-PLANNER.md for endpoints and limits.
+
+
+**CAT-03/CAT-05/TRIP-05/TRIP-06 — bản đồ Hội An (2026-10-23):** tab Bản đồ phản ánh ngày và thứ tự lịch đang mở. Chỉ dùng tọa độ catalog published có nguồn; vị trí khu vực không phải lối vào đã xác minh. Thiếu tọa độ hiển thị chưa rõ và tìm kiếm ngoài; không bịa vị trí cho món ăn. Nét nối thứ tự không phải tuyến đường/ETA, không tự sửa lịch. Xem [TRIP-MAP](TRIP-MAP.md).

@@ -6,6 +6,8 @@ GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, 
 
 Luồng Hội An:7gợi ý trong catalog có nguồn, thêm địa điểm vào chuyến/ngày, chỉnh lịch và ngân sách server tính theo nhóm hoặc mỗi người. Chạy `npm run db:seed` sau khi cập nhật để bổ sung catalog/metadata còn thiếu (không ghi đè bản đã chỉnh). Giá chưa xác minh giữ Chưa rõ. `/budget` là bản minh họa UI; chi phí thật mở từ tab Chi phí trong chuyến đã tạo. Goe vẫn là hội thoại minh họa.
 
+Bản đồ lịch trình Hội An: mở chuyến → tab **Bản đồ** → chọn ngày/điểm dừng. Có vị trí khu vực tham khảo cho5địa điểm, nút mở chỉ đường và trạng thái thiếu tọa độ/lỗi mạng. `npm run db:seed` bổ sung vị trí còn thiếu, không ghi đè catalog đã chỉnh. Xem [nguồn tọa độ và giới hạn](docs/TRIP-MAP.md).
+
 ## Yêu cầu môi trường
 
 | Công cụ           | Phiên bản                                                                                       |

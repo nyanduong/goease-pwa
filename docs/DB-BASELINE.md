@@ -327,6 +327,8 @@ Khu vực du lịch/chặng, phân biệt địa điểm cụ thể.
 
 **Runtime Khám phá 2026-10-22 (CAT-07):** subset catalog biên tập đã chạy; bảng dưới là thiết kế provider rộng hơn. Runtime dùng destinationId, destinationName (max100), name/slug (max120), description (max2000), category enum food/culture/nature, subtitle (max150), searchText không dấu (max2500), imageUrl/sourceUrl (max2048), imageCredit (max100), durationLabel/travelLabel/bestTimeLabel (max60), tip (max400), highlights tối đa8 mục name(max100)/query(max150), publicationStatus draft/published/archived, deletedAt và mutable metadata. Index đang chạy: {destinationId,publicationStatus,deletedAt}. SourceRef/provider, categoryCodes/tags, địa lý/2dsphere, giá, giờ mở cửa, mediaAssetIds và external unique index chưa triển khai. imageUrl trỏ ảnh AI local; sourceUrl là nguồn tham khảo, không cache ảnh/review provider. Seed chỉ thêm ID chưa tồn tại.
 
+**Runtime bản đồ2026-10-23:** mapLocation optional object: latitude[-90,90], longitude[-180,180], label(max150), precision=area, sourceUrl HTTPS(max2048), checkedAt ISO date. Validation Mongoose/Zod; không index near/2dsphere. Đây là metadata khu vực phục vụ bản đồ; field GeoJSON location bên dưới vẫn là thiết kế chưa triển khai. Seed backfill field absent, giữ bản đã chỉnh hoặc null; trip snapshot không đổi. Xem TRIP-MAP.md.
+
 POI dùng discovery/planner; provider ref và dữ liệu chất lượng rõ ràng.
 
 | Field                        | Kiểu                         | Required/default   | Ý nghĩa và ràng buộc                                                      |

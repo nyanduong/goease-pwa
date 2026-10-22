@@ -1,7 +1,20 @@
 import { z } from 'zod';
 export const placeCategorySchema = z.enum(['food', 'culture', 'nature']);
 export type PlaceCategory = z.infer<typeof placeCategorySchema>;
+export const mapLocationSchema = z.strictObject({
+  latitude: z.number().finite().min(-90).max(90),
+  longitude: z.number().finite().min(-180).max(180),
+  label: z.string().min(1).max(150),
+  precision: z.literal('area'),
+  sourceUrl: z
+    .url()
+    .max(2048)
+    .refine((v) => v.startsWith('https://')),
+  checkedAt: z.iso.date(),
+});
+export type MapLocation = z.infer<typeof mapLocationSchema>;
 export type PlaceDto = {
+  mapLocation?: MapLocation;
   planning?: {
     durationMinutes: number;
     locationQuery: string;

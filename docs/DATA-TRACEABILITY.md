@@ -230,3 +230,5 @@ AI-01/02: structured catalog selection → server date/time/place validation →
 ### Goe adjustment
 
 Customer message + owned selected-day context → goe-v1 run using shared quota → validated single-day replacement + unchanged other days → GoeProposal before/after → explicit apply → trip/revision/audit transaction. UI retains run/key for lost-response retry; server enforces owner/base revision and computes budget. Raw message not stored or logged; provider sees bounded message, user decides what to enter.
+
+Bản đồ Hội An2026-10-23: mapLocation có nguồn/checkedAt và nhãn area; bảng nguồn/quyền tại TRIP-MAP.md. Public DTO chỉ hydrate published/nondeleted. Trip giữ snapshot cũ, map đọc metadata catalog hiện tại; lỗi/thiếu tọa độ không được coi là vị trí thật. OSM chỉ nhận yêu cầu tile theo viewport; chỉ gửi truy vấn/tọa độ tới Google Maps khi bấm link, không gửi ghi chú riêng. Không lưu vị trí GPS người dùng hoặc cache bản đồ offline.

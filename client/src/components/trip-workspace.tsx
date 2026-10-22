@@ -1,7 +1,14 @@
 import { TripBudget } from './budget-screen';
 import { AiPlanner } from './ai-planner';
 import { ActivityCatalogInfo } from './place-planning';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -38,6 +45,10 @@ import {
 import { api } from '../api';
 import { moneyText, withDays } from '../trip-draft';
 import { placeActivity } from './explore';
+
+const TripMap = lazy(() =>
+  import('./trip-map').then((m) => ({ default: m.TripMap })),
+);
 
 const shortDate = (date: string) =>
   date.slice(5).split('-').reverse().join('/');
@@ -861,31 +872,15 @@ export function TripWorkspace({
                     <span>{day ? shortDate(day.date) : ''}</span>
                   </div>
                   {tab === 'map' ? (
-                    <div className="journey-map-panel">
-                      <Map size={30} />
-                      <h2>Những điểm mình sẽ ghé</h2>
-                      <p>
-                        Mở từng nơi trên Google Maps để xem vị trí và tìm đường.
-                      </p>
-                      {day?.activities.map((a, i) => (
-                        <a
-                          key={a.activityId}
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${a.title} ${destinationName}`)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <span>{i + 1}</span>
-                          {a.title}
-                          <ArrowRight size={16} />
-                        </a>
-                      ))}
-                      {!day?.activities.length && (
-                        <p>Thêm điểm dừng để xem trên bản đồ.</p>
-                      )}
-                      <small>
-                        Chưa có tuyến đường hoặc thời gian di chuyển tự động.
-                      </small>
-                    </div>
+                    <Suspense fallback={<p role="status">Đang mở bản đồ…</p>}>
+                      <TripMap
+                        key={day?.dayId ?? 'empty'}
+                        activities={day?.activities ?? []}
+                        destinationName={destinationName}
+                        destinationId={day?.destinationId}
+                        onEdit={(a) => setEditing(a)}
+                      />
+                    </Suspense>
                   ) : (
                     <>
                       <div className="journey-timeline">

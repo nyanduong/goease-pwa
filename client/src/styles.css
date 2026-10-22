@@ -4840,3 +4840,115 @@ body:has(.journey-shell) {
 .saved-places-page .explore-status button {
   margin: 8px;
 }
+
+.trip-map-section {
+  min-width: 0;
+}
+.trip-map-section h2 {
+  font:
+    600 25px Georgia,
+    serif;
+  margin: 0 0 6px;
+}
+.trip-map-section p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.trip-map-canvas {
+  height: 320px;
+  width: 100%;
+  border-radius: 22px;
+  z-index: 0;
+  background: #e8eddf;
+}
+.trip-map-pin span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-15deg);
+  background: #145b4d;
+  color: white;
+  border: 2px solid #fff8e8;
+  box-shadow: 0 3px 8px #0004;
+  font-weight: 700;
+}
+.trip-map-hint {
+  color: #64756b;
+}
+.trip-map-section a {
+  color: #145b4d;
+  text-decoration: underline;
+  font-size: 13px;
+}
+.trip-map-section button:focus-visible {
+  outline: 3px solid #e9ae52;
+  outline-offset: 3px;
+}
+.trip-map-section > p button {
+  text-decoration: underline;
+  margin-left: 8px;
+}
+.trip-map-selected,
+.trip-map-empty {
+  padding: 16px;
+  border-radius: 16px;
+  background: #e8eddf;
+}
+.trip-map-selected h3 {
+  margin: 0;
+  font-family: Georgia, serif;
+}
+.trip-map-selected a {
+  display: inline-block;
+  margin-right: 12px;
+}
+.trip-map-selected button {
+  display: block;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #f1bf67;
+  border-radius: 20px;
+}
+.trip-map-stops {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 10px;
+}
+.trip-map-stops li {
+  border: 1px solid #174b4020;
+  border-radius: 16px;
+  padding: 12px;
+}
+.trip-map-stop {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 4px 10px;
+  text-align: left;
+  width: 100%;
+}
+.trip-map-stop > span {
+  grid-row: span 2;
+  background: #e8eddf;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.trip-map-stop strong {
+  overflow-wrap: anywhere;
+}
+.trip-map-stop small {
+  color: #64756b;
+}
+.trip-map-stop[aria-pressed='true'] strong {
+  text-decoration: underline;
+}
+.trip-map-stops li > a {
+  display: inline-block;
+  margin-top: 10px;
+}
