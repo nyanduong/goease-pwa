@@ -51,6 +51,51 @@ export function exploreService(connection: Connection) {
         validate: (v: unknown[]) => v.length <= 8,
       },
       sourceUrl: { type: String, required: true, maxlength: 2048 },
+      planning: {
+        type: new Schema(
+          {
+            durationMinutes: {
+              type: Number,
+              min: 1,
+              max: 1440,
+              required: true,
+            },
+            locationQuery: { type: String, maxlength: 200, required: true },
+            costNote: { type: String, maxlength: 500, required: true },
+            priceOptions: {
+              type: [
+                new Schema(
+                  {
+                    label: { type: String, maxlength: 120, required: true },
+                    amountMinor: {
+                      type: Number,
+                      min: 0,
+                      max: 1e12,
+                      required: true,
+                    },
+                    basis: {
+                      type: String,
+                      enum: ['per_person', 'group_total'],
+                      required: true,
+                    },
+                    sourceUrl: {
+                      type: String,
+                      maxlength: 2048,
+                      required: true,
+                    },
+                    checkedAt: { type: String, required: true },
+                  },
+                  { _id: false, strict: 'throw' },
+                ),
+              ],
+              validate: (v: unknown[]) => v.length <= 5,
+              default: [],
+            },
+          },
+          { _id: false, strict: 'throw' },
+        ),
+        required: false,
+      },
       imageCredit: { type: String, required: true, maxlength: 100 },
       publicationStatus: {
         type: String,
@@ -122,6 +167,22 @@ export function exploreService(connection: Connection) {
     })),
     sourceUrl: doc.sourceUrl,
     imageCredit: doc.imageCredit,
+    ...(doc.planning
+      ? {
+          planning: {
+            durationMinutes: doc.planning.durationMinutes,
+            locationQuery: doc.planning.locationQuery,
+            costNote: doc.planning.costNote,
+            priceOptions: doc.planning.priceOptions.map((p) => ({
+              label: p.label,
+              amountMinor: p.amountMinor,
+              basis: p.basis as 'per_person' | 'group_total',
+              sourceUrl: p.sourceUrl,
+              checkedAt: p.checkedAt,
+            })),
+          },
+        }
+      : {}),
   });
   const state = (
     doc: Pick<FavoriteRecord, 'removedAt' | 'note' | 'revision'> | null,
@@ -156,11 +217,14 @@ export function exploreService(connection: Connection) {
       const parsed = placeQuerySchema.safeParse(query);
       if (!parsed.success)
         throw new HttpError(400, 'INVALID_INPUT', 'Bộ lọc chưa hợp lệ.');
-      const { q, category, offset, limit } = parsed.data;
+      const { q, category, offset, limit, destinationId } = parsed.data;
       const escaped = normalizeSearch(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const docs = await Place.find({
         ...published,
         ...(category ? { category } : {}),
+        ...(destinationId
+          ? { destinationId: new Types.ObjectId(destinationId) }
+          : {}),
         ...(q ? { searchText: { $regex: escaped } } : {}),
       })
         .sort({ _id: 1 })

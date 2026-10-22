@@ -616,6 +616,12 @@
           "{name,query}[]",
           "[]",
           "max8; name max100; query max150"
+        ],
+        [
+          "planning",
+          "object?",
+          "optional; legacy absent",
+          "durationMinutes 1..1440 editorial; locationQuery max200; costNote max500; priceOptions max5 with label max120/amountMinor 0..1e12/basis per_person|group_total/sourceUrl max2048/checkedAt date-only. Seed inserts new IDs or fills absent planning; preserves existing edits. No public write API."
         ]
       ]
     },
@@ -725,7 +731,28 @@
         "TRIP-09",
         "TRIP-12"
       ],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md",
+      "runtimeFields": [
+        [
+          "days[].activities[].placeId",
+          "ObjectId?",
+          "optional; legacy absent",
+          "New links must be published/nondeleted and match day destination. Existing activity/place/destination tuples survive catalog archival; title/notes/cost remain itinerary-owned."
+        ],
+        [
+          "estimatedCost.basis (activity)",
+          "enum",
+          "group_total|per_person; quantity=1",
+          "Server multiplies per_person by current travelers exactly once; group_total unchanged; VND/user_entered. Reject unsafe integer total."
+        ],
+        [
+          "budgetSummary",
+          "response-only object",
+          "computed; not stored",
+          "Server subtotal, missingCostCount, activityCount, perPersonMinor, budgetMinor, remainingMinor, usedPercent and categories; null budget distinct from zero. Existing stored summaryTotals subset retained."
+        ]
+      ],
+      "aiPlannerRuntime": "optional aiRunId UUID; generationMode/source ai|manual; server resolves successful owned proposal, validates activity ID/place pairs, new proposal base revision checked at save."
     },
     {
       "name": "trip_revisions",
@@ -786,7 +813,22 @@
       "rules": "Không lưu từng phím gõ. Snapshot được kiểm soát kích thước; mỗi version độc lập dễ restore. Nếu sau này chuyển patch phải có anchor snapshot và kiểm thử reconstruction.",
       "retention": "Cùng thời hạn trip, không giữ private notes vĩnh viễn chỉ vì gọi là log.",
       "brRefs": ["TRIP-09", "TRIP-10", "TRIP-12"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md",
+      "runtimeFields": [
+        [
+          "snapshot.days[].activities[].placeId",
+          "ObjectId?",
+          "optional; legacy absent",
+          "New links must be published/nondeleted and match day destination. Existing activity/place/destination tuples survive catalog archival; title/notes/cost remain itinerary-owned."
+        ],
+        [
+          "estimatedCost.basis (activity)",
+          "enum",
+          "group_total|per_person; quantity=1",
+          "Server multiplies per_person by current travelers exactly once; group_total unchanged; VND/user_entered. Reject unsafe integer total."
+        ]
+      ],
+      "aiPlannerRuntime": "optional aiRunId UUID; generationMode/source ai|manual; server resolves successful owned proposal, validates activity ID/place pairs, new proposal base revision checked at save."
     },
     {
       "name": "trip_access",
@@ -1040,7 +1082,9 @@
       "indexes": "Unique {userId,idempotencyKey}; {userId,createdAt:-1}; {tripId,createdAt:-1}; {status,updatedAt}.",
       "rules": "Không gửi email/token vào prompt; không log raw prompt/output. Mọi inputSummary có mục đích phục vụ planner chứ không tự được tái dùng marketing/training.",
       "retention": "Proposal ngắn hạn đề xuất 24h; metadata 90 ngày là đề xuất. Snapshot applied nằm trip_revisions với retention trip.",
-      "brRefs": ["AI-01", "AI-02", "AI-03", "AI-04", "AI-06", "AI-07"]
+      "brRefs": ["AI-01", "AI-02", "AI-03", "AI-04", "AI-06", "AI-07"],
+      "implementationStatus": "Local Gemini planner subset implemented; exact runtime fields/indexes differ from generic baseline below; see AI-PLANNER.md. Generic remaining fields are planned; registry is not executable schema.",
+      "runtimeContract": "AI-PLANNER.md#runtime-storage-authoritative-implemented-subset"
     },
     {
       "name": "usage_buckets",
@@ -1077,7 +1121,9 @@
       "indexes": "Unique {userId,feature,windowStart}; {windowEnd:1}.",
       "rules": "Không tăng rồi kiểm tra sau; dùng điều kiện nguyên tử. Reservation có nguồn aiRun; job reconcile tránh kẹt lượt. Không query audit để tính quota mỗi request.",
       "retention": "Dọn sau reconciliation và khoảng kiểm tra được duyệt; không purge khi còn reservation đang chạy.",
-      "brRefs": ["AI-05"]
+      "brRefs": ["AI-05"],
+      "implementationStatus": "Local Gemini planner subset implemented; exact runtime fields/indexes differ from generic baseline below; see AI-PLANNER.md. Generic remaining fields are planned; registry is not executable schema.",
+      "runtimeContract": "AI-PLANNER.md#runtime-storage-authoritative-implemented-subset"
     },
     {
       "name": "posts",

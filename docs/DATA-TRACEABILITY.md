@@ -218,3 +218,11 @@ X-Request-Id và X-Correlation-Id chỉ UUIDv4 36 ký tự, chuẩn hóa lowerca
 OperationId do caller backend cấp độc lập requestId và giữ qua retry. F1-B audit test-only gán actor/source/time từ code; không tin actor/role/header/body và không có HTTP audit endpoint. Canonical comparison trong DB mục 12 bỏ timestamp/request/correlation của attempt nhưng kiểm tra business fields cùng actor/source constants; conflict không là success. Một session caller được dùng cho cả read và append; transaction race E11000 phải abort trước khi retry toàn callback. Tất cả side effect bên ngoài vẫn cấm trong callback.
 
 APPEND không bảo vệ trước DBA trực tiếp và chưa cấu hình quyền DB production. Không có retention/purge/TTL production hoặc user audit trong F1-B. [Bằng chứng local](F1-B-VERIFICATION.md) không thay review privacy, deployment hay các acceptance auth/trip sau này.
+
+### Luồng Hội An và ngân sách, 22/10/2026
+
+Catalog giữ `planning.priceOptions[].sourceUrl/checkedAt` cho giá tham khảo biên tập; UI hiển thị nguồn/ngày đối chiếu. Người dùng chủ động chọn giá vào cost `user_entered`, có thể sửa; không tuyên bố giá đó vẫn được provider xác nhận. `placeId` giữ liên kết catalog, title/notes/cost đã lưu vẫn độc lập. Không có provider fetch hoặc telemetry mới. Preview ngân sách chỉ tính trên input đã validate, không ghi trip/revision/audit nghiệp vụ; lưu qua cơ chế audit/revision hiện tại. Nội dung trip và ghi chú vẫn không vào technical logs. Chưa lưu lịch sử giá catalog hoặc chứng từ báo giá.
+
+## Gemini planner trace — 2026-10-23
+
+AI-01/02: structured catalog selection → server date/time/place validation → ai_runs validated proposal. AI-03: explicit client apply → trip revision transaction with run owner/base-revision check → trip_revisions/audit. AI-04: request/run/model/prompt/planner IDs, summarized input, source IDs, timestamps and sanitized failures in ai_runs. AI-05: transactional UTC user/global usage_buckets plus per-run quotaState; ambiguous calls remain counted. AI-06: provider payload allowlist excludes account/title/private notes. Exact storage/contracts and verification gaps: [AI-PLANNER.md](AI-PLANNER.md). AI-07 and provider-cost analytics remain planned.

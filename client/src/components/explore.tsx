@@ -26,6 +26,7 @@ import type {
 } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
 import { inputFromTrip } from '../trip-draft';
+import { PlacePlanning } from './place-planning';
 const labels = { food: 'Ẩm thực', culture: 'Văn hóa', nature: 'Thiên nhiên' };
 const icons = { food: Utensils, culture: Landmark, nature: Leaf };
 const message = (e: unknown) =>
@@ -559,6 +560,7 @@ export function PlaceDetail({
             </a>
           ))}
         </section>
+        <PlacePlanning place={place} />
         <section className="place-notes">
           <h2>Ghi chú của bạn</h2>
           <label>
@@ -616,6 +618,18 @@ export function PlaceDetail({
         {notice && (
           <p className="place-notice" role="status">
             {notice}
+            {notice === 'Đã thêm vào chuyến đi.' && (
+              <button
+                className="text-button"
+                onClick={() =>
+                  onNavigate(
+                    `/trips/${tripId}?day=${Math.max(0, trips.find((t) => t.id === tripId)?.days.findIndex((d) => d.dayId === dayId) ?? 0)}`,
+                  )
+                }
+              >
+                Mở chuyến đi →
+              </button>
+            )}
           </p>
         )}
         <p className="place-source">
@@ -735,6 +749,7 @@ export function placeActivity(
 ): TripInput['days'][number]['activities'][number] {
   return {
     activityId: crypto.randomUUID(),
+    placeId: place.id,
     kind: place.category === 'food' ? 'meal' : 'visit',
     title: place.name,
     timezone: 'Asia/Ho_Chi_Minh',

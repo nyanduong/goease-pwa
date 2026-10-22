@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Schema, type Connection } from 'mongoose';
 import type { TripInput } from '@goease/contracts';
 import { mutableFields } from '../auth/auth.models.js';
+import { calculateBudget } from './budget.js';
 
 export function tripModels(connection: Connection) {
   const noId = {
@@ -22,7 +23,11 @@ export function tripModels(connection: Connection) {
     {
       amountMinor: { type: Number, default: null },
       currency: { type: String, enum: ['VND'], required: true },
-      basis: { type: String, enum: ['group_total'], required: true },
+      basis: {
+        type: String,
+        enum: ['group_total', 'per_person'],
+        required: true,
+      },
       quantity: { type: Number, enum: [1], required: true },
       confidence: { type: String, enum: ['user_entered'], required: true },
     },
@@ -31,6 +36,7 @@ export function tripModels(connection: Connection) {
   const activity = new Schema(
     {
       activityId: { type: String, required: true },
+      placeId: Schema.Types.ObjectId,
       kind: {
         type: String,
         enum: ['visit', 'meal', 'transport', 'lodging', 'free_time', 'custom'],
@@ -43,7 +49,7 @@ export function tripModels(connection: Connection) {
       order: Number,
       notes: { type: String, maxlength: 2000 },
       estimatedCost: { type: cost, required: true },
-      source: { type: String, enum: ['manual'], required: true },
+      source: { type: String, enum: ['manual', 'ai'], required: true },
       addedAt: Date,
       updatedAt: Date,
     },
@@ -88,7 +94,8 @@ export function tripModels(connection: Connection) {
     travelers: { totalCount: Number },
     budget: { type: budget, required: true },
     preferences: { type: preferences, required: true },
-    generationMode: { type: String, enum: ['manual'], required: true },
+    generationMode: { type: String, enum: ['manual', 'ai'], required: true },
+    aiRunId: String,
     days: { type: [day], required: true },
     notes: { type: String, maxlength: 2000, default: '' },
   };
@@ -237,15 +244,10 @@ export function tripModels(connection: Connection) {
   };
 }
 export function summaryTotals(input: TripInput) {
-  const activities = input.days.flatMap((d) => d.activities);
+  const summary = calculateBudget(input);
   return {
-    knownEstimatedMinor: activities.reduce(
-      (sum, a) => sum + (a.estimatedCost.amountMinor ?? 0),
-      0,
-    ),
-    missingCostCount: activities.filter(
-      (a) => a.estimatedCost.amountMinor === null,
-    ).length,
+    knownEstimatedMinor: summary.knownEstimatedMinor,
+    missingCostCount: summary.missingCostCount,
     currency: 'VND' as const,
   };
 }

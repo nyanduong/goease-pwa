@@ -78,7 +78,7 @@ test(
       assert.equal(payload.data.items[0]?.id, id);
       r = await call('/places?category=food');
       payload = await readPayload(r);
-      assert.equal(payload.data.items.length, 1);
+      assert.equal(payload.data.items.length, 2);
       assert.equal(payload.data.items[0]?.category, 'food');
       assert.equal((await call('/places?category=invalid')).status, 400);
       assert.equal((await call('/places?limit=100000')).status, 400);
@@ -174,7 +174,7 @@ test(
       );
       r = await call('/places');
       payload = await readPayload(r);
-      assert.equal(payload.data.items.length, 2);
+      assert.equal(payload.data.items.length, 6);
       assert.ok(!logs.join('').includes(note));
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));

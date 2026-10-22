@@ -17,7 +17,7 @@ export async function api<T>(
       {
         ...options,
         credentials: 'include',
-        signal: AbortSignal.timeout(15000),
+        signal: options.signal ?? AbortSignal.timeout(15000),
         headers: {
           'Content-Type': 'application/json',
           'X-GoEase-Client': 'web',

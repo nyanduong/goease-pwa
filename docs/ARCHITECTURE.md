@@ -126,3 +126,7 @@ Commerce giữ order/payment/booking/entitlement độc lập itinerary. Các ga
 `features/audit` chỉ model audit_logs và append/read service. Không được import/khởi tạo trong app startup; action system.audit_probe chỉ có trong database test trên loopback 27021. Actor/source/time gán từ code backend; trường caller không có actor/source/retention tùy ý. APPEND không updatedAt/deletedAt/versionKey, không update/delete API. Index tạo explicit, additive trong test, không autoIndex/syncIndexes.
 
 Mongoose Connection.transaction dùng session caller xuyên suốt fixture/audit. Audit failure propagate; dedupe outside transaction xử lý đúng E11000 keyPattern rồi so nội dung. Race làm transaction abort được báo AuditTransactionRaceError, caller chỉ retry toàn callback sau abort với cùng operationId; không fallback ngoài session. Chi tiết canonical payload và giới hạn ở DB/traceability, bằng chứng thật ở F1-B-VERIFICATION. Chưa cấu hình DB privileges production hay retention/purge.
+
+## Implemented Gemini adapter (2026-10-23)
+
+`features/ai/gemini.ts` isolates the fixed-origin REST provider; `planner.ts` owns catalog constraints, output validation, run/idempotency/quota state. Shared contracts expose only planner request/proposal DTOs. No provider key/model implementation is imported by React. Generation does not write trips; explicit customer apply uses existing revision-checked save and server provenance checks. See [AI-PLANNER.md](AI-PLANNER.md) for scope and open production requirements.

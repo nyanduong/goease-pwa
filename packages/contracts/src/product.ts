@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { BudgetSummary } from './budget.js';
 
 export const interestCodes = [
   'nature',
@@ -27,6 +28,7 @@ const clock = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
 export const activityInputSchema = z
   .strictObject({
     activityId: z.uuid(),
+    placeId: objectId.optional(),
     kind: z.enum([
       'visit',
       'meal',
@@ -44,11 +46,11 @@ export const activityInputSchema = z
     estimatedCost: z.strictObject({
       amountMinor: money.nullable(),
       currency: z.literal('VND'),
-      basis: z.literal('group_total'),
+      basis: z.enum(['group_total', 'per_person']),
       quantity: z.literal(1),
       confidence: z.literal('user_entered'),
     }),
-    source: z.literal('manual'),
+    source: z.enum(['manual', 'ai']),
   })
   .refine(
     (v) =>
@@ -85,7 +87,8 @@ export const tripInputSchema = z
         .array(z.enum(['walking', 'car', 'motorbike', 'public_transport']))
         .max(4),
     }),
-    generationMode: z.literal('manual'),
+    generationMode: z.enum(['manual', 'ai']),
+    aiRunId: z.uuid().optional(),
     days: z
       .array(
         z.strictObject({
@@ -148,6 +151,7 @@ export type UserDto = {
   avatarUrl?: string | null;
 };
 export type TripDto = TripInput & {
+  budgetSummary?: BudgetSummary;
   id: string;
   revision: number;
   destinationName: string;

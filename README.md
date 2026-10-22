@@ -4,6 +4,8 @@ GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, 
 
 Đã có trang chủ sản phẩm, đăng ký/đăng nhập email-mật khẩu không phụ thuộc xác minh email, đăng xuất bằng phiên cookie và lịch trình thủ công lưu MongoDB theo tài khoản. Account dùng được ngay; email chưa xác minh vẫn được ghi nhận riêng. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. AI, booking/payment, CMS, native mobile và offline cache chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
 
+Luồng Hội An:7gợi ý trong catalog có nguồn, thêm địa điểm vào chuyến/ngày, chỉnh lịch và ngân sách server tính theo nhóm hoặc mỗi người. Chạy `npm run db:seed` sau khi cập nhật để bổ sung catalog/metadata còn thiếu (không ghi đè bản đã chỉnh). Giá chưa xác minh giữ Chưa rõ. `/budget` là bản minh họa UI; chi phí thật mở từ tab Chi phí trong chuyến đã tạo. Goe vẫn là hội thoại minh họa.
+
 ## Yêu cầu môi trường
 
 | Công cụ           | Phiên bản                                                                                       |
@@ -190,3 +192,7 @@ npm run test:integration
 ```
 
 Integration dùng fixture replica set riêng trên 27021 và giữ dữ liệu test dưới `.local`; không drop database ứng dụng. Các suite chạy tuần tự để tránh tranh cổng. Xem tài liệu nghiệm thu để biết bằng chứng đã quan sát và nhánh provider chưa kiểm chứng.
+
+## Gemini AI planner (local)
+
+Customer itinerary proposals are connected to the server Gemini adapter. Set server-only GEMINI_API_KEY; see [setup, contract, quotas and verification limits](docs/AI-PLANNER.md). Goe chat remains a demo.

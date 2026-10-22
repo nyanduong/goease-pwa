@@ -42,6 +42,7 @@ export function inputFromTrip(data: TripDto): TripInput {
     budget,
     preferences,
     generationMode,
+    aiRunId,
     days,
     notes,
   } = data;
@@ -55,6 +56,7 @@ export function inputFromTrip(data: TripDto): TripInput {
     budget,
     preferences,
     generationMode,
+    ...(aiRunId ? { aiRunId } : {}),
     days,
     notes,
   };

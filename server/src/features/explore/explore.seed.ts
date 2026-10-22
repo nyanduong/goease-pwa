@@ -1,5 +1,7 @@
 import { Types } from 'mongoose';
 import { normalizeSearch, type exploreService } from './explore.service.js';
+const ticketSource =
+  'https://www.hoianworldheritage.org.vn/vi/news/Du-lich-Hoi-An/cap-nhat-ve-tham-quan-khu-pho-co-hoi-an-hanh-trinh-cham-ve-nguyen-ban-giua-long-di-san-3033.hwh';
 export async function seedPlaces(
   Place: ReturnType<typeof exploreService>['models']['Place'],
 ) {
@@ -59,11 +61,105 @@ export async function seedPlaces(
       sourceUrl:
         'https://hoianworldheritage.org.vn/en/news/Traditional-occupational-Village/tra-que-vegetable-village-tourist-attraction-583.hwh',
     },
+    {
+      id: '100000000000000000000004',
+      slug: 'bien-an-bang',
+      name: 'Biển An Bàng',
+      category: 'nature',
+      subtitle: 'Một buổi chiều bên biển.',
+      description:
+        'Ghé bãi biển An Bàng, dành thời gian nghỉ chân và ngắm biển. Các dịch vụ ăn uống, ghế nghỉ và gửi xe được tính riêng tùy nơi cung cấp.',
+      imageUrl: '/images/explore-traque.png',
+      durationLabel: '1–2 giờ',
+      travelLabel: 'Tự chọn phương tiện',
+      bestTimeLabel: 'Hợp chiều dịu nắng',
+      tip: 'Kiểm tra thời tiết và hướng dẫn an toàn tại bãi biển. Hỏi giá dịch vụ trước khi sử dụng.',
+      highlights: [{ name: 'Biển An Bàng', query: 'An Bang Beach Hoi An' }],
+      sourceUrl: 'https://vietnam.travel/node/965',
+    },
+    {
+      id: '100000000000000000000005',
+      slug: 'cam-thanh',
+      name: 'Cẩm Thanh',
+      category: 'nature',
+      subtitle: 'Đi chậm giữa miền xanh.',
+      description:
+        'Khu vực Cẩm Thanh có cảnh quan nông thôn và dừa nước. Chọn hoạt động phù hợp tại địa phương; giá tour và dịch vụ phụ thuộc đơn vị tổ chức.',
+      imageUrl: '/images/explore-traque.png',
+      durationLabel: '1–2 giờ',
+      travelLabel: 'Tự chọn phương tiện',
+      bestTimeLabel: 'Hợp buổi sáng',
+      tip: 'Dành thời gian di chuyển từ phố cổ. Thống nhất nội dung và giá trước khi tham gia một trải nghiệm.',
+      highlights: [{ name: 'Cẩm Thanh', query: 'Cam Thanh Hoi An' }],
+      sourceUrl: 'https://vietnam.travel/node/99',
+    },
+    {
+      id: '100000000000000000000006',
+      slug: 'cao-lau-hoi-an',
+      name: 'Cao lầu Hội An',
+      category: 'food',
+      subtitle: 'Thêm một bữa mang vị phố Hội.',
+      description:
+        'Cao lầu là gợi ý món ăn của Hội An, không đại diện cho một nhà hàng cụ thể. Bạn chọn quán thuận đường và phù hợp nhu cầu ăn uống.',
+      imageUrl: '/images/explore-rice.png',
+      durationLabel: '45–60 phút',
+      travelLabel: 'Ăn uống',
+      bestTimeLabel: 'Hợp bữa trưa hoặc tối',
+      tip: 'Hỏi thành phần món ăn nếu có dị ứng và xem thực đơn trước khi gọi.',
+      highlights: [{ name: 'Tìm quán cao lầu', query: 'Cao lau Hoi An' }],
+      sourceUrl: 'https://vietnam.travel/node/99',
+    },
+    {
+      id: '100000000000000000000007',
+      slug: 'song-hoai',
+      name: 'Dạo bên sông Hoài',
+      category: 'culture',
+      subtitle: 'Một khoảng nghỉ khi phố lên đèn.',
+      description:
+        'Thêm thời gian dạo ven sông vào buổi ghé phố cổ. Đây là hoạt động dạo bộ; không bao gồm đặt thuyền, vé di tích hoặc các dịch vụ khác.',
+      imageUrl: '/images/explore-hoian.png',
+      durationLabel: '45–60 phút',
+      travelLabel: 'Đi bộ',
+      bestTimeLabel: 'Hợp cuối buổi chiều',
+      tip: 'Chọn lối đi phù hợp và giữ an toàn sát mép nước. Không cộng lại vé phố cổ nếu đã tính trong một hoạt động khác.',
+      highlights: [{ name: 'Sông Hoài', query: 'Song Hoai Hoi An' }],
+      sourceUrl: ticketSource,
+    },
   ];
   for (const { id, ...entry } of entries) {
+    const planning = {
+      durationMinutes:
+        entry.category === 'food' || id.endsWith('007')
+          ? 60
+          : id.endsWith('001')
+            ? 180
+            : 120,
+      locationQuery: entry.highlights[0]!.query,
+      costNote: id.endsWith('001')
+        ? 'Vé 80.000đ hoặc 120.000đ với phạm vi tham quan khác nhau. Chọn loại vé phù hợp và kiểm tra điều kiện tại nơi bán. Chỉ tính một lần, không cộng lại ở các di tích đã bao gồm.'
+        : 'Chưa có giá xác minh cho lựa chọn của bạn. Hỏi đơn vị cung cấp rồi nhập dự kiến; để trống nếu chưa rõ. Thời lượng là gợi ý biên tập.',
+      priceOptions: id.endsWith('001')
+        ? [80000, 120000].map((amount) => ({
+            label:
+              amount === 80000
+                ? 'Vé tham quan 80.000đ'
+                : 'Vé tham quan 120.000đ',
+            amountMinor: amount,
+            basis: 'per_person',
+            sourceUrl: ticketSource,
+            checkedAt: '2026-10-22',
+          }))
+        : [],
+    };
+    // Add metadata only when absent; preserve edited catalog text, prices and publication state.
+    await Place.updateOne(
+      { _id: id, planning: { $exists: false } },
+      { $set: { planning } },
+    );
     if (await Place.exists({ _id: id })) continue;
     await new Place({
       ...entry,
+      planning,
       _id: new Types.ObjectId(id),
       destinationId: new Types.ObjectId('000000000000000000000004'),
       destinationName: 'Hội An',

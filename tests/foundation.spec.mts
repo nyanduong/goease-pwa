@@ -7,7 +7,26 @@ import mongoose from 'mongoose';
 import { createProduct } from '../server/src/product.js';
 import { parseConfig } from '../server/src/config.js';
 import { seedDestinations } from '../server/src/features/trips/destination-seed.js';
-import { inputFromTrip } from '../client/src/trip-draft.js';
+import { seedPlaces } from '../server/src/features/explore/explore.seed.js';
+import type { TripDto, TripInput } from '@goease/contracts';
+// Build the HTTP write payload independently of browser modules. Mixing .ts/CJS
+// and .mts/ESM browser-helper imports makes the full Playwright suite ambiguous.
+function inputFromTrip(trip: TripDto): TripInput {
+  return {
+    title: trip.title,
+    destinations: trip.destinations,
+    startDate: trip.startDate,
+    endDate: trip.endDate,
+    timezone: trip.timezone,
+    travelers: trip.travelers,
+    budget: trip.budget,
+    preferences: trip.preferences,
+    generationMode: trip.generationMode,
+    ...(trip.aiRunId ? { aiRunId: trip.aiRunId } : {}),
+    days: trip.days,
+    notes: trip.notes,
+  };
+}
 import { e2eApiOrigin } from './ports.js';
 
 let mongo: ChildProcess;
@@ -114,6 +133,7 @@ test.beforeAll(async () => {
     );
     await product.initialize();
     await seedDestinations(product.trips.models.Destination);
+    await seedPlaces(product.explore.models.Place);
   } finally {
     await connection.close();
   }
@@ -285,250 +305,539 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await expect(
     page.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
   ).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/trips');
   await expect(
-    page.getByRole('heading', { name: 'Chuyến đi của tôi', exact: true }),
+    page.getByRole('heading', { name: 'Mỗi chuyến đi, một câu chuyện.' }),
   ).toBeVisible();
-  await expect(
-    page.getByText('Chuyến đi đầu tiên, bắt đầu thôi.'),
-  ).toBeVisible();
-  async function login() {
-    await page.getByLabel('Email', { exact: true }).fill(email);
-    await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
-    await page.getByRole('button', { name: 'Đăng nhập', exact: false }).click();
-  }
-  await expect(
-    page.getByRole('heading', { name: 'Chuyến đi của tôi', exact: true }),
-  ).toBeVisible();
-  page.once('dialog', (dialog) => dialog.accept());
+  await expect(page.getByText('Một nơi bạn luôn muốn đến?')).toBeVisible();
   await page
-    .getByRole('button', { name: '＋ Tạo chuyến đi', exact: true })
+    .getByRole('button', { name: 'Tạo chuyến đi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Gợi ý lịch trình', exact: true })
+    .click();
+  await expect(page.getByRole('alert')).toContainText('Chọn điểm đến');
+  await page.getByRole('button', { name: /^Điểm đến/ }).click();
+  await page
+    .getByLabel('Điểm đến', { exact: true })
+    .selectOption({ label: 'Hội An' });
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await page.getByRole('button', { name: /^Thời gian/ }).click();
+  await page.getByLabel('Ngày đi', { exact: true }).fill('2026-11-12');
+  await page.getByLabel('Ngày về', { exact: true }).fill('2026-11-14');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await page.getByRole('button', { name: /^Đi cùng/ }).click();
+  await page.getByLabel('Số người', { exact: true }).fill('4');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await page.getByRole('button', { name: /^Ngân sách cả nhóm/ }).click();
+  await page
+    .getByLabel('Ngân sách tổng nhóm (VND)', { exact: true })
+    .fill('10000000');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await page.getByRole('button', { name: 'Ẩm thực', exact: true }).click();
+  await page.getByRole('button', { name: 'Văn hóa', exact: true }).click();
+  await page.getByRole('button', { name: 'Thư thả', exact: true }).click();
+  await mkdir('.local/journey-preview', { recursive: true });
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({
+    path: '.local/journey-preview/create-390.png',
+    fullPage: false,
+  });
+  await page
+    .getByRole('button', { name: 'Gợi ý lịch trình', exact: true })
+    .click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Đóng', exact: true }).click();
+  async function addStop(
+    title: string,
+    start: string,
+    end: string,
+    cost?: string,
+  ) {
+    await page
+      .getByRole('button', { name: 'Thêm điểm dừng', exact: true })
+      .click();
+    await page.getByLabel('Tên hoạt động', { exact: true }).fill(title);
+    await page.getByLabel('Bắt đầu', { exact: true }).fill(start);
+    await page.getByLabel('Kết thúc', { exact: true }).fill(end);
+    if (cost)
+      await page.getByLabel('Chi phí nhóm (VND)', { exact: true }).fill(cost);
+    await page
+      .getByRole('button', { name: 'Thêm vào lịch trình', exact: true })
+      .click();
+  }
+  await addStop('Dạo phố cổ', '08:30', '10:00', '200000');
+  await addStop('Cơm gà Hội An', '11:30', '12:30');
+  await addStop('Làng rau Trà Quế', '15:00', '16:00');
+  await addStop('Dạo sông Hoài', '18:00', '19:00');
+  await page
+    .getByRole('button', { name: 'Đưa Cơm gà Hội An lên', exact: true })
+    .click();
+  await expect(page.locator('.journey-stop-open').first()).toContainText(
+    'Cơm gà Hội An',
+  );
+  await page
+    .getByRole('button', { name: 'Đưa Cơm gà Hội An xuống', exact: true })
+    .click();
+  await page.getByRole('tab', { name: 'Ngày 2', exact: true }).click();
+  await addStop('Một ngày thong thả', '09:00', '10:00');
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.locator('.journey-budget-view')).toContainText(
+    '4 điểm dừng chưa rõ chi phí',
+  );
+  await expect(page.locator('.journey-budget-view')).toContainText('200.000');
+  await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Xem lại chuyến đi', exact: true })
     .click();
   await page
     .getByLabel('Tên chuyến đi', { exact: true })
-    .fill('Hai ngày thư thả ở Đà Nẵng');
-  await page
-    .getByLabel('Điểm đến', { exact: true })
-    .selectOption({ label: 'Đà Nẵng' });
-  await page.getByLabel('Ngày đi', { exact: true }).fill('2026-11-12');
-  await page.getByLabel('Ngày về', { exact: true }).fill('2026-11-13');
-  await page.getByLabel('Số người', { exact: true }).fill('2');
-  await page
-    .getByLabel('Ngân sách tổng nhóm (VND)', { exact: true })
-    .fill('2000000');
-  await page.getByRole('button', { name: 'Thiên nhiên', exact: true }).click();
-  await page.getByRole('button', { name: 'Thêm hoạt động' }).click();
-  await page
-    .getByLabel('Tên hoạt động', { exact: true })
-    .fill('Dạo biển buổi sáng');
-  await page.getByLabel('Bắt đầu', { exact: true }).fill('08:00');
-  await page.getByLabel('Kết thúc', { exact: true }).fill('09:00');
-  await page.getByLabel('Chi phí nhóm (VND)', { exact: true }).fill('200000');
-  await page
-    .getByLabel('Ghi chú hoạt động', { exact: true })
-    .fill('Mang nước uống');
-  await page.getByRole('tab', { name: 'Ngày 2' }).click();
-  await page.getByRole('button', { name: 'Thêm hoạt động' }).click();
-  await page.getByLabel('Tên hoạt động', { exact: true }).fill('Ghé bảo tàng');
-  await expect(page.locator('.cost-panel')).toContainText(
-    '1 hoạt động chưa rõ chi phí',
-  );
+    .fill('Ba ngày thư thả ở Hội An');
   await page.route('**/api/v1/trips', (route) =>
     route.request().method() === 'POST' ? route.abort() : route.continue(),
   );
   await page
-    .getByRole('button', { name: 'Tạo chuyến đi', exact: false })
+    .getByRole('button', { name: 'Lưu chuyến đi', exact: true })
     .click();
-  await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
-    'Lưu thất bại',
-  );
-  await expect(page.getByLabel('Tên hoạt động', { exact: true })).toHaveValue(
-    'Ghé bảo tàng',
+  await expect(page.getByRole('alert')).toContainText('Không kết nối');
+  await expect(page.getByLabel('Tên chuyến đi', { exact: true })).toHaveValue(
+    'Ba ngày thư thả ở Hội An',
   );
   await page.unroute('**/api/v1/trips');
   await page
-    .getByRole('button', { name: 'Tạo chuyến đi', exact: false })
+    .getByRole('button', { name: 'Lưu chuyến đi', exact: true })
     .click();
   await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
     'Đã lưu',
   );
   const savedUrl = page.url();
-  await page.getByRole('link', { name: 'Trang chủ', exact: true }).click();
-  await expect(
-    page.getByRole('heading', { name: 'Hai ngày thư thả ở Đà Nẵng' }),
-  ).toBeVisible();
-  await page.route('**/api/v1/trips', (route) => route.abort());
   await page.reload();
-  await expect(page.getByText('Chưa tải được chuyến đi.')).toBeVisible();
-  await page.unroute('**/api/v1/trips');
-  await page.getByRole('button', { name: 'Thử lại' }).last().click();
-  await expect(
-    page.getByRole('heading', { name: 'Hai ngày thư thả ở Đà Nẵng' }),
-  ).toBeVisible();
-  for (const width of [390, 768, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
-    await page.screenshot({
-      path: `test-results/home-${width}.png`,
-      fullPage: true,
-    });
-  }
-  await page
-    .getByRole('searchbox', { name: 'Tìm điểm đến ở Việt Nam' })
-    .fill('Da Nang');
-  await expect(
-    page.getByRole('button', { name: /Đà Nẵng.*Lên kế hoạch tại đây/ }),
-  ).toBeVisible();
-  await page
-    .getByRole('searchbox', { name: 'Tìm điểm đến ở Việt Nam' })
-    .fill('khong co dia diem nay');
-  await expect(
-    page.getByText('Không tìm thấy điểm đến phù hợp.'),
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'Xóa từ khóa' }).click();
-  await page.route('**/api/v1/destinations', (route) => route.abort());
-  await page.reload();
-  await expect(
-    page.getByText('Chưa tải được danh mục điểm đến.'),
-  ).toBeVisible();
-  await page.unroute('**/api/v1/destinations');
-  await page.getByRole('button', { name: 'Thử lại' }).last().click();
-  await expect(
-    page.getByRole('button', { name: /Đà Nẵng.*Lên kế hoạch tại đây/ }),
-  ).toBeVisible();
-  await page.goto(savedUrl);
-  await page.reload();
-  await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
-    'Đã lưu',
+  await expect(page.locator('.journey-stop-open')).toHaveCount(4);
+  await page.screenshot({
+    path: '.local/journey-preview/itinerary-390.png',
+    fullPage: false,
+  });
+  await page.getByRole('button', { name: 'Bản đồ', exact: true }).click();
+  await expect(page.getByRole('link', { name: /Dạo phố cổ/ })).toHaveAttribute(
+    'href',
+    /google.com\/maps\/search/,
   );
-  await page.getByRole('tab', { name: 'Ngày 2' }).click();
-  await expect(page.getByLabel('Tên hoạt động', { exact: true })).toHaveValue(
-    'Ghé bảo tàng',
-  );
+  await page.getByRole('button', { name: 'Lịch trình', exact: true }).click();
+  await page.getByRole('tab', { name: 'Ngày 2', exact: true }).click();
+  await page.locator('.journey-stop-open').click();
   await page
     .getByLabel('Tên hoạt động', { exact: true })
-    .fill('Ghé bảo tàng, thong thả');
-  await page.getByRole('button', { name: 'Thêm hoạt động' }).click();
+    .fill('Một ngày thong thả, ghé bảo tàng');
   await page
-    .getByRole('button', { name: 'Xóa hoạt động 2', exact: true })
+    .getByRole('button', { name: 'Áp dụng thay đổi', exact: true })
     .click();
-  await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
   await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
     'Đã lưu',
   );
-  // A stale browser revision keeps the unsaved input instead of overwriting server data.
-  const current = await page.request.get(
-    new URL(savedUrl).pathname.replace('/trips/', '/api/v1/trips/'),
-  );
+  const path = new URL(savedUrl).pathname.replace('/trips/', '/api/v1/trips/');
+  const current = await page.request.get(path);
   const stored = (await current.json()) as {
     data: { trip: import('@goease/contracts').TripDto };
   };
-  const { id: _id, revision } = stored.data.trip;
+  expect(stored.data.trip.days[0]!.activities.map((a) => a.order)).toEqual([
+    0, 1, 2, 3,
+  ]);
+  expect(stored.data.trip.preferences.pace).toBe('relaxed');
+  expect(stored.data.trip.preferences.interestCodes).toEqual([
+    'food',
+    'culture',
+  ]);
+  expect(stored.data.trip.budget.amountMinor).toBe(10000000);
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.locator('.budget-total')).toContainText('200.000');
+  await expect(page.getByRole('meter')).toHaveAttribute('aria-valuenow', '2');
+  await expect(page.locator('.budget-disclaimer')).toContainText(
+    '4 điểm dừng chưa rõ chi phí',
+  );
+  await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
+  await page.getByRole('button', { name: /Muốn đổi nhịp/ }).click();
+  await expect(page.locator('.goe-context-chip')).toContainText(
+    'Hội An · Ngày 2',
+  );
+  await page.getByRole('button', { name: 'Xem thay đổi', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText(
+    'Ngày này có 1 điểm dừng',
+  );
+  await page.getByRole('button', { name: 'Áp dụng vào bản minh họa' }).click();
+  const unchanged = await page.request.get(path);
+  expect((await unchanged.json()).data.trip.revision).toBe(
+    stored.data.trip.revision,
+  );
+  await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
+  await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
+    'Đã lưu',
+  );
   const input = inputFromTrip(stored.data.trip);
-  const newer = await page.request.patch(`/api/v1/trips/${_id}`, {
-    headers: {
-      Origin: new URL(savedUrl).origin,
-      'X-GoEase-Client': 'web',
-      'Idempotency-Key': crypto.randomUUID(),
-    },
-    data: { trip: input, expectedRevision: revision },
-  });
-  expect(newer.status()).toBe(200);
+  const headers = {
+    Origin: new URL(savedUrl).origin,
+    'X-GoEase-Client': 'web',
+    'Idempotency-Key': crypto.randomUUID(),
+  };
+  expect(
+    (
+      await page.request.patch(path, {
+        headers,
+        data: { trip: input, expectedRevision: stored.data.trip.revision },
+      })
+    ).status(),
+  ).toBe(200);
   await page
     .getByLabel('Ghi chú chuyến đi', { exact: true })
-    .fill('Ghi chú giữ khi xung đột');
-  await page.getByRole('button', { name: 'Lưu thay đổi' }).click();
+    .fill('Giữ bản nháp khi xung đột');
+  await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
   await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
     'Lưu thất bại',
   );
   await expect(
     page.getByLabel('Ghi chú chuyến đi', { exact: true }),
-  ).toHaveValue('Ghi chú giữ khi xung đột');
+  ).toHaveValue('Giữ bản nháp khi xung đột');
+  page.once('dialog', (d) => d.accept());
   await page.reload();
-  for (const width of [390, 768, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    await expect(page.getByLabel('Tên chuyến đi', { exact: true })).toHaveValue(
-      'Hai ngày thư thả ở Đà Nẵng',
-    );
+  await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
+    'Đã lưu',
+  );
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await page.screenshot({
-      path: `test-results/product-trip-${width}.png`,
-      fullPage: true,
-    });
   }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Ba ngày thư thả ở Hội An' }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: '.local/journey-preview/list-390.png',
+    fullPage: false,
+  });
+  await page.goto('/');
   await page.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
   await page.goto('/login');
-  await login();
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập', exact: false }).click();
   await expect(page).toHaveURL(/\/$/);
-  await page.goto('/trips');
-  await page.getByRole('link', { name: 'Mở lịch trình' }).click();
-  await page.getByRole('tab', { name: 'Ngày 2' }).click();
-  await expect(page.getByLabel('Tên hoạt động', { exact: true })).toHaveValue(
-    'Ghé bảo tàng, thong thả',
+  await page.goto(savedUrl);
+  await page.getByRole('tab', { name: 'Ngày 2', exact: true }).click();
+  await expect(page.locator('.journey-stop-open')).toContainText(
+    'Một ngày thong thả, ghé bảo tàng',
   );
   const contextB = await browser.newContext();
   try {
-    const request = contextB.request;
     const origin = new URL(savedUrl).origin;
-    const headers = { Origin: origin, 'X-GoEase-Client': 'web' };
-    const emailB = `other-${Date.now()}@example.invalid`;
     expect(
       (
-        await request.post(origin + '/api/v1/auth/register', {
+        await contextB.request.post(origin + '/api/v1/auth/register', {
           headers,
-          data: { email: emailB, password, displayName: 'Tài khoản khác' },
+          data: {
+            email: `other-${Date.now()}@example.invalid`,
+            password,
+            displayName: 'Tài khoản khác',
+          },
         })
       ).status(),
     ).toBe(201);
-    expect(
-      (await request.get(origin + '/api/v1/auth/me', { headers })).status(),
-    ).toBe(200);
-    expect(
-      (await request.get(origin + '/api/v1/dev/mailbox', { headers })).status(),
-    ).toBe(404);
+    expect((await contextB.request.get(origin + path)).status()).toBe(404);
     expect(
       (
-        await request.post(origin + '/api/v1/auth/login', {
-          headers,
-          data: { email: emailB, password },
+        await contextB.request.patch(origin + path, {
+          headers: { ...headers, 'Idempotency-Key': crypto.randomUUID() },
+          data: { trip: input, expectedRevision: stored.data.trip.revision },
         })
       ).status(),
-    ).toBe(200);
+    ).toBe(404);
     const otherPage = await contextB.newPage();
     await otherPage.goto(savedUrl);
     await expect(
-      otherPage
-        .getByRole('alert')
-        .filter({ hasText: 'Không tìm thấy chuyến đi của bạn.' }),
-    ).toContainText('Không tìm thấy chuyến đi của bạn.');
-    await expect(
-      otherPage.getByLabel('Tên chuyến đi', { exact: true }),
-    ).toHaveCount(0);
-    await otherPage.goto('/');
-    await expect(
-      otherPage.locator('.home-avatar[title="Tài khoản khác"]'),
+      otherPage.getByText('Không tìm thấy chuyến đi của bạn.'),
     ).toBeVisible();
-    await expect(otherPage.getByText('Chưa có chuyến đi nào')).toBeVisible();
-    await expect(otherPage.getByText('Hai ngày thư thả ở Đà Nẵng')).toHaveCount(
-      0,
-    );
-    expect(
-      (
-        await request.patch(origin + `/api/v1/trips/${_id}`, {
-          headers: { ...headers, 'Idempotency-Key': crypto.randomUUID() },
-          data: { trip: input, expectedRevision: revision },
-        })
-      ).status(),
-    ).toBe(404);
+    await expect(otherPage.locator('.journey-stop')).toHaveCount(0);
   } finally {
     await contextB.close();
   }
+});
+test('Hoi An catalog journey and server budget stay connected across save and reload', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/register');
+  const email = `hoian-browser-${Date.now()}@example.invalid`;
+  const password = 'HoiAn-browser-test-2026';
+  await page.getByLabel('Tên của bạn', { exact: true }).fill('Người đi Hội An');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  await page
+    .getByRole('button', { name: 'Lên kế hoạch đến Hội An', exact: true })
+    .click();
+  await page.getByRole('button', { name: /^Thời gian/ }).click();
+  await page.getByLabel('Ngày đi', { exact: true }).fill('2026-11-12');
+  await page.getByLabel('Ngày về', { exact: true }).fill('2026-11-14');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await page.getByRole('button', { name: /^Đi cùng/ }).click();
+  await page.getByLabel('Số người', { exact: true }).fill('4');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await page.getByRole('button', { name: /^Ngân sách cả nhóm/ }).click();
+  await page
+    .getByLabel('Ngân sách tổng nhóm (VND)', { exact: true })
+    .fill('1000000');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Gợi ý lịch trình', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Thêm Phố cổ Hội An', exact: true })
+    .click();
+  await page.locator('.journey-stop-open').first().click();
+  await page
+    .getByRole('button', { name: 'Dùng vé tham quan 80.000đ', exact: true })
+    .click();
+  await expect(
+    page.getByLabel('Chi phí mỗi người (VND)', { exact: true }),
+  ).toHaveValue('80000');
+  await page
+    .getByRole('button', { name: 'Áp dụng thay đổi', exact: true })
+    .click();
+  for (const [day, name] of [
+    [2, 'Làng rau Trà Quế'],
+    [3, 'Biển An Bàng'],
+  ] as const) {
+    await page.getByRole('tab', { name: `Ngày ${day}`, exact: true }).click();
+    await page.getByRole('button', { name: /Tìm một nơi hợp gu/ }).click();
+    await page
+      .getByRole('button', { name: `Thêm ${name}`, exact: true })
+      .click();
+  }
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.locator('.budget-total')).toContainText('320.000');
+  await expect(page.locator('.budget-disclaimer')).toContainText(
+    '2 điểm dừng chưa rõ',
+  );
+  await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Xem lại chuyến đi', exact: true })
+    .click();
+  await page
+    .getByLabel('Tên chuyến đi', { exact: true })
+    .fill('Hội An nối dữ liệu thật');
+  await page
+    .getByRole('button', { name: 'Lưu chuyến đi', exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/trips\/[a-f0-9]{24}$/);
+  const tripUrl = page.url();
+  await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
+    'Đã lưu',
+  );
+  await page
+    .getByRole('button', { name: 'Thông tin chuyến đi', exact: true })
+    .click();
+  await page.getByRole('button', { name: /^Đi cùng/ }).click();
+  await page.getByLabel('Số người', { exact: true }).fill('5');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.locator('.budget-total')).toContainText('400.000');
+  await expect(page.locator('.budget-per-person')).toContainText('80.000');
+  await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
+  await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
+    'Đã lưu',
+  );
+  await page.reload();
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.locator('.budget-total')).toContainText('400.000');
+  await mkdir('.local/hoian-preview', { recursive: true });
+  await page.screenshot({ path: '.local/hoian-preview/budget-live-390.png' });
+  // A failed preview must not masquerade as a successful, freshly calculated budget.
+  await page.route('**/api/v1/trips/budget-preview', (r) => r.abort());
+  await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'Chưa tính được ngân sách',
+  );
+  await page.unroute('**/api/v1/trips/budget-preview');
+  await page.getByRole('button', { name: 'Thử lại', exact: true }).click();
+  await expect(page.locator('.budget-total')).toContainText('400.000');
+  await page.getByRole('link', { name: 'Khám phá', exact: true }).click();
+  await page
+    .getByRole('button', { name: /Cơm gà Hội An/ })
+    .first()
+    .click();
+  await page
+    .getByRole('button', { name: 'Thêm vào chuyến đi', exact: false })
+    .first()
+    .click();
+  await page
+    .getByLabel('Chuyến đi tại Hội An')
+    .selectOption({ label: 'Hội An nối dữ liệu thật' });
+  await page.getByLabel('Ngày ghé thăm').selectOption({ label: '2026-11-13' });
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Thêm vào chuyến đi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Mở chuyến đi →', exact: true })
+    .click();
+  await expect(
+    page.getByRole('tab', { name: 'Ngày 2', exact: true }),
+  ).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('.journey-stop-open')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.locator('.budget-disclaimer')).toContainText(
+    '3 điểm dừng chưa rõ',
+  );
+  await expect(page.locator('.budget-total')).toContainText('400.000');
+  const stored = (
+    await (
+      await page.request.get(
+        new URL(tripUrl).pathname.replace('/trips/', '/api/v1/trips/'),
+      )
+    ).json()
+  ).data.trip;
+  expect(stored.days[0].activities[0].placeId).toBe('100000000000000000000001');
+  expect(stored.days[1].activities[1].placeId).toBe('100000000000000000000002');
+  expect(stored.budgetSummary.knownEstimatedMinor).toBe(400000);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
+  await page.goto('/login');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập', exact: false }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto(tripUrl);
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.locator('.budget-total')).toContainText('400.000');
+});
+
+test('live Gemini proposal applies saves reloads and preserves AI provenance', async ({
+  page,
+}) => {
+  test.skip(
+    process.env.LIVE_GEMINI !== '1',
+    'Explicit opt-in: uses real Gemini quota.',
+  );
+  test.setTimeout(150000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/register');
+  await page
+    .getByLabel('Tên của bạn', { exact: true })
+    .fill('Gemini acceptance traveler');
+  await page
+    .getByLabel('Email', { exact: true })
+    .fill(`gemini-${Date.now()}@example.invalid`);
+  await page
+    .getByLabel('Mật khẩu', { exact: true })
+    .fill('Gemini-acceptance-only-2026');
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  await page
+    .getByRole('button', { name: 'Lên kế hoạch đến Hội An', exact: true })
+    .click();
+  await page.getByRole('button', { name: /^Thời gian/ }).click();
+  await page.getByLabel('Ngày đi', { exact: true }).fill('2026-11-12');
+  await page.getByLabel('Ngày về', { exact: true }).fill('2026-11-14');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  const generated = page.waitForResponse('**/api/v1/trips/ai-proposal', {
+    timeout: 65000,
+  });
+  await page
+    .getByRole('button', { name: 'Tạo đề xuất bằng Gemini', exact: true })
+    .click();
+  const response = await generated;
+  const result = await response.json();
+  expect(response.status(), JSON.stringify(result.error ?? {})).toBe(200);
+  expect(result.data.trip.generationMode).toBe('ai');
+  expect(result.data.trip.days).toHaveLength(3);
+  expect(
+    (await (await page.request.get('/api/v1/trips')).json()).data.items,
+  ).toHaveLength(0);
+  await expect(
+    page.getByText('Đề xuất của Goe · Chưa áp dụng', { exact: true }),
+  ).toBeVisible();
+  await mkdir('.local/ai-preview', { recursive: true });
+  await page.screenshot({
+    path: '.local/ai-preview/live-proposal.png',
+    fullPage: true,
+  });
+  await page
+    .getByRole('button', {
+      name: 'Dùng đề xuất này trong bản nháp',
+      exact: true,
+    })
+    .click();
+  await expect(page.locator('.journey-stop-open')).toHaveCount(
+    result.data.trip.days[0].activities.length,
+  );
+  await page
+    .getByRole('button', { name: 'Xem lại chuyến đi', exact: true })
+    .click();
+  await page
+    .getByLabel('Tên chuyến đi', { exact: true })
+    .fill('Hội An – Gemini live acceptance');
+  const saved = page.waitForResponse(
+    (r) => r.url().endsWith('/api/v1/trips') && r.request().method() === 'POST',
+  );
+  await page
+    .getByRole('button', { name: 'Lưu chuyến đi', exact: true })
+    .click();
+  const savedResponse = await saved;
+  expect(
+    savedResponse.status(),
+    JSON.stringify((await savedResponse.json()).error ?? {}),
+  ).toBe(201);
+  await expect(page).toHaveURL(/\/trips\/[a-f0-9]{24}$/);
+  const endpoint = new URL(page.url()).pathname.replace(
+    '/trips/',
+    '/api/v1/trips/',
+  );
+  await page.reload();
+  await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
+    'Đã lưu',
+  );
+  const stored = (await (await page.request.get(endpoint)).json()).data
+    .trip as TripDto;
+  expect(stored.aiRunId).toBe(result.data.runId);
+  expect(stored.days).toEqual(result.data.trip.days);
+  expect(stored.generationMode).toBe('ai');
+  expect(stored.budgetSummary?.missingCostCount).toBe(
+    stored.days.flatMap((d) => d.activities).length,
+  );
+  await page.screenshot({
+    path: '.local/ai-preview/live-saved-reloaded.png',
+    fullPage: true,
+  });
+  // The same run is recovered without another provider request or quota unit.
+  const recovered = await page.request.post('/api/v1/trips/ai-proposal', {
+    headers: {
+      Origin: new URL(page.url()).origin,
+      'X-GoEase-Client': 'web',
+      'Idempotency-Key': response.request().headers()['idempotency-key']!,
+    },
+    data: response.request().postDataJSON(),
+  });
+  expect(recovered.status()).toBe(200);
+  expect((await recovered.json()).data.runId).toBe(stored.aiRunId);
 });

@@ -1181,3 +1181,15 @@ Trip + revision + mandatory audit + idempotency key ghi trong một transaction.
 Auth identity tách password PHC và Google issuer/sub khỏi user. Session/challenge lưu token hash, không raw token. OAuth challenge context chỉ có identityId/nonceHash/bindingHash/encryptedPkceVerifier (AES-GCM), không raw provider response. TTL chỉ ở session/challenge/key, kiểm tra expiry bằng query trước khi dùng. Danh mục seed có source goease_curated và rights của nội dung tự biên soạn; không chứa dữ liệu provider.
 
 Các field runtime cụ thể xem `server/src/features/auth/auth.models.ts`, `server/src/features/trips/trip.models.ts`; registry giữ baseline mục tiêu và đánh dấu subset triển khai, không tuyên bố mọi field trong mỗi collection đã có.
+
+### Runtime Hội An / ngân sách (22/10/2026)
+
+- `trips.days[].activities[].placeId?`: ObjectId catalog, optional để đọc chuyến cũ. Cùng field có trong `trip_revisions.snapshot`. Title/notes/estimatedCost vẫn thuộc itinerary, không bị đồng bộ đè từ catalog. Server xác minh các liên kết mới; giữ liên kết cũ khi catalog archived/deleted, không cấp quyền xem lại nội dung đã ẩn.
+- `estimatedCost.basis`: runtime mở rộng `group_total|per_person`, quantity1/currencyVND/confidenceuser_entered giữ nguyên. Server tính amount×travelers cho per_person, tính trực tiếp group_total; kiểm tra safe integer trước commit. Chưa triển khai per_unit, giá provider hoặc expense. Các phiên bản ứng dụng cũ chỉ hiểu group_total không được dùng để ghi lại chuyến per_person.
+- `summaryTotals` vẫn lưu3field cũ, do cùng hàm server tính. `budgetSummary` chỉ là DTO được tính khi đọc/lưu hoặc preview: knownEstimatedMinor, missingCostCount, activityCount, perPersonMinor, budgetMinor, remainingMinor, usedPercent, categories[{key,amountMinor,missingCostCount}], currencyVND. Không nhận summary từ client và không thêm collection/cache.
+- `places.planning?`: optional subdocument gồm durationMinutes(1–1440, biên tập), locationQuery(string≤200, tìm bản đồ, không phải tọa độ), costNote(string≤500), priceOptions(tối đa5; label≤120, amountMinor0–1e12, basisgroup_total/per_person, sourceUrl≤2048, checkedAtdate-only). Có schema Mongoose strict; dữ liệu do seed quản lý, chưa có public write endpoint. Seed chỉ bổ sung planning khi chưa có và insert ID mới; không ghi đè nội dung/giá/status đã chỉnh.
+- Không thêm index hoặc đổi collection. Query catalog theo destinationId sử dụng index có sẵn. Không chạy migration phá dữ liệu hoặc thay MongoDB replica set. Schema nền đầy đủ và các trường provider/geo còn là kế hoạch.
+
+## Gemini runtime subset — 2026-10-23
+
+`ai_runs` and `usage_buckets` now have local runtime consumers; their exact implemented fields, bounds, indexes and state transitions are documented in [AI-PLANNER.md](AI-PLANNER.md#runtime-storage-authoritative-implemented-subset). Earlier generic baseline fields remain design targets and are not claims about runtime. Trips/revisions support optional aiRunId and ai/manual origins; ownership and successful proposal provenance are checked in the save transaction. Old manual documents remain compatible. No TTL/retention policy or provider token/cost accounting is implemented.

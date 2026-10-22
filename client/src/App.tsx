@@ -14,7 +14,9 @@ import { Foundation } from './Foundation';
 import { api, ApiFailure } from './api';
 import { Brand, Goe, Notice } from './components/ui';
 import { AuthPage } from './components/auth';
-import { TripEditor } from './components/trip-editor';
+import { JourneyList, TripWorkspace } from './components/trip-workspace';
+import { BudgetPreview } from './components/budget-screen';
+import { GoeChat } from './components/goe-chat';
 import { initialDraft, inputFromTrip, withDays } from './trip-draft';
 
 export type Link = (
@@ -64,6 +66,16 @@ export function App() {
   const saveKey = useRef({ payload: '', key: '' });
 
   const go = (next: string) => {
+    if (
+      (path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path)) &&
+      next.split('?')[0] !== path &&
+      saveState !== 'saved' &&
+      (draft.title || draft.days.some((d) => d.activities.length)) &&
+      !confirm(
+        'Chuyến đi có thay đổi chưa lưu. Rời trang mà chưa lưu thay đổi?',
+      )
+    )
+      return;
     history.pushState({}, '', next);
     setPath(location.pathname);
     setMessage('');
@@ -221,10 +233,11 @@ export function App() {
       return;
     }
     if (
-      draft.title ||
-      draft.notes ||
-      draft.days.some((d) => d.activities.length) ||
-      draft.destinations.length
+      saveState !== 'saved' &&
+      (draft.title ||
+        draft.notes ||
+        draft.days.some((d) => d.activities.length) ||
+        draft.destinations.length)
     ) {
       if (
         !window.confirm(
@@ -236,6 +249,9 @@ export function App() {
       setLoaded(null);
       setSaveState('dirty');
     }
+    setDraft(initialDraft());
+    setLoaded(null);
+    setSaveState('dirty');
     go('/trips/new');
   };
 
@@ -245,23 +261,15 @@ export function App() {
       return;
     }
     if (
-      draft.title ||
-      draft.notes ||
-      draft.days.some((d) => d.activities.length) ||
-      draft.destinations.length
-    ) {
-      if (
-        !window.confirm(
-          'Thay điểm đến cho bản nháp hiện tại? Các hoạt động sẽ được giữ lại.',
-        )
-      )
-        return;
-    }
-    const updated: TripInput = {
-      ...draft,
+      saveState !== 'saved' &&
+      (draft.title || draft.days.some((d) => d.activities.length)) &&
+      !confirm('Bỏ bản nháp chưa lưu và tạo chuyến đi mới?')
+    )
+      return;
+    const updated: TripInput = withDays({
+      ...initialDraft(),
       destinations: [{ destinationId: destId, order: 0 }],
-      days: draft.days.map((day) => ({ ...day, destinationId: destId })),
-    };
+    });
     setDraft(updated);
     setLoaded(null);
     setSaveState('dirty');
@@ -324,6 +332,7 @@ export function App() {
 
   const isEditor =
     path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path);
+  const isJourney = isEditor || ['/trips', '/budget', '/goe'].includes(path);
   const isAuth = path === '/login' || path === '/register';
   const isWelcome = path === '/welcome';
   const isPlaceDetail = path.startsWith('/places/');
@@ -350,13 +359,13 @@ export function App() {
               ? 'explore-shell'
               : isAuth
                 ? 'auth-shell'
-                : isEditor || path === '/trips'
-                  ? 'workspace-shell'
+                : isJourney
+                  ? 'workspace-shell journey-shell'
                   : 'home-shell'
       }`}
     >
       {/* Site Header: distinct and uncluttered for auth vs app */}
-      {!isWelcome && !isExplore && !isPlaceDetail && (
+      {!isWelcome && !isExplore && !isPlaceDetail && !isJourney && (
         <header className={`site-header ${isAuth ? 'auth-site-header' : ''}`}>
           <div className="header-inner">
             <div className="header-brand-wrap">{link('/', <Brand />)}</div>
@@ -372,7 +381,7 @@ export function App() {
                   {link(
                     '/trips',
                     'Chuyến đi của tôi',
-                    `nav-link ${path.startsWith('/trips') ? 'active' : ''}`,
+                    `nav-link ${path.startsWith('/trips') || path === '/budget' ? 'active' : ''}`,
                   )}
                 </nav>
 
@@ -455,7 +464,9 @@ export function App() {
               ? 'place-main'
               : isExplore
                 ? 'explore-main'
-                : 'container main-content-wrap'
+                : isJourney
+                  ? 'journey-main'
+                  : 'container main-content-wrap'
         }
         onClickCapture={
           path === '/' && sessionStatus === 'ready' && !user
@@ -639,6 +650,10 @@ export function App() {
               onNavigate={go}
             />
           </>
+        ) : path === '/budget' ? (
+          <BudgetPreview onBack={() => go('/trips')} />
+        ) : path === '/goe' ? (
+          <GoeChat signedIn={Boolean(user)} onNavigate={go} />
         ) : isDiscovery ? (
           <HomeDiscovery
             key={user?.id ?? 'guest'}
@@ -672,199 +687,64 @@ export function App() {
             }}
           />
         ) : path === '/trips' ? (
-          <section className="page-section trips-page-section">
-            <div className="page-heading">
-              <div>
-                <p className="eyebrow">
-                  <span></span>GÓC HÀNH TRÌNH
-                </p>
-                <h1>Chuyến đi của tôi</h1>
-                <p>Mỗi kế hoạch là một điều đáng mong đợi.</p>
-              </div>
+          <JourneyList
+            trips={list}
+            signedIn={Boolean(user)}
+            loading={
+              sessionStatus === 'loading' ||
+              (Boolean(user) &&
+                (tripsStatus === 'loading' || tripsStatus === 'idle'))
+            }
+            error={
+              sessionStatus === 'error'
+                ? 'Chưa kiểm tra được phiên đăng nhập.'
+                : tripsStatus === 'error'
+                  ? 'Chưa tải được danh sách chuyến đi.'
+                  : message
+            }
+            onRetry={() =>
+              sessionStatus === 'error'
+                ? setSessionRetry((v) => v + 1)
+                : setTripsRetry((v) => v + 1)
+            }
+            onStart={start}
+            onNavigate={go}
+          />
+        ) : isEditor ? (
+          busy && path !== '/trips/new' && !loaded ? (
+            <Notice>Đang mở lịch trình…</Notice>
+          ) : path !== '/trips/new' && !loaded ? (
+            <div className="journey-empty">
+              <h1>Chưa mở được chuyến đi.</h1>
+              <p>{message}</p>
               <button
-                type="button"
-                className="button button-primary"
-                onClick={start}
+                className="journey-primary"
+                onClick={() => setDetailRetry((v) => v + 1)}
               >
-                ＋ Tạo chuyến đi
+                Thử lại
+              </button>
+              <button className="journey-outline" onClick={() => go('/trips')}>
+                Về danh sách
               </button>
             </div>
-
-            {message && (
-              <Notice error>
-                {message}{' '}
-                <button
-                  type="button"
-                  onClick={() => setTripsRetry((v) => v + 1)}
-                  className="text-button"
-                >
-                  Thử lại
-                </button>
-              </Notice>
-            )}
-
-            {!user && sessionStatus !== 'ready' ? (
-              <Notice>
-                {sessionStatus === 'loading'
-                  ? 'Đang kiểm tra phiên…'
-                  : 'Chưa kiểm tra được phiên đăng nhập.'}{' '}
-                {sessionStatus === 'error' && (
-                  <button
-                    type="button"
-                    onClick={() => setSessionRetry((v) => v + 1)}
-                    className="text-button"
-                  >
-                    Thử lại
-                  </button>
-                )}
-              </Notice>
-            ) : !user ? (
-              <div className="empty-state panel">
-                <Goe size="medium" />
-                <h2>Những chuyến đi đang chờ bạn.</h2>
-                <p>Đăng nhập để lưu và mở lại lịch trình của riêng mình.</p>
-                {link(
-                  '/login',
-                  'Đăng nhập để bắt đầu',
-                  'button button-primary',
-                )}
-              </div>
-            ) : tripsStatus === 'loading' ? (
-              <Notice>Đang mở những chuyến đi…</Notice>
-            ) : tripsStatus === 'error' ? (
-              <Notice error>
-                Chưa tải được danh sách chuyến đi.{' '}
-                <button
-                  type="button"
-                  onClick={() => setTripsRetry((v) => v + 1)}
-                  className="text-button"
-                >
-                  Thử lại
-                </button>
-              </Notice>
-            ) : list.length ? (
-              <div className="trip-grid">
-                {list.map((trip) => (
-                  <article className="trip-card" key={trip.id}>
-                    <div className="trip-card-art">
-                      <span className="trip-card-art-arrow">↗</span>
-                      <span className="trip-card-art-dest">
-                        {trip.destinationName}
-                      </span>
-                    </div>
-                    <div className="trip-card-body">
-                      <p className="eyebrow">LỊCH TRÌNH THỦ CÔNG · RIÊNG TƯ</p>
-                      <h2>{link(`/trips/${trip.id}`, trip.title)}</h2>
-                      <p>
-                        {trip.startDate} → {trip.endDate} ·{' '}
-                        {trip.travelers.totalCount} người
-                      </p>
-                      {link(
-                        `/trips/${trip.id}`,
-                        'Mở lịch trình ↗',
-                        'text-button trip-open-link',
-                      )}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              !message && (
-                <div className="empty-state panel">
-                  <Goe size="medium" />
-                  <h2>Chuyến đi đầu tiên, bắt đầu thôi.</h2>
-                  <p>
-                    Chọn một nơi bạn muốn đến và tạo kế hoạch của riêng mình.
-                  </p>
-                  <button
-                    type="button"
-                    className="button button-primary"
-                    onClick={start}
-                  >
-                    Tạo chuyến đi đầu tiên
-                  </button>
-                </div>
-              )
-            )}
-          </section>
-        ) : isEditor ? (
-          <section className="page-section editor-page-section">
-            <div className="page-heading editor-page-heading">
-              <div>
-                <p className="eyebrow">
-                  <span></span>LỊCH TRÌNH THỦ CÔNG · RIÊNG TƯ
-                </p>
-                <h1>{loaded ? loaded.title : 'Một chuyến đi mới'}</h1>
-                <p>Chậm lại một chút. Lên kế hoạch theo cách bạn thích.</p>
-              </div>
-
-              <div className="editor-top-actions">
-                <p
-                  className={`save-state save-${saveState}`}
-                  role="status"
-                  aria-label="Trạng thái lưu"
-                >
-                  {saveState === 'saving'
-                    ? 'Đang lưu'
-                    : saveState === 'saved'
-                      ? 'Đã lưu'
-                      : saveState === 'error'
-                        ? 'Lưu thất bại'
-                        : 'Chưa lưu'}
-                </p>
-
-                <button
-                  type="button"
-                  className="button button-primary"
-                  disabled={busy}
-                  onClick={() => void save()}
-                >
-                  {saveState === 'saving'
-                    ? 'Đang lưu…'
-                    : loaded
-                      ? 'Lưu thay đổi'
-                      : 'Tạo chuyến đi'}{' '}
-                  <span>↗</span>
-                </button>
-              </div>
-            </div>
-
-            {!user && (
-              <Notice>
-                Đăng nhập để lưu vào tài khoản. Bạn có thể phác thảo trước ở
-                đây.{' '}
-                {link('/login?next=/trips/new', 'Đăng nhập', 'text-button')}
-              </Notice>
-            )}
-
-            {message && (
-              <Notice error={!message.startsWith('Đã lưu')}>{message}</Notice>
-            )}
-
-            {busy && path !== '/trips/new' && !loaded ? (
-              <Notice>Đang mở lịch trình…</Notice>
-            ) : path !== '/trips/new' && !loaded ? (
-              <Notice error>
-                Chưa mở được chuyến đi.{' '}
-                {link('/trips', 'Về danh sách', 'text-button')}{' '}
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => setDetailRetry((v) => v + 1)}
-                >
-                  Thử lại
-                </button>
-              </Notice>
-            ) : (
-              <fieldset className="editor-fieldset" disabled={busy}>
-                <TripEditor
-                  draft={draft}
-                  onChange={changeDraft}
-                  destinations={destinations}
-                />
-              </fieldset>
-            )}
-          </section>
+          ) : (
+            <TripWorkspace
+              key={loaded?.id ?? 'new'}
+              draft={draft}
+              onChange={changeDraft}
+              destinations={destinations}
+              loaded={loaded}
+              busy={busy}
+              saveState={saveState}
+              message={message}
+              signedIn={Boolean(user)}
+              onSave={() => void save()}
+              onOpenGoe={(day) =>
+                go(loaded ? `/goe?trip=${loaded.id}&day=${day}` : '/goe')
+              }
+              onBack={() => go('/trips')}
+            />
+          )
         ) : (
           <section className="empty-state panel">
             <h1>Chưa tìm thấy trang này.</h1>
@@ -874,7 +754,7 @@ export function App() {
       </main>
 
       {/* Clean, quiet footer */}
-      {!isWelcome && !isExplore && !isPlaceDetail && (
+      {!isWelcome && !isExplore && !isPlaceDetail && !isJourney && (
         <footer className="site-footer">
           <div className="container footer-inner">
             <div className="footer-brand-line">
@@ -891,7 +771,7 @@ export function App() {
       )}
 
       {/* Mobile persistent bottom navigation bar */}
-      {!isAuth && !isWelcome && !isPlaceDetail && (
+      {!isAuth && !isWelcome && !isPlaceDetail && path !== '/trips/new' && (
         <nav className="mobile-bottom-nav" aria-label="Điều hướng di động">
           {[
             { to: '/explore', label: 'Khám phá', Icon: Compass },
@@ -904,11 +784,13 @@ export function App() {
               key={to}
               href={to}
               aria-current={
-                path === to || (to === '/trips' && path.startsWith('/trips'))
+                path === to ||
+                (to === '/trips' &&
+                  (path.startsWith('/trips') || path === '/budget'))
                   ? 'page'
                   : undefined
               }
-              className={`mobile-nav-item ${to === '/' ? 'mobile-nav-home' : ''} ${path === to || (to === '/trips' && path.startsWith('/trips')) ? 'active' : ''}`}
+              className={`mobile-nav-item ${to === '/' ? 'mobile-nav-home' : ''} ${path === to || (to === '/trips' && (path.startsWith('/trips') || path === '/budget')) ? 'active' : ''}`}
               onClick={(e) => {
                 e.preventDefault();
                 go(!user && to !== '/' ? '/login' : to);

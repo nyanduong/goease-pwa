@@ -10,6 +10,7 @@ import type { businessAudit } from '../audit/business-audit.js';
 import { requestId } from '../auth/auth.service.js';
 import { tokenHash } from '../auth/security.js';
 import { HttpError } from '../../http-error.js';
+import { calculateBudget } from './budget.js';
 
 export function tripService(
   connection: Connection,
@@ -33,6 +34,7 @@ export function tripService(
       budget: doc.budget,
       preferences: doc.preferences,
       generationMode: doc.generationMode,
+      ...(doc.aiRunId ? { aiRunId: doc.aiRunId } : {}),
       notes: doc.notes,
       days: doc.days.map((d) => ({
         dayId: d.dayId,
@@ -40,6 +42,7 @@ export function tripService(
         destinationId: String(d.destinationId),
         activities: d.activities.map((a) => ({
           activityId: a.activityId,
+          ...(a.placeId ? { placeId: String(a.placeId) } : {}),
           kind: a.kind,
           title: a.title,
           startLocalTime: a.startLocalTime,
@@ -61,6 +64,7 @@ export function tripService(
       destinationName: doc.destinations[0]?.nameSnapshot ?? '',
       updatedAt: doc.updatedAt.toISOString(),
       summaryTotals: summaryTotals(toInput(doc)),
+      budgetSummary: calculateBudget(toInput(doc)),
     };
   }
   async function owned(id: string, ownerId: Types.ObjectId) {
@@ -188,6 +192,109 @@ export function tripService(
                 'Chuyến đi đã có bản mới hơn. Bản đang nhập vẫn được giữ; hãy mở bản server ở tab khác trước khi cập nhật.',
               );
             const now = new Date();
+            // AI provenance is resolved on the server; the browser cannot invent it.
+            if (value.generationMode === 'ai') {
+              const run = await connection.collection('ai_runs').findOne(
+                {
+                  runId: value.aiRunId ?? '',
+                  userId: ownerId,
+                  status: 'succeeded',
+                },
+                { session },
+              );
+              if (
+                !run ||
+                (current?.aiRunId !== value.aiRunId &&
+                  ((run.tripId ?? undefined) !== id ||
+                    (id && run.expectedRevision !== expectedRevision)))
+              )
+                throw new HttpError(
+                  409,
+                  'AI_PROPOSAL_STALE',
+                  'Đề xuất AI không còn phù hợp với bản chuyến đi này. Hãy tạo đề xuất mới.',
+                );
+              const original = tripInputSchema.parse(run.proposal.trip);
+              const links = new Set(
+                original.days.flatMap((d) =>
+                  d.activities.map((a) => `${a.activityId}:${a.placeId}`),
+                ),
+              );
+              if (
+                value.days.some((d) =>
+                  d.activities.some(
+                    (a) =>
+                      a.source === 'ai' &&
+                      !links.has(`${a.activityId}:${a.placeId}`),
+                  ),
+                )
+              )
+                throw new HttpError(
+                  400,
+                  'INVALID_AI_SOURCE',
+                  'Nguồn hoạt động AI không hợp lệ.',
+                );
+            } else if (
+              value.aiRunId ||
+              value.days.some((d) =>
+                d.activities.some((a) => a.source === 'ai'),
+              )
+            ) {
+              throw new HttpError(
+                400,
+                'INVALID_AI_SOURCE',
+                'Chuyến đi thủ công không thể tự gắn nguồn AI.',
+              );
+            }
+            // Existing links remain readable if a catalog entry is archived. New links
+            // must point to published places in the day's destination.
+            const incoming = value.days.flatMap((d) =>
+              d.activities
+                .filter((a) => a.placeId)
+                .map((a) => ({ ...a, destinationId: d.destinationId })),
+            );
+            const oldLinks = new Set(
+              current?.days.flatMap((d) =>
+                d.activities.map(
+                  (a) => `${a.activityId}:${a.placeId}:${d.destinationId}`,
+                ),
+              ) ?? [],
+            );
+            const newLinks = incoming.filter(
+              (a) =>
+                !oldLinks.has(
+                  `${a.activityId}:${a.placeId}:${a.destinationId}`,
+                ),
+            );
+            if (newLinks.length) {
+              const places = await connection
+                .collection('places')
+                .find(
+                  {
+                    _id: {
+                      $in: newLinks.map((a) => new Types.ObjectId(a.placeId)),
+                    },
+                    publicationStatus: 'published',
+                    deletedAt: null,
+                  },
+                  { session },
+                )
+                .toArray();
+              if (
+                newLinks.some(
+                  (a) =>
+                    !places.some(
+                      (p) =>
+                        String(p._id) === a.placeId &&
+                        String(p.destinationId) === a.destinationId,
+                    ),
+                )
+              )
+                throw new HttpError(
+                  400,
+                  'INVALID_PLACE',
+                  'Địa điểm không còn khả dụng hoặc không thuộc điểm đến của ngày. Hãy chọn lại.',
+                );
+            }
             const oldActivities =
               current?.days.flatMap((d) => d.activities) ?? [];
             const enriched = {

@@ -6,6 +6,7 @@ import {
   loginSchema,
   registerSchema,
   tripInputSchema,
+  plannerRequestSchema,
 } from '@goease/contracts';
 import type { Config } from './config.js';
 import { authService, userDto } from './features/auth/auth.service.js';
@@ -14,6 +15,8 @@ import { tripService } from './features/trips/trip.service.js';
 import { businessAudit } from './features/audit/business-audit.js';
 import { HttpError } from './http-error.js';
 import { uuidPattern } from './observability/context.js';
+import { calculateBudget } from './features/trips/budget.js';
+import { plannerService } from './features/ai/planner.js';
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): T {
   const parsed = schema.safeParse(input);
@@ -30,6 +33,7 @@ export function createProduct(connection: Connection, config: Config) {
   const auth = authService(connection, config, audit);
   const trips = tripService(connection, audit);
   const explore = exploreService(connection);
+  const planner = plannerService(connection, config, trips, explore);
   const google = googleAuth(connection, config, auth);
   const router = Router();
   let ready = false;
@@ -46,6 +50,8 @@ export function createProduct(connection: Connection, config: Config) {
       '/places',
       '/me/places',
       '/trips',
+      '/trips/budget-preview',
+      '/trips/ai-proposal',
     ];
     if (publicTemplates.includes(req.path))
       res.locals.logRoute = '/api/v1' + req.path;
@@ -192,6 +198,22 @@ export function createProduct(connection: Connection, config: Config) {
   router.get('/trips', async (_req, res) =>
     res.json({ ok: true, data: await trips.list(res.locals.authUser._id) }),
   );
+  router.post('/trips/budget-preview', (req, res) => {
+    const { trip } = parse(z.strictObject({ trip: tripInputSchema }), req.body);
+    res.json({ ok: true, data: { budget: calculateBudget(trip) } });
+  });
+  router.post('/trips/ai-proposal', async (req, res) => {
+    const value = parse(plannerRequestSchema, req.body);
+    const key = parse(
+      z.string().regex(uuidPattern),
+      req.get('Idempotency-Key'),
+    );
+    await planner.reconcile();
+    res.json({
+      ok: true,
+      data: await planner.propose(res.locals.authUser._id, value, key),
+    });
+  });
   router.get('/trips/:id', async (req, res) =>
     res.json({
       ok: true,
@@ -250,12 +272,14 @@ export function createProduct(connection: Connection, config: Config) {
         ...Object.values(auth.models),
         ...Object.values(trips.models),
         ...Object.values(explore.models),
+        ...Object.values(planner.models),
       ];
       for (const model of all) {
         await model.createCollection();
         await model.createIndexes();
       }
       await audit.initialize();
+      await planner.reconcile();
       ready = true;
     },
   };

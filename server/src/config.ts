@@ -31,6 +31,13 @@ const schema = z.object({
   GOOGLE_CLIENT_ID: z.string().max(512).optional(),
   GOOGLE_CLIENT_SECRET: z.string().max(4096).optional(),
   GOOGLE_PKCE_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().max(4096).optional(),
+  GEMINI_MODEL: z
+    .string()
+    .regex(/^gemini-[a-z0-9.-]+$/)
+    .default('gemini-3.5-flash-lite'),
+  AI_DAILY_USER_LIMIT: z.coerce.number().int().min(1).max(100).default(5),
+  AI_DAILY_GLOBAL_LIMIT: z.coerce.number().int().min(1).max(1000).default(20),
   GOOGLE_REDIRECT_URI: z
     .url()
     .default('http://localhost:3000/api/v1/auth/google/callback'),
