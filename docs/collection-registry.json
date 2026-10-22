@@ -983,7 +983,7 @@
       "rules": "Hydrate target qua quyền/publication/deleted checks. Không coi favorites là consent marketing.",
       "retention": "Xóa theo account; analytics có retention độc lập hợp lệ.",
       "brRefs": ["CONTENT-02", "CAT-07"],
-      "implementationStatus": "Local place state implemented: userId from session, targetType=place, targetId, removedAt, note max2000 default empty, revision default1 and timestamps. Both listed indexes implemented. Other target types/base metadata/purge jobs planned. saved list capped100 newest relationships; published/nondeleted target hydration only; unsave keeps private note; note excluded from public DTO/log/audit.",
+      "implementationStatus": "Local place state implemented: userId from session, targetType=place, targetId, removedAt, note max2000 default empty, revision default1 and timestamps. Both listed indexes implemented. Other target types/base metadata/purge jobs planned. saved list capped100 newest relationships; published/nondeleted target hydration only; unavailable relationships return owner state/id without hidden catalog and allow revision-checked unsave-only; unsave keeps private note; note excluded from public DTO/log/audit.",
       "runtimeFields": [
         ["note", "string", "''", "Private, max2000; unsave preserves note."],
         [

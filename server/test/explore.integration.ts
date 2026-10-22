@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import type { PlaceStateDto } from '@goease/contracts';
 async function readPayload(response: Response) {
   return (await response.json()) as {
-    data: { items: Record<string, unknown>[]; state: PlaceStateDto };
+    data: {
+      items: Record<string, unknown>[];
+      unavailable: { placeId: string; state: PlaceStateDto }[];
+      state: PlaceStateDto;
+    };
   };
 }
 import { once } from 'node:events';
@@ -156,10 +160,67 @@ test(
         targetId: id,
       });
       assert.equal(stored?.note, note);
+      assert.equal(
+        (
+          await call(
+            `/me/places/${id}`,
+            'PATCH',
+            { expectedRevision: 2, saved: true },
+            cookieA,
+          )
+        ).status,
+        200,
+      );
       await product.explore.models.Place.updateOne(
         { _id: id },
         { $set: { publicationStatus: 'archived' } },
       );
+      const unavailable = await readPayload(
+        await call('/me/places', 'GET', undefined, cookieA),
+      );
+      assert.equal(unavailable.data.unavailable.length, 1);
+      assert.equal(unavailable.data.unavailable[0]!.placeId, id);
+      assert.equal(unavailable.data.unavailable[0]!.state.note, note);
+      assert.ok(!JSON.stringify(unavailable.data).includes('Phố cổ Hội An'));
+      assert.equal(
+        (
+          await call(
+            `/me/places/${id}`,
+            'PATCH',
+            { expectedRevision: 3, saved: false },
+            cookieB,
+          )
+        ).status,
+        404,
+      );
+      assert.equal(
+        (
+          await call(
+            `/me/places/${id}`,
+            'PATCH',
+            { expectedRevision: 2, saved: false },
+            cookieA,
+          )
+        ).status,
+        409,
+      );
+      assert.equal(
+        (
+          await call(
+            `/me/places/${id}`,
+            'PATCH',
+            { expectedRevision: 3, saved: false },
+            cookieA,
+          )
+        ).status,
+        200,
+      );
+      assert.equal(
+        (await readPayload(await call('/me/places', 'GET', undefined, cookieA)))
+          .data.unavailable.length,
+        0,
+      );
+
       assert.equal((await call(`/places/${id}`)).status, 404);
       assert.equal(
         (

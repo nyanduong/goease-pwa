@@ -4805,3 +4805,38 @@ body:has(.journey-shell) {
 .ai-proposal small {
   display: block;
 }
+
+.saved-places-page .explore-card {
+  height: 210px;
+}
+.saved-places-page .explore-card.featured {
+  height: 250px;
+}
+.saved-places-page .explore-card-open {
+  height: calc(100% - 46px);
+}
+.saved-places-page .explore-card-open::after {
+  bottom: 46px;
+}
+.saved-places-page .explore-card-copy {
+  bottom: 58px;
+}
+.saved-add-trip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px;
+  background: #e9edde;
+  color: #174b40;
+  font-size: 12px;
+  font-weight: 600;
+}
+.saved-places-page .explore-status button {
+  margin: 8px;
+}

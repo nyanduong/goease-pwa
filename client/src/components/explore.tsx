@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import type {
   PlaceDto,
+  SavedPlacesDto,
   PlaceStateDto,
   TripDto,
   TripInput,
@@ -49,8 +50,15 @@ export function ExplorePage({
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
   const [saving, setSaving] = useState('');
+  const [unavailable, setUnavailable] = useState<SavedPlacesDto['unavailable']>(
+    [],
+  );
   useEffect(() => {
     let active = true;
+    if (savedOnly && !signedIn) {
+      setLoading(false);
+      return;
+    }
     const timer = setTimeout(() => {
       setLoading(true);
       setError('');
@@ -59,19 +67,27 @@ export function ExplorePage({
         ...(category ? { category } : {}),
       });
       const request = savedOnly
-        ? api<{ items: { place: PlaceDto; state: PlaceStateDto }[] }>(
-            '/me/places',
-          ).then((r) =>
-            r.items
+        ? api<SavedPlacesDto>('/me/places').then((r) => {
+            if (active) {
+              setUnavailable(r.unavailable ?? []);
+              setStates(
+                Object.fromEntries(r.items.map((v) => [v.place.id, v.state])),
+              );
+            }
+            const normalize = (v: string) =>
+              v
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd');
+            return r.items
               .map((v) => v.place)
               .filter(
                 (p) =>
                   (!category || p.category === category) &&
-                  p.name
-                    .toLocaleLowerCase('vi')
-                    .includes(query.toLocaleLowerCase('vi')),
-              ),
-          )
+                  normalize(p.name).includes(normalize(query)),
+              );
+          })
         : api<{ items: PlaceDto[] }>(`/places?${params}`).then((r) => r.items);
       void request
         .then((data) => {
@@ -88,10 +104,10 @@ export function ExplorePage({
       active = false;
       clearTimeout(timer);
     };
-  }, [query, category, retry, savedOnly]);
+  }, [query, category, retry, savedOnly, signedIn]);
   useEffect(() => {
     let active = true;
-    if (signedIn)
+    if (signedIn && !savedOnly)
       void api<{ items: { place: PlaceDto; state: PlaceStateDto }[] }>(
         '/me/places',
       )
@@ -105,7 +121,7 @@ export function ExplorePage({
     return () => {
       active = false;
     };
-  }, [signedIn]);
+  }, [signedIn, savedOnly]);
   async function toggle(place: PlaceDto) {
     if (!signedIn) {
       onNavigate('/login');
@@ -135,8 +151,41 @@ export function ExplorePage({
       setSaving('');
     }
   }
+  async function removeUnavailable(
+    value: SavedPlacesDto['unavailable'][number],
+  ) {
+    setSaving(value.placeId);
+    setError('');
+    try {
+      await api(`/me/places/${value.placeId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          expectedRevision: value.state.revision,
+          saved: false,
+        }),
+      });
+      setRetry((v) => v + 1);
+    } catch (e) {
+      setError(message(e));
+    } finally {
+      setSaving('');
+    }
+  }
+  if (savedOnly && !signedIn)
+    return (
+      <section className="explore-page">
+        <h1>Những nơi đã lưu.</h1>
+        <p>Đăng nhập để xem những địa điểm của bạn.</p>
+        <button
+          className="button button-primary"
+          onClick={() => onNavigate('/login')}
+        >
+          Đăng nhập
+        </button>
+      </section>
+    );
   return (
-    <div className="explore-page">
+    <div className={`explore-page ${savedOnly ? 'saved-places-page' : ''}`}>
       {!savedOnly && (
         <button className="explore-back" onClick={() => onNavigate('/')}>
           <ArrowLeft size={20} />
@@ -157,7 +206,7 @@ export function ExplorePage({
         </h1>
         <p>
           {savedOnly
-            ? 'Giữ lại những nơi bạn muốn ghé.'
+            ? 'Chọn nơi đã lưu và thêm vào hành trình của bạn.'
             : 'Tìm nơi hợp gu, lưu cho chuyến tới.'}
         </p>
       </header>
@@ -203,6 +252,29 @@ export function ExplorePage({
           <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button>
         </div>
       )}
+      {savedOnly && !loading && unavailable.length > 0 && (
+        <section
+          className="explore-status"
+          aria-label="Địa điểm không còn khả dụng"
+        >
+          <h2>Địa điểm không còn khả dụng</h2>
+          <p>
+            {unavailable.length} nơi đã lưu đang ẩn hoặc đã ngừng cung cấp.
+            Không thể thêm vào chuyến đi.
+          </p>
+          {unavailable.map((v, i) => (
+            <div key={v.placeId}>
+              <span>Địa điểm đã lưu {i + 1}</span>
+              <button
+                disabled={Boolean(saving)}
+                onClick={() => void removeUnavailable(v)}
+              >
+                Bỏ lưu địa điểm không khả dụng {i + 1}
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
       {loading ? (
         <p className="explore-status" role="status">
           Đang tìm những nơi thú vị…
@@ -210,7 +282,9 @@ export function ExplorePage({
       ) : !items.length ? (
         <p className="explore-status">
           {savedOnly
-            ? 'Bạn chưa lưu địa điểm phù hợp.'
+            ? query || category
+              ? 'Không có nơi đã lưu khớp bộ lọc.'
+              : 'Bạn chưa lưu địa điểm nào đang khả dụng.'
             : 'Chưa có địa điểm phù hợp với tìm kiếm này.'}
         </p>
       ) : view === 'map' ? (
@@ -246,7 +320,11 @@ export function ExplorePage({
               >
                 <button
                   className="explore-card-open"
-                  onClick={() => onNavigate(`/places/${p.id}`)}
+                  onClick={() =>
+                    onNavigate(
+                      `/places/${p.id}${savedOnly ? '?from=saved' : ''}`,
+                    )
+                  }
                 >
                   <img src={p.imageUrl} alt={`${p.name} — ảnh minh họa AI`} />
                   <span className="explore-category">
@@ -264,7 +342,7 @@ export function ExplorePage({
                   className="explore-save"
                   aria-label={`${states[p.id]?.saved ? 'Bỏ lưu' : 'Lưu'} ${p.name}`}
                   aria-pressed={Boolean(states[p.id]?.saved)}
-                  disabled={saving === p.id}
+                  disabled={Boolean(saving)}
                   onClick={() => void toggle(p)}
                 >
                   <Bookmark
@@ -272,10 +350,29 @@ export function ExplorePage({
                     fill={states[p.id]?.saved ? 'currentColor' : 'none'}
                   />
                 </button>
+                {savedOnly && (
+                  <button
+                    className="saved-add-trip"
+                    onClick={() =>
+                      onNavigate(`/places/${p.id}?from=saved&add=1`)
+                    }
+                    aria-label={`Thêm ${p.name} vào chuyến đi`}
+                  >
+                    Thêm vào chuyến đi <ArrowRight size={16} />
+                  </button>
+                )}
               </article>
             );
           })}
         </div>
+      )}
+      {savedOnly && !loading && !items.length && (
+        <button
+          className="button button-outline"
+          onClick={() => onNavigate('/explore')}
+        >
+          Khám phá địa điểm để lưu →
+        </button>
       )}
       <p className="explore-image-credit">Ảnh minh họa được tạo bằng AI.</p>
     </div>
@@ -291,6 +388,11 @@ export function PlaceDetail({
   id: string;
   onNewTrip: (place: PlaceDto, note: string) => void;
 }) {
+  const fromSaved =
+    new URLSearchParams(location.search).get('from') === 'saved';
+  const autoAdd = new URLSearchParams(location.search).get('add') === '1';
+  const openedAuto = useRef(false);
+  const [addedPath, setAddedPath] = useState('');
   const [place, setPlace] = useState<PlaceDto | null>(null);
   const [state, setState] = useState<PlaceStateDto | null>(null);
   const [note, setNote] = useState('');
@@ -376,7 +478,7 @@ export function PlaceDetail({
   }, [dirty]);
   function back() {
     if (dirty && !confirm('Ghi chú chưa lưu. Bạn muốn rời trang?')) return;
-    onNavigate('/explore');
+    onNavigate(fromSaved ? '/saved' : '/explore');
   }
   async function update(saved?: boolean) {
     if (!signedIn) {
@@ -418,6 +520,7 @@ export function PlaceDetail({
     setSheet(true);
     setError('');
     setTripsLoading(true);
+    setTrips([]);
     try {
       const r = await api<{ items: TripDto[] }>('/trips');
       setTrips(
@@ -431,6 +534,16 @@ export function PlaceDetail({
       setTripsLoading(false);
     }
   }
+  useEffect(() => {
+    if (!autoAdd || !place || !state || openedAuto.current) return;
+    const timer = setTimeout(() => {
+      if (!openedAuto.current) {
+        openedAuto.current = true;
+        void openTrips();
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [autoAdd, place, state]);
   const pendingAdd = useRef<{
     signature: string;
     key: string;
@@ -451,6 +564,13 @@ export function PlaceDetail({
           throw new Error(
             'Ngày đã thay đổi hoặc không thuộc Hội An. Chọn lại chuyến đi.',
           );
+        if (
+          day.activities.some((a) => a.placeId === place.id) &&
+          !confirm(
+            'Địa điểm này đã có trong ngày đã chọn. Bạn vẫn muốn thêm một lần nữa?',
+          )
+        )
+          return;
         const input = inputFromTrip(trip);
         input.days = input.days.map((d) =>
           d.dayId === dayId
@@ -472,12 +592,18 @@ export function PlaceDetail({
           }),
         };
       }
-      await api(`/trips/${tripId}`, {
+      const saved = await api<{ trip: TripDto }>(`/trips/${tripId}`, {
         method: 'PATCH',
         body: pendingAdd.current.body,
         headers: { 'Idempotency-Key': pendingAdd.current.key },
       });
       pendingAdd.current = null;
+      setAddedPath(
+        `/trips/${saved.trip.id}?day=${Math.max(
+          0,
+          saved.trip.days.findIndex((d) => d.dayId === dayId),
+        )}`,
+      );
       setSheet(false);
       setNotice('Đã thêm vào chuyến đi.');
     } catch (e) {
@@ -492,7 +618,7 @@ export function PlaceDetail({
   if (!place)
     return (
       <div className="explore-status">
-        <button onClick={back}>← Khám phá</button>
+        <button onClick={back}>{fromSaved ? '← Đã lưu' : '← Khám phá'}</button>
         <p>{error || 'Đang mở địa điểm…'}</p>
         {error && (
           <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button>
@@ -503,7 +629,11 @@ export function PlaceDetail({
     <article className="place-detail">
       <div className="place-hero">
         <img src={place.imageUrl} alt={`${place.name} — ảnh minh họa AI`} />
-        <button className="place-back" aria-label="Về Khám phá" onClick={back}>
+        <button
+          className="place-back"
+          aria-label={fromSaved ? 'Về Đã lưu' : 'Về Khám phá'}
+          onClick={back}
+        >
           <ArrowLeft size={23} />
         </button>
         <button
@@ -621,11 +751,7 @@ export function PlaceDetail({
             {notice === 'Đã thêm vào chuyến đi.' && (
               <button
                 className="text-button"
-                onClick={() =>
-                  onNavigate(
-                    `/trips/${tripId}?day=${Math.max(0, trips.find((t) => t.id === tripId)?.days.findIndex((d) => d.dayId === dayId) ?? 0)}`,
-                  )
-                }
+                onClick={() => onNavigate(addedPath)}
               >
                 Mở chuyến đi →
               </button>
@@ -679,7 +805,7 @@ export function PlaceDetail({
             ) : (
               <>
                 <label>
-                  Chuyến đi tại Hội An
+                  Chuyến đi tại {place.destinationName}
                   <select
                     value={tripId}
                     disabled={busy}
@@ -717,7 +843,7 @@ export function PlaceDetail({
                 )}
                 <button
                   className="button button-primary"
-                  disabled={busy || !tripId || !dayId}
+                  disabled={busy || !selected || !dayId || tripsLoading}
                   onClick={() => void add()}
                 >
                   {busy ? 'Đang thêm…' : 'Thêm vào chuyến đi'}
@@ -731,10 +857,22 @@ export function PlaceDetail({
                 </button>
               </>
             )}
-            {error && <p role="alert">{error}</p>}
+            {!tripsLoading && !trips.length && !error && (
+              <p>
+                Chưa có chuyến đi phù hợp. Bạn có thể tạo bản nháp mới bên trên.
+              </p>
+            )}
+            {error && (
+              <p role="alert">
+                {error}{' '}
+                <button disabled={busy} onClick={() => void openTrips()}>
+                  Tải lại chuyến đi
+                </button>
+              </p>
+            )}
             <p className="place-source">
-              Chỉ hiện chuyến đi của bạn tại Hội An. Bản nháp mới cần được lưu
-              trong màn chỉnh sửa.
+              Chỉ hiện chuyến đi của bạn tại {place.destinationName}. Bản nháp
+              mới cần được lưu trong màn chỉnh sửa.
             </p>
           </section>
         </div>

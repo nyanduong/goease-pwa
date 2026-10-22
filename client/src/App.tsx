@@ -638,17 +638,6 @@ export function App() {
               onNavigate={go}
               savedOnly
             />
-            <HomeDiscovery
-              key={`destinations:${user?.id ?? 'guest'}`}
-              mode="saved"
-              user={user}
-              destinations={destinations}
-              trips={list}
-              tripsStatus={tripsStatus}
-              onRetry={() => setTripsRetry((v) => v + 1)}
-              onStart={(id) => (id ? startWithDestination(id) : start())}
-              onNavigate={go}
-            />
           </>
         ) : path === '/budget' ? (
           <BudgetPreview onBack={() => go('/trips')} />

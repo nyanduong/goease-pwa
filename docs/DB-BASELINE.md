@@ -470,7 +470,7 @@ Thực chi du lịch, tách ước tính planner và giao dịch tiền trên Go
 
 **Lớp:** PLATFORM · **Bộ metadata:** `MUTABLE`
 
-**Runtime Khám phá 2026-10-22 (CAT-07):** userId, targetType=place, targetId, removedAt, note, revision và timestamps đã chạy. TargetType khác và metadata MUTABLE ngoài timestamps chưa triển khai. Hai index dưới đã chạy. Owner từ session; chỉ hydrate place published/chưa xóa. Note private không có trong public DTO/log/audit. Bỏ lưu giữ note. List hiện giới hạn100 quan hệ mới nhất; account purge/retention job chưa triển khai.
+**Runtime Khám phá 2026-10-22 (CAT-07):** userId, targetType=place, targetId, removedAt, note, revision và timestamps đã chạy. TargetType khác và metadata MUTABLE ngoài timestamps chưa triển khai. Hai index dưới đã chạy. Owner từ session; chỉ hydrate place published/chưa xóa. Note private không có trong public DTO/log/audit. Bỏ lưu giữ note. List hiện giới hạn100 quan hệ mới nhất; account purge/retention job chưa triển khai. Cập nhật2026-10-23: response SavedPlacesDto có items (published) và unavailable (placeId/state của chính user, không hydrate catalog). Cho phép unsave-only quan hệ đã ẩn theo revision; không đổi schema/index hoặc migration.
 
 Quan hệ yêu thích, không mảng không giới hạn trên user.
 

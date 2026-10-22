@@ -37,6 +37,10 @@ export type PlaceStateDto = {
   note: string;
   revision: number;
 };
+export type SavedPlacesDto = {
+  items: { place: PlaceDto; state: PlaceStateDto }[];
+  unavailable: { placeId: string; state: PlaceStateDto }[];
+};
 export const placeQuerySchema = z.strictObject({
   destinationId: z
     .string()

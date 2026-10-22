@@ -684,9 +684,34 @@ test('Hoi An catalog journey and server budget stay connected across save and re
     .first()
     .click();
   await page
-    .getByRole('button', { name: 'Thêm vào chuyến đi', exact: false })
+    .getByLabel('Ghi chú của bạn', { exact: true })
+    .fill('Ăn trưa cùng nhóm');
+  await page.getByRole('button', { name: 'Lưu ghi chú', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText('Đã lưu ghi chú.');
+  await page
+    .getByRole('button', { name: 'Lưu địa điểm', exact: true })
     .first()
     .click();
+  await expect(page.getByRole('status')).toHaveText('Đã lưu địa điểm.');
+  await page.goto('/saved');
+  await expect(page.locator('.explore-card')).toHaveCount(1);
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: '.local/hoian-preview/saved-live-390.png' });
+  await page
+    .getByRole('button', {
+      name: 'Thêm Cơm gà Hội An vào chuyến đi',
+      exact: true,
+    })
+    .click();
+  await expect(page.getByRole('dialog')).toBeVisible();
   await page
     .getByLabel('Chuyến đi tại Hội An')
     .selectOption({ label: 'Hội An nối dữ liệu thật' });
@@ -717,6 +742,47 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   expect(stored.days[0].activities[0].placeId).toBe('100000000000000000000001');
   expect(stored.days[1].activities[1].placeId).toBe('100000000000000000000002');
   expect(stored.budgetSummary.knownEstimatedMinor).toBe(400000);
+  expect(stored.days[1].activities[1].notes).toBe('Ăn trưa cùng nhóm');
+  await page.goto('/saved');
+  await page
+    .getByRole('button', {
+      name: 'Thêm Cơm gà Hội An vào chuyến đi',
+      exact: true,
+    })
+    .click();
+  await page
+    .getByLabel('Chuyến đi tại Hội An')
+    .selectOption({ label: 'Hội An nối dữ liệu thật' });
+  await page.getByLabel('Ngày ghé thăm').selectOption({ label: '2026-11-13' });
+  const duplicatePrompt = page.waitForEvent('dialog');
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Thêm vào chuyến đi', exact: true })
+    .click();
+  expect((await duplicatePrompt).message()).toContain('đã có trong ngày');
+  await expect(
+    page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Thêm vào chuyến đi', exact: true }),
+  ).toBeEnabled();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.getByRole('button', { name: 'Về Đã lưu', exact: true }).click();
+  await expect(page).toHaveURL(/\/saved$/);
+  await page.locator('.explore-save').click();
+  await expect(page.locator('.explore-card')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('.explore-card')).toHaveCount(0);
+  const unchanged = (
+    await (
+      await page.request.get(
+        new URL(tripUrl).pathname.replace('/trips/', '/api/v1/trips/'),
+      )
+    ).json()
+  ).data.trip;
+  expect(unchanged.revision).toBe(stored.revision);
+  expect(unchanged.days[1].activities).toHaveLength(2);
   await page.goto('/');
   await page.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
   await page.goto('/login');

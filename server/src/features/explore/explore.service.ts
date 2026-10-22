@@ -268,10 +268,17 @@ export function exploreService(connection: Connection) {
           const p = docs.find((p) => String(p._id) === String(f.targetId));
           return p ? [{ place: dto(p), state: state(f, String(p._id)) }] : [];
         }),
+        unavailable: favorites
+          .filter(
+            (f) => !docs.some((p) => String(p._id) === String(f.targetId)),
+          )
+          .map((f) => ({
+            placeId: String(f.targetId),
+            state: state(f, String(f.targetId)),
+          })),
       };
     },
     async updateState(owner: Types.ObjectId, id: string, input: unknown) {
-      await place(id);
       const parsed = placeStateInputSchema.safeParse(input);
       if (!parsed.success)
         throw new HttpError(
@@ -280,6 +287,15 @@ export function exploreService(connection: Connection) {
           'Ghi chú tối đa 2.000 ký tự; yêu cầu phải có phiên bản hiện tại.',
         );
       const { expectedRevision, saved, note } = parsed.data;
+      if (saved === false && note === undefined && /^[a-f0-9]{24}$/.test(id)) {
+        // Removing an owned bookmark must work even after its public place disappears.
+        const owned = await Favorite.exists({
+          userId: owner,
+          targetType: 'place',
+          targetId: id,
+        });
+        if (!owned) await place(id);
+      } else await place(id);
       const filter = {
         userId: owner,
         targetType: 'place' as const,

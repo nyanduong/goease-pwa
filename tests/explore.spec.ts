@@ -236,3 +236,67 @@ test('mocked add-to-trip retries reuse payload and idempotency key', async ({
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
 });
+
+test('saved guest gate does not fetch private places', async ({ page }) => {
+  await setup(page, false);
+  let privateReads = 0;
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/v1/me/places') privateReads++;
+  });
+  await page.goto('/saved');
+  await expect(
+    page.getByText('Đăng nhập để xem những địa điểm của bạn.'),
+  ).toBeVisible();
+  expect(privateReads).toBe(0);
+});
+
+test('saved unavailable relationship can be removed without showing hidden catalog', async ({
+  page,
+}) => {
+  await setup(page, true);
+  let removed = false;
+  await page.route('**/api/v1/me/places', (r) =>
+    r.fulfill({
+      json: {
+        ok: true,
+        data: {
+          items: [],
+          unavailable: removed
+            ? []
+            : [
+                {
+                  placeId: place.id,
+                  state: {
+                    placeId: place.id,
+                    saved: true,
+                    note: '',
+                    revision: 4,
+                  },
+                },
+              ],
+        },
+      },
+    }),
+  );
+  await page.route(`**/api/v1/me/places/${place.id}`, async (r) => {
+    expect(r.request().method()).toBe('PATCH');
+    expect(r.request().postDataJSON()).toEqual({
+      expectedRevision: 4,
+      saved: false,
+    });
+    removed = true;
+    await r.fulfill({ json: { ok: true, data: {} } });
+  });
+  await page.goto('/saved');
+  await expect(
+    page.getByRole('heading', { name: 'Địa điểm không còn khả dụng' }),
+  ).toBeVisible();
+  await expect(page.locator('.explore-card')).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Bỏ lưu địa điểm không khả dụng 1' })
+    .click();
+  await expect(
+    page.getByRole('heading', { name: 'Địa điểm không còn khả dụng' }),
+  ).toHaveCount(0);
+  expect(removed).toBe(true);
+});
