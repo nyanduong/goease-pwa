@@ -2,6 +2,8 @@
 
 Ngày kiểm tra: **22/10/2026**, Windows / PowerShell. Mã được triển khai trực tiếp trên `main`, viết mới, không nhập code repository GoEase cũ. BR không thay đổi. Architecture chỉ cập nhật trạng thái F0 và quyết định pnpm thay khuyến nghị npm trước đó (kèm chuẩn hóa định dạng Markdown).
 
+> Bằng chứng bên dưới ghi nhận lần bootstrap ban đầu với pnpm. Cấu hình hiện tại đã chuyển sang npm workspace và localhost theo yêu cầu mới nhất; kết quả kiểm tra lại được ghi ở cuối tài liệu.
+
 ## Môi trường và lựa chọn
 
 - Node **24.15.0 LTS**, pnpm **10.34.6**; phiên bản dependency trực tiếp pin trong từng manifest, một lockfile ở root.
@@ -40,3 +42,11 @@ Unit test kiểm tra invalid JSON (400), payload quá lớn (413), endpoint khô
 - Hướng dẫn PowerShell, cấu trúc thư mục và hợp đồng API nằm trong README. Sau F0 cần chốt Q-02 trước khi triển khai lưu trip và ownership.
 
 Commit SHA và trạng thái push được báo trong bàn giao sau khi commit; không tự ghi SHA của chính commit này vào nội dung commit.
+
+## Cập nhật npm và localhost theo yêu cầu chủ dự án
+
+- Chuyển toàn bộ workspace, scripts và CI sang **npm 11.12.1**, dùng duy nhất `package-lock.json`; bỏ cấu hình và lockfile pnpm. `npm run dev` build contracts rồi chạy web/API song song bằng concurrently.
+- Web ở **http://localhost:5180**, API ở **http://localhost:3000**; bind, proxy, CORS, environment example và browser tests dùng localhost. MongoDB nội bộ tiếp tục dùng loopback để giữ nguyên replica set đã khởi tạo.
+- Đã chạy thành công: clean npm install trong thư mục riêng, `npm ci` tại repo, `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm test` (3 tests), `npm run db:check` (ghi/đọc/xóa thật), `npm run test:e2e` (build và 3 browser tests qua localhost).
+- Browser test tiếp tục kiểm chứng MongoDB dừng → HTTP 503 → database khởi động lại → cùng API phục hồi; không dùng mock thành công database.
+- Kết quả CI của bản npm chỉ được xác nhận sau khi quan sát run tương ứng; bảng pnpm phía trên là bằng chứng lịch sử của bootstrap ban đầu.

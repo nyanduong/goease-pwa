@@ -19,7 +19,7 @@ Backend ban đầu là một ứng dụng có các module theo nghiệp vụ. Ch
 
 ## 2. Cấu trúc đề xuất
 
-Giữ các tên đơn giản đã trao đổi. Dùng pnpm workspace với một pnpm-lock.yaml ở root theo yêu cầu F0 trực tiếp của chủ dự án (ưu tiên hơn khuyến nghị npm trước đây).
+Giữ các tên đơn giản đã trao đổi. Dùng npm workspace với một package-lock.json ở root theo yêu cầu mới nhất của chủ dự án. Chạy development bằng npm run dev, web/API sử dụng localhost.
 
 | Đường dẫn dự kiến   | Nội dung                                                        |
 | ------------------- | --------------------------------------------------------------- |
@@ -89,7 +89,7 @@ Nguồn: [Vite environment variables](https://vite.dev/guide/env-and-mode), [Exp
 **Phạm vi:**
 
 1. Kiểm tra runtime/môi trường; chọn bộ phiên bản tương thích, ghi Node version và package manager.
-2. Dựng pnpm workspace cho client, server và contracts tối thiểu; bật TypeScript strict.
+2. Dựng npm workspace cho client, server và contracts tối thiểu; bật TypeScript strict.
 3. Dựng React/Vite/Tailwind với một màn hình nền có responsive cơ bản.
 4. Dựng Express với validation cấu hình môi trường, error handling và endpoint /api/v1/health.
 5. Thiết lập kết nối Mongoose local; health/readiness phải phân biệt được API đang chạy và database có truy cập được hay không. Không trả chi tiết nội bộ nhạy cảm.

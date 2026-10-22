@@ -9,11 +9,11 @@ F0 cung cấp màn hình kỹ thuật, health API và tooling. Chưa triển kha
 | Công cụ           | Phiên bản                                                                                       |
 | ----------------- | ----------------------------------------------------------------------------------------------- |
 | Node.js           | 24 LTS; đã kiểm tra **24.15.0**, `.node-version` pin bản này; engines nhận 24.15+ trong dòng 24 |
-| pnpm              | **10.34.6**, pin bằng `packageManager`                                                          |
+| npm               | **11.12.1**, pin bằng `packageManager`                                                          |
 | MongoDB Community | Đã kiểm tra **8.2**, executable `mongod`; không cần quyền admin để chạy instance riêng          |
 | Trình duyệt E2E   | Microsoft Edge đã cài trên Windows; cần `MONGOD_BINARY`                                         |
 
-Các dependency trực tiếp được pin trong manifests, dependency tree trong **một** `pnpm-lock.yaml`. Không dùng npm/yarn để tạo lockfile khác. ESLint 10, TypeScript 5.9, React 19, Vite 8 và Tailwind 4; xem manifest để có patch version chính xác. Không cần Docker; chưa cung cấp Docker Compose vì F0 đã được kiểm chứng bằng MongoDB cài sẵn.
+Các dependency trực tiếp được pin trong manifests, dependency tree trong **một** `package-lock.json`. Dùng npm workspace cho cả development và CI; không tạo lockfile của package manager khác. ESLint 10, TypeScript 5.9, React 19, Vite 8 và Tailwind 4; xem manifest để có patch version chính xác. Không cần Docker; chưa cung cấp Docker Compose vì F0 đã được kiểm chứng bằng MongoDB cài sẵn.
 
 ## Chạy local trên Windows / PowerShell
 
@@ -23,13 +23,8 @@ Từ checkout mới:
 git clone https://github.com/nyanduong/goease-pwa.git
 Set-Location goease-pwa
 node --version
-# Nếu Corepack đã có, bật shim nếu cần và quyền thư mục cài đặt cho phép:
-corepack enable pnpm
-corepack prepare pnpm@10.34.6 --activate
-# Nếu không có Corepack, có thể cài pnpm vào user prefix:
-# npm install --global --prefix "$env:APPDATA\npm" pnpm@10.34.6
-pnpm --version
-pnpm install --frozen-lockfile
+npm --version
+npm ci
 Copy-Item server/.env.example server/.env
 Copy-Item client/.env.example client/.env
 ```
@@ -51,15 +46,15 @@ Terminal thứ hai, tại root repo:
 
 ```powershell
 # Chỉ chạy lệnh init trên instance GoEase dành riêng ở 127.0.0.1:27019.
-pnpm db:init
+npm run db:init
 # Sau lần init đầu, chờ vài giây để replica set bầu primary.
-pnpm db:check
-pnpm dev
+npm run db:check
+npm run dev
 ```
 
-Mở [web local](http://127.0.0.1:5180). API ở [health](http://127.0.0.1:3000/api/v1/health) và [database health](http://127.0.0.1:3000/api/v1/health/db). Dùng `127.0.0.1` nhất quán với `CLIENT_ORIGIN`. Cổng 5180 được chọn vì 5173 đã có tiến trình khác trong môi trường kiểm tra; `strictPort` tránh âm thầm đổi cổng. Nút **Kiểm tra lại** lấy trạng thái mới; trang không tự polling.
+Mở [web local](http://localhost:5180). API ở [health](http://localhost:3000/api/v1/health) và [database health](http://localhost:3000/api/v1/health/db). Dùng `localhost` nhất quán với `CLIENT_ORIGIN`. Cổng 5180 được chọn vì 5173 đã có tiến trình khác trong môi trường kiểm tra; `strictPort` tránh âm thầm đổi cổng. Nút **Kiểm tra lại** lấy trạng thái mới; trang không tự polling.
 
-`pnpm dev` build contracts trước rồi chạy web/API song song. Nếu sửa contracts, build lại package và khởi động lại dev. Vite proxy `/api` tới API 3000. Khi triển khai web/API khác origin, cấu hình `VITE_API_BASE_URL` là origin API và `CLIENT_ORIGIN` là origin web; đổi proxy nếu đổi cổng API local. Không dùng Vite dev server làm production server.
+`npm run dev` build contracts trước rồi chạy web/API song song. Nếu sửa contracts, build lại package và khởi động lại dev. Vite proxy `/api` tới API trên `localhost:3000`. Web và API chỉ bind localhost, không mở ra IP LAN. MongoDB nội bộ dùng loopback 127.0.0.1 để giữ tương thích replica set đã khởi tạo; đây không phải địa chỉ IP LAN của máy. Khi triển khai web/API khác origin, cấu hình `VITE_API_BASE_URL` là origin API và `CLIENT_ORIGIN` là origin web; đổi proxy nếu đổi cổng API local. Không dùng Vite dev server làm production server.
 
 ## MongoDB và phục hồi kết nối
 
@@ -70,9 +65,9 @@ MONGODB_URI=mongodb://127.0.0.1:27019/goease?replicaSet=rs0
 MONGODB_TEST_URI=mongodb://127.0.0.1:27019/goease_f0_test?replicaSet=rs0
 ```
 
-`pnpm db:init` chỉ khởi tạo `rs0` khi instance trên 27019 trả `NotYetInitialized`; không sửa cấu hình replica set có sẵn. URI chứa `replicaSet=rs0` không tự khởi tạo replica set. Single-node replica set này phục vụ development, chưa có dự phòng; transaction nghiệp vụ chưa được triển khai hay nghiệm thu trong F0.
+`npm run db:init` chỉ khởi tạo `rs0` khi instance trên 27019 trả `NotYetInitialized`; không sửa cấu hình replica set có sẵn. URI chứa `replicaSet=rs0` không tự khởi tạo replica set. Single-node replica set này phục vụ development, chưa có dự phòng; transaction nghiệp vụ chưa được triển khai hay nghiệm thu trong F0.
 
-`pnpm db:check` dùng Mongoose ghi → đọc → xóa document có marker ngẫu nhiên, chỉ trong `goease_f0_test` trên loopback. Script từ chối tên database ứng dụng, host bên ngoài, credentials, URI SRV, query khác `replicaSet` và `NODE_ENV=production`; không drop database hay xóa dữ liệu khác.
+`npm run db:check` dùng Mongoose ghi → đọc → xóa document có marker ngẫu nhiên, chỉ trong `goease_f0_test` trên loopback. Script từ chối tên database ứng dụng, host bên ngoài, credentials, URI SRV, query khác `replicaSet` và `NODE_ENV=production`; không drop database hay xóa dữ liệu khác.
 
 Để thử mất kết nối thủ công: dừng terminal MongoDB bằng `Ctrl+C`, nhấn **Kiểm tra lại**. Backend vẫn trả health 200 nhưng DB trả 503. Chạy lại đúng lệnh `mongod` với cùng dbpath, chờ kết nối phục hồi rồi nhấn **Kiểm tra lại**. Backend thử lại sau 3 giây khi kết nối ban đầu lỗi; sau khi đã kết nối, driver Mongoose tự phục hồi khi database trở lại. API không xóa dữ liệu lúc khởi động.
 
@@ -81,23 +76,23 @@ Dừng web/API bằng `Ctrl+C`. API xử lý SIGINT/SIGTERM, ngừng nhận requ
 ## Các lệnh kiểm tra
 
 ```powershell
-pnpm typecheck
-pnpm lint
-pnpm format:check
-pnpm test
-pnpm build
-pnpm db:check
+npm run typecheck
+npm run lint
+npm run format:check
+npm test
+npm run build
+npm run db:check
 $env:MONGOD_BINARY = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
-pnpm test:e2e
+npm run test:e2e
 ```
 
-E2E cần cổng **3000**, **5180**, **27020** trống; hãy dừng `pnpm dev` trước. Test dùng Edge headless, API build thật và Vite dev server, khởi chạy MongoDB riêng trên 27020 với dbpath mới trong `.local`. Test thực sự dừng process MongoDB do chính nó tạo rồi khởi động lại, kiểm tra 503 và phục hồi trên cùng API. Không dừng MongoDB của người dùng trên 27017/27019. Dữ liệu E2E giữ trong `.local` để kiểm tra khi cần. Screenshot ở `test-results/`; không commit artifacts này.
+E2E cần cổng **3000**, **5180**, **27020** trống; hãy dừng `npm run dev` trước. Test dùng Edge headless, API build thật và Vite dev server, khởi chạy MongoDB riêng trên 27020 với dbpath mới trong `.local`. Test thực sự dừng process MongoDB do chính nó tạo rồi khởi động lại, kiểm tra 503 và phục hồi trên cùng API. Không dừng MongoDB của người dùng trên 27017/27019. Dữ liệu E2E giữ trong `.local` để kiểm tra khi cần. Screenshot ở `test-results/`; không commit artifacts này.
 
-`pnpm test` kiểm tra HTTP thật với dependency ping được điều khiển để kiểm tra hợp đồng lỗi, validation và guard database test; đây không phải bằng chứng kết nối MongoDB. Bằng chứng MongoDB thật đến từ `db:check` và E2E. Test lỗi mạng dùng browser fault injection và được đặt tên rõ.
+`npm test` kiểm tra HTTP thật với dependency ping được điều khiển để kiểm tra hợp đồng lỗi, validation và guard database test; đây không phải bằng chứng kết nối MongoDB. Bằng chứng MongoDB thật đến từ `db:check` và E2E. Test lỗi mạng dùng browser fault injection và được đặt tên rõ.
 
-`pnpm build` tạo `client/dist`, `server/dist`, `packages/contracts/dist`. Sau build có thể chạy API bằng `pnpm --filter @goease/server start`; `pnpm --filter @goease/client preview` chỉ xem bundle (không có dev proxy, cần cấu hình public API URL hoặc reverse proxy để gọi API).
+`npm run build` tạo `client/dist`, `server/dist`, `packages/contracts/dist`. Sau build có thể chạy API bằng `npm run start --workspace @goease/server`; `npm run preview --workspace @goease/client` chỉ xem bundle (không có dev proxy, cần cấu hình public API URL hoặc reverse proxy để gọi API).
 
-CI GitHub chạy frozen install, format, lint, typecheck, unit test và build. E2E/database là kiểm tra local có điều kiện riêng. Trạng thái CI chỉ được xác nhận sau khi quan sát run trên GitHub; xem [bằng chứng F0](docs/F0-VERIFICATION.md).
+CI GitHub chạy npm ci, format, lint, typecheck, unit test và build. E2E/database là kiểm tra local có điều kiện riêng. Trạng thái CI chỉ được xác nhận sau khi quan sát run trên GitHub; xem [bằng chứng F0](docs/F0-VERIFICATION.md).
 
 ## API và tổ chức mã
 
@@ -130,7 +125,7 @@ Health hiện chỉ cần routes gọi dependency ping; chưa có domain logic c
 ## Tài liệu và bước tiếp theo
 
 - [BR và câu hỏi cần chốt](docs/BR.md): giữ nguyên các mục đề xuất; chưa coi là chính sách đã duyệt.
-- [Kiến trúc](docs/ARCHITECTURE.md): cập nhật pnpm theo yêu cầu F0, thay khuyến nghị npm cũ.
+- [Kiến trúc](docs/ARCHITECTURE.md): dùng npm workspace và localhost theo yêu cầu mới nhất của chủ dự án.
 - [Quy ước repository](AGENTS.md).
 - [Bằng chứng nghiệm thu F0](docs/F0-VERIFICATION.md).
 

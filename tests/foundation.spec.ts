@@ -23,7 +23,7 @@ async function startMongo() {
       async () => {
         if (mongo.exitCode !== null)
           throw new Error('Dedicated test mongod exited; check port 27020');
-        return (await fetch('http://127.0.0.1:3000/api/v1/health/db')).status;
+        return (await fetch('http://localhost:3000/api/v1/health/db')).status;
       },
       { timeout: 20000 },
     )
