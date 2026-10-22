@@ -124,6 +124,16 @@ export function authService(
   }
   return {
     models,
+    hasSessionCookie(req: Request) {
+      return (
+        req.headers.cookie
+          ?.split(';')
+          .some((value) => value.trim().startsWith('goease_session=')) ?? false
+      );
+    },
+    clearSessionCookie(res: Response) {
+      res.clearCookie('goease_session', cookieOptions);
+    },
     authenticate,
     createSession,
     limitChallenge(req: Request) {

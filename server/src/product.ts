@@ -86,8 +86,17 @@ export function createProduct(connection: Connection, config: Config) {
     }),
   );
   router.get('/auth/me', async (req, res) => {
+    const hadSessionCookie = auth.hasSessionCookie(req);
     const value = await auth.authenticate(req);
-    res.json({ ok: true, data: { user: value ? userDto(value.user) : null } });
+    const expiredSession = hadSessionCookie && !value;
+    if (expiredSession) auth.clearSessionCookie(res);
+    res.json({
+      ok: true,
+      data: {
+        user: value ? userDto(value.user) : null,
+        expiredSession,
+      },
+    });
   });
   router.post('/auth/register', async (req, res) => {
     const value = parse(registerSchema, req.body);
