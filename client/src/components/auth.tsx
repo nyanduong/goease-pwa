@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import type { UserDto } from '@goease/contracts';
 import { api } from '../api';
 import { errorText, type Link } from '../App';
@@ -26,27 +27,58 @@ export function AuthPage({
   );
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+
   return (
     <section className="auth-layout">
-      <div className="auth-story">
-        <p className="eyebrow">ĐIỀU HAY ĐANG Ở PHÍA TRƯỚC</p>
+      {/* Brand story column - visible on tablet/desktop */}
+      <div className="auth-story" aria-hidden="false">
+        <p className="eyebrow">
+          <span></span>ĐIỀU HAY ĐANG Ở PHÍA TRƯỚC
+        </p>
         <h1>
           {register
             ? 'Một tài khoản.\nNhững hành trình mới.'
             : 'Chào bạn,\nmình lại đi nhé?'}
         </h1>
-        <Goe />
-        <p>Lưu những kế hoạch riêng và tiếp tục từ nơi bạn đã dừng lại.</p>
-      </div>
-      <div className="auth-card">
-        <p className="eyebrow">CHÀO MỪNG ĐẾN GOEASE</p>
-        <h2>{register ? 'Tạo tài khoản' : 'Đăng nhập'}</h2>
-        <p>
-          {register
-            ? 'Bắt đầu bằng những điều đơn giản.'
-            : 'Lịch trình của bạn đang chờ ở đây.'}
+        <p className="auth-story-sub">
+          Lưu những kế hoạch riêng và tiếp tục từ nơi bạn đã dừng lại.
         </p>
+        <div className="auth-mascot-card">
+          <Goe size="large" />
+          <div className="auth-mascot-caption">
+            <strong>Goe chờ bạn</strong>
+            <span>Đồng hành từng chặng đường</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Form card column */}
+      <div className="auth-card">
+        <div className="auth-card-header">
+          <p className="eyebrow">
+            <span></span>CHÀO MỪNG ĐẾN GOEASE
+          </p>
+          <h2>{register ? 'Tạo tài khoản' : 'Đăng nhập'}</h2>
+          <p className="auth-card-sub">
+            {register
+              ? 'Bắt đầu bằng những điều đơn giản.'
+              : 'Lịch trình của bạn đang chờ ở đây.'}
+          </p>
+        </div>
+
+        {register && (
+          <details className="dev-notice">
+            <summary>Lưu ý môi trường thử nghiệm (Local)</summary>
+            <p>
+              Bản local lưu email, mật khẩu đã băm và lịch trình trong MongoDB
+              trên máy. Thư xác minh dùng hộp thư phát triển, chưa gửi email
+              thật. Không dùng mật khẩu của tài khoản khác.
+            </p>
+          </details>
+        )}
+
         <form
+          className="auth-form"
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
@@ -76,23 +108,17 @@ export function AuthPage({
           }}
         >
           {register && (
-            <>
-              <p className="muted">
-                Bản local lưu email, mật khẩu đã băm và lịch trình trong MongoDB
-                trên máy. Thư xác minh dùng hộp thư phát triển, chưa gửi email
-                thật. Không dùng mật khẩu của tài khoản khác.
-              </p>
-              <Field label="Tên của bạn">
-                <input
-                  name="displayName"
-                  required
-                  maxLength={100}
-                  autoComplete="name"
-                  placeholder="Bạn muốn GoEase gọi là gì?"
-                />
-              </Field>
-            </>
+            <Field label="Tên của bạn">
+              <input
+                name="displayName"
+                required
+                maxLength={100}
+                autoComplete="name"
+                placeholder="Bạn muốn GoEase gọi là gì?"
+              />
+            </Field>
           )}
+
           <Field label="Email">
             <input
               name="email"
@@ -103,163 +129,228 @@ export function AuthPage({
               placeholder="ban@example.com"
             />
           </Field>
-          <Field
-            label="Mật khẩu"
-            {...(register
-              ? {
-                  hint: 'Ít nhất 12 ký tự. Hãy dùng một mật khẩu riêng cho GoEase.',
-                }
-              : {})}
-          >
-            <input
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              required
-              minLength={12}
-              maxLength={128}
-              autoComplete={register ? 'new-password' : 'current-password'}
-              placeholder="Nhập mật khẩu của bạn"
-            />
-          </Field>
-          <button
-            className="password-toggle text-button"
-            type="button"
-            aria-pressed={showPassword}
-            onClick={() => setShowPassword((v) => !v)}
-          >
-            {showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-          </button>
+
+          <div className="field">
+            <label htmlFor="auth-password-input">Mật khẩu</label>
+            <div className="input-with-action">
+              <input
+                id="auth-password-input"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                minLength={12}
+                maxLength={128}
+                autoComplete={register ? 'new-password' : 'current-password'}
+                placeholder="Nhập mật khẩu của bạn"
+              />
+              <button
+                className="password-toggle-btn"
+                type="button"
+                aria-pressed={showPassword}
+                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? (
+                  <EyeOff
+                    className="password-toggle-icon"
+                    size={20}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Eye
+                    className="password-toggle-icon"
+                    size={20}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="sr-only">
+                  {showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                </span>
+              </button>
+            </div>
+            {register && (
+              <small>
+                Ít nhất 12 ký tự. Hãy dùng một mật khẩu riêng cho GoEase.
+              </small>
+            )}
+          </div>
+
           {message && <Notice error={!sent}>{message}</Notice>}
+
           {sent &&
             import.meta.env.DEV &&
             link(
               '/dev/mailbox',
               'Mở hộp thư phát triển để xác minh ↗',
-              'text-button',
+              'dev-mailbox-link',
             )}
-          <button className="button full-width" disabled={busy}>
+
+          <button
+            type="submit"
+            className="button button-primary full-width"
+            disabled={busy}
+          >
             {busy ? 'Đang xử lý…' : register ? 'Tạo tài khoản' : 'Đăng nhập'}{' '}
             <span>↗</span>
           </button>
         </form>
-        <div className="divider">hoặc</div>
-        {google ? (
-          <a
-            className="button button-outline full-width"
-            href="/api/v1/auth/google"
-          >
-            Tiếp tục với Google
-          </a>
-        ) : (
-          <>
-            <button className="button button-outline full-width" disabled>
-              Google · Chưa khả dụng
-            </button>
-            <small className="muted">
-              Google chưa được cấu hình trong môi trường này.
-            </small>
-          </>
-        )}
+
+        <div className="divider">
+          <span>hoặc</span>
+        </div>
+
+        <div className="auth-social">
+          {google ? (
+            <a
+              className="button button-outline full-width google-btn"
+              href="/api/v1/auth/google"
+            >
+              Tiếp tục với Google
+            </a>
+          ) : (
+            <div className="google-disabled-group">
+              <button
+                type="button"
+                className="button button-outline full-width google-btn"
+                disabled
+              >
+                Google · Chưa khả dụng
+              </button>
+              <small className="muted text-center block">
+                Google chưa được cấu hình trong môi trường này.
+              </small>
+            </div>
+          )}
+        </div>
+
         <p className="auth-switch">
           {register ? 'Đã có tài khoản? ' : 'Bạn mới đến? '}
           {link(
             register ? '/login' : '/register',
             register ? 'Đăng nhập' : 'Tạo tài khoản',
-            'text-button',
+            'text-link',
           )}
         </p>
       </div>
     </section>
   );
 }
+
 export function VerifyPage({ link }: { link: Link }) {
   const [message, setMessage] = useState('');
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+
   return (
     <section className="narrow-page panel">
-      <p className="eyebrow">TÀI KHOẢN CỦA BẠN</p>
-      <h1>Xác minh email</h1>
-      <p>Hoàn tất bước xác minh trước khi lưu chuyến đi vào tài khoản.</p>
+      <div className="verify-header">
+        <Goe size="medium" />
+        <p className="eyebrow">
+          <span></span>TÀI KHOẢN CỦA BẠN
+        </p>
+        <h1>Xác minh email</h1>
+        <p className="verify-sub">
+          Hoàn tất bước xác minh trước khi lưu chuyến đi vào tài khoản.
+        </p>
+      </div>
+
       {message && <Notice error={!done}>{message}</Notice>}
-      {done ? (
-        link('/login', 'Đến trang đăng nhập', 'button')
-      ) : (
-        <button
-          className="button"
-          disabled={busy}
-          onClick={() => {
-            setBusy(true);
-            void api('/auth/verify-email', {
-              method: 'POST',
-              body: JSON.stringify({
-                token: new URLSearchParams(location.search).get('token'),
-              }),
-            })
-              .then(() => {
-                setDone(true);
-                setMessage('Email đã được xác minh. Bạn có thể đăng nhập.');
-                history.replaceState({}, '', '/verify-email');
+
+      <div className="verify-actions">
+        {done ? (
+          link('/login', 'Đến trang đăng nhập', 'button button-primary')
+        ) : (
+          <button
+            type="button"
+            className="button button-primary"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              void api('/auth/verify-email', {
+                method: 'POST',
+                body: JSON.stringify({
+                  token: new URLSearchParams(location.search).get('token'),
+                }),
               })
-              .catch((e: unknown) => setMessage(errorText(e)))
-              .finally(() => setBusy(false));
-          }}
-        >
-          {busy ? 'Đang xác minh…' : 'Xác minh email của tôi'}
-        </button>
-      )}
+                .then(() => {
+                  setDone(true);
+                  setMessage('Email đã được xác minh. Bạn có thể đăng nhập.');
+                  history.replaceState({}, '', '/verify-email');
+                })
+                .catch((e: unknown) => setMessage(errorText(e)))
+                .finally(() => setBusy(false));
+            }}
+          >
+            {busy ? 'Đang xác minh…' : 'Xác minh email của tôi'}
+          </button>
+        )}
+      </div>
     </section>
   );
 }
+
 type Mail = { id: string; to: string; url: string; createdAt: string };
+
 export function Mailbox({ link }: { link: Link }) {
   const [items, setItems] = useState<Mail[]>([]);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     void api<{ items: Mail[] }>('/dev/mailbox')
       .then((v) => setItems(v.items))
       .catch((e: unknown) => setError(errorText(e)));
   }, [attempt]);
+
   return (
-    <section className="page-section">
-      <p className="eyebrow">CHỈ TRONG DEVELOPMENT</p>
-      <h1>Hộp thư phát triển</h1>
-      <Notice>
-        Thư chỉ lưu trên máy phát triển, không được gửi tới email thật. Trang
-        này không hoạt động trong production.
-      </Notice>
-      <button
-        className="button button-outline"
-        onClick={() => {
-          setError('');
-          setAttempt((v) => v + 1);
-        }}
-      >
-        Tải lại hộp thư
-      </button>
-      {error && <Notice error>{error}</Notice>}
-      {items.length ? (
-        items.map((m) => (
-          <article className="mail-card" key={m.id}>
-            <div>
-              <strong>Xác minh tài khoản GoEase</strong>
-              <p>
-                {m.to} · {new Date(m.createdAt).toLocaleString('vi-VN')}
-              </p>
-            </div>
-            {link(
-              new URL(m.url).pathname + new URL(m.url).search,
-              'Mở thư xác minh ↗',
-              'button button-outline',
-            )}
-          </article>
-        ))
-      ) : (
-        <p className="muted">
-          Chưa có thư. Đăng ký một tài khoản để nhận thư xác minh local.
+    <section className="page-section mailbox-section">
+      <div className="mailbox-header">
+        <p className="eyebrow">
+          <span></span>CHỈ TRONG DEVELOPMENT
         </p>
-      )}
+        <h1>Hộp thư phát triển</h1>
+        <Notice>
+          Thư chỉ lưu trên máy phát triển, không được gửi tới email thật. Trang
+          này không hoạt động trong production.
+        </Notice>
+        <button
+          type="button"
+          className="button button-outline"
+          onClick={() => {
+            setError('');
+            setAttempt((v) => v + 1);
+          }}
+        >
+          Tải lại hộp thư
+        </button>
+      </div>
+
+      {error && <Notice error>{error}</Notice>}
+
+      <div className="mailbox-list">
+        {items.length ? (
+          items.map((m) => (
+            <article className="mail-card" key={m.id}>
+              <div className="mail-card-content">
+                <strong>Xác minh tài khoản GoEase</strong>
+                <p>
+                  {m.to} · {new Date(m.createdAt).toLocaleString('vi-VN')}
+                </p>
+              </div>
+              {link(
+                new URL(m.url).pathname + new URL(m.url).search,
+                'Mở thư xác minh ↗',
+                'button button-outline button-small',
+              )}
+            </article>
+          ))
+        ) : (
+          <p className="muted empty-mailbox-text">
+            Chưa có thư. Đăng ký một tài khoản để nhận thư xác minh local.
+          </p>
+        )}
+      </div>
     </section>
   );
 }

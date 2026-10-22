@@ -1,94 +1,198 @@
 import { cloneElement, useId, type ReactElement, type ReactNode } from 'react';
+
 export function Field({
   label,
   children,
   hint,
+  className = '',
 }: {
   label: string;
   children: ReactElement<{ id?: string }>;
   hint?: string;
+  className?: string;
 }) {
   const id = useId();
   return (
-    <div className="field">
+    <div className={`field ${className}`}>
       <label htmlFor={id}>{label}</label>
       {cloneElement(children, { id })}
       {hint && <small>{hint}</small>}
     </div>
   );
 }
+
 export function Notice({
   children,
   error = false,
+  className = '',
 }: {
   children: ReactNode;
   error?: boolean;
+  className?: string;
 }) {
   return (
     <div
-      className={`notice ${error ? 'notice-error' : ''}`}
+      className={`notice ${error ? 'notice-error' : ''} ${className}`}
       role={error ? 'alert' : 'status'}
     >
-      {children}
+      <span className="notice-icon" aria-hidden="true">
+        {error ? '!' : '✓'}
+      </span>
+      <div className="notice-text">{children}</div>
     </div>
   );
 }
+
 export function Brand() {
   return (
     <span className="brand">
-      <span className="brand-mark">↗</span>GoEase
+      <span className="brand-mark" aria-hidden="true">
+        ↗
+      </span>
+      <span className="brand-name">GoEase</span>
       <span className="brand-dot">.</span>
     </span>
   );
 }
-export function Landscape() {
-  return (
-    <svg
-      className="landscape"
-      viewBox="0 0 600 460"
-      role="img"
-      aria-label="Minh họa những ngọn đồi, con đường và ánh nắng"
-    >
-      <rect width="600" height="460" rx="24" fill="#e2e9db" />
-      <circle cx="455" cy="100" r="54" fill="#f2bd77" />
-      <path d="M0 260 150 82 310 270 413 151 600 300V460H0Z" fill="#98b4a0" />
-      <path d="m70 177 80-95 84 99-80-27Z" fill="#edf0df" />
-      <path d="M0 310Q180 220 320 315T600 280V460H0Z" fill="#567c66" />
-      <path d="M0 395Q160 275 350 370T600 350V460H0Z" fill="#254e40" />
-      <path
-        d="M285 460Q430 407 320 363T347 287Q291 343 375 364T368 460Z"
-        fill="#f6e3bd"
-      />
-      <path
-        d="M80 316v-42m-20 23h40m-34-12h28"
-        stroke="#284d3c"
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
-      <path
-        d="M490 352v-65m-24 34h48m-41-17h35"
-        stroke="#203f33"
-        strokeWidth="7"
-        strokeLinecap="round"
-      />
-      <path
-        d="M90 100q10-12 22 0m0 0q10-12 22 0"
-        fill="none"
-        stroke="#567c66"
-        strokeWidth="3"
-      />
-    </svg>
-  );
-}
 
-export function Goe() {
+export function Goe({
+  className = '',
+  size = 'medium',
+}: {
+  className?: string;
+  size?: 'small' | 'medium' | 'large';
+}) {
   return (
     <img
-      className="goe-mascot"
+      className={`goe-mascot goe-${size} ${className}`}
       src="/images/goe-original.png"
       alt="Goe, linh thú xanh dương của GoEase"
       width={1254}
       height={1254}
+      loading="lazy"
     />
   );
+}
+
+export function HeroArtwork() {
+  return (
+    <div
+      className="hero-artwork-frame"
+      role="img"
+      aria-label="Minh họa những ngọn đồi, dòng sông và ánh nắng bình minh ấm áp tại Việt Nam"
+    >
+      <svg
+        viewBox="0 0 540 380"
+        className="hero-artwork-svg"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#F9EFE0" />
+            <stop offset="45%" stopColor="#EFE0C7" />
+            <stop offset="100%" stopColor="#DFE8D9" />
+          </linearGradient>
+          <linearGradient id="hillGrad1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#96B59E" />
+            <stop offset="100%" stopColor="#679174" />
+          </linearGradient>
+          <linearGradient id="hillGrad2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#456F57" />
+            <stop offset="100%" stopColor="#204A37" />
+          </linearGradient>
+          <linearGradient id="riverGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#CCDBC9" />
+            <stop offset="100%" stopColor="#AEC8B4" />
+          </linearGradient>
+        </defs>
+
+        {/* Sky background */}
+        <rect width="540" height="380" rx="20" fill="url(#skyGrad)" />
+
+        {/* Sun / Halo */}
+        <circle cx="395" cy="115" r="54" fill="#E8B568" opacity="0.88" />
+        <circle cx="395" cy="115" r="72" fill="#E8B568" opacity="0.22" />
+
+        {/* Distant mountain silhouette */}
+        <path
+          d="M0 240 Q130 150 260 215 T540 185 L540 380 L0 380 Z"
+          fill="url(#hillGrad1)"
+          opacity="0.75"
+        />
+        <path d="M70 205 L130 140 L190 215 Z" fill="#EBF2E5" opacity="0.4" />
+
+        {/* River */}
+        <path
+          d="M0 270 Q160 235 300 280 T540 255 L540 380 L0 380 Z"
+          fill="url(#riverGrad)"
+        />
+
+        {/* Terraced foreground hills */}
+        <path
+          d="M-20 310 Q140 220 320 295 T560 270 L560 380 L-20 380 Z"
+          fill="url(#hillGrad2)"
+        />
+        <path
+          d="M110 322 Q230 285 370 322"
+          stroke="#F5ECCF"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          opacity="0.65"
+        />
+        <path
+          d="M70 348 Q210 312 410 348"
+          stroke="#F5ECCF"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          opacity="0.5"
+        />
+
+        {/* Little pagoda / pavilion silhouette */}
+        <g transform="translate(185, 252) scale(0.65)" fill="#184C43">
+          <path d="M30 45 L50 25 L70 45 Z" />
+          <rect x="42" y="45" width="16" height="15" />
+          <path d="M22 60 L78 60 L72 68 L28 68 Z" />
+          <rect x="36" y="68" width="28" height="18" />
+        </g>
+
+        {/* Gentle boat on river */}
+        <path
+          d="M340 266 Q370 274 400 266 L395 273 Q370 277 345 273 Z"
+          fill="#184C43"
+          opacity="0.8"
+        />
+
+        {/* Distant birds */}
+        <path
+          d="M75 88 Q85 80 95 88 Q105 80 115 88"
+          stroke="#456F57"
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.6"
+        />
+        <path
+          d="M120 102 Q128 95 136 102 Q144 95 152 102"
+          stroke="#456F57"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.5"
+        />
+      </svg>
+      <div className="hero-artwork-badge">
+        <Goe size="small" />
+        <div className="hero-artwork-badge-text">
+          <strong>Goe cùng bạn</strong>
+          <span>Lên kế hoạch theo cách của riêng mình</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Landscape() {
+  return <HeroArtwork />;
 }
