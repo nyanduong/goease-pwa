@@ -26,3 +26,5 @@ Scope: owner-requested direct Chrome customer UI on localhost:5180, actual local
 - Local ignored server/.env user AI daily limit raised from default 5 to 10 to accommodate the authorized UI tests; global limit stays 20. No counter reset or paid subscription change. Repository default remains 5.
 - Screenshot evidence is local/ignored: `.local/customer-lifecycle-cost.png` and `.local/customer-lifecycle-final.png`.
 - This verifies the requested create/save/change-date/Goe-adjust path, not the entire customer MVP. Account recovery, sharing, offline, expenses, trash/restore and every device are not reverified here. Hours use existing narrow editorial parsing; unknown hours, exceptional closures, holidays and arbitrary future import formats are not verified availability. Seven-day live generation and sustained provider reliability remain unverified. No deployment performed.
+
+24/10/2026 — Chi phí customer: đổi nhãn thành Chi phí dự kiến; ghi lại chi tiêu chỉ mở tùy chọn khi có loaded trip. TripWorkspace không còn SourceCredit. Không đổi dữ liệu/API/schema. Kiểm tra typecheck và ESLint các component; UI chuyến đã lưu xác nhận nút tùy chọn và không có mục bản quyền.

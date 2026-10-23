@@ -235,7 +235,7 @@ export function TripExpenses({
       {data && !loading && !loadError && (
         <>
           <div className="expense-total-card">
-            <small>TỔNG THỰC CHI ĐÃ GHI NHẬN</small>
+            <small>TỔNG CHI TIÊU ĐÃ GHI LẠI</small>
             <strong className="expense-total">
               {moneyText(data.actual.amountMinor)}
             </strong>
@@ -258,11 +258,11 @@ export function TripExpenses({
               </dd>
             </div>
             <div>
-              <dt>Dự toán đã biết</dt>
+              <dt>Chi phí dự kiến đã biết</dt>
               <dd>{moneyText(data.budget.knownEstimatedMinor)}</dd>
             </div>
             <div>
-              <dt>Thực chi − dự toán đã biết</dt>
+              <dt>Đã chi − chi phí dự kiến đã biết</dt>
               <dd>
                 {data.actual.differenceFromEstimateMinor > 0 ? '+' : ''}
                 {moneyText(data.actual.differenceFromEstimateMinor)}
@@ -271,12 +271,12 @@ export function TripExpenses({
           </dl>
           <p className="expense-caption">
             {data.budget.missingCostCount > 0
-              ? `${data.budget.missingCostCount} điểm dừng chưa có dự toán. `
+              ? `${data.budget.missingCostCount} điểm dừng chưa có giá dự kiến. `
               : ''}
             Chỉ gồm khoản chi bạn đã nhập; chênh lệch âm chưa có nghĩa chuyến đi
             tiết kiệm.
           </p>
-          <div className="expense-categories" aria-label="Thực chi theo nhóm">
+          <div className="expense-categories" aria-label="Chi tiêu theo nhóm">
             {data.actual.categories.map((c) => (
               <div key={c.key}>
                 <span>{categories[c.key]}</span>

@@ -1,5 +1,4 @@
 import { TripManagement } from './trip-management';
-import { SourceCredit } from './source-credit';
 import { TripOffline } from './trip-offline';
 import { Sheet } from './journey-sheet';
 import { TripExpenses } from './trip-expenses';
@@ -960,25 +959,21 @@ export function TripWorkspace({
               </div>
             ) : tab === 'cost' ? (
               <div className="journey-budget-view">
-                <div
-                  className="expense-view-tabs"
-                  role="group"
-                  aria-label="Loại chi phí"
-                >
+                {loaded && (
                   <button
-                    aria-pressed={costView === 'estimate'}
-                    onClick={() => setCostView('estimate')}
+                    className="button button-subtle"
+                    onClick={() =>
+                      setCostView(
+                        costView === 'estimate' ? 'actual' : 'estimate',
+                      )
+                    }
                   >
-                    Dự toán
+                    {costView === 'estimate'
+                      ? 'Ghi lại chi tiêu (tùy chọn)'
+                      : '← Chi phí dự kiến'}
                   </button>
-                  <button
-                    aria-pressed={costView === 'actual'}
-                    onClick={() => setCostView('actual')}
-                  >
-                    Thực chi
-                  </button>
-                </div>
-                {costView === 'estimate' ? (
+                )}
+                {costView === 'estimate' || !loaded ? (
                   <TripBudget
                     draft={draft}
                     destinationName={destinationName}
@@ -1017,12 +1012,19 @@ export function TripWorkspace({
                     }}
                   />
                 ) : loaded ? (
-                  <TripExpenses
-                    key={loaded.id}
-                    tripId={loaded.id}
-                    tripRevision={loaded.revision}
-                    unsaved={saveState !== 'saved'}
-                  />
+                  <section aria-label="Ghi lại chi tiêu">
+                    <h2>Ghi lại chi tiêu</h2>
+                    <p>
+                      Tùy chọn: ghi những khoản bạn đã trả để tiện xem lại. Bạn
+                      không cần ghi chi tiêu để tiếp tục chuyến đi.
+                    </p>
+                    <TripExpenses
+                      key={loaded.id}
+                      tripId={loaded.id}
+                      tripRevision={loaded.revision}
+                      unsaved={saveState !== 'saved'}
+                    />
+                  </section>
                 ) : (
                   <p className="expense-empty">
                     Lưu chuyến đi trước để ghi nhận chi tiêu thực tế.
@@ -1913,9 +1915,6 @@ export function TripWorkspace({
             Ảnh minh họa AI · Gợi ý biên tập, không phải lịch trình AI tự động
           </small>
         </Sheet>
-      )}
-      {!isSetup && allActivities.some((activity) => activity.placeId) && (
-        <SourceCredit />
       )}
     </section>
   );

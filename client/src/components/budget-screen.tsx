@@ -127,7 +127,7 @@ export function BudgetScreen({
         .join(',')
     : '#e4e8dd 0deg 360deg';
   return (
-    <section className="budget-screen" aria-label="Dự toán chi phí chuyến đi">
+    <section className="budget-screen" aria-label="Chi phí dự kiến chuyến đi">
       <div className="budget-landscape">
         <img
           src={
@@ -142,9 +142,9 @@ export function BudgetScreen({
           {destinationName} · {days} ngày · {travelers} người
         </span>
         <h1>
-          Dự toán
+          Chi phí
           <br />
-          chuyến đi.<i aria-hidden="true">✦</i>
+          dự kiến.<i aria-hidden="true">✦</i>
         </h1>
       </div>
       {demo && (
