@@ -144,7 +144,7 @@ export function HomeDiscovery({
               <br />
               Cả một hành trình.
             </h2>
-            <p>Theo sở thích & ngân sách của bạn</p>
+            <p>Chọn điểm đến, số ngày và số người. Goe lo phần lịch trình.</p>
             <button
               data-start-trip
               className="button button-primary"

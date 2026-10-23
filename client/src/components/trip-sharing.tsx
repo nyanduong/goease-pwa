@@ -118,7 +118,8 @@ export function TripSharing({
           <div className="expense-form share-form">
             <p>
               Ai có link đều xem được lịch trình đã lưu mới nhất và bản đồ. Ghi
-              chú riêng, ngân sách, thực chi và thông tin tài khoản được ẩn.
+              chú riêng, ngân sách, các khoản đã chi và thông tin tài khoản được
+              ẩn.
             </p>
             <p>
               Tên chuyến và tên hoạt động sẽ hiển thị. Link chỉ hiện để sao chép

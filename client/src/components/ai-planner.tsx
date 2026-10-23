@@ -25,6 +25,7 @@ export function AiPlanner({
   const [proposal, setProposal] = useState<PlannerProposal | null>(null);
   const [recoverable, setRecoverable] = useState(false);
   const [quotaReached, setQuotaReached] = useState(false);
+  const [catalogUnavailable, setCatalogUnavailable] = useState(false);
   const supported =
     draft.destinations[0]?.destinationId === '000000000000000000000004' &&
     draft.days.length > 0 &&
@@ -52,6 +53,7 @@ export function AiPlanner({
     onBusyChange?.(true);
     setError('');
     setQuotaReached(false);
+    setCatalogUnavailable(false);
     setProposal(null);
     const base = JSON.stringify(draft);
     const payload = currentPayload;
@@ -74,6 +76,14 @@ export function AiPlanner({
       else setProposal(result);
     } catch (e) {
       setQuotaReached(e instanceof ApiFailure && e.code === 'AI_QUOTA');
+      setCatalogUnavailable(
+        e instanceof ApiFailure &&
+          [
+            'AI_CATALOG_EMPTY',
+            'AI_CATALOG_COVERAGE',
+            'AI_DAY_COVERAGE',
+          ].includes(e.code ?? ''),
+      );
       setRecoverable(canRecoverAi(e));
       setError(e instanceof Error ? e.message : 'Chưa tạo được đề xuất.');
     } finally {
@@ -92,10 +102,10 @@ export function AiPlanner({
             <Sparkles size={19} /> Để Goe xếp lịch giúp bạn
           </h2>
           <p>
-            Goe chọn điểm dừng và gợi ý giờ đi. Hiện hỗ trợ Hội An từ 1–7 ngày.
-            Khi bấm tạo, ngày đi, số người, ngân sách và sở thích được gửi tới
-            dịch vụ AI được cấu hình cho Goe. Tên, email và ghi chú riêng không
-            được gửi.
+            Goe chọn điểm dừng và giờ đi từ những nơi có đủ giá và giờ hoạt
+            động. Khả năng xếp lịch phụ thuộc dữ liệu tại điểm đến. Khi bấm tạo,
+            ngày đi, số người, ngân sách và sở thích được gửi tới dịch vụ AI
+            được cấu hình cho Goe. Tên, email và ghi chú riêng không được gửi.
           </p>
         </>
       )}
@@ -137,9 +147,11 @@ export function AiPlanner({
           <p>
             {quotaReached
               ? 'Hôm nay đã hết lượt tạo lịch. Bạn có thể tự chọn điểm dừng hoặc quay lại vào ngày mai.'
-              : immediatePreview
-                ? 'Thử lại bằng nút tạo lịch, hoặc chọn “Tự chọn điểm dừng” bên dưới.'
-                : 'Bạn có thể tạo lại, hoặc quay về lịch trình để tự chỉnh.'}{' '}
+              : catalogUnavailable
+                ? 'GoEase cần bổ sung địa điểm phù hợp cho chuyến này. Bấm tạo lại với cùng thông tin sẽ chưa giải quyết được. Bạn có thể giữ thông tin hoặc tự chọn điểm dừng.'
+                : immediatePreview
+                  ? 'Thử lại bằng nút tạo lịch, hoặc chọn “Tự chọn điểm dừng” bên dưới.'
+                  : 'Bạn có thể tạo lại, hoặc quay về lịch trình để tự chỉnh.'}{' '}
             Thông tin bạn chọn vẫn được giữ.
           </p>
         </div>

@@ -22,8 +22,8 @@ export function TripOffline({ id, unsaved }: { id: string; unsaved: boolean }) {
     <section className="trip-management" aria-label="Lịch trình offline">
       <h2>Mang lịch trình theo bạn</h2>
       <p>
-        Chỉ xem lịch, ghi chú và dự toán. Dữ liệu lưu trên trình duyệt này và
-        được xóa khi đăng xuất.
+        Chỉ xem lịch, ghi chú và chi phí dự kiến. Dữ liệu lưu trên trình duyệt
+        này và được xóa khi đăng xuất.
       </p>
       {stamp && (
         <p role="status">Đã tải: {new Date(stamp).toLocaleString('vi-VN')}</p>

@@ -28,3 +28,20 @@ Scope: owner-requested direct Chrome customer UI on localhost:5180, actual local
 - This verifies the requested create/save/change-date/Goe-adjust path, not the entire customer MVP. Account recovery, sharing, offline, expenses, trash/restore and every device are not reverified here. Hours use existing narrow editorial parsing; unknown hours, exceptional closures, holidays and arbitrary future import formats are not verified availability. Seven-day live generation and sustained provider reliability remain unverified. No deployment performed.
 
 24/10/2026 — Chi phí customer: đổi nhãn thành Chi phí dự kiến; ghi lại chi tiêu chỉ mở tùy chọn khi có loaded trip. TripWorkspace không còn SourceCredit. Không đổi dữ liệu/API/schema. Kiểm tra typecheck và ESLint các component; UI chuyến đã lưu xác nhận nút tùy chọn và không có mục bản quyền.
+
+## Customer UX audit after strict catalog gate — 24/10/2026
+
+This section supersedes the older data-availability and quota observations above. The historical two-day live run used an earlier, less restrictive catalog; it is not evidence that the current catalog supports two days. Local development limits are now user 100/global 1000 as authorized; no quota counters were reset in this audit.
+
+Changes: consistent “Chi phí dự kiến” and optional recorded spending across sharing/offline/trash/manual planning/Goe; home emphasizes destination, duration and travelers rather than budget. Catalog failures no longer advise retrying identical inputs. Removed unconditional 1–7-day availability promise. Returning to the cost tab resets to estimates. Duplicate confirmation explicitly explains that copied stops are not revalidated for a different date.
+
+Live Chrome findings and verification:
+
+- Reproduced duplicate form displaying a new date but submitting the old date. Added input synchronization; retest created November 12 correctly, persisted after the dev page reloaded. This is an observed browser-input path, not a claim that all manual input methods failed.
+- Created private test copies named `[TEST] Rà vòng đời customer` and its copy. Original customer trip preserved. Both test copies remain available; no permanent deletion or public sharing performed.
+- On the November 12 copy, entered `[TEST] Nước uống`, 10,000 VND, November 12. Saved list showed exactly that date, total 10,000 and average 5,000/person for two travelers. Date field also synchronizes input/change.
+- Returning to estimates showed 820,000/person and 1,640,000/group unchanged. Lodging, transport and personal spending remain explicitly excluded; recorded spending is not added into estimates. Screenshot: `.local/customer-audit-cost.png` (ignored).
+
+Checks: `npm test` 42 passed. Focused integration run (account, expenses, password recovery, product, reschedule, trip management, sharing) 42 passed against isolated Mongo harness 27021 using `MONGOD_BINARY`. Typecheck, lint and production build passed; build still warns about the main bundle exceeding 500 KB.
+
+Boundaries for the admin handoff: current eligible Hội An catalog has only two visits and two meal venues, suitable for a one-day small-group example, not all durations/group sizes/closure dates. Real shared-ticket data remains unverified; unit tests cover bundle arithmetic but do not validate a real Hội An ticket package. Live AI create/reschedule/chat results are documented in earlier runs; they were not all repeated in this audit. Sharing, recovery, ownership and trash lifecycle were checked by integration tests, not live public sharing or real password changes. Offline wording was reviewed; actual disconnected-device behavior and all-device usability remain unverified. This is a scoped audit, not an unconditional customer MVP acceptance.

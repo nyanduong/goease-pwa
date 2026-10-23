@@ -421,6 +421,9 @@ export function TripExpenses({
                   required
                   type="date"
                   value={form.spentOn}
+                  onInput={(e) =>
+                    setForm({ ...form, spentOn: e.currentTarget.value })
+                  }
                   onChange={(e) =>
                     setForm({ ...form, spentOn: e.target.value })
                   }

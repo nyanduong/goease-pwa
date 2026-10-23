@@ -135,8 +135,8 @@ export function TripManagement({
           >
             <p>
               {action === 'duplicate'
-                ? 'Sao chép lịch, ghi chú và dự toán sang chuyến riêng mới. Thực chi không được sao chép. Các hoạt động được giữ làm kế hoạch thủ công.'
-                : 'Chuyến đi sẽ chuyển vào Thùng rác. Bạn có thể khôi phục nguyên lịch và thực chi. Các link chia sẻ cũ bị thu hồi và không mở lại khi khôi phục.'}
+                ? 'Tạo chuyến riêng từ lịch và chi phí dự kiến đã lưu. Các khoản đã chi không được sao chép. Bản sao giữ nguyên điểm dừng; giờ mở cửa chưa được kiểm tra lại cho ngày mới.'
+                : 'Chuyến đi sẽ chuyển vào Thùng rác. Bạn có thể khôi phục lịch và các khoản đã chi. Link chia sẻ cũ sẽ ngừng hoạt động.'}
             </p>
             <strong>{trip.title}</strong>
             {action === 'duplicate' && (
@@ -148,6 +148,7 @@ export function TripManagement({
                   value={date}
                   disabled={busy || uncertain}
                   onChange={(e) => setDate(e.target.value)}
+                  onInput={(e) => setDate(e.currentTarget.value)}
                 />
               </label>
             )}

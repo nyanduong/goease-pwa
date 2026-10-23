@@ -536,7 +536,7 @@ export function TripWorkspace({
     });
     if (!tripInputSchema.safeParse(next).success) {
       setError(
-        'Chọn điểm đến, khoảng ngày hợp lệ, số người và ngân sách trước khi tiếp tục.',
+        'Kiểm tra điểm đến, ngày đi và số người. Ngân sách có thể để trống.',
       );
       return;
     }
@@ -895,7 +895,7 @@ export function TripWorkspace({
                     Lịch dành cho ngày trọn vẹn; bạn có thể đổi giờ theo lúc đến
                     và về. Thời gian đi đường là ước tính. Giá chưa có được giữ
                     là “Chưa rõ”; chỗ ở và di chuyển chưa thêm không nằm trong
-                    dự toán. Lịch này chưa được lưu vào tài khoản.
+                    chi phí dự kiến. Lịch này chưa được lưu vào tài khoản.
                   </p>
                 </details>
               </div>
@@ -928,7 +928,10 @@ export function TripWorkspace({
                     <button
                       key={code}
                       aria-pressed={tab === code}
-                      onClick={() => setTab(code)}
+                      onClick={() => {
+                        if (code === 'cost') setCostView('estimate');
+                        setTab(code);
+                      }}
                     >
                       {label}
                     </button>

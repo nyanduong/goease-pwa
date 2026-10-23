@@ -104,8 +104,8 @@ export function TripTrash({
         <span className="journey-eyebrow">KẾ HOẠCH VẪN Ở ĐÂY</span>
         <h1>Trở lại hành trình.</h1>
         <p>
-          Khôi phục nguyên lịch trình, ghi chú, dự toán và thực chi. Các link
-          chia sẻ cũ vẫn bị thu hồi.
+          Khôi phục nguyên lịch trình, ghi chú, chi phí dự kiến và các khoản đã
+          chi. Các link chia sẻ cũ vẫn bị thu hồi.
         </p>
       </div>
       {!signedIn ? (

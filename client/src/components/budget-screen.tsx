@@ -362,7 +362,7 @@ export function BudgetScreen({
           ? `${missing} lượt dừng chưa rõ chi phí. Các số tiền theo nhóm ở trên chỉ gồm phần đã biết.`
           : activities.length
             ? 'Các điểm đã nhập đủ giá ước tính; chưa có nghĩa đã bao gồm mọi chi phí chuyến đi.'
-            : 'Chưa có chi phí hoạt động. Thêm điểm dừng và khoản dự kiến để xem dự toán.'}
+            : 'Chưa có chi phí hoạt động. Thêm điểm dừng và khoản dự kiến để xem chi phí.'}
       </p>
       {!demo && (
         <p className="budget-source-note">
@@ -427,7 +427,7 @@ export function TripBudget({
   if (error)
     return (
       <section className="journey-empty" role="alert">
-        <h2>Chưa tính được ngân sách</h2>
+        <h2>Chưa tính được chi phí dự kiến</h2>
         <p>{error}</p>
         <button
           className="journey-outline"
@@ -443,7 +443,7 @@ export function TripBudget({
   if (result?.payload !== payload)
     return (
       <p role="status" className="journey-notice">
-        Đang tính ngân sách từ server…
+        Đang tính chi phí dự kiến…
       </p>
     );
   return (

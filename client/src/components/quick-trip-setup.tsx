@@ -265,8 +265,8 @@ export function QuickTripSetup({
       </fieldset>
       {destination && !supported && (
         <p className="journey-notice">
-          Goe hiện tự xếp lịch Hội An từ 1–7 ngày. Lựa chọn này cần tự chọn điểm
-          dừng, hoặc bạn có thể chọn lại Hội An.
+          Goe hiện hỗ trợ Hội An khi có đủ địa điểm phù hợp. Với lựa chọn này,
+          bạn có thể tự chọn điểm dừng hoặc đổi điểm đến.
         </p>
       )}
       {!valid && (

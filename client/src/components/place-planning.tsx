@@ -72,10 +72,13 @@ export function PlacePlanning({
             Xem chi tiết giá ↗
           </a>
           {place.referencePrice.reviewAfter < catalogToday() ? (
-            <small>Giá đến hạn kiểm tra, chưa dùng cho dự toán mới.</small>
+            <small>
+              Giá đến hạn kiểm tra, chưa dùng cho chi phí dự kiến mới.
+            </small>
           ) : (
             <small>
-              Tự tính vào dự toán khi thêm điểm này. Chưa phải giá đặt dịch vụ.
+              Tự tính vào chi phí dự kiến khi thêm điểm này. Chưa phải giá đặt
+              dịch vụ.
             </small>
           )}
         </div>

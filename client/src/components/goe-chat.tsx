@@ -255,7 +255,7 @@ export function GoeChat({
             disabled={busy}
             onClick={() => onNavigate(`/trips/${trip.id}?view=cost`)}
           >
-            Xem ngân sách chuyến đi
+            Xem chi phí dự kiến
           </button>
           <button
             disabled={busy}
