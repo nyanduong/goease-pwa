@@ -36,7 +36,7 @@ const newPlace = (destinationId: string): AdminPlaceInput => ({
 });
 const newPrice = (): ReferencePrice => ({
   label: '',
-  amountMinor: 0,
+  amountMinor: Number.NaN,
   basis: 'per_person',
   maxTravelers: 1000,
   conditions: '',
@@ -44,6 +44,12 @@ const newPrice = (): ReferencePrice => ({
   checkedAt: catalogToday(),
   reviewAfter: catalogToday(),
 });
+const formFromDto = ({ id, revision, updatedAt, ...input }: AdminPlaceDto) => {
+  void id;
+  void revision;
+  void updatedAt;
+  return input;
+};
 export function AdminCatalog({
   destinations,
 }: {
@@ -65,6 +71,13 @@ export function AdminCatalog({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const key = useRef({ payload: '', key: '' });
+  const previewPanel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (preview) previewPanel.current?.scrollIntoView({ block: 'start' });
+  }, [preview]);
+  useEffect(() => {
+    if (error || success) window.scrollTo(0, 0);
+  }, [error, success]);
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -136,7 +149,9 @@ export function AdminCatalog({
       publicationStatus,
     });
     if (!checked.success) {
-      setError(checked.error.issues.map((i) => i.message).join(' '));
+      setError(
+        'Chưa thể lưu. Kiểm tra tên, giới thiệu, địa chỉ và link nguồn HTTPS. Nếu bật giá tự động, điền đủ tên khoản giá, số tiền không âm, số người, điều kiện, nguồn và ngày kiểm tra.',
+      );
       return;
     }
     const payload = JSON.stringify({
@@ -158,7 +173,7 @@ export function AdminCatalog({
         },
       );
       setSaved(value.place);
-      setForm(checked.data);
+      setForm(formFromDto(value.place));
       setPreview(false);
       setRetry((v) => v + 1);
       setHistory((v) =>
@@ -255,6 +270,7 @@ export function AdminCatalog({
             <label>
               Trạng thái
               <select
+                aria-label="Trạng thái"
                 value={status}
                 onChange={(e) => {
                   setStatus(e.target.value);
@@ -372,6 +388,8 @@ export function AdminCatalog({
               <label>
                 Điểm đến
                 <select
+                  aria-label="Điểm đến"
+                  disabled={!!saved}
                   value={form.destinationId}
                   onChange={(e) => update({ destinationId: e.target.value })}
                 >
@@ -385,6 +403,7 @@ export function AdminCatalog({
               <label>
                 Loại địa điểm
                 <select
+                  aria-label="Loại địa điểm"
                   value={form.venueType}
                   onChange={(e) => {
                     const venueType = e.target
@@ -452,6 +471,7 @@ export function AdminCatalog({
                 <label>
                   Nhóm trải nghiệm
                   <select
+                    aria-label="Nhóm trải nghiệm"
                     value={form.category}
                     onChange={(e) =>
                       update({
@@ -526,15 +546,26 @@ export function AdminCatalog({
                       min={0}
                       max={1e12}
                       step={1}
-                      value={form.referencePrice.amountMinor}
+                      value={
+                        Number.isFinite(form.referencePrice.amountMinor)
+                          ? form.referencePrice.amountMinor
+                          : ''
+                      }
+                      placeholder="0 chỉ khi đã xác nhận miễn phí"
                       onChange={(e) =>
-                        updatePrice({ amountMinor: Number(e.target.value) })
+                        updatePrice({
+                          amountMinor:
+                            e.target.value === ''
+                              ? Number.NaN
+                              : Number(e.target.value),
+                        })
                       }
                     />
                   </label>
                   <label>
                     Đơn vị tính
                     <select
+                      aria-label="Đơn vị tính"
                       value={form.referencePrice.basis}
                       onChange={(e) =>
                         updatePrice({
@@ -618,7 +649,11 @@ export function AdminCatalog({
             )}
           </fieldset>
           {preview && (
-            <section className="admin-preview" aria-label="Xem trước nội dung">
+            <section
+              ref={previewPanel}
+              className="admin-preview"
+              aria-label="Xem trước nội dung"
+            >
               <span className="admin-eyebrow">KHÁCH SẼ THẤY</span>
               <h2>{form.name}</h2>
               <p>{form.description}</p>

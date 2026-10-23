@@ -39,6 +39,9 @@ try {
     user.roles = action === 'grant' ? ['traveler', 'admin'] : ['traveler'];
     // Require a fresh login after a privilege change.
     user.securityVersion += 1;
+    user.revision += 1;
+    user.updatedBy = null;
+    user.updatedByType = 'system';
     await user.save({ session });
     await audit.append(
       {

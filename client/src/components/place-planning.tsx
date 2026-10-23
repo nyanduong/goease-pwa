@@ -40,7 +40,9 @@ export function PlacePlanning({
         target="_blank"
         rel="noreferrer"
       >
-        {place.category === 'food' && !place.mapLocation
+        {place.category === 'food' &&
+        place.venueType !== 'restaurant' &&
+        !place.mapLocation
           ? 'Tìm quán trên Google Maps ↗'
           : 'Tìm vị trí trên bản đồ ↗'}
       </a>

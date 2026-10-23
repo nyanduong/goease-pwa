@@ -12,5 +12,6 @@ export const referencePriceFields = {
 };
 export const referencePriceModelSchema = new Schema(referencePriceFields, {
   _id: false,
+  versionKey: false,
   strict: 'throw',
 });

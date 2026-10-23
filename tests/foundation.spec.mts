@@ -29,6 +29,7 @@ function inputFromTrip(trip: TripDto): TripInput {
   };
 }
 import { e2eApiOrigin } from './ports.js';
+import { catalogToday } from '@goease/contracts';
 
 let mongo: ChildProcess;
 let dbPath: string;
@@ -2820,6 +2821,277 @@ test('quick mobile plan: recover proposal, swap or undo a stop, choose dates onl
     );
     expect(trip.aiRunId).toBe(runId);
   } finally {
+    await connection.close();
+  }
+});
+
+test('admin publishes reference prices and mobile customer gets automatic estimates with saved snapshots', async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(120000);
+  page.setDefaultTimeout(15000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const email = `catalog-admin-${Date.now()}@example.invalid`;
+  const password = 'Catalog-browser-test-2026!';
+  await page.goto('/register');
+  await page.getByLabel('Tên của bạn', { exact: true }).fill('Admin kiểm thử');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  const connection = await mongoose
+    .createConnection(
+      'mongodb://127.0.0.1:27020/goease_f0_test?replicaSet=goease_e2e',
+    )
+    .asPromise();
+  const customerContext = await browser.newContext({
+    baseURL: new URL(page.url()).origin,
+    viewport: { width: 390, height: 844 },
+  });
+  try {
+    // Explicit test-only role bootstrap; never a public signup field.
+    await connection.collection('users').updateOne(
+      { emailNormalized: email },
+      {
+        $set: { roles: ['traveler', 'admin'] },
+        $inc: { securityVersion: 1 },
+      },
+    );
+    await page.goto('/login');
+    await page.getByLabel('Email', { exact: true }).fill(email);
+    await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Đăng nhập', exact: false }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(
+      page.getByRole('link', { name: 'Chuyến đi của tôi', exact: true }),
+    ).toHaveCount(0);
+    await page.goto('/trips/new');
+    await expect(page).toHaveURL(/\/admin$/);
+    await page.reload();
+    await expect(
+      page.getByRole('heading', {
+        name: 'Địa điểm & giá tham khảo',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page
+      .getByRole('button', { name: 'Thêm địa điểm / quán ăn', exact: true })
+      .click();
+    await page
+      .getByLabel('Loại địa điểm', { exact: true })
+      .selectOption('restaurant');
+    const name = `Quán kiểm thử ${Date.now()}`;
+    await page.getByLabel('Tên địa điểm / quán ăn', { exact: true }).fill(name);
+    await page
+      .getByLabel('Giới thiệu ngắn', { exact: true })
+      .fill('Dữ liệu kiểm thử, không phải cơ sở thật.');
+    await page
+      .getByLabel('Địa chỉ / vị trí tìm trên bản đồ', { exact: true })
+      .fill('Địa chỉ minh họa Hội An');
+    await page
+      .getByLabel('Link nguồn thông tin', { exact: true })
+      .fill('https://example.invalid/catalog-test');
+    await page
+      .getByLabel('Có giá đủ căn cứ để tự tính', { exact: true })
+      .check();
+    await page
+      .getByLabel('Tên khoản giá', { exact: true })
+      .fill('Bữa ăn thử nghiệm');
+    await page.getByLabel('Giá tham khảo (VND)', { exact: true }).fill('50000');
+    await page
+      .getByLabel('Bao gồm gì / điều kiện áp dụng', { exact: true })
+      .fill('Một bữa/người. Chỉ là giá kiểm thử.');
+    await page
+      .getByLabel('Link nguồn giá', { exact: true })
+      .fill('https://example.invalid/test-price');
+    await page
+      .getByLabel('Ngày đối chiếu giá', { exact: true })
+      .fill(catalogToday());
+    await page
+      .getByLabel('Cần kiểm tra lại vào', { exact: true })
+      .fill('2099-12-31');
+    let lost = false;
+    await page.route('**/api/v1/admin/places', async (route) => {
+      if (route.request().method() === 'POST' && !lost) {
+        lost = true;
+        await route.fetch();
+        await route.abort();
+      } else await route.continue();
+    });
+    await page
+      .getByRole('button', { name: 'Lưu bản nháp', exact: true })
+      .click();
+    await expect(page.getByRole('alert')).toContainText('Không kết nối');
+    await expect(
+      page.getByLabel('Tên địa điểm / quán ăn', { exact: true }),
+    ).toHaveValue(name);
+    await page
+      .getByRole('button', { name: 'Lưu bản nháp', exact: true })
+      .click();
+    await expect(page.getByRole('status')).toContainText('Đã lưu bản nháp');
+    expect(await connection.collection('places').countDocuments({ name })).toBe(
+      1,
+    );
+    await page.unroute('**/api/v1/admin/places');
+    await page
+      .getByRole('button', { name: 'Xem trước để xuất bản', exact: true })
+      .click();
+    await expect(
+      page.getByRole('region', { name: 'Xem trước nội dung' }),
+    ).toContainText('50.000');
+    await page
+      .getByRole('button', { name: 'Xuất bản cho khách', exact: true })
+      .click();
+    await expect(page.getByRole('status')).toContainText('Đã xuất bản');
+    await page
+      .getByRole('button', { name: '← Về danh sách', exact: true })
+      .click();
+    await page.reload();
+    await page
+      .getByRole('button', { name: `Chỉnh sửa ${name}`, exact: true })
+      .click();
+    await expect(
+      page.getByLabel('Giá tham khảo (VND)', { exact: true }),
+    ).toHaveValue('50000');
+    await mkdir('.local/catalog-review', { recursive: true });
+    await page.screenshot({
+      path: '.local/catalog-review/admin-desktop.png',
+      fullPage: true,
+    });
+    const customer = await customerContext.newPage();
+    await customer.goto('/register');
+    await customer
+      .getByLabel('Tên của bạn', { exact: true })
+      .fill('Khách mới kiểm thử');
+    await customer
+      .getByLabel('Email', { exact: true })
+      .fill(`catalog-customer-${Date.now()}@example.invalid`);
+    await customer.getByLabel('Mật khẩu', { exact: true }).fill(password);
+    await customer
+      .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+      .click();
+    await expect(customer).toHaveURL(/\/$/);
+    expect((await customer.request.get('/api/v1/admin/places')).status()).toBe(
+      403,
+    );
+    await customer.goto('/trips/new');
+    await customer
+      .getByRole('button', { name: /Hội An Goe tự lên lịch/ })
+      .click();
+    await customer
+      .getByRole('button', { name: 'Tự chọn điểm dừng', exact: true })
+      .click();
+    await customer
+      .getByRole('button', { name: `Thêm ${name}`, exact: true })
+      .click();
+    await customer
+      .getByRole('button', { name: 'Chi phí', exact: true })
+      .click();
+    await expect(customer.locator('.budget-total')).toContainText('100.000');
+    await customer
+      .getByText('Giá nào đang được dùng?', { exact: true })
+      .click();
+    await expect(customer.locator('.budget-price-sources')).toContainText(
+      'Một bữa/người',
+    );
+    await expect(customer.locator('.budget-scope-note')).toContainText(
+      'Chưa bao gồm chỗ ở',
+    );
+    await customer
+      .getByRole('button', { name: 'Giữ lịch này', exact: true })
+      .click();
+    await customer
+      .getByLabel('Ngày khởi hành', { exact: true })
+      .fill('2026-11-07');
+    await customer
+      .getByRole('button', { name: 'Lưu chuyến đi', exact: true })
+      .click();
+    await expect(customer).toHaveURL(/\/trips\/[a-f0-9]{24}$/);
+    const tripPath = new URL(customer.url()).pathname.replace(
+      '/trips/',
+      '/api/v1/trips/',
+    );
+    const original = (await (await customer.request.get(tripPath)).json()).data
+      .trip as TripDto;
+    expect(original.budgetSummary!.knownEstimatedMinor).toBe(100000);
+    expect(original.days[0]!.activities[0]!.estimatedCost.confidence).toBe(
+      'catalog_reference',
+    );
+    await page.getByLabel('Giá tham khảo (VND)', { exact: true }).fill('80000');
+    await page
+      .getByRole('button', { name: 'Xem trước để xuất bản', exact: true })
+      .click();
+    await page
+      .getByRole('button', { name: 'Cập nhật nội dung công khai', exact: true })
+      .click();
+    await expect(page.getByRole('status')).toContainText('Đã xuất bản');
+    await customer.reload();
+    await customer
+      .getByRole('button', { name: 'Chi phí', exact: true })
+      .click();
+    await expect(customer.locator('.budget-total')).toContainText('100.000');
+    await customer.screenshot({
+      path: '.local/catalog-review/customer-390.png',
+      fullPage: false,
+    });
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await customer.setViewportSize({ width, height: 844 });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      expect(
+        await customer.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+    }
+    await customer
+      .getByRole('button', { name: 'Quay lại', exact: true })
+      .click();
+    await customer.locator('.journey-stop-open').first().click();
+    await customer
+      .getByRole('button', { name: 'Cập nhật giá tham khảo', exact: true })
+      .click();
+    await expect(
+      customer.getByLabel('Chi phí mỗi người (VND)', { exact: true }),
+    ).toHaveValue('80000');
+    await customer
+      .getByRole('button', { name: 'Áp dụng thay đổi', exact: false })
+      .click();
+    await customer
+      .getByRole('button', { name: 'Lưu thay đổi', exact: true })
+      .click();
+    await expect(
+      customer.getByRole('status', { name: 'Trạng thái lưu' }),
+    ).toHaveText('Đã lưu');
+    await customer
+      .getByRole('button', { name: 'Chi phí', exact: true })
+      .click();
+    await expect(customer.locator('.budget-total')).toContainText('160.000');
+    page.once('dialog', (dialog) => dialog.accept());
+    await page
+      .getByRole('button', { name: 'Ngừng hiển thị', exact: true })
+      .click();
+    await expect(page.getByRole('status')).toContainText('Đã ngừng hiển thị');
+    await customer.reload();
+    const final = (await (await customer.request.get(tripPath)).json()).data
+      .trip as TripDto;
+    expect(final.budgetSummary!.knownEstimatedMinor).toBe(160000);
+    expect(
+      (
+        await customer.request.get(
+          `/api/v1/places/${final.days[0]!.activities[0]!.placeId}`,
+        )
+      ).status(),
+    ).toBe(404);
+  } finally {
+    await customerContext.close();
     await connection.close();
   }
 });

@@ -171,6 +171,13 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (user?.isAdmin && path !== '/admin') {
+      history.replaceState({}, '', '/admin');
+      setPath('/admin');
+    }
+  }, [user?.isAdmin, path]);
+
   // Resolve the session before deciding whether a root visit should show welcome.
   useEffect(() => {
     let active = true;
@@ -414,6 +421,49 @@ export function App() {
           <a href="/offline.html">Mở màn offline</a>
         </Notice>
       </main>
+    );
+
+  if (user?.isAdmin)
+    return (
+      <div className="admin-desktop-shell">
+        <aside className="admin-sidebar">
+          <a href="/admin">
+            <Brand />
+          </a>
+          <p>KHÔNG GIAN QUẢN TRỊ</p>
+          <a href="/admin" aria-current="page">
+            Địa điểm & giá tham khảo
+          </a>
+          <span>{user.displayName}</span>
+          <button
+            className="button button-outline"
+            onClick={() => {
+              try {
+                beginOfflineLogout();
+              } catch {
+                setMessage('Chưa xóa được dữ liệu offline. Hãy thử lại.');
+                return;
+              }
+              setUser(null);
+              setList([]);
+              setLoaded(null);
+              setDraft(initialDraft());
+              void finishOfflineLogout()
+                .then(() => {
+                  history.replaceState({}, '', '/login');
+                  setPath('/login');
+                })
+                .catch(() => location.replace('/offline.html'));
+            }}
+          >
+            Đăng xuất
+          </button>
+        </aside>
+        <main className="admin-desktop-main">
+          {message && <Notice>{message}</Notice>}
+          <AdminCatalog key={user.id} destinations={destinations} />
+        </main>
+      </div>
     );
 
   if (path === '/dev/foundation')
@@ -853,7 +903,9 @@ export function App() {
               setExpiredSession(false);
               setOnboardingSeen(false);
               const params = new URLSearchParams(location.search);
-              if (params.get('next') === '/trips/new') {
+              if (v.isAdmin) {
+                go('/admin');
+              } else if (params.get('next') === '/trips/new') {
                 const destinationId = params.get('destination');
                 const next = initialDraft();
                 if (destinations.some((d) => d.id === destinationId))
@@ -986,39 +1038,43 @@ export function App() {
       )}
 
       {/* Mobile persistent bottom navigation bar */}
-      {!isAuth && !isWelcome && !isPlaceDetail && path !== '/trips/new' && (
-        <nav className="mobile-bottom-nav" aria-label="Điều hướng di động">
-          {[
-            { to: '/explore', label: 'Khám phá', Icon: Compass },
-            { to: '/trips', label: 'Chuyến đi', Icon: Map },
-            { to: '/', label: 'Trang chủ', Icon: House },
-            { to: '/goe', label: 'Goe', Icon: Bird },
-            { to: '/saved', label: 'Đã lưu', Icon: Bookmark },
-          ].map(({ to, label, Icon }) => (
-            <a
-              key={to}
-              href={to}
-              aria-current={
-                path === to ||
-                (to === '/trips' &&
-                  (path.startsWith('/trips') || path === '/budget'))
-                  ? 'page'
-                  : undefined
-              }
-              className={`mobile-nav-item ${to === '/' ? 'mobile-nav-home' : ''} ${path === to || (to === '/trips' && (path.startsWith('/trips') || path === '/budget')) ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                go(!user && to !== '/' ? '/login' : to);
-              }}
-            >
-              <span className="bottom-nav-icon">
-                <Icon size={22} strokeWidth={1.6} aria-hidden="true" />
-              </span>
-              <span>{label}</span>
-            </a>
-          ))}
-        </nav>
-      )}
+      {!isAuth &&
+        !isWelcome &&
+        !isPlaceDetail &&
+        path !== '/trips/new' &&
+        path !== '/admin' && (
+          <nav className="mobile-bottom-nav" aria-label="Điều hướng di động">
+            {[
+              { to: '/explore', label: 'Khám phá', Icon: Compass },
+              { to: '/trips', label: 'Chuyến đi', Icon: Map },
+              { to: '/', label: 'Trang chủ', Icon: House },
+              { to: '/goe', label: 'Goe', Icon: Bird },
+              { to: '/saved', label: 'Đã lưu', Icon: Bookmark },
+            ].map(({ to, label, Icon }) => (
+              <a
+                key={to}
+                href={to}
+                aria-current={
+                  path === to ||
+                  (to === '/trips' &&
+                    (path.startsWith('/trips') || path === '/budget'))
+                    ? 'page'
+                    : undefined
+                }
+                className={`mobile-nav-item ${to === '/' ? 'mobile-nav-home' : ''} ${path === to || (to === '/trips' && (path.startsWith('/trips') || path === '/budget')) ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  go(!user && to !== '/' ? '/login' : to);
+                }}
+              >
+                <span className="bottom-nav-icon">
+                  <Icon size={22} strokeWidth={1.6} aria-hidden="true" />
+                </span>
+                <span>{label}</span>
+              </a>
+            ))}
+          </nav>
+        )}
     </div>
   );
 }

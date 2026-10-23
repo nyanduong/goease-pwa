@@ -139,9 +139,19 @@ function render() {
       if (activity.notes) node('p', activity.notes, row, 'note');
       node(
         'small',
-        `Dự toán: ${money(activity.estimatedCost.amountMinor)}${activity.estimatedCost.basis === 'per_person' ? ' / người' : ' / nhóm'}`,
+        activity.estimatedCost.reference &&
+          trip.travelers.totalCount >
+            activity.estimatedCost.reference.maxTravelers
+          ? 'Chưa có giá áp dụng cho số người hiện tại.'
+          : `Dự toán: ${money(activity.estimatedCost.amountMinor)}${activity.estimatedCost.basis === 'per_person' ? ' / người' : ' / nhóm'}`,
         row,
       );
+      if (activity.estimatedCost.reference)
+        node(
+          'small',
+          `Giá tham khảo đối chiếu ${activity.estimatedCost.reference.checkedAt}. ${activity.estimatedCost.reference.conditions}`,
+          row,
+        );
     }
   });
 }

@@ -2,7 +2,7 @@
 
 GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Phát triển bằng MongoDB local; Atlas là bước sau khi bản local hoàn thành. Mobile tương lai sử dụng cùng REST API và contracts thuần TypeScript.
 
-Đã có trang chủ sản phẩm, đăng ký/đăng nhập email-mật khẩu không phụ thuộc xác minh email, đăng xuất bằng phiên cookie và lịch trình lưu MongoDB theo tài khoản. Account dùng được ngay; email chưa xác minh vẫn được ghi nhận riêng. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. Có AI xếp/chỉnh lịch Hội An và bản lịch tải xuống chỉ đọc offline; booking/payment, CMS và native mobile chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
+Đã có trang chủ sản phẩm, đăng ký/đăng nhập email-mật khẩu không phụ thuộc xác minh email, đăng xuất bằng phiên cookie và lịch trình lưu MongoDB theo tài khoản. Account dùng được ngay; email chưa xác minh vẫn được ghi nhận riêng. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. Có AI xếp/chỉnh lịch Hội An, bản lịch tải xuống chỉ đọc offline và quản trị danh mục/giá tham khảo; booking/payment, CMS nội dung rộng hơn và native mobile chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
 
 Luồng Hội An: 7 gợi ý trong catalog có nguồn, thêm địa điểm vào chuyến/ngày, chỉnh lịch và ngân sách server tính theo nhóm hoặc mỗi người. Chạy `npm run db:seed` sau khi cập nhật để bổ sung catalog/metadata còn thiếu (không ghi đè bản đã chỉnh). Giá chưa xác minh giữ Chưa rõ. `/budget` là bản minh họa UI; chi phí thật mở từ tab Chi phí trong chuyến đã tạo. [Goe](docs/AI-PLANNER.md) dùng Gemini qua server khi được cấu hình, cho xem đề xuất trước khi áp dụng.
 
@@ -218,3 +218,9 @@ Chia sẻ lịch trình: mở chuyến đã lưu → Thông tin chuyến đi →
 Thùng rác: **Chuyến đi → Thùng rác → Khôi phục chuyến đi**. Giữ nguyên lịch và thực chi, link chia sẻ cũ vẫn bị thu hồi. Xem [quản lý chuyến đi](docs/TRIP-MANAGEMENT.md).
 
 Offline: mở chuyến → **Thông tin chuyến đi → Lưu để xem offline**; mở **Bản offline** từ danh sách chuyến. Chỉ xem lịch/ghi chú/dự toán; đăng xuất xóa bản trên trình duyệt. Xem [phạm vi và triển khai offline](docs/OFFLINE-ITINERARY.md).
+
+## Admin danh mục và dự toán tự động — 2026-10-23
+
+Admin đăng nhập → **Quản trị** → thêm/sửa địa điểm hoặc quán ăn → lưu nháp → xem trước → xuất bản. Giá tham khảo có nguồn, ngày đối chiếu, hạn kiểm tra lại, điều kiện và số người áp dụng; AI và thao tác thêm/đổi điểm tự dùng giá đó. Server tính dự toán; chuyến cũ giữ snapshot, khách chủ động cập nhật giá hoặc nhập dự kiến riêng. Các mục chưa có giá phù hợp vẫn ghi chưa rõ.
+
+Cấp quyền local cho tài khoản đã đăng ký: `npm run admin:access --workspace @goease/server -- grant admin@example.test`, sau đó đăng nhập lại. Không có tài khoản/mật khẩu admin mặc định. Xem [hướng dẫn admin, API và giới hạn](docs/ADMIN-CATALOG.md). Giá trong kiểm thử là dữ liệu minh họa, không phải xác minh giá cơ sở thực tế.

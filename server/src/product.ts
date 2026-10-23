@@ -298,20 +298,18 @@ export function createProduct(
           z.string().regex(uuidPattern),
           req.get('Idempotency-Key'),
         );
-        res
-          .status(method === 'post' ? 201 : 200)
-          .json({
-            ok: true,
-            data: await catalog.write(
-              res.locals.authUser._id,
-              body.place,
-              key,
-              method === 'patch'
-                ? String('id' in req.params ? req.params.id : '')
-                : undefined,
-              body.expectedRevision,
-            ),
-          });
+        res.status(method === 'post' ? 201 : 200).json({
+          ok: true,
+          data: await catalog.write(
+            res.locals.authUser._id,
+            body.place,
+            key,
+            method === 'patch'
+              ? String('id' in req.params ? req.params.id : '')
+              : undefined,
+            body.expectedRevision,
+          ),
+        });
       },
     );
   }

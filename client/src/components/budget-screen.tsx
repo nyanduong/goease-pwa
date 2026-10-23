@@ -141,52 +141,6 @@ export function BudgetScreen({
       {demo && (
         <p className="mvp-demo-label">BẢN XEM TRƯỚC · SỐ LIỆU MINH HỌA</p>
       )}
-      {!demo && (
-        <div className="budget-incomplete">
-          <strong>Dự toán tham khảo cho cả nhóm</strong>
-          <p>
-            App tự dùng giá đã biên tập và nhân số người khi tính theo người.
-            Đây chưa phải giá đặt dịch vụ.
-          </p>
-          <p>
-            {!activities.some((a) => a.kind === 'lodging') &&
-              'Chưa bao gồm chỗ ở. '}
-            {!activities.some((a) => a.kind === 'transport') &&
-              'Chưa bao gồm di chuyển. '}
-            Các khoản chưa thêm vào lịch chưa nằm trong tổng.
-          </p>
-        </div>
-      )}
-      {activities.some((a) => a.estimatedCost.reference) && (
-        <details className="budget-price-sources">
-          <summary>Giá nào đang được dùng?</summary>
-          {activities
-            .filter((a) => a.estimatedCost.reference)
-            .map((a, i) => {
-              const p = a.estimatedCost.reference!;
-              return (
-                <div key={i}>
-                  <strong>
-                    {p.label} · {moneyText(p.amountMinor)} /{' '}
-                    {p.basis === 'per_person' ? 'người' : 'nhóm'}
-                  </strong>
-                  <p>{p.conditions}</p>
-                  <small>
-                    Đối chiếu {p.checkedAt} · Nhóm tối đa {p.maxTravelers} người
-                  </small>
-                  {!priceFitsGroup(a.estimatedCost, travelers) && (
-                    <p>
-                      Không áp dụng cho số người hiện tại — chưa tính khoản này.
-                    </p>
-                  )}
-                  <a href={p.sourceUrl} target="_blank" rel="noreferrer">
-                    Xem nguồn giá ↗
-                  </a>
-                </div>
-              );
-            })}
-        </details>
-      )}
       {incomplete && (
         <div className="budget-incomplete" role="status">
           <strong>Chưa đủ dữ liệu để tính tổng chuyến đi</strong>
@@ -259,6 +213,52 @@ export function BudgetScreen({
                 : `Chênh lệch với khoản đã nhập: ${moneyText(remaining)}`}
         </span>
       </div>
+      {!demo && (
+        <div className="budget-scope-note">
+          <strong>Dự toán tham khảo cho cả nhóm</strong>
+          <p>
+            App tự dùng giá đã biên tập và nhân số người khi tính theo người.
+            Đây chưa phải giá đặt dịch vụ.
+          </p>
+          <p>
+            {!activities.some((a) => a.kind === 'lodging') &&
+              'Chưa bao gồm chỗ ở. '}
+            {!activities.some((a) => a.kind === 'transport') &&
+              'Chưa bao gồm di chuyển. '}
+            Các khoản chưa thêm vào lịch chưa nằm trong tổng.
+          </p>
+        </div>
+      )}
+      {activities.some((a) => a.estimatedCost.reference) && (
+        <details className="budget-price-sources">
+          <summary>Giá nào đang được dùng?</summary>
+          {activities
+            .filter((a) => a.estimatedCost.reference)
+            .map((a, i) => {
+              const p = a.estimatedCost.reference!;
+              return (
+                <div key={i}>
+                  <strong>
+                    {p.label} · {moneyText(p.amountMinor)} /{' '}
+                    {p.basis === 'per_person' ? 'người' : 'nhóm'}
+                  </strong>
+                  <p>{p.conditions}</p>
+                  <small>
+                    Đối chiếu {p.checkedAt} · Nhóm tối đa {p.maxTravelers} người
+                  </small>
+                  {!priceFitsGroup(a.estimatedCost, travelers) && (
+                    <p>
+                      Không áp dụng cho số người hiện tại — chưa tính khoản này.
+                    </p>
+                  )}
+                  <a href={p.sourceUrl} target="_blank" rel="noreferrer">
+                    Xem nguồn giá ↗
+                  </a>
+                </div>
+              );
+            })}
+        </details>
+      )}
       <section className="budget-breakdown" aria-label="Chi phí theo nhóm">
         <div
           className="budget-donut"

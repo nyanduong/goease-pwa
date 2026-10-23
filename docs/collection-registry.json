@@ -2419,6 +2419,33 @@
     "contract": "DB-BASELINE.md#plan-first-creation-contract--2026-10-23",
     "note": "Relative-day preview uses temporary date anchors in the unchanged PlannerRequest. Explicit departure required before persistence; existing shiftTripDays preserves IDs. Quick swap uses manual source and unknown cost. UI-only confirmation/undo memory; no persistent undated trip or migration."
   },
+  "adminCatalog": {
+    "date": "2026-10-23",
+    "brRefs": [
+      "CAT-08",
+      "CAT-09",
+      "AUTH-08",
+      "TRIP-07",
+      "TRIP-08",
+      "AI-03",
+      "DATA-02",
+      "DATA-03"
+    ],
+    "status": "implemented-local",
+    "contract": "ADMIN-CATALOG.md",
+    "collections": [
+      "users",
+      "places",
+      "trips",
+      "trip_revisions",
+      "ai_runs",
+      "audit_logs",
+      "idempotency_keys"
+    ],
+    "newCollections": false,
+    "migrationRequired": false,
+    "note": "Optional place venueType/openingHoursNote/referencePrice; admin role server-controlled. Reference snapshots in estimatedCost and AI proposals, validated on save and preserved in existing trips. Audit catalog and local role changes; resourceType place receipts. See DB-BASELINE.md runtime section."
+  },
   "browserStorage": {
     "implementationStatus": "local read-only offline itinerary, 2026-10-23",
     "contract": "OFFLINE-ITINERARY.md",

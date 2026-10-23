@@ -223,6 +223,23 @@ test(
               400,
             );
           const pub = { ...input, publicationStatus: 'published' };
+          assert.equal(
+            (
+              await call(
+                `/admin/places/${place.id}`,
+                'PATCH',
+                {
+                  place: {
+                    ...input,
+                    destinationId: '000000000000000000000001',
+                  },
+                  expectedRevision: place.revision,
+                },
+                admin,
+              )
+            ).status,
+            400,
+          );
           place = (
             await read<{ place: AdminPlaceDto }>(
               await call(
@@ -343,6 +360,22 @@ test(
         'catalog changes do not rewrite saved estimates; new and changed group totals are correct',
         async () => {
           input.referencePrice!.amountMinor = 80000;
+          await product.explore.models.Place.updateOne(
+            { _id: place.id },
+            {
+              $set: {
+                mapLocation: {
+                  latitude: 15.88,
+                  longitude: 108.33,
+                  precision: 'area',
+                  label: 'Old test address',
+                  sourceUrl: 'https://example.invalid/map',
+                  checkedAt: catalogToday(),
+                },
+              },
+            },
+          );
+          input.locationQuery = 'New test address';
           place = (
             await read<{ place: AdminPlaceDto }>(
               await call(
@@ -381,6 +414,7 @@ test(
           const freshPlace = (
             await read<{ place: PlaceDto }>(await call(`/places/${place.id}`))
           ).place;
+          assert.equal(freshPlace.mapLocation, undefined);
           trip.days[0]!.activities[0]!.estimatedCost = catalogCost(freshPlace);
           const second = (
             await read<{ trip: TripDto }>(

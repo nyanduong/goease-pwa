@@ -203,6 +203,15 @@ export function adminCatalog(
                 'CATALOG_CONFLICT',
                 'Địa điểm đã được sửa ở nơi khác. Nội dung đang nhập vẫn giữ; mở bản mới để đối chiếu trước khi lưu.',
               );
+            if (
+              current &&
+              String(current.destinationId) !== input.destinationId
+            )
+              throw new HttpError(
+                400,
+                'PLACE_DESTINATION_FIXED',
+                'Địa điểm đã tạo giữ nguyên điểm đến để bảo vệ các lịch đang dùng. Hãy tạo mục mới cho điểm đến khác.',
+              );
             const fields = {
               destinationId: destination._id,
               destinationName: destination.name,
@@ -216,6 +225,10 @@ export function adminCatalog(
               ).slice(0, 2500),
               sourceUrl: input.sourceUrl,
               openingHoursNote: input.openingHoursNote,
+              ...(current &&
+              current.planning?.locationQuery !== input.locationQuery
+                ? { mapLocation: null }
+                : {}),
               referencePrice: input.referencePrice,
               publicationStatus: input.publicationStatus,
               durationLabel: `${input.durationMinutes} phút`,
@@ -286,7 +299,9 @@ export function adminCatalog(
           if (
             attempt < 2 &&
             e instanceof mongoose.mongo.MongoServerError &&
-            e.code === 11000
+            e.code === 11000 &&
+            JSON.stringify(e.keyPattern) ===
+              JSON.stringify({ actorId: 1, operation: 1, key: 1 })
           )
             continue;
           throw e;

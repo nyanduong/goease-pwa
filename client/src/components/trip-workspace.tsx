@@ -51,6 +51,7 @@ import {
 import { api } from '../api';
 import { moneyText, withDays } from '../trip-draft';
 import { placeActivity } from './explore';
+import { priceFitsGroup } from '@goease/contracts';
 
 const TripMap = lazy(() =>
   import('./trip-map').then((m) => ({ default: m.TripMap })),
@@ -939,7 +940,12 @@ export function TripWorkspace({
                     onReview={() => {
                       const index = draft.days.findIndex((d) =>
                         d.activities.some(
-                          (a) => a.estimatedCost.amountMinor === null,
+                          (a) =>
+                            a.estimatedCost.amountMinor === null ||
+                            !priceFitsGroup(
+                              a.estimatedCost,
+                              draft.travelers.totalCount,
+                            ),
                         ),
                       );
                       setTab('schedule');
@@ -948,7 +954,12 @@ export function TripWorkspace({
                         setEditing(
                           structuredClone(
                             draft.days[index]!.activities.find(
-                              (a) => a.estimatedCost.amountMinor === null,
+                              (a) =>
+                                a.estimatedCost.amountMinor === null ||
+                                !priceFitsGroup(
+                                  a.estimatedCost,
+                                  draft.travelers.totalCount,
+                                ),
                             )!,
                           ),
                         );
@@ -1731,8 +1742,8 @@ export function TripWorkspace({
         >
           <p className="journey-sheet-note">
             {replacing
-              ? 'Chọn một nơi chưa có trong chuyến, phù hợp với khung giờ hiện tại. Các điểm còn lại được giữ nguyên; giá của điểm mới chưa xác định.'
-              : `Gợi ý từ danh mục GoEase tại ${destinationName}. Chọn để thêm vào ngày ${dayIndex + 1}; giờ và chi phí do bạn quyết định.`}
+              ? 'Chọn nơi phù hợp với khung giờ hiện tại. Các điểm khác giữ nguyên; giá tham khảo của nơi mới được tự áp dụng nếu có.'
+              : `Gợi ý tại ${destinationName}. Chọn để thêm vào ngày ${dayIndex + 1}; app tự dùng giá tham khảo nếu có, bạn có thể chỉnh sau.`}
           </p>
           {placesStatus === 'loading' ? (
             <p role="status">Đang tìm gợi ý…</p>

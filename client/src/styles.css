@@ -5847,3 +5847,62 @@ body:has(.quick-result-intro) .mobile-bottom-nav {
     padding: 16px;
   }
 }
+.budget-scope-note {
+  padding: 16px 20px;
+  line-height: 1.6;
+  background: #edf0e6;
+  border-radius: 16px;
+  margin: 16px 0;
+}
+
+/* Administration is a desktop workspace, separate from the travel app. */
+.admin-desktop-shell {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  min-height: 100vh;
+  background: #f5f6f0;
+}
+.admin-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px 24px;
+  border-right: 1px solid #dce2d5;
+  background: #fffdf6;
+}
+.admin-sidebar p {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.admin-sidebar a[aria-current] {
+  padding: 16px;
+  background: #dcebd9;
+  border-radius: 12px;
+  color: #194e45;
+  text-decoration: none;
+  font-weight: 600;
+}
+.admin-sidebar span {
+  margin-top: auto;
+}
+.admin-desktop-main {
+  min-width: 0;
+}
+.admin-desktop-main .admin-catalog {
+  max-width: 1280px;
+  padding: 40px 40px 64px;
+}
+.admin-desktop-main .admin-heading h1 {
+  font-size: 36px;
+}
+.admin-desktop-main .admin-place-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 1200px) {
+  .admin-desktop-main .admin-place-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
