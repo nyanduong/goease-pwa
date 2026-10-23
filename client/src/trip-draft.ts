@@ -16,9 +16,9 @@ export function initialDraft(): TripInput {
     title: '',
     destinations: [],
     startDate: date,
-    endDate: date,
+    endDate: new Date(Date.parse(date) + 86400000).toISOString().slice(0, 10),
     timezone: 'Asia/Ho_Chi_Minh',
-    travelers: { totalCount: 1 },
+    travelers: { totalCount: 2 },
     budget: {
       amountMinor: null,
       currency: 'VND',

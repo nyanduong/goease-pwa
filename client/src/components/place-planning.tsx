@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { PlaceDto } from '@goease/contracts';
+import {
+  catalogCost,
+  catalogToday,
+  type ActivityInput,
+  type PlaceDto,
+} from '@goease/contracts';
 import { api } from '../api';
 import { moneyText } from '../trip-draft';
 
@@ -7,21 +12,25 @@ type Price = NonNullable<PlaceDto['planning']>['priceOptions'][number];
 export function PlacePlanning({
   place,
   onPick,
+  onAutomatic,
 }: {
   place: PlaceDto;
   onPick?: (price: Price) => void;
+  onAutomatic?: (cost: ActivityInput['estimatedCost']) => void;
 }) {
   const planning = place.planning;
   if (!planning) return null;
   return (
     <section className="place-planning">
       <strong>Thông tin để xếp lịch</strong>
-      {place.category === 'food' && !place.mapLocation && (
-        <p>
-          <strong>Gợi ý món ăn, chưa chọn quán.</strong> Tìm quán phù hợp trên
-          bản đồ, rồi ghi tên quán, địa chỉ và giá vào điểm dừng này.
-        </p>
-      )}
+      {place.category === 'food' &&
+        place.venueType !== 'restaurant' &&
+        !place.mapLocation && (
+          <p>
+            <strong>Gợi ý món ăn, chưa chọn quán.</strong> Tìm quán phù hợp trên
+            bản đồ, rồi ghi tên quán, địa chỉ và giá vào điểm dừng này.
+          </p>
+        )}
       <p>
         Gợi ý dành {planning.durationMinutes} phút · Thời lượng do GoEase biên
         tập.
@@ -36,6 +45,46 @@ export function PlacePlanning({
           : 'Tìm vị trí trên bản đồ ↗'}
       </a>
       <p>{planning.costNote}</p>
+      {place.openingHoursNote && (
+        <p>Giờ mở cửa tham khảo: {place.openingHoursNote}</p>
+      )}
+      {place.referencePrice && (
+        <div className="place-reference-price">
+          <strong>
+            {place.referencePrice.label} ·{' '}
+            {moneyText(place.referencePrice.amountMinor)} /{' '}
+            {place.referencePrice.basis === 'per_person' ? 'người' : 'nhóm'}
+          </strong>
+          <p>{place.referencePrice.conditions}</p>
+          <small>
+            Nhóm tối đa {place.referencePrice.maxTravelers} người · Đối chiếu{' '}
+            {place.referencePrice.checkedAt}
+          </small>
+          <a
+            href={place.referencePrice.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Nguồn giá tham khảo ↗
+          </a>
+          {place.referencePrice.reviewAfter < catalogToday() ? (
+            <small>Giá đến hạn kiểm tra, chưa dùng cho dự toán mới.</small>
+          ) : (
+            <small>
+              Tự tính vào dự toán khi thêm điểm này. Chưa phải giá đặt dịch vụ.
+            </small>
+          )}
+        </div>
+      )}
+      {onAutomatic && (
+        <button
+          type="button"
+          className="journey-outline"
+          onClick={() => onAutomatic(catalogCost(place))}
+        >
+          Cập nhật giá tham khảo
+        </button>
+      )}
       {planning.priceOptions.map((price) => (
         <div className="place-reference-price" key={price.label}>
           <b>
@@ -60,7 +109,7 @@ export function PlacePlanning({
           )}
         </div>
       ))}
-      {!planning.priceOptions.length && (
+      {!planning.priceOptions.length && !place.referencePrice && (
         <small>Chi phí: Chưa rõ. Bạn có thể nhập dự kiến bên dưới.</small>
       )}
     </section>
@@ -70,9 +119,11 @@ export function PlacePlanning({
 export function ActivityCatalogInfo({
   placeId,
   onPick,
+  onAutomatic,
 }: {
   placeId: string;
   onPick: (price: Price) => void;
+  onAutomatic?: (cost: ActivityInput['estimatedCost']) => void;
 }) {
   const [place, setPlace] = useState<PlaceDto | null>(null);
   const [error, setError] = useState(false);
@@ -106,5 +157,11 @@ export function ActivityCatalogInfo({
       </p>
     );
   if (!place) return <p role="status">Đang tải thông tin địa điểm…</p>;
-  return <PlacePlanning place={place} onPick={onPick} />;
+  return (
+    <PlacePlanning
+      place={place}
+      onPick={onPick}
+      {...(onAutomatic ? { onAutomatic } : {})}
+    />
+  );
 }

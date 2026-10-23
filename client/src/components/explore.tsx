@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { catalogCost } from '@goease/contracts';
 import {
   ArrowLeft,
   ArrowRight,
@@ -893,13 +894,7 @@ export function placeActivity(
     timezone: 'Asia/Ho_Chi_Minh',
     order,
     notes: note,
-    estimatedCost: {
-      amountMinor: null,
-      currency: 'VND',
-      basis: 'group_total',
-      quantity: 1,
-      confidence: 'user_entered',
-    },
+    estimatedCost: catalogCost(place),
     source: 'manual',
   };
 }

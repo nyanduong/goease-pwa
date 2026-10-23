@@ -4,6 +4,7 @@ import { Sheet } from './journey-sheet';
 import { TripExpenses } from './trip-expenses';
 import { TripBudget } from './budget-screen';
 import { AiPlanner } from './ai-planner';
+import { QuickTripSetup } from './quick-trip-setup';
 import { ActivityCatalogInfo } from './place-planning';
 import {
   lazy,
@@ -293,7 +294,6 @@ export function TripWorkspace({
   busy,
   saveState,
   message,
-  signedIn,
   onSave,
   onBack,
   onOpenGoe,
@@ -307,11 +307,10 @@ export function TripWorkspace({
   busy: boolean;
   saveState: 'dirty' | 'saving' | 'saved' | 'error';
   message: string;
-  signedIn: boolean;
   onOpenGoe: (day: number) => void;
   onNavigate: (path: string) => void;
   onReload: () => void;
-  onSave: () => void;
+  onSave: (value?: TripInput) => void;
   onBack: () => void;
 }) {
   const [costView, setCostView] = useState<'estimate' | 'actual'>('estimate');
@@ -333,6 +332,14 @@ export function TripWorkspace({
     ),
   );
   const [settings, setSettings] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [datesConfirmed, setDatesConfirmed] = useState(Boolean(loaded));
+  const [keeping, setKeeping] = useState(false);
+  const [departure, setDeparture] = useState('');
+  const [replacing, setReplacing] = useState<ActivityInput | null>(null);
+  const [undoDay, setUndoDay] = useState<TripInput['days'][number] | null>(
+    null,
+  );
   const [field, setField] = useState<
     'destination' | 'dates' | 'travelers' | 'budget' | null
   >(null);
@@ -354,7 +361,7 @@ export function TripWorkspace({
   const dayIndex = Math.min(selectedDay, Math.max(0, draft.days.length - 1));
   const day = draft.days[dayIndex];
   const isSetup = !loaded && step === 1;
-  const showSettings = isSetup || settings;
+  const showSettings = settings;
   const allActivities = draft.days.flatMap((d) => d.activities);
   const dayRefs = useRef<(HTMLButtonElement | null)[]>([]);
   useEffect(() => {
@@ -386,6 +393,7 @@ export function TripWorkspace({
   }, [saveState, draft.title, allActivities.length]);
   function changeActivities(activities: ActivityInput[]) {
     if (!day) return;
+    setUndoDay(null);
     onChange({
       ...draft,
       days: draft.days.map((d) =>
@@ -470,6 +478,8 @@ export function TripWorkspace({
         };
     }
     onChange(next);
+    setUndoDay(null);
+    if (field === 'dates') setDatesConfirmed(true);
     setField(null);
     setError('');
   }
@@ -548,6 +558,26 @@ export function TripWorkspace({
         Number(draft.preferences.interestCodes.includes(b.category)) -
         Number(draft.preferences.interestCodes.includes(a.category)),
     );
+  // A quick swap keeps the existing time slot and all other stops unchanged.
+  // Longer visits are excluded, not silently squeezed into an impossible slot.
+  const replacements = candidates.filter(
+    (p) =>
+      p.id !== replacing?.placeId &&
+      !allActivities.some((a) => a.placeId === p.id) &&
+      (!replacing?.startLocalTime ||
+        !replacing.endLocalTime ||
+        (p.planning &&
+          p.planning.durationMinutes <=
+            Number(replacing.endLocalTime.slice(0, 2)) * 60 +
+              Number(replacing.endLocalTime.slice(3)) -
+              (Number(replacing.startLocalTime.slice(0, 2)) * 60 +
+                Number(replacing.startLocalTime.slice(3))))),
+  );
+  function keepTrip() {
+    setDeparture(datesConfirmed ? draft.startDate : '');
+    setKeeping(true);
+    setError('');
+  }
   const summaryRows = [
     {
       code: 'destination',
@@ -558,7 +588,9 @@ export function TripWorkspace({
     {
       code: 'dates',
       label: 'Thời gian',
-      value: `${shortDate(draft.startDate)} – ${shortDate(draft.endDate)}/${draft.endDate.slice(0, 4)} · ${Math.max(1, draft.days.length)} ngày`,
+      value: datesConfirmed
+        ? `${shortDate(draft.startDate)} – ${shortDate(draft.endDate)}/${draft.endDate.slice(0, 4)} · ${Math.max(1, draft.days.length)} ngày`
+        : `Chưa chốt ngày đi · ${draft.days.length} ngày`,
       Icon: CalendarDays,
     },
     {
@@ -661,11 +693,12 @@ export function TripWorkspace({
       <header className="journey-top">
         <button
           aria-label="Quay lại"
+          disabled={generating || busy}
           onClick={() => {
             if (settings) setSettings(false);
             else if (tab === 'cost' || tab === 'summary') setTab('schedule');
             else if (!loaded && step > 1) {
-              setStep(step - 1);
+              setSettings(true);
               setError('');
             } else onBack();
           }}
@@ -689,7 +722,7 @@ export function TripWorkspace({
             </small>
           )}
         </div>
-        {loaded ? (
+        {!isSetup ? (
           <button
             aria-label="Thông tin chuyến đi"
             onClick={() => setSettings((v) => !v)}
@@ -697,24 +730,25 @@ export function TripWorkspace({
             <SlidersHorizontal size={21} />
           </button>
         ) : (
-          <span className="journey-step-label">Bước {step} / 3</span>
+          <span className="quick-header-note">Cùng Goe</span>
         )}
       </header>
-      {!loaded && (
-        <ol className="journey-progress" aria-label={`Bước ${step} trên 3`}>
-          {[1, 2, 3].map((n) => (
-            <li
-              key={n}
-              className={n <= step ? 'complete' : ''}
-              aria-current={n === step ? 'step' : undefined}
-            >
-              <span>{n < step ? <Check size={10} /> : ''}</span>
-            </li>
-          ))}
-        </ol>
-      )}
       <fieldset className="journey-fieldset" disabled={busy}>
-        {showSettings ? (
+        {isSetup && !settings ? (
+          <QuickTripSetup
+            draft={draft}
+            destinations={destinations}
+            onChange={onChange}
+            onBusyChange={setGenerating}
+            onManual={nextStep}
+            onPreview={(value) => {
+              onChange(value);
+              setStep(2);
+              setTab('schedule');
+              window.scrollTo(0, 0);
+            }}
+          />
+        ) : showSettings ? (
           <>
             <h1 className="journey-intro-title">
               {loaded ? (
@@ -756,7 +790,7 @@ export function TripWorkspace({
               <button
                 className="journey-primary"
                 disabled={busy || saveState === 'saved'}
-                onClick={onSave}
+                onClick={() => onSave()}
               >
                 Lưu thay đổi <Check size={18} />
               </button>
@@ -771,6 +805,7 @@ export function TripWorkspace({
               revision={loaded?.revision}
               onApply={(value) => {
                 onChange(value);
+                setUndoDay(null);
                 setSettings(false);
                 setStep(2);
                 setTab('schedule');
@@ -778,9 +813,9 @@ export function TripWorkspace({
             />
             <button
               className="journey-outline journey-manual-choice"
-              onClick={loaded ? () => setSettings(false) : nextStep}
+              onClick={() => setSettings(false)}
             >
-              {loaded ? 'Về lịch trình' : 'Tự chọn điểm dừng'}
+              Về lịch trình
               <ArrowRight size={19} />
             </button>
             {!loaded && (
@@ -789,80 +824,47 @@ export function TripWorkspace({
               </p>
             )}
           </>
-        ) : !loaded && step === 3 ? (
-          <div className="journey-review">
-            <span className="journey-eyebrow">BẢN KẾ HOẠCH CỦA BẠN</span>
-            <h1>
-              Lưu lại.
-              <br />
-              Rồi hoàn thiện dần.
-            </h1>
-            <img
-              className="journey-review-cover"
-              src={travelImage(destinationName)}
-              alt="Ảnh minh họa hành trình"
-            />
-            <label className="journey-field">
-              Tên chuyến đi
-              <input
-                value={draft.title}
-                maxLength={120}
-                onChange={(e) => onChange({ ...draft, title: e.target.value })}
-              />
-            </label>
-            <div className="journey-review-meta">
-              <span>
-                <MapPin size={17} />
-                {destinationName}
-              </span>
-              <span>
-                <CalendarDays size={17} />
-                {draft.days.length} ngày
-              </span>
-              <span>
-                <UsersRound size={17} />
-                {draft.travelers.totalCount} người
-              </span>
-            </div>
-            <label className="journey-field">
-              Ghi chú chuyến đi
-              <textarea
-                aria-label="Ghi chú chuyến đi"
-                value={draft.notes}
-                maxLength={2000}
-                placeholder="Những điều muốn nhớ…"
-                onChange={(e) => onChange({ ...draft, notes: e.target.value })}
-              />
-            </label>
-            <Companion>
-              {allActivities.length} điểm dừng đã chọn. Bạn luôn có thể chỉnh
-              sửa sau.
-            </Companion>
-            <p className="journey-sheet-note">
-              Đây là bản kế hoạch. Trước khi đi, kiểm tra chỗ ở, di chuyển, giờ
-              mở cửa và các khoản chưa có giá. Lưu chuyến không phải đặt dịch
-              vụ.
-            </p>
-            <button className="journey-primary" onClick={onSave}>
-              {busy
-                ? 'Đang lưu…'
-                : signedIn
-                  ? 'Lưu chuyến đi'
-                  : 'Đăng nhập để lưu'}
-              <Check size={19} />
-            </button>
-          </div>
         ) : (
           <>
+            {!loaded && (
+              <div className="quick-result-intro">
+                <span className="journey-eyebrow">
+                  {draft.generationMode === 'ai'
+                    ? 'LỊCH GỢI Ý CỦA GOE'
+                    : 'LỊCH BẠN ĐANG CHỌN'}
+                </span>
+                <h1>
+                  {destinationName} · {draft.days.length} ngày
+                </h1>
+                <p>
+                  {draft.travelers.totalCount} người ·{' '}
+                  {datesConfirmed
+                    ? `${shortDate(draft.startDate)}–${shortDate(draft.endDate)}`
+                    : 'Chưa chốt ngày đi'}
+                </p>
+                <p>Thích thì giữ. Chưa thích chỗ nào, đổi ngay ở đó.</p>
+                <details>
+                  <summary>Những điều cần biết về lịch này</summary>
+                  <p>
+                    Giờ đi là gợi ý, chưa xác minh giờ mở cửa hoặc thời gian đi
+                    đường. Giá chưa có được giữ là “Chưa rõ”. Gợi ý Hội An còn
+                    ít, có thể lặp giữa các ngày. Món ăn chưa phải quán cụ thể.
+                    Lịch này chưa được lưu vào tài khoản.
+                  </p>
+                </details>
+              </div>
+            )}
             {tab !== 'cost' && (
               <>
-                <div className="journey-cover">
-                  <img
-                    src={travelImage(destinationName)}
-                    alt="Ảnh minh họa hành trình"
-                  />
-                  <span>Ảnh minh họa AI</span>
-                </div>
+                {loaded && (
+                  <div className="journey-cover">
+                    <img
+                      src={travelImage(destinationName)}
+                      alt="Ảnh minh họa hành trình"
+                    />
+                    <span>Ảnh minh họa AI</span>
+                  </div>
+                )}
                 <div
                   className="journey-segment journey-view-tabs"
                   aria-label="Xem hành trình"
@@ -1021,7 +1023,9 @@ export function TripWorkspace({
                           ? 'Đi và khám phá.'
                           : 'Một ngày thật vui.'}
                     </h1>
-                    <span>{day ? shortDate(day.date) : ''}</span>
+                    <span>
+                      {day && datesConfirmed ? shortDate(day.date) : ''}
+                    </span>
                   </div>
                   {tab === 'map' ? (
                     <Suspense fallback={<p role="status">Đang mở bản đồ…</p>}>
@@ -1061,6 +1065,14 @@ export function TripWorkspace({
                                   {a.startLocalTime ?? 'Chưa đặt giờ'}
                                 </small>
                                 <strong>{a.title}</strong>
+                                {a.estimatedCost.reference && (
+                                  <small>
+                                    {draft.travelers.totalCount >
+                                    a.estimatedCost.reference.maxTravelers
+                                      ? 'Cần giá cho nhóm đông hơn'
+                                      : `${moneyText(a.estimatedCost.amountMinor!)} / ${a.estimatedCost.basis === 'per_person' ? 'người' : 'nhóm'} · Tham khảo`}
+                                  </small>
+                                )}
                                 <small>
                                   {a.notes ||
                                     (a.endLocalTime
@@ -1070,6 +1082,31 @@ export function TripWorkspace({
                               </span>
                               <Pencil size={14} />
                             </button>
+                            <div className="quick-stop-actions">
+                              <button
+                                aria-label={`Đổi ${a.title}`}
+                                onClick={() => {
+                                  setReplacing(a);
+                                  setSuggestions(true);
+                                  setPlacesStatus('loading');
+                                }}
+                              >
+                                Đổi chỗ này
+                              </button>
+                              <button
+                                aria-label={`Bỏ ${a.title}`}
+                                onClick={() => {
+                                  changeActivities(
+                                    day.activities.filter(
+                                      (v) => v.activityId !== a.activityId,
+                                    ),
+                                  );
+                                  setUndoDay(structuredClone(day));
+                                }}
+                              >
+                                Bỏ điểm này
+                              </button>
+                            </div>
                             <div className="journey-stop-order">
                               <button
                                 aria-label={`Đưa ${a.title} lên`}
@@ -1103,6 +1140,18 @@ export function TripWorkspace({
                           </article>
                         ))}
                       </div>
+                      {undoDay && undoDay.dayId === day?.dayId && (
+                        <div className="quick-undo" role="status">
+                          Đã chỉnh lịch.{' '}
+                          <button
+                            onClick={() => {
+                              changeActivities(undoDay.activities);
+                            }}
+                          >
+                            Hoàn tác
+                          </button>
+                        </div>
+                      )}
                       {!day?.activities.length && (
                         <div className="journey-empty">
                           <Sparkles size={24} />
@@ -1117,6 +1166,7 @@ export function TripWorkspace({
                         className="journey-add-stop"
                         disabled={atLimit}
                         onClick={() => {
+                          setReplacing(null);
                           setSuggestions(true);
                           setPlacesStatus('loading');
                         }}
@@ -1127,6 +1177,7 @@ export function TripWorkspace({
                       <button
                         className="journey-companion journey-suggest-button"
                         onClick={() => {
+                          setReplacing(null);
                           setSuggestions(true);
                           setPlacesStatus('loading');
                         }}
@@ -1141,15 +1192,12 @@ export function TripWorkspace({
               </>
             )}
             {!loaded && (
-              <button
-                className="journey-primary"
-                onClick={() => {
-                  setStep(3);
-                  window.scrollTo(0, 0);
-                }}
-              >
-                Xem lại chuyến đi <ArrowRight size={18} />
-              </button>
+              <div className="quick-keep-bar">
+                <button className="journey-primary" onClick={keepTrip}>
+                  Giữ lịch này <Check size={18} />
+                </button>
+                <small>Bạn luôn có thể sửa tiếp sau khi lưu.</small>
+              </div>
             )}
             {loaded && (
               <>
@@ -1191,7 +1239,7 @@ export function TripWorkspace({
                   </span>
                   <button
                     className="journey-primary"
-                    onClick={onSave}
+                    onClick={() => onSave()}
                     disabled={busy || saveState === 'saved'}
                   >
                     Lưu thay đổi <Check size={16} />
@@ -1243,13 +1291,110 @@ export function TripWorkspace({
           {error}
         </p>
       )}
-      {message && (
+      {message && !keeping && (
         <p
           className={saveState === 'error' ? 'journey-error' : 'journey-notice'}
           role={saveState === 'error' ? 'alert' : 'status'}
         >
           {message}
         </p>
+      )}
+      {keeping && (
+        <Sheet
+          title="Giữ chuyến đi của bạn"
+          onClose={() => {
+            if (!busy) setKeeping(false);
+          }}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              try {
+                if (!departure) {
+                  setError('Chọn ngày khởi hành để lưu lịch theo ngày.');
+                  return;
+                }
+                const end = new Date(
+                  Date.parse(departure) + (draft.days.length - 1) * 86400000,
+                )
+                  .toISOString()
+                  .slice(0, 10);
+                const next = shiftTripDays(draft, departure, end, () =>
+                  crypto.randomUUID(),
+                );
+                onChange(next);
+                setDatesConfirmed(true);
+                setError('');
+                onSave(next);
+              } catch {
+                setError('Chọn ngày khởi hành hợp lệ.');
+              }
+            }}
+          >
+            <fieldset className="journey-fieldset" disabled={busy}>
+              <p>
+                {draft.days.length} ngày ở {destinationName}. Chỉ còn ngày khởi
+                hành để lưu lịch của bạn.
+              </p>
+              <label className="journey-field">
+                Ngày khởi hành
+                <input
+                  autoFocus
+                  type="date"
+                  required
+                  value={departure}
+                  onChange={(e) => {
+                    setDeparture(e.target.value);
+                    setError('');
+                  }}
+                />
+              </label>
+              <details className="quick-preferences">
+                <summary>
+                  Đổi tên hoặc thêm ghi chú <span>Tùy chọn</span>
+                </summary>
+                <label className="journey-field">
+                  Tên chuyến đi
+                  <input
+                    maxLength={120}
+                    value={draft.title}
+                    onChange={(e) =>
+                      onChange({ ...draft, title: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="journey-field">
+                  Ghi chú chuyến đi
+                  <textarea
+                    aria-label="Ghi chú chuyến đi"
+                    maxLength={2000}
+                    value={draft.notes}
+                    onChange={(e) =>
+                      onChange({ ...draft, notes: e.target.value })
+                    }
+                  />
+                </label>
+              </details>
+              <p className="journey-sheet-note">
+                Lưu kế hoạch riêng vào tài khoản. Chưa đặt phòng, vé hoặc dịch
+                vụ.
+              </p>
+              {error && (
+                <p role="alert" className="journey-error">
+                  {error}
+                </p>
+              )}
+              {saveState === 'error' && (
+                <p role="alert" className="journey-error">
+                  {message}
+                </p>
+              )}
+              <button className="journey-primary" type="submit">
+                {busy ? 'Đang lưu…' : 'Lưu chuyến đi'}
+              </button>
+            </fieldset>
+          </form>
+        </Sheet>
       )}
       {field && (
         <Sheet
@@ -1467,11 +1612,16 @@ export function TripWorkspace({
               <ActivityCatalogInfo
                 key={editing.placeId}
                 placeId={editing.placeId}
+                onAutomatic={(estimatedCost) =>
+                  setEditing({ ...editing, estimatedCost })
+                }
                 onPick={(price) =>
                   setEditing({
                     ...editing,
                     estimatedCost: {
                       ...editing.estimatedCost,
+                      confidence: 'user_entered',
+                      reference: undefined,
                       amountMinor: price.amountMinor,
                       basis: price.basis,
                     },
@@ -1489,6 +1639,8 @@ export function TripWorkspace({
                     ...editing,
                     estimatedCost: {
                       ...editing.estimatedCost,
+                      confidence: 'user_entered',
+                      reference: undefined,
                       basis: e.target.value as 'group_total' | 'per_person',
                     },
                   })
@@ -1516,6 +1668,8 @@ export function TripWorkspace({
                     ...editing,
                     estimatedCost: {
                       ...editing.estimatedCost,
+                      confidence: 'user_entered',
+                      reference: undefined,
                       amountMinor:
                         e.target.value === '' ? null : Number(e.target.value),
                     },
@@ -1568,10 +1722,17 @@ export function TripWorkspace({
         </Sheet>
       )}
       {suggestions && (
-        <Sheet title="Một vài nơi hợp gu" onClose={() => setSuggestions(false)}>
+        <Sheet
+          title={replacing ? `Đổi ${replacing.title}` : 'Một vài nơi hợp gu'}
+          onClose={() => {
+            setSuggestions(false);
+            setReplacing(null);
+          }}
+        >
           <p className="journey-sheet-note">
-            Gợi ý từ danh mục GoEase tại {destinationName}. Chọn để thêm vào
-            ngày {dayIndex + 1}; giờ và chi phí do bạn quyết định.
+            {replacing
+              ? 'Chọn một nơi chưa có trong chuyến, phù hợp với khung giờ hiện tại. Các điểm còn lại được giữ nguyên; giá của điểm mới chưa xác định.'
+              : `Gợi ý từ danh mục GoEase tại ${destinationName}. Chọn để thêm vào ngày ${dayIndex + 1}; giờ và chi phí do bạn quyết định.`}
           </p>
           {placesStatus === 'loading' ? (
             <p role="status">Đang tìm gợi ý…</p>
@@ -1588,9 +1749,9 @@ export function TripWorkspace({
                 Thử lại
               </button>
             </div>
-          ) : candidates.length ? (
+          ) : (replacing ? replacements : candidates).length ? (
             <div className="journey-place-options">
-              {candidates.map((p) => (
+              {(replacing ? replacements : candidates).map((p) => (
                 <article key={p.id}>
                   <img src={p.imageUrl} alt="Ảnh minh họa AI" />
                   <div>
@@ -1598,14 +1759,34 @@ export function TripWorkspace({
                     <small>{p.subtitle}</small>
                   </div>
                   <button
-                    aria-label={`Thêm ${p.name}`}
-                    disabled={atLimit}
+                    aria-label={`${replacing ? 'Đổi sang' : 'Thêm'} ${p.name}`}
+                    disabled={!replacing && atLimit}
                     onClick={() => {
                       if (day) {
-                        changeActivities([
-                          ...day.activities,
-                          placeActivity(p, '', day.activities.length),
-                        ]);
+                        if (replacing) {
+                          const replacement = {
+                            ...placeActivity(p, '', replacing.order),
+                            ...(replacing.startLocalTime
+                              ? {
+                                  startLocalTime: replacing.startLocalTime,
+                                  endLocalTime: replacing.endLocalTime,
+                                }
+                              : {}),
+                          };
+                          changeActivities(
+                            day.activities.map((a) =>
+                              a.activityId === replacing.activityId
+                                ? replacement
+                                : a,
+                            ),
+                          );
+                          setUndoDay(structuredClone(day));
+                          setReplacing(null);
+                        } else
+                          changeActivities([
+                            ...day.activities,
+                            placeActivity(p, '', day.activities.length),
+                          ]);
                         setSuggestions(false);
                       }
                     }}
@@ -1617,20 +1798,23 @@ export function TripWorkspace({
             </div>
           ) : (
             <p className="journey-empty">
-              Chưa có gợi ý ở điểm đến này. Bạn có thể tự thêm những nơi muốn
-              ghé.
+              {replacing
+                ? 'Chưa có điểm khác phù hợp với khung giờ này. Giữ lịch hiện tại hoặc bỏ điểm để có thêm thời gian nghỉ.'
+                : 'Chưa có gợi ý ở điểm đến này. Bạn có thể tự thêm những nơi muốn ghé.'}
             </p>
           )}
-          <button
-            className="journey-outline"
-            disabled={atLimit}
-            onClick={() => {
-              setSuggestions(false);
-              addBlank();
-            }}
-          >
-            Tự thêm điểm dừng <Plus size={17} />
-          </button>
+          {!replacing && (
+            <button
+              className="journey-outline"
+              disabled={atLimit}
+              onClick={() => {
+                setSuggestions(false);
+                addBlank();
+              }}
+            >
+              Tự thêm điểm dừng <Plus size={17} />
+            </button>
+          )}
           <small className="journey-caption">
             Ảnh minh họa AI · Gợi ý biên tập, không phải lịch trình AI tự động
           </small>

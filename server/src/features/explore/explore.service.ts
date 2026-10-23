@@ -13,6 +13,8 @@ import {
   placeStateInputSchema,
 } from '@goease/contracts';
 import { HttpError } from '../../http-error.js';
+import { referencePriceSchema } from '@goease/contracts';
+import { referencePriceModelSchema } from './reference-price.js';
 import { mutableFields } from '../auth/auth.models.js';
 const parseMapLocation = (v: unknown) =>
   mapLocationSchema.safeParse(
@@ -28,6 +30,9 @@ export function exploreService(connection: Connection) {
   const placeSchema = new Schema(
     {
       ...mutableFields,
+      venueType: { type: String, enum: ['place', 'restaurant', 'food_idea'] },
+      openingHoursNote: { type: String, maxlength: 400, default: '' },
+      referencePrice: { type: referencePriceModelSchema, default: null },
       destinationId: { type: Schema.Types.ObjectId, required: true },
       destinationName: { type: String, required: true, maxlength: 100 },
       name: { type: String, required: true, maxlength: 120 },
@@ -127,6 +132,7 @@ export function exploreService(connection: Connection) {
     {
       collection: 'places',
       timestamps: true,
+      versionKey: false,
       strict: 'throw',
       autoIndex: false,
       autoCreate: false,
@@ -168,6 +174,18 @@ export function exploreService(connection: Connection) {
     deletedAt: null,
   };
   const dto = (doc: PlaceRecord & { _id: Types.ObjectId }): PlaceDto => ({
+    revision: doc.revision,
+    venueType:
+      (doc.venueType as PlaceDto['venueType']) ??
+      (doc.category === 'food' ? 'food_idea' : 'place'),
+    openingHoursNote: doc.openingHoursNote,
+    referencePrice: doc.referencePrice
+      ? referencePriceSchema.parse(
+          doc.referencePrice instanceof mongoose.Document
+            ? doc.referencePrice.toObject()
+            : doc.referencePrice,
+        )
+      : null,
     id: String(doc._id),
     destinationId: String(doc.destinationId),
     destinationName: doc.destinationName,

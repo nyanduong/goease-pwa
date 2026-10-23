@@ -14,6 +14,7 @@ import { requestId } from '../auth/auth.service.js';
 import { tokenHash } from '../auth/security.js';
 import { HttpError } from '../../http-error.js';
 import { calculateBudget } from './budget.js';
+import { validateCatalogCosts } from './catalog-costs.js';
 
 export function tripService(
   connection: Connection,
@@ -255,6 +256,7 @@ export function tripService(
                 );
             }
             const now = new Date();
+            let originalProposal: TripInput | undefined;
             // AI provenance is resolved on the server; the browser cannot invent it.
             if (value.generationMode === 'ai') {
               const run = await connection.collection('ai_runs').findOne(
@@ -277,6 +279,7 @@ export function tripService(
                   'Đề xuất AI không còn phù hợp với bản chuyến đi này. Hãy tạo đề xuất mới.',
                 );
               const original = tripInputSchema.parse(run.proposal.trip);
+              originalProposal = original;
               const links = new Set(
                 original.days.flatMap((d) =>
                   d.activities.map((a) => `${a.activityId}:${a.placeId}`),
@@ -358,6 +361,13 @@ export function tripService(
                   'Địa điểm không còn khả dụng hoặc không thuộc điểm đến của ngày. Hãy chọn lại.',
                 );
             }
+            await validateCatalogCosts(
+              connection,
+              value,
+              current ? toInput(current) : undefined,
+              originalProposal,
+              session,
+            );
             const oldActivities =
               current?.days.flatMap((d) => d.activities) ?? [];
             const enriched = {

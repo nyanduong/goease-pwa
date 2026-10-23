@@ -2403,6 +2403,22 @@
     "legacyGoeApplyAccepted": "goe-v1",
     "note": "Derived budget completeness and preparation UI; allowlisted auth continuation carries no draft. Same error envelope, actionable pace/timing errors and distinct pending/failed runs. No migration or new schema."
   },
+  "planFirstCreation": {
+    "date": "2026-10-23",
+    "brRefs": [
+      "TRIP-02",
+      "TRIP-03",
+      "TRIP-04",
+      "TRIP-05",
+      "TRIP-09",
+      "AI-01",
+      "AI-03",
+      "AI-06"
+    ],
+    "storageChanged": false,
+    "contract": "DB-BASELINE.md#plan-first-creation-contract--2026-10-23",
+    "note": "Relative-day preview uses temporary date anchors in the unchanged PlannerRequest. Explicit departure required before persistence; existing shiftTripDays preserves IDs. Quick swap uses manual source and unknown cost. UI-only confirmation/undo memory; no persistent undated trip or migration."
+  },
   "browserStorage": {
     "implementationStatus": "local read-only offline itinerary, 2026-10-23",
     "contract": "OFFLINE-ITINERARY.md",

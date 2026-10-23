@@ -12,6 +12,7 @@ import { authLimiter, cookie, opaqueToken, tokenHash } from './security.js';
 import type { businessAudit } from '../audit/business-audit.js';
 
 export const userDto = (user: UserRecord): UserDto => ({
+  isAdmin: user.roles.includes('admin'),
   id: user._id.toHexString(),
   displayName: user.displayName,
   avatarUrl: accountAvatarUrl(user.avatarUrl),

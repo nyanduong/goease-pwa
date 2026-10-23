@@ -17,6 +17,7 @@ import type {
 } from '@goease/contracts';
 import { api } from '../api';
 import { moneyText } from '../trip-draft';
+import { priceFitsGroup } from '@goease/contracts';
 
 const categories = [
   { key: 'transport', label: 'Di chuyển', color: '#1d6152', Icon: Car },
@@ -66,20 +67,34 @@ export function BudgetScreen({
     return {
       ...category,
       amount: entries.reduce(
-        (n, a) => n + (a.estimatedCost.amountMinor ?? 0),
+        (n, a) =>
+          n +
+          (priceFitsGroup(a.estimatedCost, travelers)
+            ? (a.estimatedCost.amountMinor ?? 0) *
+              (a.estimatedCost.basis === 'per_person' ? travelers : 1)
+            : 0),
         0,
       ),
-      missing: entries.filter((a) => a.estimatedCost.amountMinor === null)
-        .length,
+      missing: entries.filter(
+        (a) =>
+          a.estimatedCost.amountMinor === null ||
+          !priceFitsGroup(a.estimatedCost, travelers),
+      ).length,
     };
   });
   const known =
     summary?.knownEstimatedMinor ?? rows.reduce((n, r) => n + r.amount, 0);
   const missing =
     summary?.missingCostCount ??
-    activities.filter((a) => a.estimatedCost.amountMinor === null).length;
+    activities.filter(
+      (a) =>
+        a.estimatedCost.amountMinor === null ||
+        !priceFitsGroup(a.estimatedCost, travelers),
+    ).length;
   const hasPrices = activities.some(
-    (a) => a.estimatedCost.amountMinor !== null,
+    (a) =>
+      a.estimatedCost.amountMinor !== null &&
+      priceFitsGroup(a.estimatedCost, travelers),
   );
   const incomplete = missing > 0 || !hasPrices;
   const percent = summary
@@ -126,6 +141,52 @@ export function BudgetScreen({
       {demo && (
         <p className="mvp-demo-label">BẢN XEM TRƯỚC · SỐ LIỆU MINH HỌA</p>
       )}
+      {!demo && (
+        <div className="budget-incomplete">
+          <strong>Dự toán tham khảo cho cả nhóm</strong>
+          <p>
+            App tự dùng giá đã biên tập và nhân số người khi tính theo người.
+            Đây chưa phải giá đặt dịch vụ.
+          </p>
+          <p>
+            {!activities.some((a) => a.kind === 'lodging') &&
+              'Chưa bao gồm chỗ ở. '}
+            {!activities.some((a) => a.kind === 'transport') &&
+              'Chưa bao gồm di chuyển. '}
+            Các khoản chưa thêm vào lịch chưa nằm trong tổng.
+          </p>
+        </div>
+      )}
+      {activities.some((a) => a.estimatedCost.reference) && (
+        <details className="budget-price-sources">
+          <summary>Giá nào đang được dùng?</summary>
+          {activities
+            .filter((a) => a.estimatedCost.reference)
+            .map((a, i) => {
+              const p = a.estimatedCost.reference!;
+              return (
+                <div key={i}>
+                  <strong>
+                    {p.label} · {moneyText(p.amountMinor)} /{' '}
+                    {p.basis === 'per_person' ? 'người' : 'nhóm'}
+                  </strong>
+                  <p>{p.conditions}</p>
+                  <small>
+                    Đối chiếu {p.checkedAt} · Nhóm tối đa {p.maxTravelers} người
+                  </small>
+                  {!priceFitsGroup(a.estimatedCost, travelers) && (
+                    <p>
+                      Không áp dụng cho số người hiện tại — chưa tính khoản này.
+                    </p>
+                  )}
+                  <a href={p.sourceUrl} target="_blank" rel="noreferrer">
+                    Xem nguồn giá ↗
+                  </a>
+                </div>
+              );
+            })}
+        </details>
+      )}
       {incomplete && (
         <div className="budget-incomplete" role="status">
           <strong>Chưa đủ dữ liệu để tính tổng chuyến đi</strong>
@@ -145,7 +206,7 @@ export function BudgetScreen({
         </div>
       )}
       <div className="budget-green-card">
-        <span className="budget-eyebrow">CHI PHÍ NHÓM ĐÃ NHẬP</span>
+        <span className="budget-eyebrow">DỰ TOÁN NHÓM ĐÃ BIẾT</span>
         <strong
           className={`budget-total ${!hasPrices ? 'budget-no-price' : ''}`}
         >

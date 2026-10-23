@@ -53,6 +53,8 @@ const fieldsSchema = z.object({
       '/api/v1/dev/mailbox',
       '/api/v1/destinations',
       '/api/v1/places',
+      '/api/v1/admin/places',
+      '/api/v1/admin/places/:id',
       '/api/v1/places/:id',
       '/api/v1/me/places',
       '/api/v1/me/places/:id',

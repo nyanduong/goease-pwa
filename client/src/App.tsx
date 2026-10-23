@@ -10,6 +10,7 @@ import {
 import { TripTrash } from './components/trip-trash';
 import { PasswordRecovery } from './components/password-recovery';
 import { AccountPage } from './components/account-page';
+import { AdminCatalog } from './components/admin-catalog';
 import { ExplorePage, PlaceDetail, placeActivity } from './components/explore';
 import { AccountAvatar } from './components/account-avatar';
 import { Compass, Map, House, Bird, Bookmark } from 'lucide-react';
@@ -355,12 +356,12 @@ export function App() {
     go('/trips/new');
   };
 
-  async function save() {
+  async function save(valueToSave: TripInput = draft) {
     if (!user) {
       go('/login?next=/trips/new');
       return;
     }
-    const parsed = tripInputSchema.safeParse(draft);
+    const parsed = tripInputSchema.safeParse(valueToSave);
     if (!parsed.success) {
       setSaveState('error');
       setMessage(
@@ -488,6 +489,12 @@ export function App() {
                     <span role="status">Đang kiểm tra phiên…</span>
                   ) : user ? (
                     <div className="user-menu">
+                      {user.isAdmin &&
+                        link(
+                          '/admin',
+                          'Quản trị',
+                          'button button-subtle button-small',
+                        )}
                       <button
                         type="button"
                         aria-label="Hồ sơ cá nhân"
@@ -793,6 +800,19 @@ export function App() {
             onStart={(id) => (id ? startWithDestination(id) : start())}
             onNavigate={go}
           />
+        ) : path === '/admin' ? (
+          sessionStatus === 'loading' ? (
+            <Notice>Đang kiểm tra phiên…</Notice>
+          ) : user?.isAdmin ? (
+            <AdminCatalog key={user.id} destinations={destinations} />
+          ) : (
+            <Notice>
+              {user
+                ? 'Tài khoản này không có quyền quản trị.'
+                : 'Đăng nhập bằng tài khoản quản trị.'}{' '}
+              {link('/login', 'Đăng nhập')} {link('/', 'Về trang chủ')}
+            </Notice>
+          )
         ) : path === '/account' ? (
           sessionStatus === 'loading' ? (
             <Notice>Đang kiểm tra phiên…</Notice>
@@ -933,8 +953,7 @@ export function App() {
               busy={busy}
               saveState={saveState}
               message={message}
-              signedIn={Boolean(user)}
-              onSave={() => void save()}
+              onSave={(value) => void save(value)}
               onOpenGoe={(day) =>
                 go(loaded ? `/goe?trip=${loaded.id}&day=${day}` : '/goe')
               }

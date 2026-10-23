@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { priceSnapshotSchema } from './catalog.js';
 import type { BudgetSummary } from './budget.js';
 
 export const interestCodes = [
@@ -43,13 +44,24 @@ export const activityInputSchema = z
     timezone: z.literal('Asia/Ho_Chi_Minh'),
     order: z.number().int().min(0).max(299),
     notes: z.string().max(2000).default(''),
-    estimatedCost: z.strictObject({
-      amountMinor: money.nullable(),
-      currency: z.literal('VND'),
-      basis: z.enum(['group_total', 'per_person']),
-      quantity: z.literal(1),
-      confidence: z.literal('user_entered'),
-    }),
+    estimatedCost: z
+      .strictObject({
+        amountMinor: money.nullable(),
+        currency: z.literal('VND'),
+        basis: z.enum(['group_total', 'per_person']),
+        quantity: z.literal(1),
+        confidence: z.enum(['user_entered', 'catalog_reference']),
+        reference: priceSnapshotSchema.optional(),
+      })
+      .refine(
+        (v) =>
+          v.confidence === 'catalog_reference'
+            ? !!v.reference &&
+              v.amountMinor === v.reference.amountMinor &&
+              v.basis === v.reference.basis
+            : !v.reference,
+        { message: 'Nguồn giá tham khảo không hợp lệ.' },
+      ),
     source: z.enum(['manual', 'ai']),
   })
   .refine(
@@ -144,6 +156,7 @@ export type DestinationDto = {
   summary: string;
 };
 export type UserDto = {
+  isAdmin?: boolean;
   id: string;
   displayName: string;
   email: string;

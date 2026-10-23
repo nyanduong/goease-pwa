@@ -1,4 +1,9 @@
 import { passwordRecovery } from './features/auth/password-recovery.js';
+import { adminCatalog } from './features/explore/admin-catalog.js';
+import {
+  adminPlaceWriteSchema,
+  adminPlaceQuerySchema,
+} from '@goease/contracts';
 import {
   resetEmailSender,
   type ResetEmailSender,
@@ -71,6 +76,13 @@ export function createProduct(
   const manageTrip = tripManagement(connection, trips, audit);
   const expenses = expenseService(connection, trips, audit);
   const explore = exploreService(connection);
+  const catalog = adminCatalog(
+    connection,
+    explore,
+    trips,
+    audit,
+    auth.models.User,
+  );
   const planner = plannerService(connection, config, trips, explore);
   const google = googleAuth(connection, config, auth);
   const router = Router();
@@ -91,6 +103,7 @@ export function createProduct(
       '/auth/google/callback',
       '/destinations',
       '/places',
+      '/admin/places',
       '/me/places',
       '/trips',
       '/trips/trash',
@@ -111,6 +124,8 @@ export function createProduct(
       res.locals.logRoute = '/api/v1/trips/:id/expenses/:expenseId';
     if (/^\/places\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/places/:id';
+    if (/^\/admin\/places\/[^/]+$/.test(req.path))
+      res.locals.logRoute = '/api/v1/admin/places/:id';
     if (/^\/me\/places\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/me/places/:id';
     if (/^\/trips\/[^/]+\/goe-proposal$/.test(req.path))
@@ -247,6 +262,59 @@ export function createProduct(
   router.get('/places/:id', async (req, res) =>
     res.json({ ok: true, data: await explore.read(String(req.params.id)) }),
   );
+  router.use('/admin', async (req, res, next) => {
+    const value = await auth.authenticate(req);
+    if (!value)
+      throw new HttpError(
+        401,
+        'AUTH_REQUIRED',
+        'Đăng nhập bằng tài khoản quản trị.',
+      );
+    await catalog.requireAdmin(value.user._id);
+    res.locals.authUser = value.user;
+    next();
+  });
+  router.get('/admin/places', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await catalog.list(
+        res.locals.authUser._id,
+        parse(adminPlaceQuerySchema, req.query),
+      ),
+    }),
+  );
+  router.get('/admin/places/:id', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await catalog.read(res.locals.authUser._id, String(req.params.id)),
+    }),
+  );
+  for (const method of ['post', 'patch'] as const) {
+    router[method](
+      method === 'post' ? '/admin/places' : '/admin/places/:id',
+      async (req, res) => {
+        const body = parse(adminPlaceWriteSchema, req.body);
+        const key = parse(
+          z.string().regex(uuidPattern),
+          req.get('Idempotency-Key'),
+        );
+        res
+          .status(method === 'post' ? 201 : 200)
+          .json({
+            ok: true,
+            data: await catalog.write(
+              res.locals.authUser._id,
+              body.place,
+              key,
+              method === 'patch'
+                ? String('id' in req.params ? req.params.id : '')
+                : undefined,
+              body.expectedRevision,
+            ),
+          });
+      },
+    );
+  }
   router.use('/me/places', async (req, res, next) => {
     const value = await auth.authenticate(req);
     if (!value)

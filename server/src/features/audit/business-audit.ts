@@ -6,6 +6,11 @@ import { uuidPattern } from '../../observability/context.js';
 const id = z.string().regex(/^[a-f0-9]{24}$/);
 const input = z.strictObject({
   action: z.enum([
+    'catalog.created',
+    'catalog.updated',
+    'catalog.publication_changed',
+    'admin.granted',
+    'admin.revoked',
     'auth.registered',
     'profile.updated',
     'password.changed',
@@ -46,10 +51,12 @@ export function businessAudit(
       if (!checked.success) throw new Error('Invalid business audit context');
       const v = checked.data;
       const expense = v.action.startsWith('expense.');
+      const catalog = v.action.startsWith('catalog.');
       const trip = v.action.startsWith('trip.') || expense;
       const authSession = v.action.startsWith('session.');
       if (
-        (trip ||
+        (catalog ||
+          trip ||
           authSession ||
           v.action === 'auth.email_verified' ||
           v.action === 'profile.updated' ||
@@ -61,17 +68,24 @@ export function businessAudit(
       const now = new Date();
       await new model({
         action: v.action,
-        category: trip ? 'trip' : 'auth',
+        category: catalog ? 'catalog' : trip ? 'trip' : 'auth',
         actor: v.actorUserId
           ? { type: 'user', userId: v.actorUserId }
-          : { type: 'system', serviceName: 'auth' },
-        entityType: expense
-          ? 'trip_expense'
-          : trip
-            ? 'trip'
-            : authSession
-              ? 'auth_session'
-              : 'user',
+          : {
+              type: 'system',
+              serviceName: v.action.startsWith('admin.')
+                ? 'admin-bootstrap'
+                : 'auth',
+            },
+        entityType: catalog
+          ? 'place'
+          : expense
+            ? 'trip_expense'
+            : trip
+              ? 'trip'
+              : authSession
+                ? 'auth_session'
+                : 'user',
         entityId: v.entityId,
         entityRevision: v.entityRevision,
         requestId: v.requestId,
@@ -80,13 +94,15 @@ export function businessAudit(
         recordedAt: now,
         outcome: v.action === 'auth.failed' ? 'failed' : 'succeeded',
         changedFields: [
-          expense
-            ? 'expenseDetails'
-            : trip
-              ? 'tripDetails'
-              : authSession
-                ? 'sessionState'
-                : 'accountState',
+          catalog
+            ? 'catalogDetails'
+            : expense
+              ? 'expenseDetails'
+              : trip
+                ? 'tripDetails'
+                : authSession
+                  ? 'sessionState'
+                  : 'accountState',
         ],
         changes: [],
         source: {
@@ -95,7 +111,7 @@ export function businessAudit(
           channel: 'api',
           environment,
         },
-        retentionClass: trip ? 'business_audit' : 'security_audit',
+        retentionClass: trip || catalog ? 'business_audit' : 'security_audit',
       }).save({ session: session ?? null });
     },
   };

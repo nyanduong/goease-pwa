@@ -11,7 +11,7 @@ export function auditModel(connection: Connection) {
       type: { type: String, enum: ['system', 'user'], required: true },
       serviceName: {
         type: String,
-        enum: ['goease-integration-test', 'auth'],
+        enum: ['goease-integration-test', 'auth', 'admin-bootstrap'],
       },
       userId: { type: Schema.Types.ObjectId },
     },
@@ -55,6 +55,11 @@ export function auditModel(connection: Connection) {
       action: {
         type: String,
         enum: [
+          'catalog.created',
+          'catalog.updated',
+          'catalog.publication_changed',
+          'admin.granted',
+          'admin.revoked',
           'system.audit_probe',
           'auth.registered',
           'profile.updated',
@@ -79,13 +84,20 @@ export function auditModel(connection: Connection) {
       },
       category: {
         type: String,
-        enum: ['system', 'auth', 'trip'],
+        enum: ['system', 'auth', 'trip', 'catalog'],
         required: true,
       },
       actor: { type: actor, required: true },
       entityType: {
         type: String,
-        enum: ['system_probe', 'user', 'auth_session', 'trip', 'trip_expense'],
+        enum: [
+          'system_probe',
+          'user',
+          'auth_session',
+          'trip',
+          'trip_expense',
+          'place',
+        ],
         required: true,
       },
       entityId: { type: String, match: /^[0-9a-f]{24}$/, required: true },
@@ -103,6 +115,7 @@ export function auditModel(connection: Connection) {
             type: String,
             enum: [
               'probeState',
+              'catalogDetails',
               'tripDetails',
               'accountState',
               'sessionState',

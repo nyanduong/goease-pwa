@@ -4,6 +4,7 @@ import type {
   TripInput,
 } from '@goease/contracts';
 import { HttpError } from '../../http-error.js';
+import { priceFitsGroup } from '@goease/contracts';
 
 // All monetary arithmetic is performed here. null means unknown, zero means entered as zero.
 export function calculateBudget(trip: TripInput): BudgetSummary {
@@ -17,7 +18,10 @@ export function calculateBudget(trip: TripInput): BudgetSummary {
     const row =
       categories.find((row) => row.key === activity.kind) ?? categories[4]!;
     const cost = activity.estimatedCost;
-    if (cost.amountMinor === null) {
+    if (
+      cost.amountMinor === null ||
+      !priceFitsGroup(cost, trip.travelers.totalCount)
+    ) {
       row.missingCostCount++;
       missingCostCount++;
       continue;

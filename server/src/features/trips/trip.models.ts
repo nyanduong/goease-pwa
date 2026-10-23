@@ -3,6 +3,7 @@ import { Schema, type Connection } from 'mongoose';
 import type { TripInput } from '@goease/contracts';
 import { mutableFields } from '../auth/auth.models.js';
 import { calculateBudget } from './budget.js';
+import { referencePriceFields } from '../explore/reference-price.js';
 
 export function tripModels(connection: Connection) {
   const noId = {
@@ -29,7 +30,21 @@ export function tripModels(connection: Connection) {
         required: true,
       },
       quantity: { type: Number, enum: [1], required: true },
-      confidence: { type: String, enum: ['user_entered'], required: true },
+      confidence: {
+        type: String,
+        enum: ['user_entered', 'catalog_reference'],
+        required: true,
+      },
+      reference: {
+        type: new Schema(
+          {
+            ...referencePriceFields,
+            placeRevision: { type: Number, required: true },
+          },
+          noId,
+        ),
+        required: false,
+      },
     },
     noId,
   );
@@ -179,7 +194,7 @@ export function tripModels(connection: Connection) {
       leaseUntil: { type: Date, default: null },
       resourceType: {
         type: String,
-        enum: ['trip', 'trip_expense'],
+        enum: ['trip', 'trip_expense', 'place'],
         default: 'trip',
       },
       resourceId: { type: String, required: true },

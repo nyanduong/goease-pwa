@@ -8,6 +8,8 @@ Luồng Hội An: 7 gợi ý trong catalog có nguồn, thêm địa điểm và
 
 Luồng mobile giữ lựa chọn bắt đầu chuyến qua đăng nhập/đăng ký, phân biệt Goe xếp lịch với tự chọn điểm dừng và cảnh báo rõ khi dự toán chưa đủ. Trong lịch đã lưu, mở **Chuẩn bị trước khi đi** để bổ sung chỗ ở/di chuyển, kiểm tra giá/vị trí và tải [bản đọc offline](docs/OFFLINE-ITINERARY.md). Lịch đã lưu không phải xác nhận đặt dịch vụ.
 
+**Tạo chuyến trên mobile:** chọn điểm đến → số ngày và số người (mặc định hiển thị 2 ngày/2 người) → **Lên lịch giúp mình** → xem và đổi/bỏ từng điểm → **Giữ lịch này**, chọn ngày khởi hành rồi lưu. Sở thích/ngân sách là tùy chọn; ngày cụ thể được hỏi sau khi có lịch. Goe hiện tự xếp Hội An 1–7 ngày. Điểm đến khác giữ lối tự chọn, có nhãn rõ. Chưa có lưu chuyến không ngày hoặc đặt dịch vụ tự động.
+
 Bản đồ lịch trình Hội An: mở chuyến → tab **Bản đồ** → chọn ngày/điểm dừng. Có vị trí khu vực tham khảo cho5địa điểm, nút mở chỉ đường và trạng thái thiếu tọa độ/lỗi mạng. `npm run db:seed` bổ sung vị trí còn thiếu, không ghi đè catalog đã chỉnh. Xem [nguồn tọa độ và giới hạn](docs/TRIP-MAP.md).
 
 ## Yêu cầu môi trường

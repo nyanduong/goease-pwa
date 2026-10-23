@@ -23,3 +23,4 @@ export type { BudgetSummary, BudgetCategory } from './budget.js';
 export * from './planner.js';
 
 export * from './expenses.js';
+export * from './catalog.js';

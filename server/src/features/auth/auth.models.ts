@@ -52,7 +52,11 @@ export function authModels(connection: Connection) {
         ],
         default: 'active',
       },
-      roles: { type: [String], enum: ['traveler'], default: ['traveler'] },
+      roles: {
+        type: [String],
+        enum: ['traveler', 'admin'],
+        default: ['traveler'],
+      },
       securityVersion: { type: Number, default: 1 },
       recoverySequence: { type: Number, default: 0 },
       deletedAt: { type: Date, default: null },

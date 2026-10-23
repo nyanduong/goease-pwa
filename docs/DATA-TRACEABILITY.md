@@ -264,3 +264,7 @@ DATA-10/TRIP-01/09/12: authenticated GET trip → parsed saved snapshot → owne
 ## Mobile follow-through — 2026-10-23
 
 AUTH-09 resumes an explicit create intent after password auth using an allowlisted URL and catalog ID only; no cross-account draft import. TRIP-08 incomplete-estimate display derives from existing prices/BudgetSummary without changing persisted totals. AI-01/02 error reasons remain sanitized codes/messages; hoian-v2/goe-v2 prompts enforce existing caps with substitution guidance, and pending/uncertain recovery stays distinct from terminal failures. No raw provider text or user messages are added to logs/storage. See AI-PLANNER.md and PRODUCT-VERIFICATION.md for test evidence.
+
+## Plan-first creation — 2026-10-23
+
+TRIP-02/03/05/09, AI-01/03/06: visible destination/duration/group choices → existing authenticated AI proposal request → editable unsaved preview → explicit departure/save → existing trip/revision/audit transaction. Until departure is chosen, planner dates are temporary anchors, not travel intent; they remain in the existing ai_runs proposal without introducing a new data category or retention rule. No private note/title/account data is added to provider inputs. Recovery reuses the same run key; changing input invalidates its use. Quick swaps use published catalog DTOs and manual source; undo retains only the last edited day in component memory. No new telemetry, external service or persisted undated-trip state.

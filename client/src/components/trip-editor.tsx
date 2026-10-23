@@ -450,6 +450,8 @@ export function TripEditor({
                                       ...v,
                                       estimatedCost: {
                                         ...v.estimatedCost,
+                                        confidence: 'user_entered',
+                                        reference: undefined,
                                         amountMinor:
                                           e.target.value === ''
                                             ? null

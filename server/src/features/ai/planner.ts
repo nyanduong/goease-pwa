@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { catalogCost } from '@goease/contracts';
 import { Schema, Types, type Connection } from 'mongoose';
 import {
   tripInputSchema,
@@ -87,13 +88,7 @@ export function validatePlan(
           order,
           notes: '',
           source: 'ai' as const,
-          estimatedCost: {
-            amountMinor: null,
-            currency: 'VND' as const,
-            basis: 'group_total' as const,
-            quantity: 1 as const,
-            confidence: 'user_entered' as const,
-          },
+          estimatedCost: catalogCost(place),
         };
       }),
     };
@@ -110,7 +105,7 @@ export function validatePlan(
     budget: calculateBudget(trip),
     warnings: [
       'Đây là đề xuất AI. Giờ đi và thời lượng cần kiểm tra lại; chưa xác minh giờ mở cửa, thời tiết hay thời gian di chuyển thực tế.',
-      'Chi phí chưa được chọn. Mở từng điểm dừng để chọn giá tham khảo hoặc nhập giá; không xem tổng hiện tại là chi phí đầy đủ.',
+      'Dự toán tự dùng giá tham khảo đã biên tập khi có. Các khoản thiếu giá, chỗ ở và di chuyển chưa thêm chưa nằm trong tổng; đây không phải báo giá đặt dịch vụ.',
       ...(days.length > 2
         ? ['Gợi ý ở Hội An còn ít; địa điểm có thể lặp giữa các ngày.']
         : []),
