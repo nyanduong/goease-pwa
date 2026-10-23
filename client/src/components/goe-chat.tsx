@@ -1,3 +1,4 @@
+import { plannerTiming } from '@goease/contracts';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -122,7 +123,7 @@ export function GoeChat({
           method: 'POST',
           headers: { 'Idempotency-Key': request.key },
           body: JSON.stringify(request.body),
-          signal: AbortSignal.timeout(60000),
+          signal: AbortSignal.timeout(plannerTiming.clientTimeoutMs),
         },
       );
       setProposal(result);
@@ -275,17 +276,19 @@ export function GoeChat({
               }[trip.preferences.pace]
             }
             : Goe xếp tối đa{' '}
-            {{ relaxed: 2, balanced: 3, active: 6 }[trip.preferences.pace]}{' '}
+            {Math.max(
+              { relaxed: 2, balanced: 3, active: 6 }[trip.preferences.pace],
+              Math.min(6, day?.activities.length ?? 0),
+            )}{' '}
             điểm/ngày. Nếu đã đủ điểm, Goe có thể đề xuất thay một điểm để thêm
             nơi mới. Bạn sẽ xem và xác nhận trước khi lưu.
           </p>
         </div>
       )}
       <p className="goe-demo-note">
-        Goe dùng Gemini để đề xuất thay đổi. Khi gửi, nội dung tin nhắn, lịch
-        theo mã địa điểm, ngày đi, số người, ngân sách và sở thích được gửi tới
-        Google. Không gửi tên tài khoản hay ghi chú riêng. Đừng nhập thông tin
-        nhạy cảm.
+        Khi gửi, nội dung tin nhắn, lịch theo mã địa điểm, ngày đi, số người,
+        ngân sách và sở thích được gửi tới dịch vụ AI của Goe. Không gửi tên tài
+        khoản hay ghi chú riêng. Đừng nhập thông tin nhạy cảm.
       </p>
       {error && !preview && (
         <div role="alert" className="goe-context-notice">

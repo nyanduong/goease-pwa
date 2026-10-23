@@ -230,3 +230,7 @@ Cấp quyền local cho tài khoản đã đăng ký: `npm run admin:access --wo
 ## Nhập địa điểm Geoapify
 
 Admin đã có tìm/xem trước/nhập bản nháp từ Geoapify cho Hội An. Thử live 50 kết quả giữ 45 bản hợp lệ; đã tạo 41 draft sau khi bỏ 4 mục nghi trùng. Thêm GEOAPIFY_API_KEY vào server/.env (không VITE_*), restart API, mở Quản trị → Nhập địa điểm từ Geoapify. Cần biên tập trước xuất bản; giờ/giá/vị trí chưa xác minh tại cơ sở. Chi tiết [luồng, thử dữ liệu và giới hạn](docs/GEOAPIFY-IMPORT.md). Lặp thử chỉ đọc bằng `npm run geoapify:sample --workspace @goease/server`.
+
+### FULLDICHVU API cho Goe
+
+Đặt `AI_PROVIDER=fulldichvu`, điền `FULLDICHVU_API_KEY` trong `server/.env`, giữ `FULLDICHVU_MODEL=fulldichvu/haiku-4.5` rồi khởi động lại API. Không dùng key này cho `GEMINI_API_KEY` hoặc biến `VITE_*`. Đổi `AI_PROVIDER=gemini` để quay lại Google trực tiếp. Xem [cấu hình và phạm vi kiểm chứng](docs/AI-PLANNER.md#fulldichvu-provider--2026-10-24); Haiku đã vượt qua thử API thật cho lịch Hội An 2 và 3 ngày (khoảng 8–10 giây), giá thiếu vẫn giữ chưa rõ. Model Gemini 2.0 của bên trung gian trước đó bị cắt phản hồi nên không còn là lựa chọn mặc định.

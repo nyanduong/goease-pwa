@@ -1,7 +1,11 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import type { PlannerRequest, PlaceDto } from '@goease/contracts';
+import {
+  catalogToday,
+  type PlannerRequest,
+  type PlaceDto,
+} from '@goease/contracts';
 import { validatePlan } from '../src/features/ai/planner.js';
 import { geminiProvider } from '../src/features/ai/gemini.js';
 import { parseConfig } from '../src/config.js';
@@ -54,6 +58,19 @@ const place: PlaceDto = {
   destinationName: 'Hội An',
   name: 'Phố cổ Hội An',
   slug: 'pho-co',
+  openingHoursNote: '07:00–22:00',
+  referencePrice: {
+    label: 'Vé kiểm thử',
+    amountMinor: 20000,
+    basis: 'per_person',
+    maxTravelers: 10,
+    conditions: 'Dữ liệu kiểm thử',
+    inclusions: 'Vào cửa',
+    exclusions: 'Dịch vụ khác',
+    sourceUrl: 'https://example.invalid/price',
+    checkedAt: catalogToday(),
+    reviewAfter: '2099-12-31',
+  },
   category: 'culture',
   subtitle: '',
   description: '',
@@ -77,6 +94,41 @@ const valid = () => ({
     { date: '2026-11-12', stops: [{ placeId, start: '09:00', end: '11:00' }] },
   ],
 });
+
+test('Goe rejects missing, stale, incomplete and oversized prices and unknown hours before selection', () => {
+  assert.equal(eligibleForPlanner(place, 4), true);
+  const invalid: PlaceDto[] = [
+    { ...place, referencePrice: null },
+    {
+      ...place,
+      referencePrice: { ...place.referencePrice!, reviewAfter: '2000-01-01' },
+    },
+    {
+      ...place,
+      referencePrice: { ...place.referencePrice!, inclusions: undefined },
+    },
+    { ...place, referencePrice: { ...place.referencePrice!, maxTravelers: 2 } },
+    { ...place, referencePrice: { ...place.referencePrice!, minTravelers: 5 } },
+    { ...place, openingHoursNote: 'Chưa xác minh: 08:00–17:00' },
+    { ...place, openingHoursNote: '' },
+  ];
+  for (const candidate of invalid) {
+    assert.equal(eligibleForPlanner(candidate, 4), false);
+    assert.throws(() =>
+      validatePlan(valid(), input, [candidate], randomUUID()),
+    );
+  }
+  assert.equal(
+    eligibleForPlanner(
+      {
+        ...place,
+        referencePrice: { ...place.referencePrice!, amountMinor: 0 },
+      },
+      4,
+    ),
+    true,
+  );
+});
 test('date changes replace closed places, keep identities and private edits, and never fabricate prices', () => {
   const trip = validatePlan(valid(), input, [place], randomUUID()).trip;
   trip.days[0]!.activities[0]!.notes = 'Ghi chú riêng';
@@ -99,7 +151,7 @@ test('date changes replace closed places, keep identities and private edits, and
   assert.equal(a.placeId, alternate.id);
   assert.equal(a.activityId, trip.days[0]!.activities[0]!.activityId);
   assert.match(a.notes, /Ghi chú riêng/);
-  assert.equal(a.estimatedCost.amountMinor, null);
+  assert.equal(a.estimatedCost.amountMinor, 20000);
   assert.equal(result.changes.length, 1);
   assert.equal(JSON.stringify(trip), before);
   assert.throws(
@@ -108,9 +160,66 @@ test('date changes replace closed places, keep identities and private edits, and
   );
   assert.equal(JSON.stringify(trip), before);
 });
+test('date changes preserve meal suitability instead of replacing lunch with a cafe', () => {
+  const trip = validatePlan(valid(), input, [place], randomUUID()).trip;
+  const activity = trip.days[0]!.activities[0]!;
+  activity.kind = 'meal';
+  activity.startLocalTime = '12:00';
+  activity.endLocalTime = '13:00';
+  const closed: PlaceDto = {
+    ...place,
+    category: 'food',
+    venueType: 'restaurant',
+    name: 'Restaurant closed',
+    openingHoursNote: '09:00–21:00; nghỉ thứ năm',
+    planning: { ...place.planning!, durationMinutes: 60 },
+  };
+  const cafe: PlaceDto = {
+    ...closed,
+    id: '100000000000000000000002',
+    name: 'Coffee & Tea',
+    openingHoursNote: '08:00–22:00',
+  };
+  const restaurant: PlaceDto = {
+    ...cafe,
+    id: '100000000000000000000003',
+    name: 'Nhà hàng đang mở',
+  };
+  const result = rescheduleDates(trip, '2026-11-12', '2026-11-12', [
+    closed,
+    cafe,
+    restaurant,
+  ]);
+  assert.equal(result.trip.days[0]!.activities[0]!.placeId, restaurant.id);
+  assert.equal(
+    result.trip.days[0]!.activities[0]!.estimatedCost.amountMinor,
+    20000,
+  );
+  assert.equal(
+    result.trip.days[0]!.activities[0]!.activityId,
+    activity.activityId,
+  );
+  assert.throws(
+    () => rescheduleDates(trip, '2026-11-12', '2026-11-12', [closed, cafe]),
+    /Lịch cũ vẫn được giữ/,
+  );
+  activity.placeId = cafe.id;
+  const repaired = rescheduleDates(trip, '2026-11-12', '2026-11-12', [
+    cafe,
+    restaurant,
+  ]);
+  assert.equal(repaired.trip.days[0]!.activities[0]!.placeId, restaurant.id);
+});
+
 test('date changes move time within hours while preserving costs; fixed appointments remain intact', () => {
   const trip = validatePlan(valid(), input, [place], randomUUID()).trip;
-  trip.days[0]!.activities[0]!.estimatedCost.amountMinor = 123000;
+  trip.days[0]!.activities[0]!.estimatedCost = {
+    amountMinor: 123000,
+    basis: 'group_total',
+    currency: 'VND',
+    quantity: 1,
+    confidence: 'user_entered',
+  };
   const later = { ...place, openingHoursNote: '10:00–17:00' };
   const result = rescheduleDates(trip, '2026-11-13', '2026-11-13', [later]);
   assert.equal(result.trip.days[0]!.activities[0]!.startLocalTime, '10:00');
@@ -174,16 +283,16 @@ test('hours handle weekly closures, split shifts, overnight and unknown notes', 
     false,
   );
 });
-test('planner uses catalog titles and unknown prices, validates dates IDs duration and duplicate stops', () => {
+test('planner uses catalog titles and verified prices, validates dates IDs duration and duplicate stops', () => {
   const runId = randomUUID();
   const proposal = validatePlan(valid(), input, [place], runId);
   assert.equal(proposal.trip.aiRunId, runId);
   assert.equal(proposal.trip.days[0]!.activities[0]!.title, place.name);
   assert.equal(
     proposal.trip.days[0]!.activities[0]!.estimatedCost.amountMinor,
-    null,
+    20000,
   );
-  assert.equal(proposal.budget.missingCostCount, 1);
+  assert.equal(proposal.budget.missingCostCount, 0);
   assert.equal(input.trip.days[0]!.activities.length, 0);
   for (const mutation of [
     (p: ReturnType<typeof valid>) => {
@@ -309,7 +418,7 @@ test('planner explains pace and timing constraints without accepting invalid pro
   assert.equal(input.trip.days[0]!.activities.length, 0);
 });
 
-test('complete Hoi An days need no budget, include meals, keep unknown prices and reject repeated visits', () => {
+test('complete Hoi An days need no budget, include meals, use verified prices and reject repeated visits', () => {
   const request = structuredClone(input);
   request.trip.budget.amountMinor = null;
   const catalog: PlaceDto[] = Array.from({ length: 6 }, (_, i) => ({
@@ -335,14 +444,14 @@ test('complete Hoi An days need no budget, include meals, keep unknown prices an
   };
   const result = validatePlan(plan, request, catalog, randomUUID());
   assert.equal(result.trip.budget.amountMinor, null);
-  assert.equal(result.budget.missingCostCount, 4);
+  assert.equal(result.budget.missingCostCount, 0);
   assert.equal(
     itineraryPolicy({ ...request, trip: result.trip }, true).maxStops,
     4,
   );
   assert.ok(
     result.trip.days[0]!.activities.every(
-      (a) => a.estimatedCost.amountMinor === null,
+      (a) => a.estimatedCost.amountMinor === 20000,
     ),
   );
   assert.equal(itineraryPolicy(request).maxStops, 5);
@@ -393,10 +502,24 @@ test('planner uses editorial hours and excludes food ideas and test data without
   );
   const data = plannerCatalog([museum])[0]!;
   assert.equal(data.openingHoursNote, museum.openingHoursNote);
-  assert.equal(data.referenceCost.amountMinor, null);
+  assert.equal(data.referenceCost.amountMinor, 20000);
+  assert.equal(data.id, museum.id);
+  assert.equal(data.durationMinutes, museum.planning!.durationMinutes);
+  assert.equal(data.location, museum.planning!.locationQuery);
+  assert.equal('description' in data, false);
+  assert.equal('reference' in data.referenceCost, false);
+  const meal = plannerCatalog([
+    {
+      ...museum,
+      venueType: 'restaurant',
+      description: 'Nhà hàng chay',
+      name: 'Quán',
+    },
+  ])[0]!;
+  assert.equal(meal.mealSuitable, true);
 });
 
-test('server arranges full days from AI choices, avoids monthly closures and preserves unknown money', () => {
+test('server arranges full days from AI choices, avoids monthly closures and uses catalog prices', () => {
   const request = structuredClone(input);
   request.trip.budget.amountMinor = null;
   const catalog: PlaceDto[] = Array.from({ length: 8 }, (_, i) => ({
@@ -428,9 +551,33 @@ test('server arranges full days from AI choices, avoids monthly closures and pre
   const result = validatePlan(arranged, request, catalog, randomUUID());
   assert.equal(result.trip.days.length, 2);
   assert.ok(result.trip.days.every((d) => d.activities.length >= 4));
-  assert.equal(result.budget.missingCostCount, result.budget.activityCount);
+  assert.equal(result.budget.missingCostCount, 0);
   assert.equal(result.trip.budget.amountMinor, null);
   const wrong = structuredClone(raw);
   wrong.days[0]!.stops[0]!.placeId = 'ffffffffffffffffffffffff';
   assert.throws(() => arrangeCompleteDays(wrong, request, catalog));
+  const ranked = { placeIds: catalog.map((p) => p.id) };
+  const rankedResult = validatePlan(
+    arrangeCompleteDays(ranked, request, catalog),
+    request,
+    catalog,
+    randomUUID(),
+  );
+  assert.equal(rankedResult.trip.days.length, 2);
+  assert.ok(
+    !rankedResult.trip.days[0]!.activities.some(
+      (a) => a.placeId === catalog[0]!.id,
+    ),
+  );
+  assert.equal(rankedResult.budget.missingCostCount, 0);
+  assert.throws(() =>
+    arrangeCompleteDays(
+      { placeIds: [...ranked.placeIds, 'ffffffffffffffffffffffff'] },
+      request,
+      catalog,
+    ),
+  );
+  assert.throws(() =>
+    arrangeCompleteDays(ranked, request, catalog.slice(0, 4)),
+  );
 });

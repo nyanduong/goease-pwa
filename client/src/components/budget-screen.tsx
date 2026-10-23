@@ -32,7 +32,11 @@ type BudgetProps = {
   days: number;
   travelers: number;
   budget: number | null;
-  activities: Pick<ActivityInput, 'kind' | 'estimatedCost'>[];
+  activities: (Pick<ActivityInput, 'kind' | 'estimatedCost'> & {
+    title?: string;
+    activityId?: string;
+    dayNumber?: number;
+  })[];
   onAdjust: () => void;
   onReview?: () => void;
   demo?: boolean;
@@ -97,6 +101,11 @@ export function BudgetScreen({
       priceFitsGroup(a.estimatedCost, travelers),
   );
   const incomplete = missing > 0 || !hasPrices;
+  const unpricedActivities = activities.filter(
+    (a) =>
+      a.estimatedCost.amountMinor === null ||
+      !priceFitsGroup(a.estimatedCost, travelers),
+  );
   const percent = summary
     ? summary.usedPercent
     : budget !== null && budget > 0
@@ -141,40 +150,22 @@ export function BudgetScreen({
       {demo && (
         <p className="mvp-demo-label">BẢN XEM TRƯỚC · SỐ LIỆU MINH HỌA</p>
       )}
-      {incomplete && (
-        <div className="budget-incomplete" role="status">
-          <strong>Chưa đủ dữ liệu để tính tổng chuyến đi</strong>
-          <p>
-            {missing
-              ? `${missing} điểm dừng chưa có giá. `
-              : 'Bạn chưa nhập chi phí. '}
-            {budget === null
-              ? 'Bạn vẫn có thể dùng lịch này mà không cần nhập ngân sách.'
-              : remaining !== null && remaining < 0
-                ? 'Các khoản đã nhập đã vượt ngân sách; vẫn còn chi phí cần bổ sung.'
-                : 'Chưa thể biết ngân sách có đủ hay không.'}
-          </p>
-          {onReview && (
-            <button className="journey-outline" onClick={onReview}>
-              {budget === null
-                ? 'Tự thêm chi phí (tùy chọn)'
-                : 'Bổ sung chi phí trong lịch'}
-            </button>
-          )}
-        </div>
-      )}
       <div className="budget-green-card">
-        <span className="budget-eyebrow">DỰ TOÁN NHÓM ĐÃ BIẾT</span>
+        <span className="budget-eyebrow">CHI PHÍ ĐÃ BIẾT MỖI NGƯỜI</span>
         <strong
           className={`budget-total ${!hasPrices ? 'budget-no-price' : ''}`}
         >
-          {hasPrices ? moneyText(known) : 'Chưa có dự toán'}
+          {hasPrices
+            ? moneyText(
+                summary?.perPersonMinor ?? Math.round(known / travelers),
+              )
+            : 'Chưa rõ'}
         </strong>
         <p className="budget-per-person">
           {!hasPrices
             ? 'Chi phí sẽ hiển thị khi có giá đủ căn cứ.'
             : travelers > 0
-              ? `${moneyText(summary?.perPersonMinor ?? Math.round(known / travelers))} / người`
+              ? `Cả nhóm ${travelers} người: ${moneyText(known)}`
               : 'Chưa xác định số người'}
         </p>
         <img
@@ -217,9 +208,51 @@ export function BudgetScreen({
                 : `Chênh lệch với khoản đã nhập: ${moneyText(remaining)}`}
         </span>
       </div>
+      <div className="budget-incomplete">
+        <strong>Các khoản chưa tính</strong>
+        <p>
+          {missing > 0
+            ? `${missing} lượt dừng chưa rõ chi phí, chưa cộng vào số tiền trên.`
+            : 'Các điểm trong lịch đã có giá tham khảo.'}{' '}
+          Đây chưa phải tổng chi phí trọn chuyến.
+        </p>
+        <ul>
+          {!activities.some((a) => a.kind === 'lodging') && (
+            <li>Chỗ ở — chưa thêm vào lịch.</li>
+          )}
+          {!activities.some((a) => a.kind === 'transport') && (
+            <li>Di chuyển — chưa thêm vào lịch.</li>
+          )}
+          <li>Các khoản ngoài lịch và chi tiêu cá nhân.</li>
+        </ul>
+        {unpricedActivities.length > 0 && (
+          <details>
+            <summary>
+              Xem {unpricedActivities.length} lượt dừng chưa rõ giá
+            </summary>
+            <ul>
+              {unpricedActivities.map((activity, index) => (
+                <li key={index}>
+                  {activity.dayNumber ? `Ngày ${activity.dayNumber} · ` : ''}
+                  {activity.title || 'Điểm dừng'} —{' '}
+                  {!priceFitsGroup(activity.estimatedCost, travelers)
+                    ? 'Giá hiện có không áp dụng cho số người này'
+                    : 'Chưa rõ giá'}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+        <p>Bạn không cần nhập ngân sách để tiếp tục dùng lịch này.</p>
+        {onReview && (
+          <button className="journey-outline" onClick={onReview}>
+            Xem lại lịch trình
+          </button>
+        )}
+      </div>
       {!demo && (
         <div className="budget-scope-note">
-          <strong>Dự toán tham khảo cho cả nhóm</strong>
+          <strong>Chi phí tham khảo</strong>
           <p>
             App tự dùng giá đã biên tập và nhân số người khi tính theo người.
             Đây chưa phải giá đặt dịch vụ.
@@ -247,8 +280,21 @@ export function BudgetScreen({
                     {p.basis === 'per_person' ? 'người' : 'nhóm'}
                   </strong>
                   <p>{p.conditions}</p>
+                  {p.inclusions && <p>Bao gồm: {p.inclusions}</p>}
+                  {p.exclusions && <p>Không bao gồm: {p.exclusions}</p>}
+                  {p.bundle && (
+                    <p>
+                      Vé gói {p.bundle.code}: tối đa {p.bundle.maxEntries} lượt
+                      trong {p.bundle.validDays} ngày.{' '}
+                      {a.activityId &&
+                      summary?.includedActivityIds?.includes(a.activityId)
+                        ? 'Đã bao gồm trong vé gói — không cộng thêm.'
+                        : 'Tính một gói tại lượt này khi chưa có vé còn hiệu lực và lượt sử dụng.'}
+                    </p>
+                  )}
                   <small>
-                    Đối chiếu {p.checkedAt} · Nhóm tối đa {p.maxTravelers} người
+                    Đối chiếu {p.checkedAt} · Nhóm {p.minTravelers ?? 1}–
+                    {p.maxTravelers} người
                   </small>
                   {!priceFitsGroup(a.estimatedCost, travelers) && (
                     <p>
@@ -302,7 +348,7 @@ export function BudgetScreen({
                       ? 'Chưa thêm'
                       : unknownCount
                         ? amount > 0
-                          ? `${moneyText(amount)} + ?`
+                          ? `${moneyText(amount)} đã biết`
                           : 'Chưa rõ'
                         : moneyText(amount)}
                   </b>
@@ -313,16 +359,15 @@ export function BudgetScreen({
       </section>
       <p className="budget-disclaimer">
         {missing
-          ? `${missing} điểm dừng chưa rõ chi phí. Tổng và dự phòng chưa đầy đủ.`
+          ? `${missing} lượt dừng chưa rõ chi phí. Các số tiền theo nhóm ở trên chỉ gồm phần đã biết.`
           : activities.length
             ? 'Các điểm đã nhập đủ giá ước tính; chưa có nghĩa đã bao gồm mọi chi phí chuyến đi.'
             : 'Chưa có chi phí hoạt động. Thêm điểm dừng và khoản dự kiến để xem dự toán.'}
       </p>
       {!demo && (
         <p className="budget-source-note">
-          Nhớ bổ sung tiền đến và rời điểm đến, chỗ ở, ăn uống và đi lại. Chỉ
-          các khoản đã nhập mới được cộng; “Chưa thêm” không có nghĩa là miễn
-          phí.
+          Chỉ các khoản đã có giá mới được cộng. “Chưa rõ” và “Chưa thêm” không
+          có nghĩa là miễn phí.
         </p>
       )}
       <button className="budget-adjust" onClick={onAdjust}>
@@ -408,7 +453,9 @@ export function TripBudget({
       days={draft.days.length}
       travelers={draft.travelers.totalCount}
       budget={draft.budget.amountMinor}
-      activities={draft.days.flatMap((d) => d.activities)}
+      activities={draft.days.flatMap((d, index) =>
+        d.activities.map((activity) => ({ ...activity, dayNumber: index + 1 })),
+      )}
       onAdjust={onAdjust}
       {...(onReview ? { onReview } : {})}
     />

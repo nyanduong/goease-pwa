@@ -50,3 +50,10 @@ export type PlannerProposal = {
   budget: BudgetSummary;
   warnings: string[];
 };
+
+// Keep the UI and stale-run recovery outside the provider request deadline.
+export const plannerTiming = {
+  providerTimeoutMs: 120000,
+  clientTimeoutMs: 135000,
+  staleRunAfterMs: 180000,
+} as const;

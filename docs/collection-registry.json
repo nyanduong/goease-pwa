@@ -2674,7 +2674,7 @@
     ],
     "newCollections": false,
     "migrationRequired": false,
-    "note": "Optional place venueType/openingHoursNote/referencePrice; admin role server-controlled. Reference snapshots in estimatedCost and AI proposals, validated on save and preserved in existing trips. Audit catalog and local role changes; resourceType place receipts. See DB-BASELINE.md runtime section."
+    "note": "Optional place venueType/openingHoursNote/referencePrice; admin role server-controlled. CAT-14: optional minTravelers (integer 1..1000, absent=1, <=maxTravelers) is preserved in snapshots and enforced by planner/budget; price inclusions/exclusions required for publication and Goe; optional bundle {code,validDays,maxEntries} is preserved in reference snapshots; BudgetSummary.includedActivityIds is derived only, not persisted. No migration/backfill. Reference snapshots in estimatedCost and AI proposals, validated on save and preserved in existing trips. Audit catalog and local role changes; resourceType place receipts. See DB-BASELINE.md runtime section."
   },
   "browserStorage": {
     "implementationStatus": "local read-only offline itinerary, 2026-10-23",
@@ -2749,5 +2749,21 @@
     "verification": "CATALOG-AUTOMATION-VERIFICATION.md",
     "liveProviderVerifiedThisTask": false,
     "ttl": "Receipts24h only; no new retention/purge policy"
+  },
+  "plannerProviders": {
+    "date": "2026-10-24",
+    "brRefs": ["AI-01", "AI-02"],
+    "runtimeAiRunProviders": ["gemini", "fulldichvu", "catalog"],
+    "defaultGenerationProvider": "gemini",
+    "configuredModelRecorded": true,
+    "automaticFallback": false,
+    "migrationRequired": false,
+    "documentation": "AI-PLANNER.md FULLDICHVU provider; DB-BASELINE.md FULLDICHVU runtime",
+    "verification": "38 unit tests; Haiku live 2/3-day catalog ranking + server schedule validation passed in 10232/8270ms, all missing prices null; Gemini/Llama trials rejected; no trip saves",
+    "compactPromptVersions": ["hoian-v4", "goe-v3"],
+    "compactCatalog": "IDs, names, category, venue type, mealSuitable, address, coordinates, duration, full hours; amount/basis only; no descriptions/price provenance",
+    "rankingPromptVersion": "hoian-rank-v1",
+    "truncatedOutputError": "AI_OUTPUT_TRUNCATED; failed/consumed; never applied",
+    "selectedFullDichVuModel": "fulldichvu/haiku-4.5"
   }
 }

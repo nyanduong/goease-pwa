@@ -548,14 +548,16 @@ export function catalogOperations(
         !adminPlaceInputSchema.safeParse({ ...form, publicationStatus: status })
           .success
       )
-        return blocked('Cần đủ tên, giới thiệu, địa chỉ và nguồn hợp lệ.');
+        return blocked(
+          'Cần đủ thông tin địa điểm và giá còn hạn, nguồn, điều kiện, phần bao gồm/không bao gồm trước khi đăng.',
+        );
       if (
         p.referencePrice &&
         (p.referencePrice.checkedAt > catalogToday() ||
           p.referencePrice.reviewAfter < catalogToday())
       )
         return blocked(
-          'Giá cần kiểm tra lại hoặc bỏ giá để đăng với giá chưa rõ.',
+          'Giá cần kiểm tra lại trước khi đăng. Có thể giữ bản nháp.',
         );
       if (
         p.sourceSnapshot?.closed &&

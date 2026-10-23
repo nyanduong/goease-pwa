@@ -729,7 +729,7 @@ export function TripWorkspace({
         </div>
         <p className="journey-sheet-note">
           Goe gợi ý tối đa{' '}
-          {{ relaxed: 2, balanced: 3, active: 6 }[draft.preferences.pace]} điểm
+          {{ relaxed: 4, balanced: 5, active: 6 }[draft.preferences.pace]} điểm
           mỗi ngày theo nhịp này. Bạn vẫn có thể tự thêm điểm sau.
         </p>
       </section>
@@ -1124,10 +1124,12 @@ export function TripWorkspace({
                                 <strong>{a.title}</strong>
                                 {a.estimatedCost.reference && (
                                   <small>
-                                    {draft.travelers.totalCount >
-                                    a.estimatedCost.reference.maxTravelers
-                                      ? 'Cần giá cho nhóm đông hơn'
-                                      : `${moneyText(a.estimatedCost.amountMinor!)} / ${a.estimatedCost.basis === 'per_person' ? 'người' : 'nhóm'} · Tham khảo`}
+                                    {!priceFitsGroup(
+                                      a.estimatedCost,
+                                      draft.travelers.totalCount,
+                                    )
+                                      ? 'Giá chưa áp dụng cho số người này'
+                                      : `${a.estimatedCost.reference.bundle ? 'Vé gói: ' : ''}${moneyText(a.estimatedCost.amountMinor!)} / ${a.estimatedCost.basis === 'per_person' ? 'người' : 'nhóm'} · Tham khảo`}
                                   </small>
                                 )}
                                 <small>
@@ -1413,6 +1415,10 @@ export function TripWorkspace({
                   type="date"
                   required
                   value={departure}
+                  onInput={(e) => {
+                    setDeparture(e.currentTarget.value);
+                    setError('');
+                  }}
                   onChange={(e) => {
                     setDeparture(e.target.value);
                     setError('');
@@ -1523,6 +1529,12 @@ export function TripWorkspace({
                       type="date"
                       required
                       value={pending.startDate}
+                      onInput={(e) =>
+                        setPending({
+                          ...pending,
+                          startDate: e.currentTarget.value,
+                        })
+                      }
                       onChange={(e) =>
                         setPending({ ...pending, startDate: e.target.value })
                       }
@@ -1534,6 +1546,12 @@ export function TripWorkspace({
                       type="date"
                       required
                       value={pending.endDate}
+                      onInput={(e) =>
+                        setPending({
+                          ...pending,
+                          endDate: e.currentTarget.value,
+                        })
+                      }
                       min={pending.startDate}
                       onChange={(e) =>
                         setPending({ ...pending, endDate: e.target.value })

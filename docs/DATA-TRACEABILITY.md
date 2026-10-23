@@ -300,3 +300,17 @@ AI-01/02/03 → itinerary-policy.ts + planner.ts + gemini.ts; TRIP-08 → unchan
 Date-change update (2026-10-23), AI-02/TRIP-08: RescheduleRequest → authenticated catalog rescheduler → private catalog ai_runs proposal for AI trips → existing revision-checked trip save. Fixed closure, time shifts, unknown costs and atomic failure: planner.test.ts. Ownership, revisions, provenance save/PATCH and zero quota: reschedule.integration.ts (isolated MongoDB). No live provider call required.
 
 Concurrency clarification: every review decision also advances the place revision in the same transaction, including keep/later/distinct. This fences simultaneous editorial edits; draft review signatures advance with that decision so keeping or deferring a draft does not reopen itself. Source polling alone still does not advance editorial revision.
+
+2026-10-24 AI-01/AI-02: server selects gemini/fulldichvu from AI_PROVIDER, sends only the existing minimized planner payload, records provider/model in ai_runs, and keeps provider errors sanitized. FULLDICHVU key is server-only. fulldichvu.test.ts verifies fixed endpoint, isolated auth, bounded output and no paid retry/fallback with mocked HTTP; no live provider verification yet. No customer personal identity is added to prompts.
+
+Compact planner 2026-10-24: hoian-v4/goe-v3 omit descriptions/price provenance from provider payload, retain full hours/identity/duration/address and derived meal suitability. Final cost remains server catalogCost; strict output rejects invented price fields. planner.test.ts asserts preserved fields and omitted prose/provenance. No collection shape change.
+
+2026-10-24 provider diagnostics: length + empty final content is AI_OUTPUT_TRUNCATED, no reasoning text/credentials in application logs. FULLDICHVU hoian-rank-v1 strict ID ranking → catalog arrangement → unchanged validation/cost. Fixture tests reject fake IDs, duplicate IDs, price fields and insufficient catalog; live ranking still truncated pending final diagnostic probe.
+
+2026-10-24 selected model: FULLDICHVU Haiku 4.5 now default for that provider after two successful live catalog-ranking/arrangement/validation probes (2 days:10.232s; 3 days:8.270s). All costs unknown retained; known Nov11 museum closure respected. Scripts ran read-only catalog + provider adapter, not persisted trips/quota receipts. See AI-PLANNER.md for usage, rejected Llama trial and verification boundaries.
+
+### CAT-14 — giá đủ dữ liệu và vé gói, 24/10/2026
+
+Admin nhập inclusions/exclusions và bundle metadata có nguồn; đi qua contract + service authorization + transaction/audit hiện có đến places.referencePrice. Goe lọc priceReady + giờ/địa chỉ trước provider, dùng catalogCost tạo snapshot, validateCatalogCosts xác thực snapshot lúc save. Bundle metadata đi cùng reference vào trips/trip_revisions/ai_runs; includedActivityIds chỉ là output tính toán, không collection mới. Không sửa hồi tố lịch cũ hay coi null là 0. Giá có cấu trúc vẫn cần admin xác minh ngoài thực tế.
+
+CAT-14 minTravelers: nguồn menu có điều kiện số khách tối thiểu được lưu thành field có cấu trúc, đi cùng snapshot. `server/test/budget.test.ts` kiểm tra 1 khách không được áp dụng giá set từ 2 khách; 3 khách tính đúng 3 suất, min > max bị từ chối.

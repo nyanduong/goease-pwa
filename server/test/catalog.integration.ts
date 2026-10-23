@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import {
   catalogCost,
   catalogToday,
+  adminPlaceInputSchema,
   type AdminPlaceInput,
   type AdminPlaceDto,
   type PlaceDto,
@@ -95,11 +96,13 @@ test(
         description: 'Dữ liệu kiểm thử, không phải giá thật.',
         locationQuery: 'Địa chỉ thử nghiệm Hội An',
         durationMinutes: 60,
-        openingHoursNote: 'Giờ minh họa',
+        openingHoursNote: '07:00–22:00',
         sourceUrl: 'https://example.invalid/catalog-fixture',
         publicationStatus: 'draft',
         referencePrice: {
           label: 'Bữa ăn kiểm thử',
+          inclusions: 'Một suất ăn kiểm thử',
+          exclusions: 'Đồ uống',
           amountMinor: 50000,
           basis: 'per_person',
           maxTravelers: 10,
@@ -110,6 +113,36 @@ test(
           reviewAfter: '2099-12-31',
         },
       };
+      await t.test(
+        'publication rejects unknown or incomplete prices, while drafts remain editable',
+        async () => {
+          for (const referencePrice of [
+            null,
+            { ...input.referencePrice!, inclusions: undefined },
+            { ...input.referencePrice!, exclusions: undefined },
+            { ...input.referencePrice!, reviewAfter: '2000-01-01' },
+          ]) {
+            const response = await call(
+              '/admin/places',
+              'POST',
+              {
+                place: {
+                  ...input,
+                  referencePrice,
+                  publicationStatus: 'published',
+                },
+              },
+              admin,
+            );
+            assert.equal(response.status, 400);
+          }
+          assert.equal(
+            adminPlaceInputSchema.safeParse({ ...input, referencePrice: null })
+              .success,
+            true,
+          );
+        },
+      );
       await t.test(
         'server denies guest/customer and role mass assignment',
         async () => {

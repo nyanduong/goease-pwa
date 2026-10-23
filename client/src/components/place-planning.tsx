@@ -60,7 +60,8 @@ export function PlacePlanning({
           </strong>
           <p>{place.referencePrice.conditions}</p>
           <small>
-            Nhóm tối đa {place.referencePrice.maxTravelers} người · Đối chiếu{' '}
+            Nhóm {place.referencePrice.minTravelers ?? 1}–
+            {place.referencePrice.maxTravelers} người · Đối chiếu{' '}
             {place.referencePrice.checkedAt}
           </small>
           <a

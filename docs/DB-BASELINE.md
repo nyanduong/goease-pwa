@@ -1318,3 +1318,17 @@ Signature không đổi giữ quyết định; source mới mở lại; snooze �
 Worker uses atomic run claim + periodic lease renewal; each domain transaction also writes run with matching token and unexpired lease. This prevents stale worker side effects through MongoDB transaction write conflicts. Run counts and catalog/reviews/audit commit together; failures before commit produce no partial catalog effects. Provider calls never inside retriable transaction. Reviews and drafts never automatically demote published records. APIs/contracts and operational limits are in ADMIN-CATALOG.md and GEOAPIFY-IMPORT.md.
 
 Concurrency clarification: every review decision also advances the place revision in the same transaction, including keep/later/distinct. This fences simultaneous editorial edits; draft review signatures advance with that decision so keeping or deferring a draft does not reopen itself. Source polling alone still does not advance editorial revision.
+
+### FULLDICHVU runtime (2026-10-24)
+
+ai_runs.provider runtime Mongoose enum: gemini | fulldichvu | catalog. Generation records configured provider and corresponding model; rescheduling remains catalog. No other field/index or data migration changes. API contracts and usage bucket counting remain unchanged. See AI-PLANNER.md FULLDICHVU provider for server env and verification limitations.
+
+2026-10-24 planner metadata: FULLDICHVU new-trip promptVersion=hoian-rank-v1; successful proposals retain the existing TripInput schema after server arrangement/validation. AI_OUTPUT_TRUNCATED is a sanitized errorCode on failed/consumed runs. No new collection/index or migration. Ranking IDs never replace the persisted final trip contract.
+
+### Runtime price readiness and bundle — 2026-10-24
+
+CAT-14: referencePrice thêm `inclusions`/`exclusions` (optional để đọc dữ liệu cũ, trim 1..500 ký tự nếu có; bắt buộc cho xuất bản/Goe). Optional `bundle` strict subdocument `{code: lowercase alphanumeric/hyphen 3..80, validDays: integer1..31, maxEntries: integer1..300}`; không `_id`/`__v`. Cùng fields trong estimatedCost.reference/trip revisions/AI proposals qua priceSnapshotSchema. Không collection/index/migration mới, không backfill dữ liệu thật. Existing records thiếu fields vẫn đọc được nhưng không đủ điều kiện xuất bản mới/Goe.
+
+BudgetSummary thêm optional `includedActivityIds: string[]`, server tính lại từ snapshot theo ngày, không nhận từ client làm căn cứ; đánh dấu các lượt đã tính trong vé trước đó. Giá mỗi người vẫn là tổng nhóm / totalCount, làm tròn VND. Conflicting bundle definitions fail 409 BUNDLE_PRICE_CONFLICT. Historical snapshots không tự cập nhật khi admin đổi giá.
+
+Runtime CAT-14: `referencePrice.minTravelers?: integer 1..1000`, phải <= maxTravelers; thiếu được hiểu là 1, không backfill. Lưu cùng field trong Mongoose referencePrice và các snapshot. Admin nhập giới hạn tối thiểu; planner và budget kiểm tra cả min/max. Không thêm collection/index.

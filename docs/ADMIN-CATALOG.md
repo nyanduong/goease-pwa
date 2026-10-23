@@ -74,3 +74,15 @@ Technical implementation: shared contracts in `packages/contracts/src/catalog.ts
 Geoapify import is implemented for fixed Hội An searches and draft-only batch creation; see [GEOAPIFY-IMPORT.md](GEOAPIFY-IMPORT.md). Source metadata is preserved on ordinary admin edits and omitted from writable form input; only the server sets it. Scheduled refresh and operational review are implemented as described above. A separate approval role, uploads, structured hours and coordinate editing remain unimplemented.
 
 Concurrency clarification: every review decision also advances the place revision in the same transaction, including keep/later/distinct. This fences simultaneous editorial edits; draft review signatures advance with that decision so keeping or deferring a draft does not reopen itself. Source polling alone still does not advance editorial revision.
+
+## Điều kiện xuất bản và vé gói — cập nhật 24/10/2026
+
+Thay hướng dẫn cũ cho phép đăng địa điểm không giá: thiếu giá/điều kiện/phần bao gồm/phần không bao gồm hoặc giá quá hạn thì giữ bản nháp. Cả nút lưu xuất bản và xuất bản theo lô đều bị kiểm tra trên API. Địa điểm chỉ được Goe chọn khi thêm giờ rõ theo dạng `08:00–17:00` (có thể nhiều ca và ngày nghỉ theo parser hiện hành), địa chỉ và thời lượng, giá áp dụng cho số người. Không tự diễn giải giờ tùy ý hoặc chứng nhận giờ thực tế.
+
+Vé dùng chung: bật checkbox, nhập mã chung (chữ thường/số/gạch nối), số ngày hiệu lực tính từ ngày dùng đầu và số lượt vào cửa. Chỉ gán cho điểm được vé bao gồm; sao cùng định nghĩa giá/điều kiện/nguồn/ngày sang các điểm cùng mã. Server tính một gói trong giới hạn đó; hết hạn/hết lượt tính gói mới. Khác định nghĩa cùng mã sẽ báo lỗi, không tự ghép. Không dùng cho bữa ăn; gói có quota riêng từng nhóm di tích, hạn 24 giờ trượt, hoặc điều kiện chưa xác định phải chờ hỗ trợ phù hợp. Chưa nhập/gán gói thực tế nào trong task này.
+
+Catalog cũ vẫn giữ dữ liệu; cần biên tập thêm các trường mới. Vì vậy Hội An có thể chưa đủ nguồn hợp lệ để Goe tạo lịch ngay. Không điền placeholder hoặc tự xác nhận giá để mở khóa.
+
+Kiểm chứng local cho thay đổi này: 41 unit tests; 23 tests trong catalog, catalog-operations, Hội An và reschedule integration trên MongoDB test riêng; typecheck, lint và build pass. Build còn cảnh báo chunk client trên 500 kB. API test xác nhận catalog thiếu dữ liệu không tăng usage_buckets. Budget tests kiểm tra gói theo người/nhóm, số lượt, hiệu lực ngày, xung đột định nghĩa và bữa ăn không bị gộp. Không gọi provider thật, không nhập giá/gói thật, không clear database hoặc sửa hồi tố lịch khách trong task này. Các integration về lưu snapshot hiện có vẫn pass; chưa có E2E trình duyệt mới cho form vé gói.
+
+Giá set tối thiểu 2 khách: nhập `minTravelers=2`; không chỉ ghi điều kiện trong văn bản. Server loại giá khỏi Goe/dự toán cho khách đi một mình. Field cũ thiếu minTravelers được hiểu là 1.

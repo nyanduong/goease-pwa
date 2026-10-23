@@ -3,6 +3,12 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import type { ActivityInput, TripInput } from '@goease/contracts';
 import { calculateBudget } from '../src/features/trips/budget.js';
+import {
+  catalogCost,
+  catalogToday,
+  priceReady,
+  referencePriceSchema,
+} from '@goease/contracts';
 function draft(
   costs: [
     ActivityInput['kind'],
@@ -53,6 +59,37 @@ function draft(
     ],
   };
 }
+test('minimum group size excludes an inapplicable set price from totals', () => {
+  const price = {
+    label: 'Fixture set for two or more',
+    amountMinor: 250000,
+    basis: 'per_person' as const,
+    minTravelers: 2,
+    maxTravelers: 10,
+    conditions: 'Minimum two guests',
+    inclusions: 'Set meal',
+    exclusions: 'Drinks',
+    sourceUrl: 'https://example.invalid/menu',
+    checkedAt: catalogToday(),
+    reviewAfter: '2099-12-31',
+  };
+  assert.equal(priceReady(price, 1), false);
+  assert.equal(priceReady(price, 2), true);
+  assert.equal(
+    referencePriceSchema.safeParse({ ...price, minTravelers: 11 }).success,
+    false,
+  );
+  const trip = draft([['meal', null, 'per_person']], 1, null);
+  trip.days[0]!.activities[0]!.estimatedCost = catalogCost({
+    referencePrice: price,
+    revision: 1,
+  });
+  assert.equal(calculateBudget(trip).knownEstimatedMinor, 0);
+  assert.equal(calculateBudget(trip).missingCostCount, 1);
+  trip.travelers.totalCount = 3;
+  assert.equal(calculateBudget(trip).knownEstimatedMinor, 750000);
+  assert.equal(calculateBudget(trip).perPersonMinor, 250000);
+});
 test('budget server: mixed bases, explicit zero, unknown costs and category sums', () => {
   const input = draft([
     ['visit', 80000, 'per_person'],
@@ -95,5 +132,81 @@ test('budget rejects totals exceeding safe integer arithmetic', () => {
         ),
       ),
     /quá lớn/,
+  );
+});
+
+test('bundle charges once within validity/capacity; meals stay separate; conflicts fail closed', () => {
+  const trip = draft(
+    [
+      ['visit', null, 'per_person'],
+      ['visit', null, 'per_person'],
+      ['meal', 50000, 'per_person'],
+      ['meal', 50000, 'per_person'],
+    ],
+    3,
+    null,
+  );
+  const price = {
+    label: 'Vé gói kiểm thử',
+    amountMinor: 120000,
+    basis: 'per_person' as const,
+    maxTravelers: 10,
+    conditions: 'Mỗi lượt vào cửa dùng một lượt',
+    inclusions: 'Các điểm đã gán cùng mã',
+    exclusions: 'Ăn uống',
+    sourceUrl: 'https://example.invalid/ticket',
+    checkedAt: catalogToday(),
+    reviewAfter: '2099-12-31',
+    bundle: { code: 'fixture-pass', validDays: 2, maxEntries: 2 },
+  };
+  for (const a of trip.days[0]!.activities.slice(0, 2))
+    a.estimatedCost = catalogCost({ referencePrice: price, revision: 1 });
+  let result = calculateBudget(trip);
+  assert.equal(result.knownEstimatedMinor, 660000);
+  assert.equal(result.perPersonMinor, 220000);
+  assert.deepEqual(result.includedActivityIds, [
+    trip.days[0]!.activities[1]!.activityId,
+  ]);
+  const groupTicket = structuredClone(trip);
+  for (const a of groupTicket.days[0]!.activities.slice(0, 2)) {
+    a.estimatedCost.basis = 'group_total';
+    a.estimatedCost.reference!.basis = 'group_total';
+  }
+  assert.equal(calculateBudget(groupTicket).knownEstimatedMinor, 420000);
+  assert.equal(calculateBudget(groupTicket).perPersonMinor, 140000);
+  const next = structuredClone(trip.days[0]!);
+  next.dayId = randomUUID();
+  next.date = '2026-11-13';
+  next.activities = [
+    { ...next.activities[0]!, activityId: randomUUID(), order: 0 },
+  ];
+  trip.days.push(next);
+  assert.equal(
+    calculateBudget(trip).knownEstimatedMinor,
+    1020000,
+    'capacity exceeded buys another pass',
+  );
+  trip.days[0]!.activities.splice(1, 1);
+  assert.equal(
+    calculateBudget(trip).knownEstimatedMinor,
+    660000,
+    'second calendar day still included',
+  );
+  next.date = '2026-11-14';
+  assert.equal(
+    calculateBudget(trip).knownEstimatedMinor,
+    1020000,
+    'third day needs new pass',
+  );
+  next.activities[0]!.estimatedCost.reference!.bundle!.maxEntries = 3;
+  assert.throws(() => calculateBudget(trip), /cùng mã vé gói/);
+  next.activities[0]!.estimatedCost.reference!.bundle!.maxEntries = 2;
+  trip.travelers.totalCount = 11;
+  result = calculateBudget(trip);
+  assert.equal(result.missingCostCount, 2);
+  assert.equal(
+    result.knownEstimatedMinor,
+    1100000,
+    'out of scope passes never become free',
   );
 });

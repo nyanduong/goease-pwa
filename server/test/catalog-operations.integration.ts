@@ -288,6 +288,18 @@ test(
                 place: {
                   ...input,
                   name: 'Tên đã biên tập',
+                  referencePrice: {
+                    label: 'Vé fixture',
+                    amountMinor: 20000,
+                    basis: 'per_person',
+                    maxTravelers: 10,
+                    conditions: 'Kiểm thử',
+                    inclusions: 'Vào cửa',
+                    exclusions: 'Không có',
+                    sourceUrl: 'https://example.invalid/price',
+                    checkedAt: '2020-01-01',
+                    reviewAfter: '2099-12-31',
+                  },
                   publicationStatus: 'published',
                 },
                 expectedRevision: revision,
@@ -354,7 +366,7 @@ test(
         },
       );
       await t.test(
-        'duplicates block publication, defer hides until due, distinct permits publishing without price; partial batch replay stable',
+        'duplicates block publication, defer hides until due, distinct still requires a complete price; partial batch replay stable',
         async () => {
           const rows = (await work()).items.filter(
             (r) => r.kind === 'duplicate',
@@ -391,6 +403,34 @@ test(
             (r) => r.id === rows[1]!.id,
           )!;
           await decision(currentSecond, 'distinct');
+          const blockedPrice = await product.operations.batch(actor, {
+            items: selected.map((item) => ({
+              ...item,
+              expectedRevision: rows.find((r) => r.place.id === item.id)!.place
+                .revision,
+            })),
+            status: 'published',
+          });
+          assert.ok(blockedPrice.items.every((item) => !item.eligible));
+          await Place.updateOne(
+            { _id: selected[0]!.id },
+            {
+              $set: {
+                referencePrice: {
+                  label: 'Vé fixture',
+                  amountMinor: 20000,
+                  basis: 'per_person',
+                  maxTravelers: 10,
+                  conditions: 'Kiểm thử',
+                  inclusions: 'Vào cửa',
+                  exclusions: 'Không có',
+                  sourceUrl: 'https://example.invalid/price',
+                  checkedAt: '2020-01-01',
+                  reviewAfter: '2099-12-31',
+                },
+              },
+            },
+          );
           for (const item of selected)
             item.expectedRevision = (await Place.findById(item.id))!.revision;
           await Place.updateOne(

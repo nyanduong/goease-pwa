@@ -42,6 +42,13 @@ const schema = z.object({
   GOOGLE_CLIENT_ID: z.string().max(512).optional(),
   GOOGLE_CLIENT_SECRET: z.string().max(4096).optional(),
   GOOGLE_PKCE_KEY: z.string().optional(),
+  AI_PROVIDER: z.enum(['gemini', 'fulldichvu']).default('gemini'),
+  FULLDICHVU_API_KEY: z.string().trim().max(4096).optional(),
+  FULLDICHVU_MODEL: z
+    .string()
+    .regex(/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/)
+    .max(200)
+    .default('fulldichvu/haiku-4.5'),
   GEMINI_API_KEY: z.string().max(4096).optional(),
   GEOAPIFY_API_KEY: z.string().trim().max(4096).optional(),
   GEMINI_MODEL: z

@@ -1,6 +1,7 @@
 export type BudgetCategory =
   'transport' | 'lodging' | 'meal' | 'visit' | 'other';
 export type BudgetSummary = {
+  includedActivityIds?: string[];
   currency: 'VND';
   knownEstimatedMinor: number;
   missingCostCount: number;

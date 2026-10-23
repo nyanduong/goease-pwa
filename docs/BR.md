@@ -392,3 +392,29 @@ Triển khai Hội An: giới hạn điểm mới theo relaxed/balanced/active l
 Giờ hoạt động: truyền ghi chú hiện có cho model và kiểm tra server định dạng hẹp HH:mm–HH:mm cùng “đóng cửa ngày N và M hằng tháng”. Ghi chú chưa xác minh/không thống nhất không thành cam kết mở cửa. Schema giờ có cấu trúc, ngày lễ và chuẩn hóa mọi nguồn import khác vẫn cần triển khai; không suy ra chúng đã có từ xác nhận chất lượng dữ liệu của owner. Giá vẫn chỉ từ catalog còn hiệu lực; phần thiếu, lưu trú/di chuyển chưa thêm không nằm trong tổng đã biết. Ngày đầu/cuối mặc định là ngày trọn vẹn, giờ đến/về chưa thu thập.
 
 Bổ sung AI-02: sau khi AI chọn ứng viên, server bố trí lại giờ và bổ sung bữa ăn/điểm tham quan từ catalog đủ điều kiện trước khi kiểm tra. Không tự thành công khi provider lỗi. Chỉnh riêng một ngày cho phép ít nhất số điểm ngày đó đã có (tối đa 6), tránh buộc xóa điểm chỉ vì giới hạn cũ. AI-02/TRIP-08: đổi ngày ở workspace và chọn ngày khởi hành khi lưu preview tự kiểm tra giờ catalog trên server; giữ điểm hợp lệ, đổi giờ hoặc thay điểm đóng cửa cùng loại, không gọi thêm Gemini. Thiếu phương án thì giữ nguyên lịch cũ. Giữ activityId, ghi chú riêng và giá điểm giữ lại; điểm thay dùng giá catalog hoặc null.
+
+
+### AI-01/AI-02: tùy chọn nhà cung cấp — 24/10/2026
+
+Theo yêu cầu owner, server hỗ trợ Google trực tiếp hoặc FULLDICHVU qua cấu hình riêng. Không tự chuyển nhà cung cấp hay retry có phí khi lỗi. Mọi đầu ra vẫn qua kiểm tra lịch/catalog/giá; không coi lỗi provider là tạo lịch thành công. API key chỉ lưu ở server. Chưa có xác nhận chất lượng hoặc chi phí thực tế của model qua FULLDICHVU khi chưa thử key thật.
+
+
+AI-02 vận hành (24/10/2026): theo yêu cầu owner, tăng thời gian chờ provider lên 120 giây; client 135 giây, đối soát lượt pending sau 180 giây. Vẫn không retry/fallback tự động có phí. Timeout vẫn là kết quả chưa xác định, không báo tạo lịch thành công.
+
+
+AI-02 payload gọn (24/10/2026): bỏ mô tả dài và provenance giá khỏi dữ liệu gửi model; giữ ID/địa chỉ/thời lượng/ghi chú giờ nguyên vẹn. Giá cuối lấy từ catalog đầy đủ ở server, model không được trả field giá. Schema đầu ra và kiểm tra ID/ngày/giờ không nới lỏng.
+
+
+AI-02 (24/10/2026): FULLDICHVU tạo chuyến mới chỉ xếp hạng ID có thật; server xếp ngày/giờ từ catalog rồi kiểm tra lịch và tính giá. Phản hồi bị cắt/rỗng không được dùng làm lịch thành công. Goe chỉnh riêng ngày vẫn giữ schema lịch hiện tại. Chất lượng live của model đang thử chưa được xác nhận.
+
+AI-02/TRIP-08 kiểm chứng customer (24/10/2026): thay điểm khi đổi ngày phải giữ mục đích bữa ăn; nhãn restaurant do import chưa đủ nếu tên/mô tả chỉ thể hiện quán cà phê. Dùng cùng bằng chứng phục vụ món ăn như bước tạo lịch. Không đủ điểm thay phù hợp thì giữ lịch cũ; không bịa giá. Không thay đổi schema/contract lưu trữ. Luồng tạo, lưu, đổi ngày và Goe chỉnh lịch đã kiểm thử trực tiếp với Haiku; phạm vi và giới hạn tại docs/CUSTOMER-LIFECYCLE-VERIFICATION.md.
+
+## CAT-14 / TRIP-07 / AI-01 — dữ liệu đủ giá và vé gói (24/10/2026)
+
+Theo yêu cầu owner, xuất bản trực tiếp và theo lô đều cần referencePrice còn hạn, nguồn HTTPS, điều kiện, phần bao gồm (`inclusions`) và không bao gồm (`exclusions`). Giá 0 chỉ do admin xác nhận miễn phí; thiếu dữ liệu giữ bản nháp. Kiểm tra cấu trúc không thay việc admin xác minh sự thật. Quy tắc này thay mô tả cũ cho phép xuất bản không giá.
+
+Goe chỉ chọn giá đủ điều kiện cho số người, địa chỉ/thời lượng có sẵn và ghi chú giờ có khoảng HH:mm–HH:mm hợp lệ, không chứa dấu chưa xác minh/chưa rõ. Lọc trước gọi model; thiếu số điểm/bữa ăn trả lỗi khả dụng, không dùng quota. Áp dụng cả chỉnh lịch và tìm điểm thay thế khi đổi ngày. Dữ liệu cũ không tự sửa/xóa; lịch đã lưu vẫn giữ snapshot.
+
+Vé gói là dữ liệu admin gán tường minh: mã dùng chung, số ngày lịch tính cả ngày đầu và tổng số lượt vào cửa. Chỉ các điểm gán cùng mã, cùng toàn bộ giá/điều kiện được dùng chung; mỗi lượt hoạt động tiêu thụ một lượt vé. Hết hạn hoặc hết lượt thì tính gói mới. Bữa ăn không dùng cơ chế vé gói. Khác định nghĩa cùng mã thì từ chối tính, không tự chọn giá thấp. Các gói giới hạn riêng theo loại di tích, hạn theo giờ hoặc miễn giảm theo tuổi chưa hỗ trợ; không nhập như gói đơn giản. Không tự suy ra vé phố cổ thực tế đã thỏa mô hình.
+
+CAT-14 / TRIP-07: Giá có thể quy định `minTravelers` (1..1000, mặc định đọc là 1 nếu thiếu), không lớn hơn maxTravelers. Xuất bản được giá cho nhóm tối thiểu 2; Goe và dự toán chỉ áp dụng khi số người nằm trong cả hai giới hạn. Không tự nâng giá một khách lên giá hai khách, không nhân thiếu suất tối thiểu.

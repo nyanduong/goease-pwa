@@ -45,6 +45,8 @@ const newPrice = (): ReferencePrice => ({
   basis: 'per_person',
   maxTravelers: 1000,
   conditions: '',
+  inclusions: '',
+  exclusions: '',
   sourceUrl: '',
   checkedAt: catalogToday(),
   reviewAfter: catalogToday(),
@@ -606,7 +608,8 @@ export function AdminCatalog({
             <legend>Giá cho dự toán tự động</legend>
             <p>
               Chọn một mức tham khảo áp dụng chung cho nhóm khách. Giá trẻ em,
-              combo hoặc ưu đãi có điều kiện riêng không tự suy ra ở bước này.
+              ưu đãi có điều kiện riêng không tự suy ra. Thiếu giá hoặc điều
+              kiện thì chỉ lưu bản nháp.
             </p>
             <label className="admin-checkbox">
               <input
@@ -677,6 +680,20 @@ export function AdminCatalog({
                   </label>
                 </div>
                 <label>
+                  Áp dụng cho nhóm tối thiểu (người)
+                  <input
+                    required
+                    type="number"
+                    min={1}
+                    max={1000}
+                    step={1}
+                    value={form.referencePrice.minTravelers ?? 1}
+                    onChange={(e) =>
+                      updatePrice({ minTravelers: Number(e.target.value) })
+                    }
+                  />
+                </label>
+                <label>
                   Áp dụng cho nhóm tối đa (người)
                   <input
                     required
@@ -713,6 +730,119 @@ export function AdminCatalog({
                     onChange={(e) => updatePrice({ sourceUrl: e.target.value })}
                   />
                 </label>
+                <label>
+                  Bao gồm trong giá
+                  <input
+                    required
+                    maxLength={500}
+                    value={form.referencePrice.inclusions ?? ''}
+                    onChange={(e) =>
+                      updatePrice({ inclusions: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Không bao gồm trong giá
+                  <input
+                    required
+                    maxLength={500}
+                    placeholder="Ghi Không có nếu đã xác minh không có khoản loại trừ"
+                    value={form.referencePrice.exclusions ?? ''}
+                    onChange={(e) =>
+                      updatePrice({ exclusions: e.target.value })
+                    }
+                  />
+                </label>
+                {form.category !== 'food' && (
+                  <>
+                    <label className="admin-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={!!form.referencePrice.bundle}
+                        onChange={(e) => {
+                          const { bundle: _old, ...price } =
+                            form.referencePrice!;
+                          void _old;
+                          update({
+                            referencePrice: e.target.checked
+                              ? {
+                                  ...price,
+                                  bundle: {
+                                    code: '',
+                                    validDays: 1,
+                                    maxEntries: 1,
+                                  },
+                                }
+                              : price,
+                          });
+                        }}
+                      />
+                      Dùng chung vé gói với các điểm khác
+                    </label>
+                    {form.referencePrice.bundle && (
+                      <>
+                        <p>
+                          Chỉ gán cùng mã cho các điểm thực sự được vé bao gồm,
+                          cùng giá và điều kiện. Số lượt tính mỗi lần vào cửa;
+                          không dùng cho gói có hạn mức riêng từng nhóm di tích
+                          hoặc thời hạn theo giờ chưa được hỗ trợ.
+                        </p>
+                        <label>
+                          Mã vé gói
+                          <input
+                            required
+                            pattern="[a-z0-9-]{3,80}"
+                            value={form.referencePrice.bundle.code}
+                            onChange={(e) =>
+                              updatePrice({
+                                bundle: {
+                                  ...form.referencePrice!.bundle!,
+                                  code: e.target.value,
+                                },
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Hiệu lực (ngày, tính cả ngày đầu)
+                          <input
+                            required
+                            type="number"
+                            min={1}
+                            max={31}
+                            value={form.referencePrice.bundle.validDays}
+                            onChange={(e) =>
+                              updatePrice({
+                                bundle: {
+                                  ...form.referencePrice!.bundle!,
+                                  validDays: Number(e.target.value),
+                                },
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Số lượt vào cửa trong một gói
+                          <input
+                            required
+                            type="number"
+                            min={1}
+                            max={300}
+                            value={form.referencePrice.bundle.maxEntries}
+                            onChange={(e) =>
+                              updatePrice({
+                                bundle: {
+                                  ...form.referencePrice!.bundle!,
+                                  maxEntries: Number(e.target.value),
+                                },
+                              })
+                            }
+                          />
+                        </label>
+                      </>
+                    )}
+                  </>
+                )}
                 <div className="admin-two">
                   <label>
                     Ngày đối chiếu giá
@@ -721,6 +851,9 @@ export function AdminCatalog({
                       type="date"
                       max={catalogToday()}
                       value={form.referencePrice.checkedAt}
+                      onInput={(e) =>
+                        updatePrice({ checkedAt: e.currentTarget.value })
+                      }
                       onChange={(e) =>
                         updatePrice({ checkedAt: e.target.value })
                       }
@@ -733,6 +866,9 @@ export function AdminCatalog({
                       type="date"
                       min={form.referencePrice.checkedAt}
                       value={form.referencePrice.reviewAfter}
+                      onInput={(e) =>
+                        updatePrice({ reviewAfter: e.currentTarget.value })
+                      }
                       onChange={(e) =>
                         updatePrice({ reviewAfter: e.target.value })
                       }
@@ -741,7 +877,10 @@ export function AdminCatalog({
                 </div>
               </>
             ) : (
-              <p>Khách sẽ thấy chưa có giá. App không tự coi là miễn phí.</p>
+              <p>
+                Chỉ lưu bản nháp. Cần giá và điều kiện đầy đủ trước khi xuất
+                bản.
+              </p>
             )}
           </fieldset>
           {preview && (

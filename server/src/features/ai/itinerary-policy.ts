@@ -1,9 +1,15 @@
+import { HttpError } from '../../http-error.js';
 import {
   catalogCost,
+  priceReady,
   type PlaceDto,
   type PlannerRequest,
 } from '@goease/contracts';
-import { generatedPlanSchema, type GeneratedPlan } from './gemini.js';
+import {
+  generatedPlanSchema,
+  rankedPlacesSchema,
+  type GeneratedPlan,
+} from './gemini.js';
 
 const toClock = (minutes: number) =>
   `${Math.floor(minutes / 60)}`.padStart(2, '0') +
@@ -17,7 +23,19 @@ export function arrangeCompleteDays(
   input: PlannerRequest,
   places: PlaceDto[],
 ): GeneratedPlan {
-  const plan = generatedPlanSchema.parse(raw);
+  const ranking = rankedPlacesSchema.safeParse(raw);
+  const plan = ranking.success
+    ? {
+        days: input.trip.days.map((d) => ({
+          date: d.date,
+          stops: ranking.data.placeIds.map((placeId) => ({
+            placeId,
+            start: '00:00',
+            end: '00:00',
+          })),
+        })),
+      }
+    : generatedPlanSchema.parse(raw);
   if (
     JSON.stringify(plan.days.map((d) => d.date)) !==
       JSON.stringify(input.trip.days.map((d) => d.date)) ||
@@ -25,7 +43,11 @@ export function arrangeCompleteDays(
       d.stops.some((s) => !places.some((p) => p.id === s.placeId)),
     )
   )
-    throw new Error('Invalid provider selection');
+    throw new HttpError(
+      502,
+      'AI_UNKNOWN_SELECTION',
+      'Goe chọn nhầm mã địa điểm ngoài danh mục. Lịch cũ vẫn được giữ.',
+    );
   const visits = places.filter((p) => p.category !== 'food');
   const meals = places.filter(
     (p) =>
@@ -33,7 +55,12 @@ export function arrangeCompleteDays(
       p.venueType === 'restaurant' &&
       /nhà hàng|restaurant|món chay|foods/i.test(`${p.name} ${p.description}`),
   );
-  if (visits.length < 4 || meals.length < 2) return plan;
+  if (visits.length < input.trip.days.length * 2 || meals.length < 2)
+    throw new HttpError(
+      409,
+      'AI_CATALOG_COVERAGE',
+      'Danh mục chưa đủ điểm tham quan và quán ăn để xếp lịch.',
+    );
   const used = new Set<string>();
   const max = itineraryPolicy(input).maxStops;
   return {
@@ -88,7 +115,11 @@ export function arrangeCompleteDays(
         !take(meals, 720, 840, 900, false) ||
         !take(visits, 840, 990, 1080, true)
       )
-        throw new Error('Insufficient available catalog for full day');
+        throw new HttpError(
+          409,
+          'AI_DAY_COVERAGE',
+          'Goe chưa ghép được điểm tham quan và bữa trưa theo giờ hoạt động.',
+        );
       // Keep at least two unused visits for each remaining day before adding extras.
       const remainingDays = plan.days.length - plan.days.indexOf(day) - 1;
       while (
@@ -107,7 +138,11 @@ export function arrangeCompleteDays(
           break;
       }
       if (!take(meals, 1080, 1200, 1320, false))
-        throw new Error('No available dinner');
+        throw new HttpError(
+          409,
+          'AI_DINNER_UNAVAILABLE',
+          'Goe chưa tìm được bữa tối phù hợp giờ hoạt động.',
+        );
       return { date: day.date, stops };
     }),
   };
@@ -129,9 +164,17 @@ export function itineraryPolicy(input: PlannerRequest, adjustment = false) {
   };
 }
 
-export function eligibleForPlanner(place: PlaceDto) {
+export function eligibleForPlanner(place: PlaceDto, travelers = 1) {
   return (
     Boolean(place.planning) &&
+    priceReady(place.referencePrice, travelers) &&
+    !!place.planning?.locationQuery.trim() &&
+    !/chưa xác minh|chưa thống nhất|chưa rõ/i.test(
+      place.openingHoursNote ?? '',
+    ) &&
+    /(?:[01]\d|2[0-3]):[0-5]\d\s*[–-]\s*(?:[01]\d|2[0-3]):[0-5]\d/.test(
+      place.openingHoursNote ?? '',
+    ) &&
     place.venueType !== 'food_idea' &&
     !/^\s*\[(?:TEST|KIỂM THỬ)\]/i.test(place.name) &&
     !/tạm đóng cửa/i.test(place.openingHoursNote ?? '')
@@ -194,13 +237,18 @@ export function plannerCatalog(places: PlaceDto[]) {
     name: p.name,
     category: p.category,
     venueType: p.venueType,
-    description: p.description,
+    mealSuitable:
+      p.venueType === 'restaurant' &&
+      /nhà hàng|restaurant|món chay|foods/i.test(`${p.name} ${p.description}`),
     durationMinutes: p.planning!.durationMinutes,
     location: p.planning!.locationQuery,
     coordinates: p.mapLocation
       ? { latitude: p.mapLocation.latitude, longitude: p.mapLocation.longitude }
       : null,
     openingHoursNote: p.openingHoursNote ?? '',
-    referenceCost: catalogCost(p),
+    referenceCost: {
+      amountMinor: catalogCost(p).amountMinor,
+      basis: catalogCost(p).basis,
+    },
   }));
 }

@@ -1,5 +1,6 @@
 import {
   catalogCost,
+  priceFitsGroup,
   shiftTripDays,
   tripInputSchema,
   type TripInput,
@@ -23,7 +24,9 @@ export function rescheduleDates(
   const trip = structuredClone(
     shiftTripDays(input, startDate, endDate, randomUUID),
   );
-  const places = catalog.filter(eligibleForPlanner);
+  const places = catalog.filter((p) =>
+    eligibleForPlanner(p, trip.travelers.totalCount),
+  );
   const occupied = new Set(
     trip.days.flatMap((d) =>
       d.activities.filter((a) => a.kind !== 'meal').map((a) => a.placeId),
@@ -46,7 +49,11 @@ export function rescheduleDates(
       const original = places.find((p) => p.id === activity.placeId);
       const sameKind = (p: PlaceDto) =>
         activity.kind === 'meal'
-          ? p.category === 'food' && p.venueType === 'restaurant'
+          ? p.category === 'food' &&
+            p.venueType === 'restaurant' &&
+            /nhà hàng|restaurant|món chay|foods/i.test(
+              `${p.name} ${p.description}`,
+            )
           : p.category !== 'food';
       const alternatives = places.filter(
         (p) =>
@@ -62,7 +69,9 @@ export function rescheduleDates(
           Number(a.category === original?.category),
       );
       const candidates = [
-        ...(original && !used.has(original.id) ? [original] : []),
+        ...(original && sameKind(original) && !used.has(original.id)
+          ? [original]
+          : []),
         ...alternatives,
       ];
       const preferred = activity.startLocalTime
@@ -107,6 +116,19 @@ export function rescheduleDates(
           )
             continue;
           const replacement = place.id !== activity.placeId;
+          if (
+            !replacement &&
+            (activity.estimatedCost.amountMinor === null ||
+              !priceFitsGroup(
+                activity.estimatedCost,
+                trip.travelers.totalCount,
+              ))
+          ) {
+            activity.estimatedCost = catalogCost(place);
+            changes.push(
+              `${day.date}: cập nhật giá đủ điều kiện cho ${place.name}`,
+            );
+          }
           if (replacement) {
             changes.push(`${day.date}: ${activity.title} → ${place.name}`);
             activity.placeId = place.id;

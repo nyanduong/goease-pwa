@@ -33,6 +33,7 @@ test(
       CLIENT_ORIGIN: 'http://localhost:5180',
       MONGODB_URI: `mongodb://127.0.0.1:27021/${harness.connection.name}?replicaSet=${harness.setName}`,
       AUTH_MAX_ATTEMPTS: '100',
+      GEMINI_API_KEY: 'fixture-never-called',
     });
     const product = createProduct(harness.connection, config);
     await product.initialize();
@@ -151,6 +152,52 @@ test(
             openingHoursNote: '07:30–21:30; đóng cửa ngày 03 và 16 hằng tháng',
           },
         },
+      );
+      const generation = await call(
+        '/trips/ai-proposal',
+        'POST',
+        {
+          consent: true,
+          trip: {
+            ...input,
+            generationMode: 'manual',
+            aiRunId: undefined,
+            days: input.days.map((d) => ({ ...d, activities: [] })),
+          },
+        },
+        a,
+      );
+      assert.equal(generation.status, 503);
+      const generationError = (await generation.json()) as {
+        error: { code: string };
+      };
+      assert.equal(generationError.error.code, 'AI_CATALOG_EMPTY');
+      assert.equal(
+        await harness.connection.collection('usage_buckets').countDocuments(),
+        0,
+      );
+      await product.explore.models.Place.updateMany(
+        {},
+        {
+          $set: {
+            referencePrice: {
+              label: 'Vé kiểm thử',
+              amountMinor: 20000,
+              basis: 'per_person',
+              maxTravelers: 10,
+              conditions: 'Dữ liệu fixture',
+              inclusions: 'Vào cửa',
+              exclusions: 'Dịch vụ khác',
+              sourceUrl: 'https://example.invalid/price',
+              checkedAt: '2020-01-01',
+              reviewAfter: '2099-12-31',
+            },
+          },
+        },
+      );
+      await product.explore.models.Place.updateMany(
+        { _id: { $ne: placeId } },
+        { $set: { openingHoursNote: '07:00–22:00' } },
       );
       const request = {
         trip: input,

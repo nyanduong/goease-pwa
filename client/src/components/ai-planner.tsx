@@ -1,7 +1,8 @@
+import { plannerTiming } from '@goease/contracts';
 import { useEffect, useRef, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import type { PlannerProposal, TripInput } from '@goease/contracts';
-import { api } from '../api';
+import { api, ApiFailure } from '../api';
 import { canRecoverAi } from '../ai-errors';
 
 export function AiPlanner({
@@ -23,6 +24,7 @@ export function AiPlanner({
     [error, setError] = useState('');
   const [proposal, setProposal] = useState<PlannerProposal | null>(null);
   const [recoverable, setRecoverable] = useState(false);
+  const [quotaReached, setQuotaReached] = useState(false);
   const supported =
     draft.destinations[0]?.destinationId === '000000000000000000000004' &&
     draft.days.length > 0 &&
@@ -49,6 +51,7 @@ export function AiPlanner({
     setBusy(true);
     onBusyChange?.(true);
     setError('');
+    setQuotaReached(false);
     setProposal(null);
     const base = JSON.stringify(draft);
     const payload = currentPayload;
@@ -59,7 +62,7 @@ export function AiPlanner({
         method: 'POST',
         headers: { 'Idempotency-Key': request.current!.key },
         body: payload,
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(plannerTiming.clientTimeoutMs),
       });
       if (!active.current) return;
       if (JSON.stringify(latest.current) !== base)
@@ -70,6 +73,7 @@ export function AiPlanner({
       if (immediatePreview) onApply(result.trip);
       else setProposal(result);
     } catch (e) {
+      setQuotaReached(e instanceof ApiFailure && e.code === 'AI_QUOTA');
       setRecoverable(canRecoverAi(e));
       setError(e instanceof Error ? e.message : 'Chưa tạo được đề xuất.');
     } finally {
@@ -90,7 +94,8 @@ export function AiPlanner({
           <p>
             Goe chọn điểm dừng và gợi ý giờ đi. Hiện hỗ trợ Hội An từ 1–7 ngày.
             Khi bấm tạo, ngày đi, số người, ngân sách và sở thích được gửi tới
-            Google Gemini. Tên, email và ghi chú riêng không được gửi.
+            dịch vụ AI được cấu hình cho Goe. Tên, email và ghi chú riêng không
+            được gửi.
           </p>
         </>
       )}
@@ -130,9 +135,11 @@ export function AiPlanner({
             </button>
           )}
           <p>
-            {immediatePreview
-              ? 'Thử lại bằng nút tạo lịch, hoặc chọn “Tự chọn điểm dừng” bên dưới.'
-              : 'Bạn có thể tạo lại, hoặc quay về lịch trình để tự chỉnh.'}{' '}
+            {quotaReached
+              ? 'Hôm nay đã hết lượt tạo lịch. Bạn có thể tự chọn điểm dừng hoặc quay lại vào ngày mai.'
+              : immediatePreview
+                ? 'Thử lại bằng nút tạo lịch, hoặc chọn “Tự chọn điểm dừng” bên dưới.'
+                : 'Bạn có thể tạo lại, hoặc quay về lịch trình để tự chỉnh.'}{' '}
             Thông tin bạn chọn vẫn được giữ.
           </p>
         </div>
