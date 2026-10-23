@@ -316,7 +316,7 @@ test('real browser account, manual trip, failed save preservation, reload and re
     .getByRole('button', { name: 'Tạo chuyến đi', exact: true })
     .click();
   await page
-    .getByRole('button', { name: 'Gợi ý lịch trình', exact: true })
+    .getByRole('button', { name: 'Tự chọn điểm dừng', exact: true })
     .click();
   await expect(page.getByRole('alert')).toContainText('Chọn điểm đến');
   await page.getByRole('button', { name: /^Điểm đến/ }).click();
@@ -354,7 +354,7 @@ test('real browser account, manual trip, failed save preservation, reload and re
     fullPage: false,
   });
   await page
-    .getByRole('button', { name: 'Gợi ý lịch trình', exact: true })
+    .getByRole('button', { name: 'Tự chọn điểm dừng', exact: true })
     .click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('button', { name: 'Đóng', exact: true }).click();
@@ -366,6 +366,9 @@ test('real browser account, manual trip, failed save preservation, reload and re
   ) {
     await page
       .getByRole('button', { name: 'Thêm điểm dừng', exact: true })
+      .click();
+    await page
+      .getByRole('button', { name: 'Tự thêm điểm dừng', exact: false })
       .click();
     await page.getByLabel('Tên hoạt động', { exact: true }).fill(title);
     await page.getByLabel('Bắt đầu', { exact: true }).fill(start);
@@ -461,7 +464,10 @@ test('real browser account, manual trip, failed save preservation, reload and re
   expect(stored.data.trip.budget.amountMinor).toBe(10000000);
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
   await expect(page.locator('.budget-total')).toContainText('200.000');
-  await expect(page.getByRole('meter')).toHaveAttribute('aria-valuenow', '2');
+  await expect(page.getByRole('meter')).toHaveCount(0);
+  await expect(page.locator('.budget-incomplete')).toContainText(
+    'Chưa đủ dữ liệu',
+  );
   await expect(page.locator('.budget-disclaimer')).toContainText(
     '4 điểm dừng chưa rõ chi phí',
   );
@@ -605,7 +611,7 @@ test('Hoi An catalog journey and server budget stay connected across save and re
     .fill('1000000');
   await page.getByRole('button', { name: 'Xong', exact: true }).click();
   await page
-    .getByRole('button', { name: 'Gợi ý lịch trình', exact: true })
+    .getByRole('button', { name: 'Tự chọn điểm dừng', exact: true })
     .click();
   await page
     .getByRole('button', { name: 'Thêm Phố cổ Hội An', exact: true })
@@ -1618,7 +1624,7 @@ test('live Gemini proposal applies saves reloads and preserves AI provenance', a
     timeout: 65000,
   });
   await page
-    .getByRole('button', { name: 'Tạo đề xuất bằng Gemini', exact: true })
+    .getByRole('button', { name: 'Để Goe xếp lịch', exact: true })
     .click();
   const response = await generated;
   const result = await response.json();
@@ -1638,7 +1644,7 @@ test('live Gemini proposal applies saves reloads and preserves AI provenance', a
   });
   await page
     .getByRole('button', {
-      name: 'Dùng đề xuất này trong bản nháp',
+      name: 'Dùng lịch này',
       exact: true,
     })
     .click();
@@ -1771,7 +1777,7 @@ test('live Gemini proposal applies saves reloads and preserves AI provenance', a
     }),
   );
   await page
-    .getByRole('button', { name: 'Tạo đề xuất bằng Gemini', exact: true })
+    .getByRole('button', { name: 'Để Goe xếp lịch', exact: true })
     .click();
   await expect(page.locator('.ai-planner').getByRole('alert')).toContainText(
     'Đã hết lượt',
@@ -2471,4 +2477,150 @@ test('offline itinerary survives network loss reload and clears across tabs on l
   await expect(
     page.getByRole('heading', { name: 'Chưa có lịch trình tải xuống' }),
   ).toBeVisible();
+});
+
+test('mobile newcomer resumes setup, sees unknown costs and recovers from failed Goe without losing the trip', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Bắt đầu hành trình' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Sa Pa · Chưa hỗ trợ lập lịch' }),
+  ).toBeDisabled();
+  await page
+    .getByRole('button', { name: 'Lên kế hoạch đến Hội An', exact: true })
+    .click();
+  await expect(page).toHaveURL(/login\?next=\/trips\/new&destination=/);
+  await expect(page.locator('.auth-card-sub')).toContainText(
+    'tiếp tục tạo chuyến ngay',
+  );
+  await page.getByRole('link', { name: 'Tạo tài khoản', exact: true }).click();
+  await page
+    .getByLabel('Tên của bạn', { exact: true })
+    .fill('Mobile newcomer fixture');
+  await page
+    .getByLabel('Email', { exact: true })
+    .fill(`mobile-ux-${Date.now()}@example.invalid`);
+  await page
+    .getByLabel('Mật khẩu', { exact: true })
+    .fill('Mobile-UX-fixture-2026');
+  await page
+    .getByRole('button', { name: 'Tạo tài khoản', exact: false })
+    .click();
+  await expect(page).toHaveURL(/\/trips\/new$/);
+  await expect(
+    page.getByRole('button', { name: 'Điểm đến Hội An', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: /^Ngân sách cả nhóm/ }).click();
+  await page
+    .getByLabel('Ngân sách tổng nhóm (VND)', { exact: true })
+    .fill('6000000');
+  await page.getByRole('button', { name: 'Xong', exact: true }).click();
+  // Explicit fault injection: failed output must not offer same-run recovery or mutate the draft.
+  await page.route('**/api/v1/trips/ai-proposal', (r) =>
+    r.fulfill({
+      status: 502,
+      json: {
+        ok: false,
+        error: {
+          code: 'AI_PACE_LIMIT',
+          message: 'Goe chưa xếp được trong nhịp độ đã chọn. Thử đổi một điểm.',
+        },
+      },
+    }),
+  );
+  await page
+    .getByRole('button', { name: 'Để Goe xếp lịch', exact: true })
+    .click();
+  await expect(page.getByRole('alert')).toContainText('Thử đổi một điểm');
+  await expect(
+    page.getByRole('button', { name: 'Kiểm tra kết quả đang chờ' }),
+  ).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Tự chọn điểm dừng', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Thêm Cơm gà Hội An', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.locator('.budget-incomplete')).toContainText(
+    'Chưa đủ dữ liệu',
+  );
+  await expect(page.locator('.budget-total')).toHaveText('Chưa có dự toán');
+  await expect(page.locator('.budget-reserve')).not.toContainText('Còn');
+  await expect(page.locator('.budget-breakdown')).toContainText('Chưa thêm');
+  await expect(page.getByRole('meter')).toHaveCount(0);
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page
+    .getByRole('button', { name: 'Bổ sung chi phí trong lịch', exact: true })
+    .click();
+  await expect(page.getByRole('dialog')).toContainText(
+    'Gợi ý món ăn, chưa chọn quán',
+  );
+  await page.getByLabel('Chi phí nhóm (VND)', { exact: true }).fill('120000');
+  await page
+    .getByRole('button', { name: 'Áp dụng thay đổi', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Xem lại chuyến đi', exact: true })
+    .click();
+  await page
+    .getByLabel('Tên chuyến đi', { exact: true })
+    .fill('Mobile UX regression');
+  await page
+    .getByRole('button', { name: 'Lưu chuyến đi', exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/trips\/[a-f0-9]{24}$/);
+  const tripUrl = page.url();
+  await page.reload();
+  await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
+    'Đã lưu',
+  );
+  await page.getByText('Chuẩn bị trước khi đi', { exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Bổ sung chỗ ở vào ngày 1' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Lưu để xem offline', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: /Muốn đổi nhịp/ }).click();
+  await page.route('**/goe-proposal', (r) =>
+    r.fulfill({
+      status: 502,
+      json: {
+        ok: false,
+        error: {
+          code: 'AI_SCHEDULE_CONFLICT',
+          message: 'Goe cần đủ thời gian tham quan. Thử bớt hoặc đổi một điểm.',
+        },
+      },
+    }),
+  );
+  await page
+    .getByLabel('Hỏi Goe về chuyến đi')
+    .fill('Giữ bữa ăn và thêm chỗ đi buổi tối');
+  await page.getByRole('button', { name: 'Gửi tin nhắn' }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'Thử bớt hoặc đổi một điểm',
+  );
+  await expect(
+    page.getByRole('button', { name: 'Kiểm tra kết quả đang chờ' }),
+  ).toHaveCount(0);
+  await expect(page.getByLabel('Hỏi Goe về chuyến đi')).toHaveValue(
+    'Giữ bữa ăn và thêm chỗ đi buổi tối',
+  );
+  await page.getByRole('button', { name: 'Về lịch để tự chỉnh' }).click();
+  await expect(page).toHaveURL(tripUrl + '?day=0');
+  await expect(page.locator('.journey-stop-open')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
+  await expect(page.locator('.budget-total')).toContainText('120.000');
 });

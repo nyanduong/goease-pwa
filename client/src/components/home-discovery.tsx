@@ -145,7 +145,11 @@ export function HomeDiscovery({
               Cả một hành trình.
             </h2>
             <p>Theo sở thích & ngân sách của bạn</p>
-            <button className="button button-primary" onClick={() => onStart()}>
+            <button
+              data-start-trip
+              className="button button-primary"
+              onClick={() => onStart()}
+            >
               Tạo chuyến đi <ArrowRight size={15} />
             </button>
           </div>
@@ -199,40 +203,50 @@ export function HomeDiscovery({
         )}
         {visible.length ? (
           <div className="discovery-cards">
-            {visible.map((d) => (
-              <article className="discovery-card" key={d.slug}>
-                <button
-                  className="discovery-card-open"
-                  onClick={() =>
-                    onStart(
-                      destinations.find((v) => fold(v.name) === fold(d.name))
-                        ?.id,
-                    )
-                  }
-                  aria-label={`Lên kế hoạch đến ${d.name}`}
-                >
-                  <img
-                    src={d.image}
-                    alt={`${d.name} — ảnh minh họa tạo bằng AI`}
-                  />
-                  <span className="discovery-card-caption">
-                    <strong>{d.name}</strong>
-                    <span>{d.subtitle}</span>
-                  </span>
-                </button>
-                <button
-                  className="discovery-bookmark"
-                  aria-label={`${saved.includes(d.slug) ? 'Bỏ lưu' : 'Lưu'} ${d.name}`}
-                  aria-pressed={saved.includes(d.slug)}
-                  onClick={() => toggleSaved(d.slug)}
-                >
-                  <Bookmark
-                    size={18}
-                    fill={saved.includes(d.slug) ? 'currentColor' : 'none'}
-                  />
-                </button>
-              </article>
-            ))}
+            {visible.map((d) => {
+              const destination = destinations.find(
+                (v) => fold(v.name) === fold(d.name),
+              );
+              return (
+                <article className="discovery-card" key={d.slug}>
+                  <button
+                    className="discovery-card-open"
+                    data-start-trip
+                    disabled={!destination}
+                    onClick={() => destination && onStart(destination.id)}
+                    aria-label={
+                      destination
+                        ? `Lên kế hoạch đến ${d.name}`
+                        : `${d.name} · Chưa hỗ trợ lập lịch`
+                    }
+                  >
+                    <img
+                      src={d.image}
+                      alt={`${d.name} — ảnh minh họa tạo bằng AI`}
+                    />
+                    <span className="discovery-card-caption">
+                      <strong>{d.name}</strong>
+                      <span>
+                        {destination
+                          ? d.subtitle
+                          : 'Sắp có · Chưa hỗ trợ lập lịch'}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    className="discovery-bookmark"
+                    aria-label={`${saved.includes(d.slug) ? 'Bỏ lưu' : 'Lưu'} ${d.name}`}
+                    aria-pressed={saved.includes(d.slug)}
+                    onClick={() => toggleSaved(d.slug)}
+                  >
+                    <Bookmark
+                      size={18}
+                      fill={saved.includes(d.slug) ? 'currentColor' : 'none'}
+                    />
+                  </button>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <p className="discovery-empty">

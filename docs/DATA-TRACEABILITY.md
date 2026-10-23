@@ -260,3 +260,7 @@ TRIP-09/10/12/13 → owned tombstone → tripManagement restore → same trip + 
 ## Offline itinerary — 2026-10-23
 
 DATA-10/TRIP-01/09/12: authenticated GET trip → parsed saved snapshot → owner-scoped browser localStorage → read-only text renderer. Bản lưu gồm ghi chú riêng nên không dùng chung máy mà chưa logout. Không expense/token/profile/provider response. Download rechecks owner epoch; logout clears content and invalidates pending writes. No server write/audit on download (GET read), offline logout uses existing auth/logout when online. Service worker CacheStorage chỉ3static files, không private data. Retention là customer remove/logout/account switch hoặc browser eviction; không tự đặt server retention mới. Xem OFFLINE-ITINERARY.md.
+
+## Mobile follow-through — 2026-10-23
+
+AUTH-09 resumes an explicit create intent after password auth using an allowlisted URL and catalog ID only; no cross-account draft import. TRIP-08 incomplete-estimate display derives from existing prices/BudgetSummary without changing persisted totals. AI-01/02 error reasons remain sanitized codes/messages; hoian-v2/goe-v2 prompts enforce existing caps with substitution guidance, and pending/uncertain recovery stays distinct from terminal failures. No raw provider text or user messages are added to logs/storage. See AI-PLANNER.md and PRODUCT-VERIFICATION.md for test evidence.

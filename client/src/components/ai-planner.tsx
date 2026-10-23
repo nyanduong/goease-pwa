@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import type { PlannerProposal, TripInput } from '@goease/contracts';
 import { api } from '../api';
+import { canRecoverAi } from '../ai-errors';
 
 export function AiPlanner({
   draft,
@@ -17,12 +18,16 @@ export function AiPlanner({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   const [proposal, setProposal] = useState<PlannerProposal | null>(null);
+  const [recoverable, setRecoverable] = useState(false);
+  const supported =
+    draft.destinations[0]?.destinationId === '000000000000000000000004' &&
+    draft.days.length <= 7;
   const request = useRef<{ payload: string; key: string } | null>(null);
   const snapshot = useRef('');
   const latest = useRef(draft);
   latest.current = draft;
   async function generate(fresh = false) {
-    if (busy) return;
+    if (busy || !supported) return;
     setBusy(true);
     setError('');
     setProposal(null);
@@ -49,6 +54,7 @@ export function AiPlanner({
       snapshot.current = base;
       setProposal(result);
     } catch (e) {
+      setRecoverable(canRecoverAi(e));
       setError(e instanceof Error ? e.message : 'Chưa tạo được đề xuất.');
     } finally {
       setBusy(false);
@@ -57,20 +63,28 @@ export function AiPlanner({
   return (
     <section className="ai-planner" aria-label="Goe AI lập lịch">
       <h2>
-        <Sparkles size={19} /> Nhờ Goe xếp lịch
+        <Sparkles size={19} /> Để Goe xếp lịch giúp bạn
       </h2>
       <p>
-        Hội An · 1–7 ngày. Khi bấm tạo, ngày đi, số người, ngân sách và sở thích
-        được gửi tới Google Gemini. Tên, email và ghi chú riêng không được gửi.
+        Goe chọn điểm dừng và gợi ý giờ đi. Hiện hỗ trợ Hội An từ 1–7 ngày. Khi
+        bấm tạo, ngày đi, số người, ngân sách và sở thích được gửi tới Google
+        Gemini. Tên, email và ghi chú riêng không được gửi.
       </p>
       <button
         type="button"
         className="journey-primary"
-        disabled={busy}
+        disabled={busy || !supported}
         onClick={() => void generate(true)}
       >
-        {busy ? 'Goe đang lên lịch…' : 'Tạo đề xuất bằng Gemini'}
+        {busy ? 'Goe đang lên lịch…' : 'Để Goe xếp lịch'}
       </button>
+      {!supported && (
+        <p role="status">
+          {draft.destinations.length
+            ? 'Chuyến này chưa được hỗ trợ tự động. Bạn có thể tự chọn điểm dừng bên dưới.'
+            : 'Chọn điểm đến ở trên để bắt đầu.'}
+        </p>
+      )}
       {busy && (
         <p role="status">
           Thường mất vài chục giây. Lịch trình hiện tại vẫn được giữ.
@@ -79,9 +93,19 @@ export function AiPlanner({
       {error && (
         <div role="alert">
           <p>{error}</p>
-          <button type="button" disabled={busy} onClick={() => void generate()}>
-            Lấy lại kết quả lượt vừa gửi
-          </button>
+          {recoverable && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void generate()}
+            >
+              Kiểm tra kết quả đang chờ
+            </button>
+          )}
+          <p>
+            Bạn có thể bấm “Để Goe xếp lịch” để thử lượt mới, hoặc chọn “Tự chọn
+            điểm dừng”.
+          </p>
         </div>
       )}
       {proposal && (
@@ -117,7 +141,7 @@ export function AiPlanner({
               setProposal(null);
             }}
           >
-            Dùng đề xuất này trong bản nháp
+            Dùng lịch này
           </button>
           <button type="button" onClick={() => setProposal(null)}>
             Giữ lịch hiện tại

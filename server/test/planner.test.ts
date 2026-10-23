@@ -167,3 +167,39 @@ test('Gemini failures remain sanitized; malformed/blocked output never becomes s
     }
   }
 });
+
+test('planner explains pace and timing constraints without accepting invalid proposals', () => {
+  const relaxed = structuredClone(input);
+  relaxed.trip.preferences.pace = 'relaxed';
+  const places = [
+    place,
+    { ...place, id: '100000000000000000000002' },
+    { ...place, id: '100000000000000000000003' },
+  ];
+  const crowded = {
+    days: [
+      {
+        date: relaxed.trip.startDate,
+        stops: places.map((p, i) => ({
+          placeId: p.id,
+          start: `${9 + i * 3}`.padStart(2, '0') + ':00',
+          end: `${11 + i * 3}:00`,
+        })),
+      },
+    ],
+  };
+  assert.throws(
+    () => validatePlan(crowded, relaxed, places, randomUUID()),
+    (e) =>
+      e instanceof HttpError &&
+      e.code === 'AI_PACE_LIMIT' &&
+      e.message.includes('2 điểm'),
+  );
+  const tooShort = valid();
+  tooShort.days[0]!.stops[0]!.end = '10:00';
+  assert.throws(
+    () => validatePlan(tooShort, input, [place], randomUUID()),
+    (e) => e instanceof HttpError && e.code === 'AI_SCHEDULE_CONFLICT',
+  );
+  assert.equal(input.trip.days[0]!.activities.length, 0);
+});

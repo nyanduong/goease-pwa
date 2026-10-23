@@ -2386,6 +2386,23 @@
   "executable": false,
   "reviewHead": "fddcf6643f67356dde151d432338fc4b7cb616f8",
   "implementationEvidence": "PRODUCT-VERIFICATION.md",
+  "mobileUsability": {
+    "date": "2026-10-23",
+    "brRefs": [
+      "AUTH-09",
+      "CAT-03",
+      "CAT-05",
+      "TRIP-08",
+      "AI-01",
+      "AI-02",
+      "AI-03"
+    ],
+    "storageChanged": false,
+    "contract": "DB-BASELINE.md#mobile-usability-storagecontract-impact--2026-10-23",
+    "aiPromptVersions": ["hoian-v2", "goe-v2"],
+    "legacyGoeApplyAccepted": "goe-v1",
+    "note": "Derived budget completeness and preparation UI; allowlisted auth continuation carries no draft. Same error envelope, actionable pace/timing errors and distinct pending/failed runs. No migration or new schema."
+  },
   "browserStorage": {
     "implementationStatus": "local read-only offline itinerary, 2026-10-23",
     "contract": "OFFLINE-ITINERARY.md",

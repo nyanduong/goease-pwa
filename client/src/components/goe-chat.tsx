@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { TripDto, GoeProposal, GoeRequest } from '@goease/contracts';
 import { api } from '../api';
+import { canRecoverAi } from '../ai-errors';
 import { moneyText } from '../trip-draft';
 
 type Line = { id: number; role: 'user' | 'goe'; text: string };
@@ -35,6 +36,7 @@ export function GoeChat({
   const [lines, setLines] = useState<Line[]>([]),
     [proposal, setProposal] = useState<GoeProposal | null>(null);
   const [preview, setPreview] = useState(false);
+  const [recoverable, setRecoverable] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const sequence = useRef(0),
     generationKey = useRef<{
@@ -48,6 +50,7 @@ export function GoeChat({
     let active = true;
     setLoading(true);
     setError('');
+    setRecoverable(false);
     setProposal(null);
     setTrip(null);
     setLines([]);
@@ -130,6 +133,7 @@ export function GoeChat({
         'Mình đã chuẩn bị đề xuất cho ngày bạn chọn. Bạn xem lịch trước và sau rồi quyết định nhé.',
       );
     } catch (e) {
+      setRecoverable(canRecoverAi(e));
       setError(
         e instanceof Error
           ? e.message
@@ -261,6 +265,20 @@ export function GoeChat({
           >
             Chọn chuyến đi khác
           </button>
+          <p>
+            Nhịp{' '}
+            {
+              {
+                relaxed: 'Thư thả',
+                balanced: 'Vừa phải',
+                active: 'Khám phá nhiều',
+              }[trip.preferences.pace]
+            }
+            : Goe xếp tối đa{' '}
+            {{ relaxed: 2, balanced: 3, active: 6 }[trip.preferences.pace]}{' '}
+            điểm/ngày. Nếu đã đủ điểm, Goe có thể đề xuất thay một điểm để thêm
+            nơi mới. Bạn sẽ xem và xác nhận trước khi lưu.
+          </p>
         </div>
       )}
       <p className="goe-demo-note">
@@ -272,14 +290,28 @@ export function GoeChat({
       {error && !preview && (
         <div role="alert" className="goe-context-notice">
           <p>{error}</p>
-          {generationKey.current && (
+          {generationKey.current && recoverable && (
             <button
               disabled={busy}
               onClick={() =>
                 void send(generationKey.current!.body.message, true)
               }
             >
-              Lấy lại kết quả lượt vừa gửi
+              Kiểm tra kết quả đang chờ
+            </button>
+          )}
+          {generationKey.current && !recoverable && (
+            <p>
+              Thử yêu cầu cụ thể như “Đổi điểm tham quan sang dạo sông Hoài buổi
+              tối, giữ bữa ăn”. Hoặc tự chọn một điểm trong lịch.
+            </p>
+          )}
+          {trip && (
+            <button
+              disabled={busy}
+              onClick={() => onNavigate(`/trips/${trip.id}?day=${index}`)}
+            >
+              Về lịch để tự chỉnh
             </button>
           )}
           <button disabled={busy} onClick={() => setRetry((v) => v + 1)}>

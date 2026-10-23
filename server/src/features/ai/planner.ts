@@ -41,7 +41,12 @@ export function validatePlan(
   const days = plan.days.map((day, i) => {
     let end = 390;
     const seen = new Set<string>();
-    if (day.stops.length > maxStops) throw new Error('Pace');
+    if (day.stops.length > maxStops)
+      throw new HttpError(
+        502,
+        'AI_PACE_LIMIT',
+        `Goe chưa xếp được yêu cầu trong nhịp độ đã chọn (tối đa ${maxStops} điểm mỗi ngày). Hãy yêu cầu đổi một điểm thay vì thêm, hoặc đổi nhịp độ trong thông tin chuyến đi. Lịch cũ vẫn được giữ.`,
+      );
     return {
       ...input.trip.days[i]!,
       activities: day.stops.map((stop, order) => {
@@ -52,14 +57,22 @@ export function validatePlan(
         );
         const start = minutes(stop.start),
           finish = minutes(stop.end);
+        if (!place?.planning || seen.has(stop.placeId))
+          throw new HttpError(
+            502,
+            'AI_INVALID_OUTPUT',
+            'Goe chưa chọn được các địa điểm phù hợp. Hãy thử đổi một điểm trong ngày hoặc chọn từ gợi ý. Lịch cũ vẫn được giữ.',
+          );
         if (
-          !place?.planning ||
-          seen.has(stop.placeId) ||
           start < end + 30 ||
           finish > 1320 ||
           finish - start < place.planning.durationMinutes
         )
-          throw new Error('Invalid stop');
+          throw new HttpError(
+            502,
+            'AI_SCHEDULE_CONFLICT',
+            'Goe chưa xếp được giờ phù hợp: cần đủ thời gian tham quan và ít nhất 30 phút giữa các điểm. Thử bớt hoặc đổi một điểm; lịch cũ vẫn được giữ.',
+          );
         seen.add(stop.placeId);
         end = finish;
         return {
@@ -99,7 +112,7 @@ export function validatePlan(
       'Đây là đề xuất AI. Giờ đi và thời lượng cần kiểm tra lại; chưa xác minh giờ mở cửa, thời tiết hay thời gian di chuyển thực tế.',
       'Chi phí chưa được chọn. Mở từng điểm dừng để chọn giá tham khảo hoặc nhập giá; không xem tổng hiện tại là chi phí đầy đủ.',
       ...(days.length > 2
-        ? ['Catalog Hội An còn nhỏ; địa điểm có thể lặp giữa các ngày.']
+        ? ['Gợi ý ở Hội An còn ít; địa điểm có thể lặp giữa các ngày.']
         : []),
     ],
   };
@@ -190,7 +203,7 @@ export function plannerService(
     if (run.status === 'succeeded') return run.proposal as PlannerProposal;
     throw new HttpError(
       409,
-      'AI_RUN_UNAVAILABLE',
+      run.status === 'pending' ? 'AI_RUN_PENDING' : 'AI_RUN_FAILED',
       run.status === 'pending'
         ? 'Goe đang xử lý lượt này. Chờ một chút rồi thử lại để lấy kết quả.'
         : 'Lượt AI này không hoàn tất. Bạn có thể tạo lượt mới hoặc tự xếp lịch.',
@@ -244,7 +257,7 @@ export function plannerService(
         userId: owner,
         tripId,
         status: 'succeeded',
-        promptVersion: 'goe-v1',
+        promptVersion: { $in: ['goe-v1', 'goe-v2'] },
       });
       if (!run || run.expectedRevision !== expectedRevision)
         throw new HttpError(
@@ -369,7 +382,7 @@ export function plannerService(
             tripId: input.tripId,
             expectedRevision: input.expectedRevision,
             model: config.GEMINI_MODEL,
-            promptVersion: input.adjustment ? 'goe-v1' : 'hoian-v1',
+            promptVersion: input.adjustment ? 'goe-v2' : 'hoian-v2',
             plannerVersion: '1',
             status: 'pending',
             quotaState: 'reserved',
@@ -393,6 +406,9 @@ export function plannerService(
       try {
         const result = await generate({
           destination: 'Hội An',
+          maxStopsPerDay: { relaxed: 2, balanced: 3, active: 6 }[
+            input.trip.preferences.pace
+          ],
           dates: selected
             ? [selected.date]
             : input.trip.days.map((d) => d.date),
@@ -407,7 +423,7 @@ export function plannerService(
                     locked: !places.some((p) => p.id === a.placeId),
                   })),
                   instruction:
-                    'Modify ONLY this day according to the request. Preserve unchanged stops. Locked stops are retained by the server; do not overlap them and do not include them in output. If request is unsupported (weather facts, guaranteed savings, unavailable places), keep current eligible stops. For slower pace reduce stops or spread them out. Never claim real weather, prices or savings. Output only supplied catalog IDs.',
+                    'Modify ONLY this day. Keep stops the user explicitly asks to keep. When adding a stop would exceed maxStopsPerDay, REPLACE a different eligible stop rather than exceeding the limit. Preserve the other stops when possible. Locked stops are retained by the server; do not overlap them and do not include them in output. If the request cannot fit, keep current eligible stops. For slower pace reduce stops or spread them out. Never claim real weather, prices or savings. Output only supplied catalog IDs. Check every duration and the 30-minute gaps before responding.',
                 },
               }
             : {}),

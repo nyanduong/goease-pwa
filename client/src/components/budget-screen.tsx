@@ -33,6 +33,7 @@ type BudgetProps = {
   budget: number | null;
   activities: Pick<ActivityInput, 'kind' | 'estimatedCost'>[];
   onAdjust: () => void;
+  onReview?: () => void;
   demo?: boolean;
 };
 
@@ -43,6 +44,7 @@ export function BudgetScreen({
   budget,
   activities,
   onAdjust,
+  onReview,
   demo = false,
   summary,
 }: BudgetProps) {
@@ -76,6 +78,10 @@ export function BudgetScreen({
   const missing =
     summary?.missingCostCount ??
     activities.filter((a) => a.estimatedCost.amountMinor === null).length;
+  const hasPrices = activities.some(
+    (a) => a.estimatedCost.amountMinor !== null,
+  );
+  const incomplete = missing > 0 || !hasPrices;
   const percent = summary
     ? summary.usedPercent
     : budget !== null && budget > 0
@@ -112,56 +118,84 @@ export function BudgetScreen({
           {destinationName} · {days} ngày · {travelers} người
         </span>
         <h1>
-          Vui trong
+          Dự toán
           <br />
-          ngân sách.<i aria-hidden="true">✦</i>
+          chuyến đi.<i aria-hidden="true">✦</i>
         </h1>
       </div>
       {demo && (
         <p className="mvp-demo-label">BẢN XEM TRƯỚC · SỐ LIỆU MINH HỌA</p>
       )}
+      {incomplete && (
+        <div className="budget-incomplete" role="status">
+          <strong>Chưa đủ dữ liệu để tính tổng chuyến đi</strong>
+          <p>
+            {missing
+              ? `${missing} điểm dừng chưa có giá. `
+              : 'Bạn chưa nhập chi phí. '}
+            {remaining !== null && remaining < 0
+              ? 'Các khoản đã nhập đã vượt ngân sách; vẫn còn chi phí cần bổ sung.'
+              : 'Chưa thể biết ngân sách có đủ hay không.'}
+          </p>
+          {onReview && (
+            <button className="journey-outline" onClick={onReview}>
+              Bổ sung chi phí trong lịch
+            </button>
+          )}
+        </div>
+      )}
       <div className="budget-green-card">
-        <span className="budget-eyebrow">
-          {missing ? 'CHI PHÍ NHÓM ĐÃ NHẬP' : 'DỰ TOÁN CẢ NHÓM'}
-        </span>
-        <strong className="budget-total">{moneyText(known)}</strong>
+        <span className="budget-eyebrow">CHI PHÍ NHÓM ĐÃ NHẬP</span>
+        <strong
+          className={`budget-total ${!hasPrices ? 'budget-no-price' : ''}`}
+        >
+          {hasPrices ? moneyText(known) : 'Chưa có dự toán'}
+        </strong>
         <p className="budget-per-person">
-          {travelers > 0
-            ? `${moneyText(summary?.perPersonMinor ?? Math.round(known / travelers))} / người`
-            : 'Chưa xác định số người'}
+          {!hasPrices
+            ? 'Thêm giá cho từng điểm dừng để bắt đầu.'
+            : travelers > 0
+              ? `${moneyText(summary?.perPersonMinor ?? Math.round(known / travelers))} / người`
+              : 'Chưa xác định số người'}
         </p>
         <img
           className="budget-goe"
           src="/images/goe-mascot-cutout.png"
           alt="Goe"
         />
-        <div className="budget-meter-row">
-          <div
-            className="budget-meter"
-            role="meter"
-            aria-label="Ngân sách đã dùng theo chi phí đã nhập"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.min(100, percent ?? 0)}
-            aria-valuetext={
-              percent === null
-                ? 'Chưa có mức ngân sách để so sánh'
-                : `${percent}% ngân sách`
-            }
-          >
-            <span style={{ width: `${Math.min(100, percent ?? 0)}%` }} />
+        {!incomplete && (
+          <div className="budget-meter-row">
+            <div
+              className="budget-meter"
+              role="meter"
+              aria-label="Ngân sách đã dùng theo chi phí đã nhập"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.min(100, percent ?? 0)}
+              aria-valuetext={
+                percent === null
+                  ? 'Chưa có mức ngân sách để so sánh'
+                  : `${percent}% ngân sách`
+              }
+            >
+              <span style={{ width: `${Math.min(100, percent ?? 0)}%` }} />
+            </div>
+            <span>{percent === null ? '—' : `${percent}%`}</span>
           </div>
-          <span>{percent === null ? '—' : `${percent}%`}</span>
-        </div>
+        )}
         <span
           className={`budget-reserve ${remaining !== null && remaining < 0 ? 'over-budget' : ''}`}
         >
           <Wallet size={17} />
-          {remaining === null
-            ? 'Chưa đặt ngân sách nhóm'
-            : remaining < 0
-              ? `Vượt ${moneyText(-remaining)}`
-              : `Còn ${moneyText(remaining)} ${missing ? 'tạm tính' : 'dự phòng'}`}
+          {remaining !== null && remaining < 0
+            ? `Đã vượt ngân sách ${moneyText(-remaining)}${missing ? ' (còn khoản chưa có giá)' : ''}`
+            : incomplete
+              ? budget === null
+                ? 'Chưa đặt ngân sách nhóm'
+                : `Ngân sách bạn đặt: ${moneyText(budget)}`
+              : remaining === null
+                ? 'Chưa đặt ngân sách nhóm'
+                : `Chênh lệch với khoản đã nhập: ${moneyText(remaining)}`}
         </span>
       </div>
       <section className="budget-breakdown" aria-label="Chi phí theo nhóm">
@@ -193,11 +227,19 @@ export function BudgetScreen({
                   <Icon size={16} />
                   <span>{label}</span>
                   <b>
-                    {unknownCount
-                      ? amount > 0
-                        ? `${moneyText(amount)} + ?`
-                        : 'Chưa rõ'
-                      : moneyText(amount)}
+                    {!activities.some((a) =>
+                      key === 'other'
+                        ? !['transport', 'lodging', 'meal', 'visit'].includes(
+                            a.kind,
+                          )
+                        : a.kind === key,
+                    )
+                      ? 'Chưa thêm'
+                      : unknownCount
+                        ? amount > 0
+                          ? `${moneyText(amount)} + ?`
+                          : 'Chưa rõ'
+                        : moneyText(amount)}
                   </b>
                 </li>
               ),
@@ -208,12 +250,14 @@ export function BudgetScreen({
         {missing
           ? `${missing} điểm dừng chưa rõ chi phí. Tổng và dự phòng chưa đầy đủ.`
           : activities.length
-            ? 'Chi phí ước tính, chưa phải báo giá.'
+            ? 'Các điểm đã nhập đủ giá ước tính; chưa có nghĩa đã bao gồm mọi chi phí chuyến đi.'
             : 'Chưa có chi phí hoạt động. Thêm điểm dừng và khoản dự kiến để xem dự toán.'}
       </p>
       {!demo && (
         <p className="budget-source-note">
-          Chỉ gồm các khoản dự kiến đã nhập trong lịch; chưa phải thực chi.
+          Nhớ bổ sung tiền đến và rời điểm đến, chỗ ở, ăn uống và đi lại. Chỉ
+          các khoản đã nhập mới được cộng; “Chưa thêm” không có nghĩa là miễn
+          phí.
         </p>
       )}
       <button className="budget-adjust" onClick={onAdjust}>
@@ -228,10 +272,12 @@ export function TripBudget({
   draft,
   destinationName,
   onAdjust,
+  onReview,
 }: {
   draft: TripInput;
   destinationName: string;
   onAdjust: () => void;
+  onReview?: () => void;
 }) {
   const [result, setResult] = useState<{
     payload: string;
@@ -299,6 +345,7 @@ export function TripBudget({
       budget={draft.budget.amountMinor}
       activities={draft.days.flatMap((d) => d.activities)}
       onAdjust={onAdjust}
+      {...(onReview ? { onReview } : {})}
     />
   );
 }

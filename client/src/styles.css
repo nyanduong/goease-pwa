@@ -1246,6 +1246,9 @@ textarea::placeholder {
 }
 
 .budget-per-person {
+  position: relative;
+  z-index: 2;
+  max-width: 70%;
   font-size: 13.5px;
   color: rgba(255, 255, 255, 0.85);
 }
@@ -3093,7 +3096,8 @@ body:has(.journey-shell) {
   display: flex;
   width: 100%;
   align-items: center;
-  padding: 3px 31px 3px 3px;
+  min-height: 96px;
+  padding: 3px 48px 3px 3px;
   gap: 10px;
   text-align: left;
 }
@@ -3131,13 +3135,13 @@ body:has(.journey-shell) {
   display: flex;
   flex-direction: column;
   position: absolute;
-  top: 9px;
+  top: 4px;
   right: 2px;
 }
 .journey-stop-order button {
   padding: 4px;
-  width: 24px;
-  height: 24px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   color: #647e70;
@@ -5370,4 +5374,78 @@ body:has(.journey-shell) {
 .journey-section-title {
   flex-wrap: wrap;
   gap: 10px;
+}
+
+/* Mobile planning: clear choices, unknown prices, and reachable next steps. */
+.budget-incomplete,
+.journey-preparation {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid #d1bc89;
+  border-radius: 18px;
+  background: #fff6df;
+  color: #493c25;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.budget-incomplete p,
+.journey-preparation p {
+  font-size: 14px;
+}
+.budget-no-price {
+  white-space: normal;
+  font-size: 26px;
+  letter-spacing: -0.4px;
+}
+.budget-reserve {
+  white-space: normal;
+}
+.journey-manual-choice {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+}
+.journey-preparation summary {
+  cursor: pointer;
+  min-height: 44px;
+  font-weight: 700;
+}
+.journey-preparation-actions {
+  display: grid;
+  gap: 8px;
+}
+.journey-preparation-actions button,
+.budget-incomplete button {
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fffdf8;
+  border: 1px solid #b7c4b5;
+  color: #214e42;
+  text-align: left;
+}
+.discovery-card-open:disabled {
+  cursor: default;
+}
+.discovery-card-open:disabled img {
+  filter: saturate(0.55);
+}
+.ai-planner h2 {
+  align-items: flex-start;
+  font-size: 22px;
+}
+.ai-planner h2 svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+.ai-planner button:disabled {
+  opacity: 0.55;
+}
+.goe-context-panel p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.goe-context-notice button {
+  min-height: 44px;
+  margin: 4px;
 }

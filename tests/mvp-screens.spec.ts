@@ -48,8 +48,8 @@ test('budget preview: categories, responsive layout, missing and exceeded budget
   await mkdir('.local/mvp-preview', { recursive: true });
   await page.screenshot({ path: '.local/mvp-preview/budget-390.png' });
   for (const [value, expected] of [
-    ['5000000', 'Vượt 3.200.000'],
-    ['0', 'Vượt 8.200.000'],
+    ['5000000', 'Đã vượt ngân sách 3.200.000'],
+    ['0', 'Đã vượt ngân sách 8.200.000'],
     ['', 'Chưa đặt ngân sách nhóm'],
   ] as const) {
     await page.getByRole('button', { name: 'Điều chỉnh ngân sách' }).click();

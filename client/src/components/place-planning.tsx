@@ -16,6 +16,12 @@ export function PlacePlanning({
   return (
     <section className="place-planning">
       <strong>Thông tin để xếp lịch</strong>
+      {place.category === 'food' && !place.mapLocation && (
+        <p>
+          <strong>Gợi ý món ăn, chưa chọn quán.</strong> Tìm quán phù hợp trên
+          bản đồ, rồi ghi tên quán, địa chỉ và giá vào điểm dừng này.
+        </p>
+      )}
       <p>
         Gợi ý dành {planning.durationMinutes} phút · Thời lượng do GoEase biên
         tập.
@@ -25,7 +31,9 @@ export function PlacePlanning({
         target="_blank"
         rel="noreferrer"
       >
-        Tìm vị trí trên bản đồ ↗
+        {place.category === 'food' && !place.mapLocation
+          ? 'Tìm quán trên Google Maps ↗'
+          : 'Tìm vị trí trên bản đồ ↗'}
       </a>
       <p>{planning.costNote}</p>
       {planning.priceOptions.map((price) => (

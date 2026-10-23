@@ -23,10 +23,10 @@ for (const avatar of ['missing', 'account', 'broken'] as const) {
       return r.fulfill({ json: { ok: true, data: { user } } });
     });
     await page.route('**/api/v1/destinations', (r) =>
-      r.fulfill({ json: { ok: true, data: { destinations: [] } } }),
+      r.fulfill({ json: { ok: true, data: { items: [] } } }),
     );
     await page.route('**/api/v1/trips', (r) =>
-      r.fulfill({ json: { ok: true, data: { trips: [] } } }),
+      r.fulfill({ json: { ok: true, data: { items: [] } } }),
     );
     await page.route('https://avatar.example.invalid/**', (r) =>
       avatar === 'broken'
@@ -37,7 +37,9 @@ for (const avatar of ['missing', 'account', 'broken'] as const) {
           }),
     );
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/login?next=/trips/new');
+    await page.goto(
+      avatar === 'missing' ? '/login?next=https://example.invalid' : '/login',
+    );
     await page.getByLabel('Email', { exact: true }).fill(user.email);
     await page
       .getByLabel('Mật khẩu', { exact: true })

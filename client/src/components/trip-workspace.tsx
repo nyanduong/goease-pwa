@@ -1,4 +1,5 @@
 import { TripManagement } from './trip-management';
+import { TripOffline } from './trip-offline';
 import { Sheet } from './journey-sheet';
 import { TripExpenses } from './trip-expenses';
 import { TripBudget } from './budget-screen';
@@ -490,12 +491,12 @@ export function TripWorkspace({
     setPlacesStatus('loading');
     window.scrollTo(0, 0);
   }
-  function addBlank() {
+  function addBlank(kind: ActivityInput['kind'] = 'custom') {
     if (!day || day.activities.length >= 50 || allActivities.length >= 300)
       return;
     setEditing({
       activityId: crypto.randomUUID(),
-      kind: 'custom',
+      kind,
       title: '',
       timezone: 'Asia/Ho_Chi_Minh',
       order: day.activities.length,
@@ -647,6 +648,11 @@ export function TripWorkspace({
             </button>
           ))}
         </div>
+        <p className="journey-sheet-note">
+          Goe gợi ý tối đa{' '}
+          {{ relaxed: 2, balanced: 3, active: 6 }[draft.preferences.pace]} điểm
+          mỗi ngày theo nhịp này. Bạn vẫn có thể tự thêm điểm sau.
+        </p>
       </section>
     </>
   );
@@ -771,10 +777,10 @@ export function TripWorkspace({
               }}
             />
             <button
-              className="journey-primary"
+              className="journey-outline journey-manual-choice"
               onClick={loaded ? () => setSettings(false) : nextStep}
             >
-              {loaded ? 'Về lịch trình' : 'Gợi ý lịch trình'}
+              {loaded ? 'Về lịch trình' : 'Tự chọn điểm dừng'}
               <ArrowRight size={19} />
             </button>
             {!loaded && (
@@ -785,11 +791,11 @@ export function TripWorkspace({
           </>
         ) : !loaded && step === 3 ? (
           <div className="journey-review">
-            <span className="journey-eyebrow">SẴN SÀNG CHO MỘT CHUYẾN ĐI</span>
+            <span className="journey-eyebrow">BẢN KẾ HOẠCH CỦA BẠN</span>
             <h1>
               Lưu lại.
               <br />
-              Rồi mình đi thôi.
+              Rồi hoàn thiện dần.
             </h1>
             <img
               className="journey-review-cover"
@@ -832,6 +838,11 @@ export function TripWorkspace({
               {allActivities.length} điểm dừng đã chọn. Bạn luôn có thể chỉnh
               sửa sau.
             </Companion>
+            <p className="journey-sheet-note">
+              Đây là bản kế hoạch. Trước khi đi, kiểm tra chỗ ở, di chuyển, giờ
+              mở cửa và các khoản chưa có giá. Lưu chuyến không phải đặt dịch
+              vụ.
+            </p>
             <button className="journey-primary" onClick={onSave}>
               {busy
                 ? 'Đang lưu…'
@@ -923,6 +934,28 @@ export function TripWorkspace({
                     draft={draft}
                     destinationName={destinationName}
                     onAdjust={() => openField('budget')}
+                    onReview={() => {
+                      const index = draft.days.findIndex((d) =>
+                        d.activities.some(
+                          (a) => a.estimatedCost.amountMinor === null,
+                        ),
+                      );
+                      setTab('schedule');
+                      if (index >= 0) {
+                        setSelectedDay(index);
+                        setEditing(
+                          structuredClone(
+                            draft.days[index]!.activities.find(
+                              (a) => a.estimatedCost.amountMinor === null,
+                            )!,
+                          ),
+                        );
+                        setAdding(false);
+                      } else {
+                        setSuggestions(true);
+                        setPlacesStatus('loading');
+                      }
+                    }}
                   />
                 ) : loaded ? (
                   <TripExpenses
@@ -1083,7 +1116,10 @@ export function TripWorkspace({
                       <button
                         className="journey-add-stop"
                         disabled={atLimit}
-                        onClick={addBlank}
+                        onClick={() => {
+                          setSuggestions(true);
+                          setPlacesStatus('loading');
+                        }}
                       >
                         <Plus size={17} />
                         Thêm điểm dừng
@@ -1161,6 +1197,42 @@ export function TripWorkspace({
                     Lưu thay đổi <Check size={16} />
                   </button>
                 </div>
+                {tab === 'schedule' && (
+                  <details className="journey-preparation">
+                    <summary>Chuẩn bị trước khi đi</summary>
+                    <p>
+                      Lịch đã lưu chưa có nghĩa là đã đặt dịch vụ. Kiểm tra từng
+                      việc trước ngày khởi hành.
+                    </p>
+                    <div className="journey-preparation-actions">
+                      <button onClick={() => setTab('cost')}>
+                        Kiểm tra các khoản chi phí
+                      </button>
+                      {!allActivities.some((a) => a.kind === 'lodging') && (
+                        <button onClick={() => addBlank('lodging')}>
+                          Bổ sung chỗ ở vào ngày {dayIndex + 1}
+                        </button>
+                      )}
+                      {!allActivities.some((a) => a.kind === 'transport') && (
+                        <button onClick={() => addBlank('transport')}>
+                          Bổ sung di chuyển vào ngày {dayIndex + 1}
+                        </button>
+                      )}
+                      <button onClick={() => setTab('map')}>
+                        Kiểm tra vị trí và đường đi
+                      </button>
+                    </div>
+                    <p>
+                      Chạm từng điểm dừng để ghi quán cụ thể, địa chỉ và giá.
+                      Giờ mở cửa, thời tiết và thời gian đi đường cần kiểm tra
+                      lại.
+                    </p>
+                    <TripOffline
+                      id={loaded.id}
+                      unsaved={saveState !== 'saved'}
+                    />
+                  </details>
+                )}
               </>
             )}
           </>
@@ -1330,11 +1402,18 @@ export function TripWorkspace({
                 required
                 maxLength={120}
                 placeholder="Bạn muốn ghé đâu?"
+                aria-label="Tên hoạt động"
                 value={editing.title}
                 onChange={(e) =>
                   setEditing({ ...editing, title: e.target.value })
                 }
               />
+              {editing.kind === 'meal' && (
+                <small>
+                  Nếu đã chọn quán, ghi tên quán ở đây; thêm địa chỉ và thông
+                  tin cần nhớ vào ghi chú.
+                </small>
+              )}
             </label>
             <div className="journey-fields-row">
               <label className="journey-field">

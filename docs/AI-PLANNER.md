@@ -64,3 +64,9 @@ Goe chat now reads a saved owned trip and selected day. With no trip, the custom
 Storage: same ai_runs/usage_buckets/trips/trip_revisions, no new collection. Goe runs use promptVersion goe-v1; proposal carries before/dayId/baseRevision inside the existing bounded, validated field. Raw message is not stored, only payload hash. Collection retention remains as previously documented. Shared contract schemas are in planner.ts; route names added to log allowlist.
 
 Live acceptance passed using real Gemini: generate/save3day trip → Goe on day1 → slower-day proposal (3→2stops in observed result) → preview with other days unchanged → simulate dropped response after commit → retry → exactly one saved revision → reload retained proposal contents and new aiRunId. Stale reapply returned409. Screenshots: `.local/ai-preview/goe-real-proposal.png`, `goe-saved-reloaded.png`. The default preview-only chat test was replaced with no-trip gating/responsiveness; generic manual journey no longer applies fake chat changes.
+
+## Mobile correction — 2026-10-23
+
+Current requests use hoian-v2/goe-v2 promptVersion; existing successful goe-v1 applies remain accepted with the same owner/trip/revision checks. Prompt supplies numeric maxStopsPerDay and instructs substitution rather than exceeding the existing cap when adding a stop; expressly retained stops are prioritized. No additional model call or quota change. Validation emits AI_PACE_LIMIT or AI_SCHEDULE_CONFLICT for actionable failures, keeps IDs/date/duration checks, and never silently applies a fallback.
+
+Same-key lookup now distinguishes AI_RUN_PENDING from AI_RUN_FAILED. The client retains API error codes and offers result retrieval only for pending/uncertain/network outcomes. Terminal failures preserve the user's input and offer concrete wording guidance plus a route back to edit the day. UI labels use Goe while the Google/Gemini data disclosure remains visible. Unknown prices are never presented as savings.

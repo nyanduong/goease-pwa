@@ -17,6 +17,12 @@ export function AuthPage({
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const params = new URLSearchParams(location.search);
+  const continuing = params.get('next') === '/trips/new';
+  const destination = params.get('destination');
+  const continuation = continuing
+    ? `?next=/trips/new${destination && /^[a-f0-9]{24}$/.test(destination) ? `&destination=${destination}` : ''}`
+    : '';
 
   return (
     <section className="auth-layout">
@@ -50,9 +56,11 @@ export function AuthPage({
           </p>
           <h2>{register ? 'Tạo tài khoản' : 'Đăng nhập'}</h2>
           <p className="auth-card-sub">
-            {register
-              ? 'Bắt đầu bằng những điều đơn giản.'
-              : 'Lịch trình của bạn đang chờ ở đây.'}
+            {continuing
+              ? 'Đăng nhập hoặc tạo tài khoản để lưu lịch riêng và nhờ Goe xếp lịch. Xong bước này, bạn sẽ tiếp tục tạo chuyến ngay.'
+              : register
+                ? 'Bắt đầu bằng những điều đơn giản.'
+                : 'Lịch trình của bạn đang chờ ở đây.'}
           </p>
         </div>
 
@@ -168,7 +176,7 @@ export function AuthPage({
         <p className="auth-switch">
           {register ? 'Đã có tài khoản? ' : 'Bạn mới đến? '}
           {link(
-            register ? '/login' : '/register',
+            `${register ? '/login' : '/register'}${continuation}`,
             register ? 'Đăng nhập' : 'Tạo tài khoản',
             'text-link',
           )}

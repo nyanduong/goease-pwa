@@ -2,6 +2,7 @@ export class ApiFailure extends Error {
   constructor(
     message: string,
     public status: number,
+    public code?: string,
   ) {
     super(message);
   }
@@ -33,7 +34,7 @@ export async function api<T>(
   const result = (await response.json().catch(() => null)) as {
     ok?: boolean;
     data?: T;
-    error?: { message?: string };
+    error?: { message?: string; code?: string };
   } | null;
   if (response.status === 401 && !path.startsWith('/auth/'))
     window.dispatchEvent(new Event('goease-auth-invalid'));
@@ -45,6 +46,7 @@ export async function api<T>(
     throw new ApiFailure(
       result?.error?.message ?? 'Không thể hoàn tất yêu cầu. Hãy thử lại.',
       response.status,
+      result?.error?.code,
     );
   return result.data as T;
 }

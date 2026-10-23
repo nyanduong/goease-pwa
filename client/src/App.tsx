@@ -336,7 +336,7 @@ export function App() {
 
   const startWithDestination = (destId: string) => {
     if (!user) {
-      go('/login');
+      go(`/login?next=/trips/new&destination=${destId}`);
       return;
     }
     if (
@@ -596,6 +596,8 @@ export function App() {
           path === '/' && sessionStatus === 'ready' && !user
             ? (event) => {
                 const target = event.target as HTMLElement;
+                if (target.closest('[data-start-trip], button:disabled'))
+                  return;
                 if (
                   target.closest(
                     'a,button,input,label,select,textarea,[role="button"]',
@@ -766,7 +768,11 @@ export function App() {
         ) : path === '/budget' ? (
           <BudgetPreview onBack={() => go('/trips')} />
         ) : path === '/goe' ? (
-          <GoeChat signedIn={Boolean(user)} onNavigate={go} />
+          sessionStatus === 'loading' ? (
+            <Notice>Đang mở Goe…</Notice>
+          ) : (
+            <GoeChat signedIn={Boolean(user)} onNavigate={go} />
+          )
         ) : isDiscovery ? (
           <HomeDiscovery
             key={user?.id ?? 'guest'}
@@ -826,7 +832,19 @@ export function App() {
               setUser(v);
               setExpiredSession(false);
               setOnboardingSeen(false);
-              go('/');
+              const params = new URLSearchParams(location.search);
+              if (params.get('next') === '/trips/new') {
+                const destinationId = params.get('destination');
+                const next = initialDraft();
+                if (destinations.some((d) => d.id === destinationId))
+                  next.destinations = [
+                    { destinationId: destinationId!, order: 0 },
+                  ];
+                setDraft(withDays(next));
+                setLoaded(null);
+                setSaveState('dirty');
+                go('/trips/new');
+              } else go('/');
             }}
           />
         ) : path === '/trips/trash' ? (
@@ -880,7 +898,14 @@ export function App() {
             onNavigate={go}
           />
         ) : isEditor ? (
-          busy && path !== '/trips/new' && !loaded ? (
+          sessionStatus === 'loading' ? (
+            <Notice>Đang mở chuyến đi của bạn…</Notice>
+          ) : !user ? (
+            <Notice>
+              Đăng nhập để mở chuyến đi riêng của bạn.{' '}
+              {link('/login', 'Đăng nhập')}
+            </Notice>
+          ) : (busy || !message) && path !== '/trips/new' && !loaded ? (
             <Notice>Đang mở lịch trình…</Notice>
           ) : path !== '/trips/new' && !loaded ? (
             <div className="journey-empty">

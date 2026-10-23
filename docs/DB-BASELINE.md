@@ -1208,3 +1208,7 @@ TRIP-09/10/12/13: trips dùng lại deletedAt/deletedBy/deletionReasonCode, rest
 ## Offline reader — 2026-10-23
 
 Không thay MongoDB schema/collection/index. Snapshot riêng chỉ ở localStorage browser, contract version1/owner epoch/bounded10trips và2triệu ký tự; không auth token/expense. Logout xóa local data ngay, marker phi cá nhân chờ thu hồi server. Trip DTO/API có sẵn giữ nguyên. Xem OFFLINE-ITINERARY.md; registry browserStorage chỉ mô tả, không executable schema.
+
+## Mobile usability storage/contract impact — 2026-10-23
+
+AUTH-09 redirect intent stays in the login/register URL (allowlisted `/trips/new`, optional catalog destination ID); no draft, token or new field is stored. Budget completeness/preparation UI is derived from existing activities and the server BudgetSummary DTO; no completion/booking flag is added. Existing ai_runs.promptVersion strings now use hoian-v2/goe-v2; apply still accepts owned successful goe-v1 proposals for compatibility. Error envelope is unchanged, with AI_PACE_LIMIT, AI_SCHEDULE_CONFLICT, AI_RUN_PENDING and AI_RUN_FAILED codes. No MongoDB schema/index/collection/migration or localStorage contract changes. Registry mobileUsability mirrors these qualifications.
