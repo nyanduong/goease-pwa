@@ -1,37 +1,27 @@
+import 'dotenv/config';
 import mongoose from 'mongoose';
 
-// Explicit opt-in command for the dedicated loopback development instance only.
+// The shared local MongoDB service must already be a writable rs0 member.
+// Never initiate or reconfigure a replica set used by other databases.
 const connection = mongoose.createConnection();
 try {
+  if (
+    !/^mongodb:\/\/(127\.0\.0\.1|localhost):27017\/goease\?replicaSet=rs0$/.test(
+      process.env.MONGODB_URI ?? '',
+    )
+  )
+    throw new Error('Unexpected MongoDB target');
   await connection.openUri(
-    'mongodb://127.0.0.1:27019/admin?directConnection=true',
+    'mongodb://localhost:27017/admin?directConnection=true',
     { serverSelectionTimeoutMS: 3000 },
   );
-  const admin = connection.db!.admin();
-  try {
-    const status = await admin.command({ replSetGetStatus: 1 });
-    if (status.set !== 'rs0')
-      throw new Error('Existing replica set is not rs0');
-    console.info('Replica set rs0 already initialized');
-  } catch (error) {
-    if (
-      !(error instanceof mongoose.mongo.MongoServerError) ||
-      error.code !== 94
-    )
-      throw error;
-    await admin.command({
-      replSetInitiate: {
-        _id: 'rs0',
-        members: [{ _id: 0, host: '127.0.0.1:27019' }],
-      },
-    });
-    console.info(
-      'Replica set rs0 initialized; allow a few seconds for primary election',
-    );
-  }
+  const hello = await connection.db!.admin().command({ hello: 1 });
+  if (hello.setName !== 'rs0' || hello.isWritablePrimary !== true)
+    throw new Error('MongoDB is not a writable rs0 primary');
+  console.info('PASS: localhost:27017 is already a writable rs0 primary');
 } catch {
   console.error(
-    'Cannot initialize local rs0. Start the dedicated mongod with --replSet rs0; existing configurations are never overwritten.',
+    'FAIL: localhost:27017 must already be a writable rs0 primary; shared MongoDB is never reconfigured.',
   );
   process.exitCode = 1;
 } finally {

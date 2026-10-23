@@ -16,7 +16,7 @@ Bản đồ lịch trình Hội An: mở chuyến → tab **Bản đồ** → ch
 | ----------------- | ----------------------------------------------------------------------------------------------- |
 | Node.js           | 24 LTS; đã kiểm tra **24.15.0**, `.node-version` pin bản này; engines nhận 24.15+ trong dòng 24 |
 | npm               | **11.12.1**, pin bằng `packageManager`                                                          |
-| MongoDB Community | Đã kiểm tra **8.2**, executable `mongod`; không cần quyền admin để chạy instance riêng          |
+| MongoDB Community | Đã kiểm tra **8.2**; service local `localhost:27017` là primary của `rs0`                       |
 | Trình duyệt E2E   | Microsoft Edge đã cài trên Windows; cần `MONGOD_BINARY`                                         |
 
 Các dependency trực tiếp được pin trong manifests, dependency tree trong **một** `package-lock.json`. Dùng npm workspace cho cả development và CI; không tạo lockfile của package manager khác. ESLint 10, TypeScript 5.9, React 19, Vite 8 và Tailwind 4; xem manifest để có patch version chính xác. Không cần Docker; chưa cung cấp Docker Compose vì F0 đã được kiểm chứng bằng MongoDB cài sẵn.
@@ -37,23 +37,13 @@ Copy-Item client/.env.example client/.env
 
 Không ghi đè `.env` đã có khi cập nhật repository. `.env` API được đọc từ `server/`, vì workspace scripts chạy với working directory đó. Các biến `VITE_*` là công khai và có thể nằm trong browser bundle; tuyệt đối không đặt secret ở client.
 
-Mở terminal PowerShell thứ nhất tại root repo, chạy **instance MongoDB riêng**. Cổng **27019** dành cho GoEase để tránh ảnh hưởng MongoDB đang có trên 27017. Thư mục `.local` bị loại khỏi Git:
+GoEase dùng MongoDB service local đang chạy ở `localhost:27017`, database riêng tên `goease`. Service này phải là replica set `rs0` có primary ghi được; không khởi tạo hay cấu hình lại instance dùng chung với các database khác. Kiểm tra service trong PowerShell bằng `Get-Service MongoDB`. Nếu service chưa chạy, khởi động theo cấu hình MongoDB đã cài trên máy; không chạy thêm một `mongod` vào cùng thư mục dữ liệu.
+
+Tại root repo:
 
 ```powershell
-New-Item -ItemType Directory -Force .local/mongodb | Out-Null
-$mongoBinary = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
-# Thay đường dẫn trên theo phiên bản MongoDB đã cài trên máy.
-& $mongoBinary --dbpath "$PWD\.local\mongodb" --bind_ip 127.0.0.1 --port 27019 --replSet rs0
-```
-
-Giữ terminal này chạy. Không dùng thư mục dữ liệu MongoDB có sẵn của ứng dụng khác. Nếu chưa có MongoDB, cần cài MongoDB Community theo hướng dẫn chính thức; task không tự cài phần mềm hệ thống.
-
-Terminal thứ hai, tại root repo:
-
-```powershell
-# Chỉ chạy lệnh init trên instance GoEase dành riêng ở 127.0.0.1:27019.
+# Lệnh này chỉ kiểm tra rs0/primary trên service dùng chung, không cấu hình lại MongoDB.
 npm run db:init
-# Sau lần init đầu, chờ vài giây để replica set bầu primary.
 npm run db:check
 npm run db:seed
 npm run dev
@@ -61,22 +51,24 @@ npm run dev
 
 Mở [web local](http://localhost:5180). API ở [health](http://localhost:3000/api/v1/health) và [database health](http://localhost:3000/api/v1/health/db). Dùng `localhost` nhất quán với `CLIENT_ORIGIN`. Cổng 5180 được chọn vì 5173 đã có tiến trình khác trong môi trường kiểm tra; `strictPort` tránh âm thầm đổi cổng. Nút **Kiểm tra lại** lấy trạng thái mới; trang không tự polling.
 
-`npm run dev` build contracts trước rồi chạy web/API song song. Nếu sửa contracts, build lại package và khởi động lại dev. Vite proxy `/api` tới API trên `localhost:3000`. Web và API chỉ bind localhost, không mở ra IP LAN. MongoDB nội bộ dùng loopback 127.0.0.1 để giữ tương thích replica set đã khởi tạo; đây không phải địa chỉ IP LAN của máy. Khi triển khai web/API khác origin, cấu hình `VITE_API_BASE_URL` là origin API và `CLIENT_ORIGIN` là origin web; đổi proxy nếu đổi cổng API local. Không dùng Vite dev server làm production server.
+`npm run dev` build contracts trước rồi chạy web/API song song. Nếu sửa contracts, build lại package và khởi động lại dev. Vite proxy `/api` tới API trên `localhost:3000`. Web, API và MongoDB chỉ dùng localhost/loopback, không mở ra IP LAN. Khi đổi `server/.env`, khởi động lại dev để API đọc URI mới. Khi triển khai web/API khác origin, cấu hình `VITE_API_BASE_URL` là origin API và `CLIENT_ORIGIN` là origin web; đổi proxy nếu đổi cổng API local. Không dùng Vite dev server làm production server.
 
 ## MongoDB và phục hồi kết nối
 
 `server/.env.example` có:
 
 ```dotenv
-MONGODB_URI=mongodb://127.0.0.1:27019/goease?replicaSet=rs0
-MONGODB_TEST_URI=mongodb://127.0.0.1:27019/goease_f0_test?replicaSet=rs0
+MONGODB_URI=mongodb://localhost:27017/goease?replicaSet=rs0
+MONGODB_TEST_URI=mongodb://localhost:27017/goease_f0_test?replicaSet=rs0
 ```
 
-`npm run db:init` chỉ khởi tạo `rs0` khi instance trên 27019 trả `NotYetInitialized`; không sửa cấu hình replica set có sẵn. URI chứa `replicaSet=rs0` không tự khởi tạo replica set. Single-node replica set này phục vụ development, chưa có dự phòng; transaction nghiệp vụ chưa được triển khai hay nghiệm thu trong F0; task sản phẩm sau F1-B đã bổ sung kiểm thử riêng cho auth/trip/audit.
+`npm run db:init` hiện chỉ xác nhận `localhost:27017` đã là primary của `rs0`; không chạy `replSetInitiate` hay sửa cấu hình MongoDB dùng chung. URI chứa `replicaSet=rs0` không tự khởi tạo replica set. Bản local một thành viên không có dự phòng. Bằng chứng kiểm thử transaction của sản phẩm nằm trong các bài integration riêng, không phải lệnh init.
+
+Trên máy phát triển hiện tại, dữ liệu `goease` từ instance cũ ở `27019` đã được sao chép sang `27017` và đối chiếu nội dung/index. Thư mục cũ `.local/mongodb` được giữ lại để phục hồi nếu cần; các lần chạy sau chỉ kết nối `27017`. Trên máy khác hoặc checkout mới, việc sao chép dữ liệu không tự diễn ra.
 
 `npm run db:check` dùng Mongoose ghi → đọc → xóa document có marker ngẫu nhiên, chỉ trong `goease_f0_test` trên loopback. Script từ chối tên database ứng dụng, host bên ngoài, credentials, URI SRV, query khác `replicaSet` và `NODE_ENV=production`; không drop database hay xóa dữ liệu khác.
 
-Để thử mất kết nối thủ công: dừng terminal MongoDB bằng `Ctrl+C`, nhấn **Kiểm tra lại**. Backend vẫn trả health 200 nhưng DB trả 503. Chạy lại đúng lệnh `mongod` với cùng dbpath, chờ kết nối phục hồi rồi nhấn **Kiểm tra lại**. Backend thử lại sau 3 giây khi kết nối ban đầu lỗi; sau khi đã kết nối, driver Mongoose tự phục hồi khi database trở lại. API không xóa dữ liệu lúc khởi động.
+Không dừng MongoDB service dùng chung ở `27017` để thử lỗi kết nối vì các ứng dụng khác cũng dùng service này. E2E dùng instance riêng để kiểm tra tình huống mất kết nối/phục hồi. Backend thử lại sau 3 giây khi kết nối ban đầu lỗi; sau khi đã kết nối, driver Mongoose tự phục hồi khi database trở lại. API không xóa dữ liệu lúc khởi động.
 
 Dừng web/API bằng `Ctrl+C`. API xử lý SIGINT/SIGTERM, ngừng nhận request và đóng connection; giới hạn shutdown 10 giây. Trên Windows, đóng cửa sổ hoặc force-kill process có thể bỏ qua signal handler.
 
@@ -106,7 +98,7 @@ npm run test:e2e
 Remove-Item Env:E2E_API_PORT, Env:E2E_WEB_PORT
 ```
 
-Các override chỉ áp dụng Playwright và `tests/vite.config.mts`; không đổi cổng development hoặc config client. Port phải là số 1024–65535, khác nhau và khác cổng MongoDB. `reuseExistingServer:false` từ chối web/API test port đã bị chiếm. Test dùng Edge headless, API build thật và Vite dev server/proxy, khởi chạy MongoDB riêng trên 27020 với dbpath mới trong `.local`. Test thực sự dừng process MongoDB do chính nó tạo rồi khởi động lại, kiểm tra 503 và phục hồi trên cùng API. Không dừng MongoDB của người dùng trên 27017/27019. Dữ liệu E2E giữ trong `.local` để kiểm tra khi cần. Screenshot ở `test-results/`; không commit artifacts này. E2E standalone không thay bằng chứng transaction từ integration replica set.
+Các override chỉ áp dụng Playwright và `tests/vite.config.mts`; không đổi cổng development hoặc config client. Port phải là số 1024–65535, khác nhau và khác cổng MongoDB. `reuseExistingServer:false` từ chối web/API test port đã bị chiếm. Test dùng Edge headless, API build thật và Vite dev server/proxy, khởi chạy MongoDB riêng trên 27020 với dbpath mới trong `.local`. Test thực sự dừng process MongoDB do chính nó tạo rồi khởi động lại, kiểm tra 503 và phục hồi trên cùng API. Không dừng MongoDB service của người dùng trên 27017. Dữ liệu E2E giữ trong `.local` để kiểm tra khi cần. Screenshot ở `test-results/`; không commit artifacts này. E2E standalone không thay bằng chứng transaction từ integration replica set.
 
 `npm test` kiểm tra HTTP thật với dependency ping được điều khiển, request context/concurrency, stdout/stderr JSON có scanner bí mật, startup/database error và guard database test; đây không phải bằng chứng kết nối MongoDB. Bằng chứng MongoDB thật đến từ `db:check`, integration và E2E. Test lỗi mạng dùng browser fault injection và được đặt tên rõ.
 
@@ -175,7 +167,7 @@ OperationId khác requestId: caller backend cấp một UUIDv4 cho thao tác, gi
 
 - `/`: trang chủ; `/register`, `/login`: tài khoản; `/trips`: chuyến riêng; `/trips/new`: tạo lịch thủ công; `/trips/:id`: mở/chỉnh sửa.
 - Đăng ký bằng email thử và mật khẩu riêng tối thiểu 12 ký tự; tài khoản tự đăng nhập và vào Trang chủ `/`. Reload đọc phiên từ API; logout rồi login lại bằng cùng thông tin. Tài khoản mới giữ `emailVerifiedAt=null`; không cần mailbox. Không dùng dữ liệu/mật khẩu thật cho thử nghiệm local.
-- `npm run db:seed` thêm bốn điểm đến do GoEase biên soạn (Đà Nẵng, Đà Lạt, Hà Nội, Hội An) và ba gợi ý Khám phá tại Hội An, không ghi đè record đã có. Script chỉ nhận development và database `goease` tại loopback27019/rs0. Ảnh AI lưu local, không có giá/rating/ảnh provider trong seed.
+- `npm run db:seed` thêm bốn điểm đến do GoEase biên soạn (Đà Nẵng, Đà Lạt, Hà Nội, Hội An) và ba gợi ý Khám phá tại Hội An, không ghi đè record đã có. Script chỉ nhận development và database `goease` tại loopback 27017/rs0. Ảnh AI lưu local, không có giá/rating/ảnh provider trong seed.
 - `/explore`: tìm/lọc địa điểm từ API, xem danh sách hoặc bản đồ khu vực; `/places/:id`: chi tiết, ghi chú và thêm vào trip. Lưu địa điểm/ghi chú đồng bộ MongoDB theo tài khoản; bản nháp chuyến đi mới phải nhấn Lưu. API/giới hạn và bằng chứng kiểm tra ở [PRODUCT-VERIFICATION.md](docs/PRODUCT-VERIFICATION.md).
 - Nháp trước login chỉ giữ trong bộ nhớ trang; đăng nhập rồi bấm tạo/lưu mới ghi MongoDB. Reload trước khi lưu làm mất nháp này. Khi API lỗi hoặc conflict, giữ input hiện tại; không reload nếu cần giữ bản đang sửa.
 - Trip hiện hỗ trợ một điểm đến, VND tổng nhóm, giờ Việt Nam trong cùng ngày. Giới hạn kỹ thuật trong contracts: 31 ngày, 50 hoạt động/ngày, 300/chuyến, 1.000 người; không phải quota thương mại. Chỉnh constants/validation cùng nhau nếu cần thay đổi.

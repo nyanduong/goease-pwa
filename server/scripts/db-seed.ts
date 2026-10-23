@@ -9,7 +9,7 @@ try {
   const config = parseConfig(process.env);
   if (
     config.NODE_ENV !== 'development' ||
-    !/^mongodb:\/\/(127\.0\.0\.1|localhost):27019\/goease\?replicaSet=rs0$/.test(
+    !/^mongodb:\/\/(127\.0\.0\.1|localhost):27017\/goease\?replicaSet=rs0$/.test(
       config.MONGODB_URI,
     )
   )
@@ -32,7 +32,7 @@ try {
   );
 } catch {
   console.error(
-    'FAIL: destination seed. Only development GoEase on loopback 27019/rs0 is allowed; check database availability.',
+    'FAIL: destination seed. Only development GoEase on loopback 27017/rs0 is allowed; check database availability.',
   );
   process.exitCode = 1;
 } finally {

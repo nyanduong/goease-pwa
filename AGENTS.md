@@ -6,7 +6,7 @@ Read AGENTS.md, README.md, docs/BR.md, docs/ARCHITECTURE.md, docs/F0-VERIFICATIO
 
 The owner has confirmed a complete rewrite: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Develop against local MongoDB first; move to Atlas after the local implementation is complete. Do not import code from the old GoEase repository or reopen the stack choice without a concrete owner request.
 
-Baseline v0.2 is accepted as design, not implemented features or approval of every proposed policy. Google plus email/password, npm workspaces with one package-lock.json, npm run dev and localhost web/API are confirmed. Preserve the working local MongoDB loopback/replica set. Follow the current task for Git scope; F1-A uses main without branch/PR.
+Baseline v0.2 is accepted as design, not implemented features or approval of every proposed policy. Google plus email/password, npm workspaces with one package-lock.json, npm run dev and localhost web/API are confirmed. Local development uses the existing localhost:27017 MongoDB rs0 service and the separate goease database; preserve that service and other databases. Follow the current task for Git scope; F1-A uses main without branch/PR.
 
 ## Working agreement
 

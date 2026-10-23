@@ -45,7 +45,7 @@ Chưa tạo thư mục mobile hoặc package UI đa nền tảng. Trong server, 
 
 Kết nối được cấu hình bằng MONGODB_URI tại server. Có hướng dẫn khởi tạo, kiểm tra kết nối và dừng dịch vụ rõ ràng.
 
-F0 đã có local single-node rs0 trên loopback 127.0.0.1:27019; giữ nguyên cấu hình này. Kiểm thử transaction nhiều document của F1 cần bằng chứng riêng, chưa được nghiệm thu ở F0. Replica set một thành viên dùng cho phát triển không cung cấp dự phòng như một triển khai production. Cấu hình URI có tên replica set không tự khởi tạo replica set.
+F0 ban đầu dùng single-node rs0 trên loopback 127.0.0.1:27019. Theo yêu cầu chủ dự án ngày 23/10/2026, runtime local dùng MongoDB service `localhost:27017` đã có sẵn primary `rs0`, với database riêng `goease`; dữ liệu GoEase từ instance cũ được sao chép sang. Không reconfigure hoặc dừng service dùng chung. Kiểm thử transaction nhiều document của F1 có bằng chứng riêng, chưa được nghiệm thu ở F0. Replica set một thành viên dùng cho phát triển không cung cấp dự phòng như một triển khai production. Cấu hình URI có tên replica set không tự khởi tạo replica set.
 
 F0 dùng MongoDB cài sẵn, không cần Docker Compose. Theo README để chạy localhost, không mở IP LAN hay reconfigure replica set đang hoạt động. Nếu cần truy cập database từ điện thoại, điện thoại chỉ gọi API; không mở MongoDB trực tiếp cho frontend.
 
