@@ -12,6 +12,15 @@ export const geoapifyGroups = {
   cafe: 'catering.cafe',
 } as const;
 export type GeoapifyGroup = keyof typeof geoapifyGroups;
+export class GeoapifyRateLimit extends HttpError {
+  constructor(public retryAt: Date) {
+    super(
+      429,
+      'GEOAPIFY_REJECTED',
+      'Nguồn dữ liệu đang giới hạn lượt truy cập. Hãy chờ thời điểm thử lại.',
+    );
+  }
+}
 
 const featureSchema = z.object({
   type: z.literal('Feature'),
@@ -41,6 +50,8 @@ const featureSchema = z.object({
               .union([z.string().max(50), z.number().int().positive()])
               .optional(),
             opening_hours: z.string().max(1000).optional(),
+            disused: z.string().max(20).optional(),
+            abandoned: z.string().max(20).optional(),
             website: z.string().max(2048).optional(),
             phone: z.string().max(200).optional(),
           })
@@ -65,6 +76,7 @@ export type GeoapifyCandidate = {
   sourceUrl: string;
   openingHoursNote: string;
   flags: string[];
+  closed?: boolean | null;
 };
 export type GeoapifyBatch = {
   group: GeoapifyGroup;
@@ -157,6 +169,7 @@ export function normalizeGeoapify(
       venueType: food ? 'restaurant' : 'place',
       sourceUrl,
       openingHoursNote: (osm?.opening_hours ?? '').slice(0, 400),
+      closed: osm?.disused === 'yes' || osm?.abandoned === 'yes' ? true : null,
       flags: [
         ...(!address ? ['missing_address'] : []),
         ...(!p.street ? ['missing_street'] : []),
@@ -189,7 +202,7 @@ export function geoapifyProvider(
       throw new HttpError(
         503,
         'GEOAPIFY_NOT_CONFIGURED',
-        'Chưa cấu hình Geoapify trên server.',
+        'Chưa kết nối nguồn dữ liệu. Nhờ người thiết lập điền khóa Geoapify trên máy chủ rồi khởi động lại API.',
       );
     if (
       !(group in geoapifyGroups) ||
@@ -218,6 +231,29 @@ export function geoapifyProvider(
       });
       if (!response.ok) {
         await response.body?.cancel();
+        if (response.status === 429) {
+          const header = response.headers.get('retry-after');
+          const supplied =
+            header && /^\d+$/.test(header)
+              ? Date.now() + Number(header) * 1000
+              : Date.parse(header ?? '');
+          throw new GeoapifyRateLimit(
+            new Date(
+              Number.isFinite(supplied)
+                ? Math.min(
+                    Date.now() + 86400000,
+                    Math.max(Date.now() + 1000, supplied),
+                  )
+                : Date.now() + 15 * 60000,
+            ),
+          );
+        }
+        if (response.status === 401 || response.status === 403)
+          throw new HttpError(
+            503,
+            'GEOAPIFY_AUTH',
+            'Nguồn dữ liệu chưa chấp nhận kết nối. Nhờ người thiết lập kiểm tra khóa và quyền truy cập Geoapify.',
+          );
         throw new HttpError(
           response.status === 429 ? 429 : 502,
           'GEOAPIFY_REJECTED',

@@ -1239,3 +1239,82 @@ CAT-10 cùng CAT-01/02/03/05/08: optional `places.source` strict subdocument `{p
 Imported place uses existing fields: draft, revision 1, server actor; referencePrice=null, no priceOptions; planning.durationMinutes=60 is labeled initial editorial estimate; address in locationQuery, opening_hours in note, mapLocation area with OSM permalink/source fetch date (not verified entrance/date). Source ID remains stable when name/coordinates change. No raw response/contact/review/photo/geospatial index. Published edit/archive/trip snapshot behavior unchanged.
 
 `idempotency_keys.resourceType` adds place_import; optional resultIds (array<=50, each 24 hex ObjectId string, no default array on old records). operation=catalog.import, resourceId=UUIDbatch, existing 24 hTTL. Receipt and every place/audit committed in one transaction; replay reauthorizes and returns created IDs without needing live preview. `audit_logs.action` adds catalog.imported with entityType place/category catalog; no source payload or credential in audit. No new collection, data migration, syncIndexes, refresh or purge job. Additive unique source index created by existing initialize/createIndexes path; local index observed. Runtime schema/registry/contracts and flow are detailed in [GEOAPIFY-IMPORT](GEOAPIFY-IMPORT.md).
+
+### Hội An complete-day planner storage impact — 2026-10-23
+
+AI-01/02/03 and TRIP-08: new ai_runs promptVersion=hoian-v3 and plannerVersion=2; goe-v2 remains supported for selected-day edits. No new fields, indexes, collections or migration. Existing null budget/cost contracts remain authoritative. Activity notes now snapshot catalog address/hours (bounded to 500 characters). Provider receives public editorial context and reference costs; no raw response or private notes stored. Structured opening-hours schema and generalized import normalization remain planned. Registry hoianCompleteDays records this implemented subset.
+
+The final implementation uses AI-ranked candidates plus server scheduling before validation: meals and visits are filled from the published catalog, recognized hours/durations are enforced, and optional extra visits stay within the AI-selected set. When editing one existing day, its current stop count (maximum 6) is allowed even if above the old pace default, to avoid dropping stops solely due to the old cap. This does not introduce new persisted fields. Future structured venue meal suitability and route matrices remain planned.
+
+### Date rescheduling runtime (2026-10-23)
+
+AI-02/TRIP-08: ai_runs.provider runtime enum now permits gemini and catalog. Deterministic date checks for AI trips create succeeded catalog runs (date-reschedule-v1/plannerVersion 3), quotaState=released and bounded proposal/sources; no usage_buckets mutation. New run binds authenticated user and, for saved trips, tripId/expectedRevision. Manual trip checks create no run. Trip schemas and stable activity/expense IDs unchanged. Successful date-check proposals remain private until the normal save operation; no automatic trip migration. This is runtime Mongoose validation, not a new database JSON validator. See AI-PLANNER.md for contract and limitations.
+
+## Runtime catalog automation — 2026-10-23
+
+CAT-11–13: additive local implementation. The original40collection design remains; these3runtime collections have concrete consumers (43registry entries total). No destructive migration or reconfiguration of MongoDB. Registry mirrors this dictionary, not an executable schema.
+
+`places.sourceSnapshot` and `sourceCheckedAt` are optional/null, independent of editorial content/revision. SourceSnapshot is strict: name(max120), address(max200), latitude[-90,90], longitude[-180,180], category food/culture/nature, venueType place/restaurant, categories<=100 strings(max160), openingHoursNote(max400), closed boolean|null, sourceUrl(max2048). Categories sorted before hashing. Existing imported records without snapshot receive a first-observation review. Fetch dates never imply human verification. Ordinary admin writes preserve observation fields. No raw response/contact/photo/review.
+
+### `catalog_schedules` — implemented
+
+Singleton lịch và quota Geoapify Hội An, consumer worker và admin.
+
+| Field                                   | Type                               | Default / required     | Rule                                                                                                 |
+| --------------------------------------- | ---------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| scope                                   | enum                               | hoi-an, unique         | Chỉ một cấu hình Hội An.                                                                             |
+| revision; enabled                       | number; boolean                    | 0; false               | CAS cấu hình; quota/nextRun không tăng revision cấu hình.                                            |
+| frequency; hour; minute; weekday; group | enum; number; number; number; enum | weekly; 8; 0; 1; mixed | daily/weekly; hour0..23; minute0..59; weekday0..6; group mixed/sights/restaurant/cafe. Giờ Việt Nam. |
+| nextRunAt                               | Date / null                        | null                   | UTC; tạo tối đa một lượt quá hạn rồi tính kỳ tương lai.                                              |
+| quotaHour; searches                     | number; number                     | 0; 0                   | UTC epoch-hour; <=20 lượt/giờ, kể cả lỗi.                                                            |
+| actorSearches                           | {actor:string,count:number}[]      | []                     | Tối đa20actor/giờ; actor userId hoặc catalog-worker; <=10 lượt/actor. Reset đầu giờ.                 |
+| slots                                   | {token:UUID,until:Date}[]          | []                     | Tối đa2slot120s dùng chung preview/worker, hết hạn tự thu hồi khi nhận slot.                         |
+| createdAt; updatedAt                    | Date; Date                         | timestamps             | Mongoose strict schema; không secret.                                                                |
+
+Indexes: Unique {scope:1}.
+
+Cấu hình admin có revision/audit/receipt; quota transaction dùng chung mọi process; mặc định tắt. Retention: Chưa purge tự động; counters và slots bounded, tự thay thế khi hết cửa sổ.
+
+### `catalog_runs` — implemented
+
+Lượt cập nhật bền vững, atomic claim/fencing, retry và lịch sử.
+
+| Field                   | Type                                             | Default / required   | Rule                                                                                                                          |
+| ----------------------- | ------------------------------------------------ | -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| operationId             | UUID                                             | server randomUUID    | Stable across attempts; joins run and place audits.                                                                           |
+| scope; active; state    | enum; boolean; enum                              | hoi-an; true; queued | state queued/running/retry/succeeded/failed; active false khi kết thúc.                                                       |
+| actorId; group          | ObjectId / null; enum                            | null; required       | actorId user cho chạy ngay, null theo lịch. group mixed/sights/restaurant/cafe là snapshot cấu hình.                          |
+| attempts; nextAttemptAt | number; Date                                     | 0; now               | Tối đa3lần xử lý; quá3 lần do crash chuyển failed, không gọi nguồn.                                                           |
+| leaseToken; leaseUntil  | UUID / null; Date / null                         | null; null           | Claim120s, heartbeat20s. Transaction ghi domain phải cập nhật cùng run với token chưa hết hạn.                                |
+| finishedAt; message     | Date / null; string(max400)                      | null; empty          | Thông báo allowlist tiếng Việt, không raw error/provider key.                                                                 |
+| counts                  | {created,unchanged,review,skipped,errors:number} | all zero             | Thống kê committed; review có thể gồm địa điểm mới nghi trùng. Failed atomic run ghi errors=1, không giả số địa điểm đã nhập. |
+| createdAt; updatedAt    | Date; Date                                       | timestamps           | Không raw response; không mảng history vô hạn.                                                                                |
+
+Indexes: Unique partial {scope:1,active:1} where active=true; {active:1,nextAttemptAt:1,leaseUntil:1}; {createdAt:-1}.
+
+Một active Hội An; source fetch ngoài transaction, tất cả place/review/result/audit commit nguyên tử với fence; pause không hủy lượt đã nhận. Retention: Chưa TTL/purge; API30lượt gần nhất, audit phân trang.
+
+### `catalog_reviews` — implemented
+
+Một vấn đề/địa điểm; giữ signature quyết định để không nhắc lặp.
+
+| Field                    | Type                          | Default / required | Rule                                                                                                           |
+| ------------------------ | ----------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| placeId; kind; signature | ObjectId; enum; SHA256 string | required           | kind draft/duplicate/source/price; signature revision draft, normalized snapshot source/duplicate, price hash. |
+| revision; state          | number; enum                  | 1; open            | state open/resolved/snoozed; CAS quyết định, đồng thời kiểm place revision.                                    |
+| decision; revisitAt      | enum / null; Date / null      | null; null         | keep/apply/ignore/later/distinct; later sau now, tối đa90ngày.                                                 |
+| incoming; previous       | SourceSnapshot / null         | null; null         | Strict allowlist như places.sourceSnapshot; baseline chưa giải quyết được giữ qua nhiều lần sync.              |
+| fetchedAt; duplicates    | Date / null; string[]         | null; []           | Ngày lấy nguồn khác xác minh; tối đa20tên nghi trùng.                                                          |
+| createdAt; updatedAt     | Date; Date                    | timestamps         | Không payload ngoài allowlist.                                                                                 |
+
+Indexes: Unique {placeId:1,kind:1}; {state:1,revisitAt:1,updatedAt:-1}.
+
+Signature không đổi giữ quyết định; source mới mở lại; snooze đến hạn mở lại. Không đổi publicationStatus trừ quyết định ignore/apply đóng cửa rõ ràng. Retention: Không tự xóa receipt quyết định; một bản/loại/địa điểm, audit sự kiện riêng.
+
+`idempotency_keys`: resourceType adds catalog_operation; optional catalogResults array<=50 of strict {id:string,name:string<=120,eligible:boolean,reason:string<=400,applied?:boolean}. No Mixed/JSON payload store. Existing actor/operation/key unique index and24h TTL reused. Schedule/run/review receipts retain resourceId; batch retains exact per-item success/failure. Same-key replay reauthorizes and different payload conflicts.
+
+`audit_logs`: new catalog.source_changed, catalog.review_keep/apply/ignore/later/distinct, catalog.schedule_saved, catalog.run_requested/succeeded/failed; entityType place/catalog_schedule/catalog_run. System actor serviceName catalog-worker, platform server; authenticated decisions/config use user. run_failed outcome failed. Metadata only, existing audit unique dedupe retained; new history index {category:1,occurredAt:-1,_id:-1}. No full source payload in audit.
+
+Worker uses atomic run claim + periodic lease renewal; each domain transaction also writes run with matching token and unexpired lease. This prevents stale worker side effects through MongoDB transaction write conflicts. Run counts and catalog/reviews/audit commit together; failures before commit produce no partial catalog effects. Provider calls never inside retriable transaction. Reviews and drafts never automatically demote published records. APIs/contracts and operational limits are in ADMIN-CATALOG.md and GEOAPIFY-IMPORT.md.
+
+Concurrency clarification: every review decision also advances the place revision in the same transaction, including keep/later/distinct. This fences simultaneous editorial edits; draft review signatures advance with that decision so keeping or deferring a draft does not reopen itself. Source polling alone still does not advance editorial revision.

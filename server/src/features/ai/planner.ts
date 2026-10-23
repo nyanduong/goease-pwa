@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { rescheduleDates } from './reschedule.js';
+import type { RescheduleRequest, RescheduleResult } from '@goease/contracts';
 import { catalogCost } from '@goease/contracts';
 import { Schema, Types, type Connection } from 'mongoose';
 import {
@@ -14,6 +16,13 @@ import { HttpError } from '../../http-error.js';
 import { tokenHash } from '../auth/security.js';
 import { requestId } from '../auth/auth.service.js';
 import { calculateBudget } from '../trips/budget.js';
+import {
+  arrangeCompleteDays,
+  eligibleForPlanner,
+  itineraryPolicy,
+  outsideKnownHours,
+  plannerCatalog,
+} from './itinerary-policy.js';
 import type { tripService } from '../trips/trip.service.js';
 import type { exploreService } from '../explore/explore.service.js';
 import {
@@ -27,11 +36,15 @@ export function validatePlan(
   input: PlannerRequest,
   places: PlaceDto[],
   runId: string,
+  adjustment = false,
 ): PlannerProposal {
   const plan = generatedPlanSchema.parse(raw);
-  const maxStops = { relaxed: 2, balanced: 3, active: 6 }[
-    input.trip.preferences.pace
-  ];
+  const { maxStops } = itineraryPolicy(input, adjustment);
+  const visited = new Set<string>();
+  const fullCatalog =
+    places.filter((p) => p.category !== 'food').length >= 4 &&
+    places.filter((p) => p.category === 'food' && p.venueType === 'restaurant')
+      .length >= 2;
   if (
     JSON.stringify(plan.days.map((d) => d.date)) !==
     JSON.stringify(input.trip.days.map((d) => d.date))
@@ -42,6 +55,30 @@ export function validatePlan(
   const days = plan.days.map((day, i) => {
     let end = 390;
     const seen = new Set<string>();
+    if (!adjustment && fullCatalog) {
+      const meals = day.stops.filter(
+        (s) => places.find((p) => p.id === s.placeId)?.category === 'food',
+      );
+      const lunch = meals.some(
+        (s) => minutes(s.start) >= 660 && minutes(s.start) <= 840,
+      );
+      const dinner = meals.some(
+        (s) => minutes(s.start) >= 1020 && minutes(s.start) <= 1200,
+      );
+      if (
+        day.stops.length < 4 ||
+        !lunch ||
+        !dinner ||
+        day.stops.filter(
+          (s) => places.find((p) => p.id === s.placeId)?.category !== 'food',
+        ).length < 2
+      )
+        throw new HttpError(
+          502,
+          'AI_INVALID_OUTPUT',
+          'Goe chưa xếp đủ điểm tham quan và bữa ăn cho chuyến này. Hãy thử lại; lựa chọn của bạn vẫn được giữ.',
+        );
+    }
     if (day.stops.length > maxStops)
       throw new HttpError(
         502,
@@ -64,6 +101,19 @@ export function validatePlan(
             'AI_INVALID_OUTPUT',
             'Goe chưa chọn được các địa điểm phù hợp. Hãy thử đổi một điểm trong ngày hoặc chọn từ gợi ý. Lịch cũ vẫn được giữ.',
           );
+        if (outsideKnownHours(place, day.date, start, finish))
+          throw new HttpError(
+            502,
+            'AI_SCHEDULE_CONFLICT',
+            'Lịch gợi ý chưa khớp giờ hoạt động đã có. Chưa thay đổi chuyến đi; hãy thử lại.',
+          );
+        if (!adjustment && place.category !== 'food' && visited.has(place.id))
+          throw new HttpError(
+            502,
+            'AI_INVALID_OUTPUT',
+            'Goe đang lặp điểm tham quan giữa các ngày. Chưa thay đổi chuyến đi; hãy thử lại.',
+          );
+        visited.add(place.id);
         if (
           start < end + 30 ||
           finish > 1320 ||
@@ -86,7 +136,10 @@ export function validatePlan(
           endLocalTime: stop.end,
           timezone: 'Asia/Ho_Chi_Minh' as const,
           order,
-          notes: '',
+          notes: [place.planning.locationQuery, place.openingHoursNote]
+            .filter(Boolean)
+            .join('\n')
+            .slice(0, 500),
           source: 'ai' as const,
           estimatedCost: catalogCost(place),
         };
@@ -104,11 +157,9 @@ export function validatePlan(
     trip,
     budget: calculateBudget(trip),
     warnings: [
-      'Đây là đề xuất AI. Giờ đi và thời lượng cần kiểm tra lại; chưa xác minh giờ mở cửa, thời tiết hay thời gian di chuyển thực tế.',
+      'Lịch dành cho ngày trọn vẹn, có khoảng nghỉ giữa các điểm. Giờ di chuyển là ước tính; hãy điều chỉnh ngày đầu/cuối theo giờ đến và giờ về.',
       'Dự toán tự dùng giá tham khảo đã biên tập khi có. Các khoản thiếu giá, chỗ ở và di chuyển chưa thêm chưa nằm trong tổng; đây không phải báo giá đặt dịch vụ.',
-      ...(days.length > 2
-        ? ['Gợi ý ở Hội An còn ít; địa điểm có thể lặp giữa các ngày.']
-        : []),
+      'Giờ hoạt động dùng thông tin hiện có; chưa có kiểm tra thời tiết hoặc tình trạng nhận khách trực tiếp.',
     ],
   };
 }
@@ -130,7 +181,11 @@ export function plannerService(
   const runSchema = new Schema(
     {
       schemaVersion: { type: Number, default: 1 },
-      provider: { type: String, enum: ['gemini'], default: 'gemini' },
+      provider: {
+        type: String,
+        enum: ['gemini', 'catalog'],
+        default: 'gemini',
+      },
       runId: { type: String, required: true },
       userId: { type: Schema.Types.ObjectId, required: true },
       key: { type: String, required: true },
@@ -206,6 +261,104 @@ export function plannerService(
   }
   return {
     models: { Run, Bucket },
+    async reschedule(
+      owner: Types.ObjectId,
+      input: RescheduleRequest,
+    ): Promise<RescheduleResult> {
+      if (input.tripId) {
+        const current = await trips.read(input.tripId, owner);
+        if (current.trip.revision !== input.expectedRevision)
+          throw new HttpError(
+            409,
+            'REVISION_CONFLICT',
+            'Chuyến đi đã thay đổi. Hãy tải bản mới trước khi đổi ngày.',
+          );
+      }
+      if (input.trip.generationMode === 'ai') {
+        const source = await Run.findOne({
+          runId: input.trip.aiRunId ?? '',
+          userId: owner,
+          status: 'succeeded',
+        });
+        if (!source || (source.tripId && source.tripId !== input.tripId))
+          throw new HttpError(
+            409,
+            'AI_PROPOSAL_STALE',
+            'Không tìm thấy lịch gốc của bạn. Hãy tải lại chuyến đi.',
+          );
+        const links = new Set(
+          tripInputSchema
+            .parse(source.proposal.trip)
+            .days.flatMap((d) =>
+              d.activities.map((a) => `${a.activityId}:${a.placeId}`),
+            ),
+        );
+        if (
+          input.trip.days.some((d) =>
+            d.activities.some(
+              (a) =>
+                a.source === 'ai' && !links.has(`${a.activityId}:${a.placeId}`),
+            ),
+          )
+        )
+          throw new HttpError(
+            400,
+            'INVALID_AI_SOURCE',
+            'Nguồn hoạt động AI không hợp lệ.',
+          );
+      }
+      const { items } = await explore.list({
+        destinationId: input.trip.destinations[0]!.destinationId,
+        limit: 30,
+      });
+      let result: RescheduleResult;
+      try {
+        result = rescheduleDates(
+          input.trip,
+          input.startDate,
+          input.endDate,
+          items,
+        );
+      } catch (e) {
+        if (e instanceof HttpError) throw e;
+        throw new HttpError(
+          400,
+          'INVALID_DATE_CHANGE',
+          e instanceof Error ? e.message : 'Không thể đổi ngày.',
+        );
+      }
+      if (input.trip.generationMode === 'ai') {
+        const runId = randomUUID();
+        result.trip.aiRunId = runId;
+        await Run.create({
+          runId,
+          userId: owner,
+          key: randomUUID(),
+          provider: 'catalog',
+          ...(input.tripId
+            ? {
+                tripId: input.tripId,
+                expectedRevision: input.expectedRevision!,
+              }
+            : {}),
+          promptVersion: 'date-reschedule-v1',
+          plannerVersion: '3',
+          status: 'succeeded',
+          quotaState: 'released',
+          sources: items.map((p) => p.id),
+          proposal: {
+            runId,
+            trip: result.trip,
+            budget: calculateBudget(result.trip),
+            warnings: [
+              'Đã kiểm tra giờ hoạt động theo dữ liệu hiện có; nơi chưa có giờ xác minh vẫn chưa thể xác nhận.',
+            ],
+          },
+          finishedAt: new Date(),
+        });
+      }
+      return result;
+    },
     async chat(
       owner: Types.ObjectId,
       tripId: string,
@@ -319,7 +472,7 @@ export function plannerService(
         destinationId: input.trip.destinations[0]!.destinationId,
         limit: 30,
       });
-      const places = items.filter((p) => p.planning);
+      const places = items.filter(eligibleForPlanner);
       const selected = input.adjustment
         ? input.trip.days.find((d) => d.dayId === input.adjustment!.dayId)
         : undefined;
@@ -377,8 +530,8 @@ export function plannerService(
             tripId: input.tripId,
             expectedRevision: input.expectedRevision,
             model: config.GEMINI_MODEL,
-            promptVersion: input.adjustment ? 'goe-v2' : 'hoian-v2',
-            plannerVersion: '1',
+            promptVersion: input.adjustment ? 'goe-v2' : 'hoian-v3',
+            plannerVersion: '2',
             status: 'pending',
             quotaState: 'reserved',
             inputSummary: {
@@ -401,9 +554,14 @@ export function plannerService(
       try {
         const result = await generate({
           destination: 'Hội An',
-          maxStopsPerDay: { relaxed: 2, balanced: 3, active: 6 }[
-            input.trip.preferences.pace
-          ],
+          maxStopsPerDay: itineraryPolicy(
+            selected
+              ? { ...input, trip: { ...input.trip, days: [selected] } }
+              : input,
+            Boolean(selected),
+          ).maxStops,
+          planningBrief:
+            'For a new trip, plan complete comfortable days without asking for a budget: 2 or 3 varied visits plus a real lunch around 11:00-14:00 and dinner around 17:00-20:00, within the supplied stop cap. A coffee shop is a break, not a substitute for a meal. Use specific restaurants, never generic food ideas. Cluster adjacent addresses in each half-day; avoid backtracking and leave at least 30 minutes for transfers/rest, longer for distant areas. Use openingHoursNote including monthly closed dates; unknown hours are not a guarantee of opening. Avoid repeating visits across days; restaurants may repeat only when the catalog is limited. If budget is null, choose a balanced mix, do not assume a monetary limit or claim affordability. Reference costs may be unknown; never invent money. No hotel, booking, weather or precise travel-time claims. Dates represent full days; arrival/departure times are unknown.',
           dates: selected
             ? [selected.date]
             : input.trip.days.map((d) => d.date),
@@ -425,13 +583,7 @@ export function plannerService(
           travelers: input.trip.travelers.totalCount,
           budget: input.trip.budget,
           preferences: input.trip.preferences,
-          catalog: places.map((p) => ({
-            id: p.id,
-            name: p.name,
-            category: p.category,
-            durationMinutes: p.planning!.durationMinutes,
-            location: p.planning!.locationQuery,
-          })),
+          catalog: plannerCatalog(places),
         });
         if (selected) {
           const single = {
@@ -443,7 +595,7 @@ export function plannerService(
               days: [selected],
             },
           };
-          const generated = validatePlan(result, single, places, runId);
+          const generated = validatePlan(result, single, places, runId, true);
           const kept = selected.activities.filter(
             (a) => !places.some((p) => p.id === a.placeId),
           );
@@ -495,7 +647,13 @@ export function plannerService(
               'Goe chưa có dữ liệu thời tiết, giờ mở cửa hoặc giá trực tiếp. Không bảo đảm tiết kiệm khi còn khoản chưa rõ. Điểm mới chưa có giá cần bạn bổ sung.',
             ],
           } as GoeProposal;
-        } else proposal = validatePlan(result, input, places, runId);
+        } else
+          proposal = validatePlan(
+            arrangeCompleteDays(result, input, places),
+            input,
+            places,
+            runId,
+          );
       } catch (e) {
         const code = e instanceof HttpError ? e.code : 'AI_INVALID_OUTPUT';
         const rejected = code === 'AI_PROVIDER_REJECTED',

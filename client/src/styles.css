@@ -5573,21 +5573,6 @@ body:has(.journey-shell) {
   margin: 0;
   min-height: 52px;
 }
-.quick-disclosure {
-  font-size: 11px;
-  color: #65756d;
-  text-align: center;
-  padding: 8px 0;
-  line-height: 1.5;
-}
-.quick-disclosure summary {
-  cursor: pointer;
-  min-height: 28px;
-  padding: 4px;
-}
-.quick-disclosure p {
-  text-align: left;
-}
 .quick-manual {
   display: block;
   width: 100%;
@@ -5891,6 +5876,219 @@ body:has(.quick-result-intro) .mobile-bottom-nav {
 .admin-desktop-main {
   min-width: 0;
 }
+.admin-navigation {
+  display: grid;
+  gap: 8px;
+}
+.admin-navigation a {
+  padding: 14px 12px;
+  border-radius: 10px;
+  color: #194e45;
+  text-decoration: none;
+  font-weight: 650;
+}
+.admin-navigation a:hover,
+.admin-navigation a:focus-visible {
+  background: #dcebd9;
+}
+.admin-operations {
+  color: #183e35;
+}
+.admin-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 24px 0 32px;
+}
+.admin-overview > div {
+  padding: 22px;
+  background: #fffdf6;
+  border: 1px solid #dce2d5;
+  border-radius: 16px;
+  display: grid;
+  gap: 10px;
+}
+.admin-overview strong {
+  font-size: 24px;
+  line-height: 1.3;
+}
+.admin-overview span,
+.admin-work-row small {
+  font-size: 14px;
+  color: #52645c;
+}
+.admin-work-group {
+  margin: 28px 0;
+}
+.admin-work-group h2,
+.admin-operations h2 {
+  font-size: 21px;
+  margin: 22px 0 14px;
+}
+.admin-work-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px;
+  border: 1px solid #dce2d5;
+  border-radius: 12px;
+  margin: 10px 0;
+  background: #fffdf6;
+}
+.admin-work-row > div {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+.admin-work-row h3 {
+  font-size: 18px;
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+.admin-work-row p {
+  margin: 5px 0;
+}
+.admin-work-row button {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+}
+.admin-operations button,
+.admin-batch button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #749087;
+  background: #fffdf6;
+  color: #194e45;
+  cursor: pointer;
+}
+.admin-operations button.journey-primary,
+.admin-batch button.journey-primary {
+  color: white;
+  background: #194e45;
+}
+.admin-catalog :focus-visible,
+.admin-navigation a:focus-visible {
+  outline: 3px solid #b56324;
+  outline-offset: 3px;
+}
+.admin-soft-notice {
+  background: #e8efdf;
+  border-left: 4px solid #58765b;
+  padding: 18px;
+  border-radius: 8px;
+}
+.admin-empty {
+  padding: 40px 24px;
+  text-align: center;
+  border: 1px dashed #819787;
+  border-radius: 16px;
+}
+.admin-comparison {
+  overflow-x: auto;
+  margin: 24px 0;
+  border: 1px solid #cdd8cc;
+  border-radius: 12px;
+}
+.admin-comparison table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 15px;
+}
+.admin-comparison th,
+.admin-comparison td {
+  text-align: left;
+  padding: 16px;
+  vertical-align: top;
+  border-bottom: 1px solid #dce2d5;
+  overflow-wrap: anywhere;
+}
+.admin-comparison th:first-child {
+  width: 24%;
+}
+.admin-comparison thead {
+  background: #e8efdf;
+}
+.admin-comparison .has-difference {
+  background: #fff0d6;
+}
+.admin-comparison small {
+  display: block;
+  font-weight: 600;
+  margin-top: 8px;
+}
+.admin-source-status,
+.admin-defer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+.admin-source-status {
+  padding: 20px;
+  border: 1px solid #cdd8cc;
+  background: #fffdf6;
+  border-radius: 14px;
+}
+.admin-defer {
+  justify-content: flex-start;
+  border-top: 1px solid #cdd8cc;
+  padding-top: 20px;
+}
+.admin-run {
+  padding: 18px;
+  background: #fffdf6;
+  border: 1px solid #dce2d5;
+  border-radius: 12px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.admin-run summary {
+  cursor: pointer;
+  min-height: 28px;
+}
+.admin-run details {
+  margin-top: 18px;
+  color: #52645c;
+}
+.admin-batch {
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid #cdd8cc;
+  border-radius: 12px;
+  background: #e8efdf;
+}
+.admin-batch li {
+  margin: 12px 0;
+}
+@media (max-width: 1150px) {
+  .admin-desktop-shell {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+  .admin-sidebar {
+    padding: 24px 16px;
+  }
+  .admin-desktop-main .admin-catalog {
+    padding: 28px 24px 48px;
+  }
+  .admin-overview {
+    gap: 10px;
+  }
+  .admin-overview > div {
+    padding: 16px;
+  }
+  .admin-overview strong {
+    font-size: 20px;
+  }
+  .admin-work-row {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+}
 .admin-desktop-main .admin-catalog {
   max-width: 1280px;
   padding: 40px 40px 64px;
@@ -5953,6 +6151,11 @@ body:has(.quick-result-intro) .mobile-bottom-nav {
   display: block;
   color: #4e6259;
   line-height: 1.7;
+  font-size: 0.75rem;
+  margin-top: 1rem;
+}
+.place-source-credit summary {
+  cursor: pointer;
 }
 .place-source-credit a {
   color: inherit;

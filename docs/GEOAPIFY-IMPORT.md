@@ -1,5 +1,17 @@
 # Geoapify Hội An — thử dữ liệu và nhập danh mục
 
+## Cập nhật vận hành hiện hành — CAT-11–13
+
+Đã bổ sung lịch MongoDB + worker và luồng quyết định ở [ADMIN-CATALOG](ADMIN-CATALOG.md). Các mô tả “chưa scheduler/quota chỉ trong process/không refresh” trong hồ sơ thử ban đầu dưới đây là lịch sử, được thay bằng phạm vi hiện tại này.
+
+- Giữ nguyên provider, OSM identity/attribution/ODbL, tâm/bán kính5km và phân bổ mixed20/15/15; không Place Details/ảnh/review/contact. Snapshot so sánh chỉ name/address/lat/lon/category/venueType/categories/openingHoursNote/sourceUrl/closed. `closed` chỉ true khi nguồn OSM ghi disused=yes hoặc abandoned=yes, còn lại null; không biến thiếu kết quả thành đóng cửa. Đây là tín hiệu cần người đối chiếu, không xác nhận cơ sở thực sự đóng cửa.
+- Worker không dùng preview trong RAM. Mỗi lượt lấy toàn bộ tối đa3truy vấn trước transaction. Fetch lỗi giữa chừng không nhập nửa lượt; retry lấy lại nguồn. Thành công commit draft/observations/reviews/run-result/audit trong cùng transaction có fence. Không cache response thô hoặc giữ payload provider trong run.
+- Source snapshot tách nội dung biên tập. Không đổi chỉ cập nhật fetchedAt/sourceCheckedAt và thống kê lượt; không tăng revision nội dung hoặc sinh audit địa điểm hàng loạt. Thay đổi tạo/cập nhật duy nhất review source. Nếu có đề nghị chưa xử lý, giữ baseline cũ để không mất phần thay đổi chưa áp dụng qua nhiều lần sync. Giữ/bỏ qua ghi signature, thông tin giống nhau không nhắc lại. Bản archived không tự khôi phục; bản đã bỏ qua có nguồn mới liên quan vẫn có thể được đề nghị đối chiếu.
+- Bản legacy chưa có snapshot nguồn: lần chạy đầu tạo đề nghị đối chiếu toàn bộ trường nguồn, giữ nguyên nội dung hiện tại. Không dùng nội dung admin làm “nguồn trước”. Các import thủ công mới cũng lưu snapshot tối thiểu.
+- Quota20lượt/giờ toàn hệ thống,10/actor/giờ,2slot dùng chung worker/preview trong catalog_schedules; slot hết hạn120s, lượt lỗi vẫn tính, counters sống qua restart. Một actor hệ thống riêng cho lịch tự động. Đây là giới hạn ứng dụng, không phải số dư/billing Geoapify; không tự mua gói.429 lưu lịch theo Retry-After hợp lệ có chặn1giây–24giờ, thiếu header thì15phút; lỗi tạm1/2phút, tối đa3lần. Thiếu/sai quyền khóa chuyển cần can thiệp ngay.
+- Một active run Hội An qua unique partial index; atomic claim120s, heartbeat20s, hồi phục khóa hết hạn sau restart, không catch-up mọi kỳ đã bỏ lỡ: tạo tối đa một lượt khi lịch quá hạn rồi tính kỳ tương lai. Pause không hủy lượt đã nhận. Không cần phiên người cấu hình còn mở; actor worker hạn chế scope và không xuất bản.
+- Bằng chứng lượt này dùng provider fixture qua API thật/MongoDB riêng; không gọi provider live, không tự bật lịch hay xuất bản danh mục thật. Kết quả provider thật trong phần bên dưới thuộc lượt thử trước, không được tính lại thành bằng chứng worker mới.
+
 Ngày thực hiện: **23/10/2026**. Owner yêu cầu thử 30–50 địa điểm trước, sau đó làm import trong admin nếu dữ liệu đủ dùng. Đây là thử nghiệm local, chưa phải xác minh tại cơ sở hoặc nghiệm thu production.
 
 ## Kết quả dữ liệu thật
@@ -73,6 +85,8 @@ Chưa xác minh ngoài thực địa, chưa xác nhận giờ/giá, chưa test q
 - Git diff whitespace, registry40collection/CAT-10 references, .env/.local ignore và scan key Geoapify trong toàn bộ file Git-visible/client production bundle đều PASS. Không commit/push hoặc deploy trong lượt này.
 
 ## Rà soát biên tập tiếp theo — 23/10/2026
+
+UI khách sau biên tập: bỏ ghi công khỏi bước tạo chuyến chưa có địa điểm; các màn có dữ liệu dùng mục thu gọn “Bản quyền dữ liệu” ở cuối phần nội dung. Giữ các link giấy phép/nhà cung cấp trong mục này và trong dữ liệu quản trị. Link giá đổi thành “Xem chi tiết giá”; bỏ link nguồn chung trên chi tiết địa điểm. Thông báo AI gửi dữ liệu và nhãn ảnh minh họa vẫn giữ. Offline shell v3 nhận cách trình bày mới.
 
 Owner yêu cầu rà toàn bộ 41 bản nháp, bổ sung thông tin có nguồn và xuất bản mục đủ căn cứ; giá chưa xác minh phải giữ chưa rõ. Nội dung biên tập từng mục nằm trong [hồ sơ rà soát](data/hoian-catalog-review-2026-10-23.json): ID, revision gốc/mới, tên cũ/mới, nguồn, lý do và nội dung đã lưu theo contract admin.
 

@@ -93,6 +93,23 @@ test('admin import UI: failure/retry, duplicate review, same-key lost response, 
         ],
       });
     if (path === '/admin/places') return ok({ items: [], hasMore: false });
+    if (path === '/admin/catalog/operations')
+      return ok({
+        connected: true,
+        schedule: {
+          enabled: false,
+          frequency: 'weekly',
+          hour: 8,
+          minute: 0,
+          weekday: 1,
+          group: 'mixed',
+          revision: 0,
+          nextRunAt: null,
+        },
+        runs: [],
+      });
+    if (path === '/admin/catalog/reviews')
+      return ok({ items: [], total: 0, hasMore: false });
     if (path === '/admin/place-import/preview') {
       searches++;
       expect(r.request().postDataJSON()).toEqual({ group: 'mixed', limit: 50 });
@@ -128,6 +145,7 @@ test('admin import UI: failure/retry, duplicate review, same-key lost response, 
   });
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/admin');
+  await page.getByRole('link', { name: 'Địa điểm', exact: true }).click();
   await page
     .getByRole('button', { name: 'Nhập địa điểm từ Geoapify', exact: true })
     .click();

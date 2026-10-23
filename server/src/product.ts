@@ -2,6 +2,12 @@ import { passwordRecovery } from './features/auth/password-recovery.js';
 import { adminCatalog } from './features/explore/admin-catalog.js';
 import { placeImportService } from './features/explore/place-import.js';
 import { geoapifyProvider } from './features/explore/geoapify.js';
+import { catalogOperations } from './features/explore/catalog-operations.js';
+import {
+  catalogScheduleSchema,
+  catalogBatchSchema,
+  reviewDecisionSchema,
+} from '@goease/contracts';
 import {
   adminPlaceWriteSchema,
   adminPlaceQuerySchema,
@@ -37,6 +43,7 @@ import {
   registerSchema,
   tripInputSchema,
   plannerRequestSchema,
+  rescheduleRequestSchema,
   goeRequestSchema,
   goeApplySchema,
 } from '@goease/contracts';
@@ -101,6 +108,18 @@ export function createProduct(
     dependencies.geoapify ?? geoapifyProvider(config.GEOAPIFY_API_KEY),
   );
   const google = googleAuth(connection, config, auth);
+  const operations = catalogOperations(
+    connection,
+    catalog,
+    explore,
+    trips,
+    placeImport,
+    audit,
+    dependencies.geoapify ?? geoapifyProvider(config.GEOAPIFY_API_KEY),
+    Boolean(dependencies.geoapify || config.GEOAPIFY_API_KEY),
+    dependencies.logger ?? createLogger(config.NODE_ENV),
+  );
+  placeImport.setQuotaGuard(operations.reserveSearch);
   const router = Router();
   let ready = false;
   router.use((req, res, next) => {
@@ -122,11 +141,19 @@ export function createProduct(
       '/admin/places',
       '/admin/place-import/preview',
       '/admin/place-import/commit',
+      '/admin/catalog/operations',
+      '/admin/catalog/schedule',
+      '/admin/catalog/run',
+      '/admin/catalog/reviews',
+      '/admin/catalog/batch-preview',
+      '/admin/catalog/batch',
+      '/admin/catalog/history',
       '/me/places',
       '/trips',
       '/trips/trash',
       '/trips/budget-preview',
       '/trips/ai-proposal',
+      '/trips/reschedule-dates',
     ];
     if (publicTemplates.includes(req.path))
       res.locals.logRoute = '/api/v1' + req.path;
@@ -144,6 +171,8 @@ export function createProduct(
       res.locals.logRoute = '/api/v1/places/:id';
     if (/^\/admin\/places\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/admin/places/:id';
+    if (/^\/admin\/catalog\/reviews\/[^/]+\/decision$/.test(req.path))
+      res.locals.logRoute = '/api/v1/admin/catalog/reviews/:id/decision';
     if (/^\/me\/places\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/me/places/:id';
     if (/^\/trips\/[^/]+\/goe-proposal$/.test(req.path))
@@ -298,6 +327,86 @@ export function createProduct(
       data: await catalog.list(
         res.locals.authUser._id,
         parse(adminPlaceQuerySchema, req.query),
+      ),
+    }),
+  );
+  router.get('/admin/catalog/operations', async (_req, res) =>
+    res.json({
+      ok: true,
+      data: await operations.status(res.locals.authUser._id),
+    }),
+  );
+  router.put('/admin/catalog/schedule', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await operations.saveSchedule(
+        res.locals.authUser._id,
+        parse(catalogScheduleSchema, req.body),
+        parse(z.string().regex(uuidPattern), req.get('Idempotency-Key')),
+      ),
+    }),
+  );
+  router.post('/admin/catalog/run', async (req, res) => {
+    parse(z.strictObject({}), req.body ?? {});
+    res.json({
+      ok: true,
+      data: await operations.enqueue(
+        res.locals.authUser._id,
+        parse(z.string().regex(uuidPattern), req.get('Idempotency-Key')),
+      ),
+    });
+  });
+  router.get('/admin/catalog/reviews', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await operations.reviews(
+        res.locals.authUser._id,
+        parse(
+          z.coerce.number().int().min(0).max(100000),
+          req.query.offset ?? 0,
+        ),
+      ),
+    }),
+  );
+  router.post('/admin/catalog/reviews/:id/decision', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await operations.decide(
+        res.locals.authUser._id,
+        parse(z.string().regex(/^[a-f0-9]{24}$/), req.params.id),
+        parse(reviewDecisionSchema, req.body),
+        parse(z.string().regex(uuidPattern), req.get('Idempotency-Key')),
+      ),
+    }),
+  );
+  router.post('/admin/catalog/batch-preview', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await operations.batch(
+        res.locals.authUser._id,
+        parse(catalogBatchSchema, req.body),
+      ),
+    }),
+  );
+  router.post('/admin/catalog/batch', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await operations.batch(
+        res.locals.authUser._id,
+        parse(catalogBatchSchema, req.body),
+        parse(z.string().regex(uuidPattern), req.get('Idempotency-Key')),
+      ),
+    }),
+  );
+  router.get('/admin/catalog/history', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await operations.history(
+        res.locals.authUser._id,
+        parse(
+          z.coerce.number().int().min(0).max(100000),
+          req.query.offset ?? 0,
+        ),
       ),
     }),
   );
@@ -546,6 +655,13 @@ export function createProduct(
     const { trip } = parse(z.strictObject({ trip: tripInputSchema }), req.body);
     res.json({ ok: true, data: { budget: calculateBudget(trip) } });
   });
+  router.post('/trips/reschedule-dates', async (req, res) => {
+    const value = parse(rescheduleRequestSchema, req.body);
+    res.json({
+      ok: true,
+      data: await planner.reschedule(res.locals.authUser._id, value),
+    });
+  });
   router.post('/trips/ai-proposal', async (req, res) => {
     const value = parse(plannerRequestSchema, req.body);
     const key = parse(
@@ -647,6 +763,7 @@ export function createProduct(
     explore,
     expenses,
     sharing,
+    operations,
     async initialize() {
       ready = false;
       const all = [
@@ -656,6 +773,7 @@ export function createProduct(
         ...Object.values(expenses.models),
         ...Object.values(sharing.models),
         ...Object.values(planner.models),
+        ...Object.values(operations.models),
       ];
       for (const model of all) {
         await model.createCollection();

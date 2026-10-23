@@ -25,3 +25,4 @@ export * from './planner.js';
 export * from './expenses.js';
 export * from './catalog.js';
 export * from './place-import.js';
+export * from './catalog-operations.js';

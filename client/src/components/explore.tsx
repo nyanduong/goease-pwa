@@ -248,7 +248,6 @@ export function ExplorePage({
           Bản đồ
         </button>
       </div>
-      {items.some((p) => p.source) && <SourceCredit />}
       {error && (
         <div className="explore-status" role="alert">
           {error}{' '}
@@ -378,6 +377,7 @@ export function ExplorePage({
         </button>
       )}
       <p className="explore-image-credit">Ảnh minh họa được tạo bằng AI.</p>
+      {items.some((p) => p.source) && <SourceCredit />}
     </div>
   );
 }
@@ -763,9 +763,6 @@ export function PlaceDetail({
         )}
         <p className="place-source">
           {place.imageCredit} · Thời lượng và gợi ý do GoEase biên tập.{' '}
-          <a href={place.sourceUrl} target="_blank" rel="noreferrer">
-            Thông tin tham khảo
-          </a>
         </p>
       </div>
       <div className="place-bottom">

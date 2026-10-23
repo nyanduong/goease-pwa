@@ -147,3 +147,48 @@ test('Geoapify fixtures: provider failure, malformed/oversized output and timeou
   )('cafe', 30);
   assert.equal(empty.items.length, 0);
 });
+
+test('Geoapify explicit closure is unverified; 429 retry time and bad credentials are actionable', async () => {
+  assert.equal(
+    normalizeGeoapify(collection(feature()), 'cafe').items[0]!.closed,
+    null,
+  );
+  assert.equal(
+    normalizeGeoapify(
+      collection(
+        feature({
+          datasource: {
+            sourcename: 'openstreetmap',
+            raw: { osm_type: 'n', osm_id: 123, disused: 'yes' },
+          },
+        }),
+      ),
+      'cafe',
+    ).items[0]!.closed,
+    true,
+  );
+  const start = Date.now();
+  await assert.rejects(
+    geoapifyProvider(
+      'fixture-secret',
+      async () =>
+        new Response('', { status: 429, headers: { 'Retry-After': '120' } }),
+    )('cafe', 30),
+    (e: unknown) =>
+      e instanceof HttpError &&
+      e.code === 'GEOAPIFY_REJECTED' &&
+      'retryAt' in e &&
+      e.retryAt instanceof Date &&
+      e.retryAt.getTime() >= start + 120000,
+  );
+  await assert.rejects(
+    geoapifyProvider(
+      'fixture-secret',
+      async () => new Response('', { status: 403 }),
+    )('cafe', 30),
+    (e: unknown) =>
+      e instanceof HttpError &&
+      e.code === 'GEOAPIFY_AUTH' &&
+      !e.message.includes('fixture-secret'),
+  );
+});

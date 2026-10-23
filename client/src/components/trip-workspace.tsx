@@ -43,6 +43,7 @@ import {
   tripLifecycle,
   activityInputSchema,
   tripInputSchema,
+  type RescheduleResult,
   type ActivityInput,
   type DestinationDto,
   type PlaceDto,
@@ -293,7 +294,7 @@ export function TripWorkspace({
   onChange,
   destinations,
   loaded,
-  busy,
+  busy: savingBusy,
   saveState,
   message,
   onSave,
@@ -315,6 +316,51 @@ export function TripWorkspace({
   onSave: (value?: TripInput) => void;
   onBack: () => void;
 }) {
+  const [rescheduling, setRescheduling] = useState(false);
+  const busy = savingBusy || rescheduling;
+  const [dateNotice, setDateNotice] = useState('');
+  const latestDraft = useRef(draft);
+  latestDraft.current = draft;
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  async function changeDates(startDate: string, endDate: string) {
+    if (rescheduling) throw new Error('Goe đang kiểm tra lịch.');
+    if (!draft.days.some((d) => d.activities.length))
+      return shiftTripDays(draft, startDate, endDate, () =>
+        crypto.randomUUID(),
+      );
+    const snapshot = JSON.stringify(draft);
+    setRescheduling(true);
+    try {
+      const result = await api<RescheduleResult>('/trips/reschedule-dates', {
+        method: 'POST',
+        body: JSON.stringify({
+          trip: draft,
+          startDate,
+          endDate,
+          ...(loaded
+            ? { tripId: loaded.id, expectedRevision: loaded.revision }
+            : {}),
+        }),
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!mounted.current || JSON.stringify(latestDraft.current) !== snapshot)
+        throw new Error('Lịch đã thay đổi trong lúc kiểm tra. Hãy thử lại.');
+      setDateNotice(
+        result.changes.length
+          ? `Goe đã xếp lại lịch: ${result.changes.join('; ')}. Giờ chưa xác minh vẫn chưa thể xác nhận.`
+          : 'Đã đổi ngày và kiểm tra giờ hoạt động hiện có. Giờ chưa xác minh vẫn chưa thể xác nhận.',
+      );
+      return result.trip;
+    } finally {
+      if (mounted.current) setRescheduling(false);
+    }
+  }
   const [costView, setCostView] = useState<'estimate' | 'actual'>('estimate');
   const [step, setStep] = useState(
     draft.days.some((d) => d.activities.length) ? 2 : 1,
@@ -410,7 +456,8 @@ export function TripWorkspace({
     setError('');
     setField(value);
   }
-  function applyField() {
+  async function applyField() {
+    if (busy) return;
     const count =
       (Date.parse(pending.endDate) - Date.parse(pending.startDate)) / 86400000 +
       1;
@@ -448,9 +495,7 @@ export function TripWorkspace({
     try {
       next =
         field === 'dates'
-          ? shiftTripDays(pending, pending.startDate, pending.endDate, () =>
-              crypto.randomUUID(),
-            )
+          ? await changeDates(pending.startDate, pending.endDate)
           : withDays(pending);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Không thể đổi ngày.');
@@ -848,10 +893,10 @@ export function TripWorkspace({
                 <details>
                   <summary>Những điều cần biết về lịch này</summary>
                   <p>
-                    Giờ đi là gợi ý, chưa xác minh giờ mở cửa hoặc thời gian đi
-                    đường. Giá chưa có được giữ là “Chưa rõ”. Gợi ý Hội An còn
-                    ít, có thể lặp giữa các ngày. Món ăn chưa phải quán cụ thể.
-                    Lịch này chưa được lưu vào tài khoản.
+                    Lịch dành cho ngày trọn vẹn; bạn có thể đổi giờ theo lúc đến
+                    và về. Thời gian đi đường là ước tính. Giá chưa có được giữ
+                    là “Chưa rõ”; chỗ ở và di chuyển chưa thêm không nằm trong
+                    dự toán. Lịch này chưa được lưu vào tài khoản.
                   </p>
                 </details>
               </div>
@@ -1086,7 +1131,9 @@ export function TripWorkspace({
                                   </small>
                                 )}
                                 <small>
-                                  {a.notes ||
+                                  {(a.source === 'ai'
+                                    ? a.notes.split('\n')[0]
+                                    : a.notes) ||
                                     (a.endLocalTime
                                       ? `Đến ${a.endLocalTime}`
                                       : 'Chạm để thêm chi tiết')}
@@ -1298,6 +1345,14 @@ export function TripWorkspace({
           </>
         )}
       </fieldset>
+      {rescheduling && (
+        <p role="status">Goe đang kiểm tra giờ mở cửa và xếp lại lịch…</p>
+      )}
+      {dateNotice && (
+        <p className="journey-notice" role="status">
+          {dateNotice}
+        </p>
+      )}
       {error && !field && !editing && (
         <p className="journey-error" role="alert">
           {error}
@@ -1319,8 +1374,9 @@ export function TripWorkspace({
           }}
         >
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
+              if (busy) return;
               try {
                 if (!departure) {
                   setError('Chọn ngày khởi hành để lưu lịch theo ngày.');
@@ -1331,15 +1387,17 @@ export function TripWorkspace({
                 )
                   .toISOString()
                   .slice(0, 10);
-                const next = shiftTripDays(draft, departure, end, () =>
-                  crypto.randomUUID(),
-                );
+                const next = await changeDates(departure, end);
                 onChange(next);
                 setDatesConfirmed(true);
                 setError('');
                 onSave(next);
-              } catch {
-                setError('Chọn ngày khởi hành hợp lệ.');
+              } catch (e) {
+                setError(
+                  e instanceof Error
+                    ? e.message
+                    : 'Chưa kiểm tra được lịch. Lịch cũ vẫn được giữ.',
+                );
               }
             }}
           >
@@ -1419,6 +1477,7 @@ export function TripWorkspace({
             }[field]
           }
           onClose={() => {
+            if (busy) return;
             setField(null);
             setError('');
           }}
@@ -1426,115 +1485,120 @@ export function TripWorkspace({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              applyField();
+              void applyField();
             }}
           >
-            {field === 'destination' && (
-              <label className="journey-field">
-                Điểm đến
-                <select
-                  aria-label="Điểm đến"
-                  autoFocus
-                  value={pending.destinations[0]?.destinationId ?? ''}
-                  onChange={(e) =>
-                    setPending({
-                      ...pending,
-                      destinations: e.target.value
-                        ? [{ destinationId: e.target.value, order: 0 }]
-                        : [],
-                    })
-                  }
-                >
-                  <option value="">Chọn điểm đến</option>
-                  {destinations.map((d) => (
-                    <option value={d.id} key={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {field === 'dates' && (
-              <div className="journey-fields-row">
+            <fieldset className="journey-fieldset" disabled={busy}>
+              {field === 'destination' && (
                 <label className="journey-field">
-                  Ngày đi
+                  Điểm đến
+                  <select
+                    aria-label="Điểm đến"
+                    autoFocus
+                    value={pending.destinations[0]?.destinationId ?? ''}
+                    onChange={(e) =>
+                      setPending({
+                        ...pending,
+                        destinations: e.target.value
+                          ? [{ destinationId: e.target.value, order: 0 }]
+                          : [],
+                      })
+                    }
+                  >
+                    <option value="">Chọn điểm đến</option>
+                    {destinations.map((d) => (
+                      <option value={d.id} key={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {field === 'dates' && (
+                <div className="journey-fields-row">
+                  <label className="journey-field">
+                    Ngày đi
+                    <input
+                      autoFocus
+                      type="date"
+                      required
+                      value={pending.startDate}
+                      onChange={(e) =>
+                        setPending({ ...pending, startDate: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="journey-field">
+                    Ngày về
+                    <input
+                      type="date"
+                      required
+                      value={pending.endDate}
+                      min={pending.startDate}
+                      onChange={(e) =>
+                        setPending({ ...pending, endDate: e.target.value })
+                      }
+                    />
+                  </label>
+                </div>
+              )}
+              {field === 'travelers' && (
+                <label className="journey-field">
+                  Số người
                   <input
                     autoFocus
-                    type="date"
+                    type="number"
                     required
-                    value={pending.startDate}
+                    min={1}
+                    max={1000}
+                    value={pending.travelers.totalCount || ''}
                     onChange={(e) =>
-                      setPending({ ...pending, startDate: e.target.value })
+                      setPending({
+                        ...pending,
+                        travelers: { totalCount: Number(e.target.value) },
+                      })
                     }
                   />
                 </label>
+              )}
+              {field === 'budget' && (
                 <label className="journey-field">
-                  Ngày về
+                  Ngân sách tổng nhóm (VND)
                   <input
-                    type="date"
-                    required
-                    value={pending.endDate}
-                    min={pending.startDate}
+                    autoFocus
+                    type="number"
+                    min={0}
+                    max={1e12}
+                    step={1}
+                    placeholder="Chưa xác định"
+                    aria-label="Ngân sách tổng nhóm (VND)"
+                    value={pending.budget.amountMinor ?? ''}
                     onChange={(e) =>
-                      setPending({ ...pending, endDate: e.target.value })
+                      setPending({
+                        ...pending,
+                        budget: {
+                          ...pending.budget,
+                          amountMinor:
+                            e.target.value === ''
+                              ? null
+                              : Number(e.target.value),
+                        },
+                      })
                     }
                   />
+                  <small>Để trống nếu bạn chưa quyết định.</small>
                 </label>
-              </div>
-            )}
-            {field === 'travelers' && (
-              <label className="journey-field">
-                Số người
-                <input
-                  autoFocus
-                  type="number"
-                  required
-                  min={1}
-                  max={1000}
-                  value={pending.travelers.totalCount || ''}
-                  onChange={(e) =>
-                    setPending({
-                      ...pending,
-                      travelers: { totalCount: Number(e.target.value) },
-                    })
-                  }
-                />
-              </label>
-            )}
-            {field === 'budget' && (
-              <label className="journey-field">
-                Ngân sách tổng nhóm (VND)
-                <input
-                  autoFocus
-                  type="number"
-                  min={0}
-                  max={1e12}
-                  step={1}
-                  placeholder="Chưa xác định"
-                  aria-label="Ngân sách tổng nhóm (VND)"
-                  value={pending.budget.amountMinor ?? ''}
-                  onChange={(e) =>
-                    setPending({
-                      ...pending,
-                      budget: {
-                        ...pending.budget,
-                        amountMinor:
-                          e.target.value === '' ? null : Number(e.target.value),
-                      },
-                    })
-                  }
-                />
-                <small>Để trống nếu bạn chưa quyết định.</small>
-              </label>
-            )}
-            {error && (
-              <p className="journey-error" role="alert">
-                {error}
-              </p>
-            )}
-            <button className="journey-primary" type="submit">
-              Xong <Check size={18} />
-            </button>
+              )}
+              {error && (
+                <p className="journey-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <button className="journey-primary" type="submit" disabled={busy}>
+                {rescheduling ? 'Goe đang kiểm tra giờ mở cửa…' : 'Xong'}{' '}
+                <Check size={18} />
+              </button>
+            </fieldset>
           </form>
         </Sheet>
       )}
@@ -1832,7 +1896,9 @@ export function TripWorkspace({
           </small>
         </Sheet>
       )}
-      <SourceCredit snapshot />
+      {!isSetup && allActivities.some((activity) => activity.placeId) && (
+        <SourceCredit />
+      )}
     </section>
   );
 }

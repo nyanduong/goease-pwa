@@ -15,6 +15,7 @@ import type { businessAudit } from '../audit/business-audit.js';
 import { tokenHash } from '../auth/security.js';
 import { requestId } from '../auth/auth.service.js';
 import { HttpError } from '../../http-error.js';
+import { sourceSnapshotSchema } from '@goease/contracts';
 import {
   distanceMeters,
   type geoapifyProvider,
@@ -41,10 +42,7 @@ export function placeImportService(
     string,
     { actor: string; value: PlaceImportPreview }
   >();
-  let windowStart = Date.now();
-  let searches = 0;
-  const actorSearches = new Map<string, number>();
-  let inFlight = 0;
+  let quotaGuard: (actor: string) => Promise<() => Promise<void>>;
   const expired = () =>
     new HttpError(
       409,
@@ -128,6 +126,11 @@ export function placeImportService(
     });
   }
   return {
+    setQuotaGuard(guard: typeof quotaGuard) {
+      quotaGuard = guard;
+    },
+    markDuplicates,
+    requireDestination,
     async preview(
       actor: Types.ObjectId,
       input: PlaceImportSearch,
@@ -137,26 +140,8 @@ export function placeImportService(
       const now = Date.now();
       for (const [id, entry] of previews)
         if (Date.parse(entry.value.expiresAt) <= now) previews.delete(id);
-      if (now - windowStart >= 3600000) {
-        windowStart = now;
-        searches = 0;
-        actorSearches.clear();
-      }
       const actorId = String(actor);
-      if (
-        searches >= 20 ||
-        (actorSearches.get(actorId) ?? 0) >= 10 ||
-        inFlight >= 2
-      )
-        throw new HttpError(
-          429,
-          'IMPORT_SEARCH_LIMIT',
-          'Đã đạt giới hạn tìm địa điểm của bản thử. Chờ lượt đang chạy hoặc thử lại sau.',
-        );
-      // Reserve before the external call. Failed/uncertain requests remain counted.
-      searches++;
-      actorSearches.set(actorId, (actorSearches.get(actorId) ?? 0) + 1);
-      inFlight++;
+      const release = await quotaGuard(actorId);
       try {
         const queries: { group: GeoapifyGroup; limit: number }[] =
           input.group === 'mixed'
@@ -191,7 +176,7 @@ export function placeImportService(
         previews.set(value.previewId, { actor: actorId, value });
         return value;
       } finally {
-        inFlight--;
+        await release();
       }
     },
     async commit(
@@ -300,6 +285,19 @@ export function placeImportService(
                   license: 'ODbL-1.0',
                 },
                 sourceUrl: p.sourceUrl,
+                sourceSnapshot: sourceSnapshotSchema.parse({
+                  name: p.name,
+                  address: p.address,
+                  latitude: p.latitude,
+                  longitude: p.longitude,
+                  category: p.category,
+                  venueType: p.venueType,
+                  categories: [...p.categories].sort(),
+                  sourceUrl: p.sourceUrl,
+                  openingHoursNote: p.openingHoursNote,
+                  closed: p.closed ?? null,
+                }),
+                sourceCheckedAt: new Date(preview.value.fetchedAt),
                 openingHoursNote: p.openingHoursNote,
                 mapLocation: {
                   latitude: p.latitude,

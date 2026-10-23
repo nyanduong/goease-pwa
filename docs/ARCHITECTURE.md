@@ -1,5 +1,9 @@
 # GoEase — kiến trúc v0.2
 
+## Catalog operations runtime — 23/10/2026
+
+CAT-11–13: module explore thêm catalog-operations +3model có consumer thật. Express index khởi worker sau initialize; poll5s nhận lịch/lượt MongoDB, heartbeat20s/lease120s. Provider chạy ngoài transaction; catalog/review/result/audit cùng transaction ghi vào run có token còn hạn. Transaction write conflict ngăn stale worker; không dựa riêng vào kiểm token trước fetch. Một active run Hội An và source unique index chống tác dụng trùng. Quota chia sẻ với preview thủ công trong singleton schedule. Không Redis/queue package mới. Shutdown chờ worker trong deadline hiện có; khi force-kill, worker mới nhận lại lease hết hạn. Không cần trang admin mở hoặc phiên cấu hình còn sống. Tách snapshot nguồn khỏi nội dung biên tập; không có đường worker xuất bản hay sửa trip. Xem ADMIN-CATALOG.md và DB runtime ở cuối DB-BASELINE.md. Mô tả adapter không scheduler ở mục lịch sử phía dưới đã được mở rộng bằng runtime này.
+
 **Trạng thái:** Stack đã chốt; nền tảng F0 đã được triển khai ngày 22/10/2026. Xem README và docs/F0-VERIFICATION.md để biết cách chạy và bằng chứng kiểm tra. Baseline thiết kế v0.2 đã được chủ dự án chấp thuận; policy đánh dấu đề xuất/cần duyệt vẫn còn mở. F1-B context/log/audit probe đã triển khai và kiểm chứng local; Tài khoản local và manual trip đã triển khai theo ưu tiên sản phẩm sau F1-B; xem [nghiệm thu](PRODUCT-VERIFICATION.md). Các phần CORE khác chưa triển khai. Xem [F1-B verification](F1-B-VERIFICATION.md). Nguồn nghiệp vụ là [BR](BR.md), field/index là [DB-BASELINE](DB-BASELINE.md), truy vết là [DATA-TRACEABILITY](DATA-TRACEABILITY.md), review/gates là [F1-HANDOFF](F1-HANDOFF.md).
 
 ## 1. Ranh giới hệ thống

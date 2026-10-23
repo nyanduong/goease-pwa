@@ -2873,10 +2873,11 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await page.reload();
     await expect(
       page.getByRole('heading', {
-        name: 'Địa điểm & giá tham khảo',
+        name: 'Việc cần làm',
         exact: true,
       }),
     ).toBeVisible();
+    await page.getByRole('link', { name: 'Địa điểm', exact: true }).click();
     await page
       .getByRole('button', { name: 'Thêm địa điểm / quán ăn', exact: true })
       .click();
@@ -2943,7 +2944,7 @@ test('admin publishes reference prices and mobile customer gets automatic estima
       page.getByRole('region', { name: 'Xem trước nội dung' }),
     ).toContainText('50.000');
     await page
-      .getByRole('button', { name: 'Xuất bản cho khách', exact: true })
+      .getByRole('button', { name: 'Đăng địa điểm', exact: true })
       .click();
     await expect(page.getByRole('status')).toContainText('Đã xuất bản');
     await page

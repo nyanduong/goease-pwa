@@ -148,13 +148,17 @@ export function BudgetScreen({
             {missing
               ? `${missing} điểm dừng chưa có giá. `
               : 'Bạn chưa nhập chi phí. '}
-            {remaining !== null && remaining < 0
-              ? 'Các khoản đã nhập đã vượt ngân sách; vẫn còn chi phí cần bổ sung.'
-              : 'Chưa thể biết ngân sách có đủ hay không.'}
+            {budget === null
+              ? 'Bạn vẫn có thể dùng lịch này mà không cần nhập ngân sách.'
+              : remaining !== null && remaining < 0
+                ? 'Các khoản đã nhập đã vượt ngân sách; vẫn còn chi phí cần bổ sung.'
+                : 'Chưa thể biết ngân sách có đủ hay không.'}
           </p>
           {onReview && (
             <button className="journey-outline" onClick={onReview}>
-              Bổ sung chi phí trong lịch
+              {budget === null
+                ? 'Tự thêm chi phí (tùy chọn)'
+                : 'Bổ sung chi phí trong lịch'}
             </button>
           )}
         </div>
@@ -168,7 +172,7 @@ export function BudgetScreen({
         </strong>
         <p className="budget-per-person">
           {!hasPrices
-            ? 'Thêm giá cho từng điểm dừng để bắt đầu.'
+            ? 'Chi phí sẽ hiển thị khi có giá đủ căn cứ.'
             : travelers > 0
               ? `${moneyText(summary?.perPersonMinor ?? Math.round(known / travelers))} / người`
               : 'Chưa xác định số người'}
@@ -206,10 +210,10 @@ export function BudgetScreen({
             ? `Đã vượt ngân sách ${moneyText(-remaining)}${missing ? ' (còn khoản chưa có giá)' : ''}`
             : incomplete
               ? budget === null
-                ? 'Chưa đặt ngân sách nhóm'
+                ? 'Ngân sách không bắt buộc'
                 : `Ngân sách bạn đặt: ${moneyText(budget)}`
               : remaining === null
-                ? 'Chưa đặt ngân sách nhóm'
+                ? 'Ngân sách không bắt buộc'
                 : `Chênh lệch với khoản đã nhập: ${moneyText(remaining)}`}
         </span>
       </div>

@@ -15,6 +15,7 @@
     "format:check": "prettier --check .",
     "test": "npm run build --workspace @goease/contracts && npm run test --workspace @goease/server",
     "test:e2e": "npm run build && playwright test",
+    "test:catalog-browser": "npm run build --workspace @goease/contracts && playwright test --config tests/catalog.playwright.config.ts",
     "db:check": "npm run db:check --workspace @goease/server",
     "db:init": "npm run db:init --workspace @goease/server",
     "test:integration": "npm run test:integration --workspace @goease/server",

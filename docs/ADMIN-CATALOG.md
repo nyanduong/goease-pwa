@@ -1,5 +1,31 @@
 # Admin catalog and automatic estimates — 2026-10-23
 
+## Vận hành hiện tại — tự động cập nhật Hội An
+
+CAT-11–13 bổ sung luồng dưới đây; các phần mô tả preview thủ công phía dưới là đường nhập bổ sung. `/admin` mặc định mở **Việc cần làm**, sidebar chỉ có Việc cần làm / Địa điểm / Tự động cập nhật / Lịch sử.
+
+1. Mở **Tự động cập nhật**. Nếu “Chưa kết nối nguồn dữ liệu”, người thiết lập điền `GEOAPIFY_API_KEY` ở `server/.env` rồi restart API. UI không nhận/trả khóa. “Đã cấu hình kết nối” chỉ xác nhận có cấu hình; kết quả từng lượt mới chứng minh nguồn phản hồi.
+2. Chọn nhóm địa điểm, Hằng ngày/Hằng tuần, ngày và giờ Việt Nam; **Lưu và bật tự động**. Mặc định lịch tắt. Backend đang chạy sẽ tự lấy dữ liệu dù đóng admin. Chạy ngay tạo công việc bền vững, không chờ preview hoặc phiên đăng nhập. Tạm dừng ngăn lượt tự động mới; lượt đang nhận vẫn hoàn tất/thử lại.
+3. **Việc cần làm** nhóm bản nháp, nghi trùng, nguồn thay đổi, giá hết hạn và lượt cần can thiệp. Lỗi đang tự thử lại hiển thị thời điểm; chưa yêu cầu admin xử lý. Không tạo việc chỉ vì thiếu giá/ảnh/giờ. Mở hàng để thấy bản hiện tại, nguồn mới, khác biệt, ngày lấy và đường dẫn nguồn. Ngày lấy không phải ngày người xác minh.
+4. **Giữ thông tin hiện tại**, **Áp dụng thay đổi**, **Bỏ qua địa điểm này** hoặc **Để sau**. Hẹn1ngày/1tuần/30ngày có thời điểm rõ. Nghi trùng có “Đây là hai địa điểm riêng”. Bỏ qua ngừng hiển thị và không tự đăng lại; nguồn mới liên quan có thể tạo việc đối chiếu mới. Áp dụng dấu hiệu đóng cửa có lời giải thích ngừng hiển thị. Các quyết định kiểm cả phiên bản việc và địa điểm.
+5. Trong **Địa điểm**, tìm/lọc, chọn tối đa50 mục (qua nhiều trang), **Xem trước để đăng**, xem mục đủ điều kiện/bị chặn, rồi **Đăng các mục đủ điều kiện**. Không cần giá nếu thông tin cơ bản/nguồn đủ. Mục xung đột vẫn được chọn để mở bản mới. Màn editor dùng API cũ; nguồn hệ thống không nằm trong writable form. Lưu địa điểm đang published giữ trạng thái published; Ngừng hiển thị có xác nhận phạm vi.
+6. **Lịch sử** hiển thị tác nhân người/hệ thống, địa điểm, thời gian và kết quả tiếng Việt. Mở từng lượt để xem số mới/không đổi/cần xem/bỏ qua/lỗi; mã kỹ thuật nằm trong phần mở thêm. Danh sách30lượt gần nhất, audit phân trang30; việc phân trang20. Không có chức năng khôi phục toàn bộ nội dung cũ.
+
+API bổ sung dưới `/api/v1/admin/catalog`, dùng cùng session/admin/Origin guard, no-store và envelope hiện có:
+
+| API                          | Hợp đồng                                                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET `/operations`            | Trạng thái cấu hình kết nối, lịch và30lượt gần nhất; không khóa/lease/token                                                                 |
+| PUT `/schedule`              | `CatalogScheduleInput`: enabled, frequency daily/weekly, hour0..23, minute0..59, weekday0..6, group, expectedRevision; UUID Idempotency-Key |
+| POST `/run`                  | UUID Idempotency-Key; nhận runId, gộp yêu cầu khi đã có lượt active                                                                         |
+| GET `/reviews?offset=0`      | CatalogReviewDto: place, currentLocation, incoming/previous, fetchedAt, kind/reason, duplicates, revision;20mục + total/hasMore             |
+| POST `/reviews/:id/decision` | expectedRevision, expectedPlaceRevision, decision keep/apply/ignore/later/distinct, revisitAt ISO cho later; UUID key                       |
+| POST `/batch-preview`        | items[{id,expectedRevision}]1..50 duy nhất, status published/archived; kết quả đủ điều kiện/lý do từng mục                                  |
+| POST `/batch`                | Cùng body preview + UUID key; receipt giữ kết quả từng mục và replay chính xác trong24h                                                     |
+| GET `/history?offset=0`      | 30audit catalog, tác nhân người/hệ thống, tên/ID địa điểm và thời gian                                                                      |
+
+Không lấy actor/quyền từ body. Customer bị chặn; admin không được thêm quyền đọc trip riêng. Collection/index/giới hạn: [DB baseline](DB-BASELINE.md#runtime-catalog-automation--2026-10-23). Bằng chứng và giới hạn: [CATALOG-AUTOMATION-VERIFICATION](CATALOG-AUTOMATION-VERIFICATION.md).
+
 Owner requested milestone 1: manage places, restaurants and reference prices, connect them to customer estimates and test both roles. This is local implementation, not production acceptance or verification of real venue prices.
 
 ## Admin journey
@@ -45,4 +71,6 @@ All admin APIs authenticate from the session, check an active server-side admin 
 
 Technical implementation: shared contracts in `packages/contracts/src/catalog.ts`; administration service in `server/src/features/explore/admin-catalog.ts`; snapshot validation in `server/src/features/trips/catalog-costs.ts`; admin UI in `client/src/components/admin-catalog.tsx`. See PRODUCT-VERIFICATION.md for observed checks and limits.
 
-Geoapify import is now implemented for fixed Hội An searches and draft-only batch creation; see [GEOAPIFY-IMPORT.md](GEOAPIFY-IMPORT.md). Source metadata is preserved on ordinary admin edits and omitted from writable form input; only the server sets it. A separate approval role, scheduled refresh, uploads, structured hours and coordinate editing remain unimplemented.
+Geoapify import is implemented for fixed Hội An searches and draft-only batch creation; see [GEOAPIFY-IMPORT.md](GEOAPIFY-IMPORT.md). Source metadata is preserved on ordinary admin edits and omitted from writable form input; only the server sets it. Scheduled refresh and operational review are implemented as described above. A separate approval role, uploads, structured hours and coordinate editing remain unimplemented.
+
+Concurrency clarification: every review decision also advances the place revision in the same transaction, including keep/later/distinct. This fences simultaneous editorial edits; draft review signatures advance with that decision so keeping or deferring a draft does not reopen itself. Source polling alone still does not advance editorial revision.

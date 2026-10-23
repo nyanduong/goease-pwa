@@ -11,7 +11,12 @@ export function auditModel(connection: Connection) {
       type: { type: String, enum: ['system', 'user'], required: true },
       serviceName: {
         type: String,
-        enum: ['goease-integration-test', 'auth', 'admin-bootstrap'],
+        enum: [
+          'goease-integration-test',
+          'auth',
+          'admin-bootstrap',
+          'catalog-worker',
+        ],
       },
       userId: { type: Schema.Types.ObjectId },
     },
@@ -56,7 +61,17 @@ export function auditModel(connection: Connection) {
         type: String,
         enum: [
           'catalog.created',
+          'catalog.review_keep',
+          'catalog.review_apply',
+          'catalog.review_ignore',
+          'catalog.review_later',
+          'catalog.review_distinct',
+          'catalog.schedule_saved',
+          'catalog.run_requested',
+          'catalog.run_succeeded',
+          'catalog.run_failed',
           'catalog.imported',
+          'catalog.source_changed',
           'catalog.updated',
           'catalog.publication_changed',
           'admin.granted',
@@ -98,6 +113,8 @@ export function auditModel(connection: Connection) {
           'trip',
           'trip_expense',
           'place',
+          'catalog_schedule',
+          'catalog_run',
         ],
         required: true,
       },
@@ -162,5 +179,6 @@ export function auditModel(connection: Connection) {
   schema.index({ entityType: 1, entityId: 1, occurredAt: -1 });
   schema.index({ 'actor.userId': 1, occurredAt: -1 });
   schema.index({ requestId: 1 });
+  schema.index({ category: 1, occurredAt: -1, _id: -1 });
   return connection.model('AuditLog', schema);
 }

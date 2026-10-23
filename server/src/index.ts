@@ -11,7 +11,10 @@ async function main() {
   const database = createDatabase(config.MONGODB_URI, logger);
   const product = createProduct(database.connection, config, { logger });
   database.connection.on('connected', () => {
-    void product.initialize().catch(() => logger.write('product.init_failed'));
+    void product
+      .initialize()
+      .then(() => product.operations.start())
+      .catch(() => logger.write('product.init_failed'));
   });
   const app = createApp(config, database.ping, logger, product.router);
   const server = app.listen(config.PORT, config.HOST, () => {
@@ -28,6 +31,7 @@ async function main() {
     server.closeIdleConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await product.recovery.drain();
+    await product.operations.stop();
     await database.close();
     clearTimeout(deadline);
   }

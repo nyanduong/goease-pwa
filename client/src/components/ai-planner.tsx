@@ -106,24 +106,10 @@ export function AiPlanner({
             ? 'Lên lịch giúp mình'
             : 'Để Goe xếp lịch'}
       </button>
-      {immediatePreview && (
-        <div className="quick-disclosure">
-          Goe dùng Google Gemini để xếp lịch.{' '}
-          <details>
-            <summary>Thông tin được gửi</summary>
-            <p>
-              Điểm đến, ngày dự kiến, số người, ngân sách và sở thích. Tên,
-              email và ghi chú riêng không được gửi. Lịch gợi ý chưa phải đặt
-              dịch vụ.
-            </p>
-          </details>
-        </div>
-      )}
-      {!supported && (
+      {!supported && draft.destinations.length > 0 && (
         <p role="status">
-          {draft.destinations.length
-            ? 'Chuyến này chưa được hỗ trợ tự động. Bạn có thể tự chọn điểm dừng bên dưới.'
-            : 'Chọn điểm đến ở trên để bắt đầu.'}
+          Chuyến này chưa được hỗ trợ tự động. Bạn có thể tự chọn điểm dừng bên
+          dưới.
         </p>
       )}
       {busy && (

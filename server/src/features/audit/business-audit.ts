@@ -7,7 +7,17 @@ const id = z.string().regex(/^[a-f0-9]{24}$/);
 const input = z.strictObject({
   action: z.enum([
     'catalog.created',
+    'catalog.review_keep',
+    'catalog.review_apply',
+    'catalog.review_ignore',
+    'catalog.review_later',
+    'catalog.review_distinct',
+    'catalog.schedule_saved',
+    'catalog.run_requested',
+    'catalog.run_succeeded',
+    'catalog.run_failed',
     'catalog.imported',
+    'catalog.source_changed',
     'catalog.updated',
     'catalog.publication_changed',
     'admin.granted',
@@ -32,6 +42,7 @@ const input = z.strictObject({
     'expense.deleted',
   ]),
   actorUserId: id.optional(),
+  catalogSystem: z.literal(true).optional(),
   entityId: id,
   entityRevision: z.number().int().nonnegative().optional(),
   requestId: z.string().regex(uuidPattern),
@@ -63,7 +74,8 @@ export function businessAudit(
           v.action === 'profile.updated' ||
           v.action === 'password.changed' ||
           v.action === 'password.reset') &&
-        !v.actorUserId
+        !v.actorUserId &&
+        !(catalog && v.catalogSystem)
       )
         throw new Error('Audit actor required');
       const now = new Date();
@@ -74,26 +86,36 @@ export function businessAudit(
           ? { type: 'user', userId: v.actorUserId }
           : {
               type: 'system',
-              serviceName: v.action.startsWith('admin.')
-                ? 'admin-bootstrap'
-                : 'auth',
+              serviceName: catalog
+                ? 'catalog-worker'
+                : v.action.startsWith('admin.')
+                  ? 'admin-bootstrap'
+                  : 'auth',
             },
-        entityType: catalog
-          ? 'place'
-          : expense
-            ? 'trip_expense'
-            : trip
-              ? 'trip'
-              : authSession
-                ? 'auth_session'
-                : 'user',
+        entityType:
+          v.action === 'catalog.schedule_saved'
+            ? 'catalog_schedule'
+            : v.action.startsWith('catalog.run_')
+              ? 'catalog_run'
+              : catalog
+                ? 'place'
+                : expense
+                  ? 'trip_expense'
+                  : trip
+                    ? 'trip'
+                    : authSession
+                      ? 'auth_session'
+                      : 'user',
         entityId: v.entityId,
         entityRevision: v.entityRevision,
         requestId: v.requestId,
         operationId: v.operationId,
         occurredAt: now,
         recordedAt: now,
-        outcome: v.action === 'auth.failed' ? 'failed' : 'succeeded',
+        outcome:
+          v.action === 'auth.failed' || v.action === 'catalog.run_failed'
+            ? 'failed'
+            : 'succeeded',
         changedFields: [
           catalog
             ? 'catalogDetails'
@@ -108,7 +130,7 @@ export function businessAudit(
         changes: [],
         source: {
           appVersion: '0.0.0',
-          clientPlatform: 'web',
+          clientPlatform: v.catalogSystem ? 'server' : 'web',
           channel: 'api',
           environment,
         },

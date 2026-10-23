@@ -14,6 +14,20 @@ export const plannerRequestSchema = z
   })
   .refine((v) => Boolean(v.tripId) === (v.expectedRevision !== undefined));
 export type PlannerRequest = z.infer<typeof plannerRequestSchema>;
+export const rescheduleRequestSchema = z
+  .strictObject({
+    trip: tripInputSchema,
+    startDate: tripInputSchema.shape.startDate,
+    endDate: tripInputSchema.shape.endDate,
+    tripId: z
+      .string()
+      .regex(/^[a-f0-9]{24}$/)
+      .optional(),
+    expectedRevision: z.number().int().nonnegative().optional(),
+  })
+  .refine((v) => Boolean(v.tripId) === (v.expectedRevision !== undefined));
+export type RescheduleRequest = z.infer<typeof rescheduleRequestSchema>;
+export type RescheduleResult = { trip: TripInput; changes: string[] };
 export const goeRequestSchema = z.strictObject({
   dayId: z.uuid(),
   message: z.string().trim().min(1).max(500),

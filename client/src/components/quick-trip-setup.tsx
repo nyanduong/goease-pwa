@@ -59,7 +59,7 @@ export function QuickTripSetup({
       <div className="quick-intro">
         <img src="/images/goe-mascot-cutout.png" alt="" />
         <h1>Bạn muốn đi đâu?</h1>
-        <p>Chọn vài điều. Goe lo bản lịch đầu tiên.</p>
+        <p>Chọn nơi đến, số ngày và số người. Goe xếp lịch giúp bạn.</p>
       </div>
       <fieldset className="quick-fields" disabled={generating}>
         <legend className="sr-only">Thông tin để lên lịch</legend>
@@ -240,7 +240,7 @@ export function QuickTripSetup({
             </select>
           </label>
           <label className="journey-field">
-            Ngân sách cả nhóm (VND)
+            Ngân sách cả nhóm (VND, không bắt buộc)
             <input
               type="number"
               inputMode="numeric"
@@ -291,13 +291,15 @@ export function QuickTripSetup({
           }}
         />
       </fieldset>
-      <button
-        className="quick-manual"
-        disabled={generating || !destination || !valid}
-        onClick={onManual}
-      >
-        Tự chọn điểm dừng
-      </button>
+      {destination && (
+        <button
+          className="quick-manual"
+          disabled={generating || !valid}
+          onClick={onManual}
+        >
+          Tự chọn điểm dừng
+        </button>
+      )}
     </div>
   );
 }

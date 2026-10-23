@@ -10,7 +10,10 @@ import {
 import { TripTrash } from './components/trip-trash';
 import { PasswordRecovery } from './components/password-recovery';
 import { AccountPage } from './components/account-page';
-import { AdminCatalog } from './components/admin-catalog';
+import {
+  AdminWorkspace as AdminCatalog,
+  AdminNavigation,
+} from './components/admin-workspace';
 import { ExplorePage, PlaceDetail, placeActivity } from './components/explore';
 import { AccountAvatar } from './components/account-avatar';
 import { Compass, Map, House, Bird, Bookmark } from 'lucide-react';
@@ -431,9 +434,7 @@ export function App() {
             <Brand />
           </a>
           <p>KHÔNG GIAN QUẢN TRỊ</p>
-          <a href="/admin" aria-current="page">
-            Địa điểm & giá tham khảo
-          </a>
+          <AdminNavigation />
           <span>{user.displayName}</span>
           <button
             className="button button-outline"

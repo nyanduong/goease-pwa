@@ -27,6 +27,7 @@ export type PlaceImportCandidate = {
   sourceUrl: string;
   openingHoursNote: string;
   flags: string[];
+  closed?: boolean | null;
   existingPlaceId?: string;
   possibleDuplicates: string[];
 };

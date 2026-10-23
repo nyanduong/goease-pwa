@@ -627,7 +627,10 @@
         "CAT-07",
         "CAT-08",
         "CAT-09",
-        "CAT-10"
+        "CAT-10",
+        "CAT-11",
+        "CAT-12",
+        "CAT-13"
       ],
       "implementationStatus": "Local curated catalog: destinationId/destinationName/name/slug/description/category/subtitle/searchText/imageUrl/durationLabel/travelLabel/bestTimeLabel/tip/highlights/sourceUrl/imageCredit/publicationStatus/deletedAt and mutable metadata. Index destinationId/publicationStatus/deletedAt implemented. Geoapify/OSM source subset and partial unique external index implemented; other providers/general SourceRef/geo index remain planned. Map runtime: optional mapLocation latitude/longitude/label/precision=area/sourceUrl/checkedAt with bounds and HTTPS/date validation; no geo index; absent-only backfill, see TRIP-MAP.md.",
       "runtimeFields": [
@@ -672,6 +675,12 @@
           "object?",
           "optional; curated records may omit",
           "provider=geoapify; externalId max512 canonical osm:node|way|relation:<id>; fetchedAt Date; attribution fixed Powered by Geoapify · © OpenStreetMap contributors; license=ODbL-1.0. Server only. Unique partial source.provider/source.externalId for geoapify with string ID. See GEOAPIFY-IMPORT.md."
+        ],
+        [
+          "sourceSnapshot; sourceCheckedAt",
+          "SourceSnapshot|null; Date|null",
+          "null; null",
+          "Strict allowlist name(max120), address(max200), latitude(-90..90), longitude(-180..180), category food/culture/nature, venueType place/restaurant, categories<=100(max160 each), openingHoursNote(max400), closed boolean|null, sourceUrl(max2048). Latest normalized source only; never editable content. sourceCheckedAt/fetchedAt are fetch dates, not human verification."
         ]
       ]
     },
@@ -2184,7 +2193,25 @@
         "qualification": "DB-BASELINE.md#12-audit-subset-f1-b-đã-triển-khai",
         "productionReady": false
       },
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only; account runtime 2026-10-23: profile.updated/password.changed; identifiers only, no PII/secrets; password.reset implemented transactionally, actor from validated challenge user, no credentials or token in changes; Runtime trip.restored, trip entity, no content/expense payload. Geoapify import: catalog.imported per created place, category catalog, entityType place; actor from session; no provider payload/key."
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only; account runtime 2026-10-23: profile.updated/password.changed; identifiers only, no PII/secrets; password.reset implemented transactionally, actor from validated challenge user, no credentials or token in changes; Runtime trip.restored, trip entity, no content/expense payload. Geoapify import: catalog.imported per created place, category catalog, entityType place; actor from session; no provider payload/key.",
+      "runtimeCatalogOperations": {
+        "actions": [
+          "catalog.review_keep",
+          "catalog.review_apply",
+          "catalog.review_ignore",
+          "catalog.review_later",
+          "catalog.review_distinct",
+          "catalog.schedule_saved",
+          "catalog.run_requested",
+          "catalog.run_succeeded",
+          "catalog.run_failed",
+          "catalog.source_changed"
+        ],
+        "actor": "session user or catalog-worker system; system platform=server",
+        "entityTypes": ["place", "catalog_schedule", "catalog_run"],
+        "index": "{category:1,occurredAt:-1,_id:-1}",
+        "payload": "Metadata/IDs/revision only; no addresses/secrets/raw source. run_failed outcome=failed."
+      }
     },
     {
       "name": "analytics_events",
@@ -2360,6 +2387,12 @@
           "string[]?",
           "optional; absent on other operations",
           "At most50 valid24hex ObjectId strings for created import records; same transaction as places/audit."
+        ],
+        [
+          "resourceType=catalog_operation; catalogResults",
+          "enum; {id,name,eligible,reason,applied?}[]?",
+          "catalogResults absent by default",
+          "Up to50 typed item receipts, name<=120/reason<=400; schedule/run/review use resourceId. Same actor/operation/key/hash + TTL24h; transactional replay reauthorizes."
         ]
       ]
     },
@@ -2404,6 +2437,172 @@
       "rules": "Dry-run/backup trước destructive migration; idempotent batches; update indexes sau kiểm tra duplicates. Không sửa migration đã chạy mà giữ cùng checksum.",
       "retention": "Giữ cùng lịch sử vận hành của project; dữ liệu cá nhân không nằm trong record migration.",
       "brRefs": ["DATA-11"]
+    },
+    {
+      "name": "catalog_schedules",
+      "phase": "CORE",
+      "base": "MUTABLE",
+      "purpose": "Singleton lịch và quota Geoapify Hội An, consumer worker và admin.",
+      "fields": [
+        ["scope", "enum", "hoi-an, unique", "Chỉ một cấu hình Hội An."],
+        [
+          "revision; enabled",
+          "number; boolean",
+          "0; false",
+          "CAS cấu hình; quota/nextRun không tăng revision cấu hình."
+        ],
+        [
+          "frequency; hour; minute; weekday; group",
+          "enum; number; number; number; enum",
+          "weekly; 8; 0; 1; mixed",
+          "daily/weekly; hour0..23; minute0..59; weekday0..6; group mixed/sights/restaurant/cafe. Giờ Việt Nam."
+        ],
+        [
+          "nextRunAt",
+          "Date|null",
+          "null",
+          "UTC; tạo tối đa một lượt quá hạn rồi tính kỳ tương lai."
+        ],
+        [
+          "quotaHour; searches",
+          "number; number",
+          "0; 0",
+          "UTC epoch-hour; <=20 lượt/giờ, kể cả lỗi."
+        ],
+        [
+          "actorSearches",
+          "{actor:string,count:number}[]",
+          "[]",
+          "Tối đa20actor/giờ; actor userId hoặc catalog-worker; <=10 lượt/actor. Reset đầu giờ."
+        ],
+        [
+          "slots",
+          "{token:UUID,until:Date}[]",
+          "[]",
+          "Tối đa2slot120s dùng chung preview/worker, hết hạn tự thu hồi khi nhận slot."
+        ],
+        [
+          "createdAt; updatedAt",
+          "Date; Date",
+          "timestamps",
+          "Mongoose strict schema; không secret."
+        ]
+      ],
+      "indexes": "Unique {scope:1}.",
+      "rules": "Cấu hình admin có revision/audit/receipt; quota transaction dùng chung mọi process; mặc định tắt.",
+      "retention": "Chưa purge tự động; counters và slots bounded, tự thay thế khi hết cửa sổ.",
+      "brRefs": ["CAT-11", "CAT-13", "AUTH-08", "DATA-02"],
+      "implementationStatus": "implemented-local"
+    },
+    {
+      "name": "catalog_runs",
+      "phase": "CORE",
+      "base": "MUTABLE",
+      "purpose": "Lượt cập nhật bền vững, atomic claim/fencing, retry và lịch sử.",
+      "fields": [
+        [
+          "operationId",
+          "UUID",
+          "server randomUUID",
+          "Stable across attempts; joins run request/result and per-place import/source-change audits."
+        ],
+        [
+          "scope; active; state",
+          "enum; boolean; enum",
+          "hoi-an; true; queued",
+          "state queued/running/retry/succeeded/failed; active false khi kết thúc."
+        ],
+        [
+          "actorId; group",
+          "ObjectId|null; enum",
+          "null; required",
+          "actorId user cho chạy ngay, null theo lịch. group mixed/sights/restaurant/cafe là snapshot cấu hình."
+        ],
+        [
+          "attempts; nextAttemptAt",
+          "number; Date",
+          "0; now",
+          "Tối đa3lần xử lý; quá3 lần do crash chuyển failed, không gọi nguồn."
+        ],
+        [
+          "leaseToken; leaseUntil",
+          "UUID|null; Date|null",
+          "null; null",
+          "Claim120s, heartbeat20s. Transaction ghi domain phải cập nhật cùng run với token chưa hết hạn."
+        ],
+        [
+          "finishedAt; message",
+          "Date|null; string(max400)",
+          "null; empty",
+          "Thông báo allowlist tiếng Việt, không raw error/provider key."
+        ],
+        [
+          "counts",
+          "{created,unchanged,review,skipped,errors:number}",
+          "all zero",
+          "Thống kê committed; review có thể gồm địa điểm mới nghi trùng. Failed atomic run ghi errors=1, không giả số địa điểm đã nhập."
+        ],
+        [
+          "createdAt; updatedAt",
+          "Date; Date",
+          "timestamps",
+          "Không raw response; không mảng history vô hạn."
+        ]
+      ],
+      "indexes": "Unique partial {scope:1,active:1} where active=true; {active:1,nextAttemptAt:1,leaseUntil:1}; {createdAt:-1}.",
+      "rules": "Một active Hội An; source fetch ngoài transaction, tất cả place/review/result/audit commit nguyên tử với fence; pause không hủy lượt đã nhận.",
+      "retention": "Chưa TTL/purge; API30lượt gần nhất, audit phân trang.",
+      "brRefs": ["CAT-11", "CAT-13", "DATA-02", "DATA-03"],
+      "implementationStatus": "implemented-local"
+    },
+    {
+      "name": "catalog_reviews",
+      "phase": "CORE",
+      "base": "MUTABLE",
+      "purpose": "Một vấn đề/địa điểm; giữ signature quyết định để không nhắc lặp.",
+      "fields": [
+        [
+          "placeId; kind; signature",
+          "ObjectId; enum; SHA256 string",
+          "required",
+          "kind draft/duplicate/source/price; signature revision draft, normalized snapshot source/duplicate, price hash."
+        ],
+        [
+          "revision; state",
+          "number; enum",
+          "1; open",
+          "state open/resolved/snoozed; CAS quyết định, đồng thời kiểm place revision."
+        ],
+        [
+          "decision; revisitAt",
+          "enum|null; Date|null",
+          "null; null",
+          "keep/apply/ignore/later/distinct; later sau now, tối đa90ngày."
+        ],
+        [
+          "incoming; previous",
+          "SourceSnapshot|null",
+          "null; null",
+          "Strict allowlist như places.sourceSnapshot; baseline chưa giải quyết được giữ qua nhiều lần sync."
+        ],
+        [
+          "fetchedAt; duplicates",
+          "Date|null; string[]",
+          "null; []",
+          "Ngày lấy nguồn khác xác minh; tối đa20tên nghi trùng."
+        ],
+        [
+          "createdAt; updatedAt",
+          "Date; Date",
+          "timestamps",
+          "Không payload ngoài allowlist."
+        ]
+      ],
+      "indexes": "Unique {placeId:1,kind:1}; {state:1,revisitAt:1,updatedAt:-1}.",
+      "rules": "Signature không đổi giữ quyết định; source mới mở lại; snooze đến hạn mở lại. Không đổi publicationStatus trừ quyết định ignore/apply đóng cửa rõ ràng.",
+      "retention": "Không tự xóa receipt quyết định; một bản/loại/địa điểm, audit sự kiện riêng.",
+      "brRefs": ["CAT-11", "CAT-12", "DATA-02", "AUTH-08"],
+      "implementationStatus": "implemented-local"
     }
   ],
   "reviewedAt": "2026-10-22",
@@ -2503,10 +2702,52 @@
     },
     "planned": [
       "other providers",
-      "refresh jobs",
       "general SourceRef",
       "structured opening hours",
       "photo ingestion"
     ]
+  },
+  "hoianCompleteDays": {
+    "date": "2026-10-23",
+    "brRefs": ["AI-01", "AI-02", "AI-03", "TRIP-08"],
+    "storageChanged": false,
+    "promptVersion": "hoian-v3",
+    "plannerVersion": "2",
+    "newTripPaceCaps": [4, 5, 6],
+    "adjustmentPaceCaps": [2, 3, 6],
+    "budgetOptional": true,
+    "unknownCost": null,
+    "structuredOpeningHoursImplemented": false,
+    "contract": "DB-BASELINE.md#hội-an-complete-day-planner-storage-impact--2026-10-23",
+    "adjustmentPreservesExistingStopCountUpTo": 6,
+    "arrangement": "AI-ranked catalog candidates then deterministic server scheduling then validation"
+  },
+  "dateRescheduling": {
+    "status": "implemented-local",
+    "brRefs": ["AI-02", "TRIP-08"],
+    "contract": "RescheduleRequest / RescheduleResult; POST /trips/reschedule-dates",
+    "collections": ["ai_runs"],
+    "provider": "catalog",
+    "promptVersion": "date-reschedule-v1",
+    "plannerVersion": "3",
+    "quotaState": "released",
+    "providerCall": false,
+    "usageBucketsChanged": false,
+    "automaticTripSave": false,
+    "structuredOpeningHoursImplemented": false,
+    "hours": "editorial ranges, split/overnight, explicit weekly and monthly closures; unknown stays unverified",
+    "schemaDocumentation": "DB-BASELINE.md: Date rescheduling runtime (2026-10-23)"
+  },
+  "catalogAutomation": {
+    "status": "implemented-local",
+    "brRefs": ["CAT-11", "CAT-12", "CAT-13"],
+    "scope": "Hoi An / Geoapify OSM; drafts only; schedule disabled by default",
+    "collections": ["catalog_schedules", "catalog_runs", "catalog_reviews"],
+    "sourceSnapshot": "places optional allowlist, separate from editorial fields",
+    "contracts": "packages/contracts/src/catalog-operations.ts",
+    "documentation": "ADMIN-CATALOG.md; DB-BASELINE.md Runtime catalog automation",
+    "verification": "CATALOG-AUTOMATION-VERIFICATION.md",
+    "liveProviderVerifiedThisTask": false,
+    "ttl": "Receipts24h only; no new retention/purge policy"
   }
 }

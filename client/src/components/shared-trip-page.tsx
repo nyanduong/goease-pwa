@@ -153,7 +153,7 @@ export function SharedTripPage() {
           </p>
         </>
       )}
-      {trip && <SourceCredit snapshot />}
+      {trip && <SourceCredit />}
     </main>
   );
 }

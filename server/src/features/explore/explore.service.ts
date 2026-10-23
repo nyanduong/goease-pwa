@@ -16,6 +16,7 @@ import { HttpError } from '../../http-error.js';
 import { referencePriceSchema } from '@goease/contracts';
 import { referencePriceModelSchema } from './reference-price.js';
 import { mutableFields } from '../auth/auth.models.js';
+import { sourceSnapshotModel } from './catalog-operations.models.js';
 const parseMapLocation = (v: unknown) =>
   mapLocationSchema.safeParse(
     v instanceof mongoose.Document ? v.toObject() : v,
@@ -30,6 +31,8 @@ export function exploreService(connection: Connection) {
   const placeSchema = new Schema(
     {
       ...mutableFields,
+      sourceSnapshot: { type: sourceSnapshotModel, default: null },
+      sourceCheckedAt: { type: Date, default: null },
       venueType: { type: String, enum: ['place', 'restaurant', 'food_idea'] },
       openingHoursNote: { type: String, maxlength: 400, default: '' },
       referencePrice: { type: referencePriceModelSchema, default: null },

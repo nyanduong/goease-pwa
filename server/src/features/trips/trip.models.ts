@@ -194,7 +194,13 @@ export function tripModels(connection: Connection) {
       leaseUntil: { type: Date, default: null },
       resourceType: {
         type: String,
-        enum: ['trip', 'trip_expense', 'place', 'place_import'],
+        enum: [
+          'trip',
+          'trip_expense',
+          'place',
+          'place_import',
+          'catalog_operation',
+        ],
         default: 'trip',
       },
       resourceId: { type: String, required: true },
@@ -206,6 +212,22 @@ export function tripModels(connection: Connection) {
           (v.length <= 50 && v.every((id) => /^[a-f0-9]{24}$/.test(id))),
       },
       responseStatus: Number,
+      catalogResults: {
+        type: [
+          new Schema(
+            {
+              id: { type: String, required: true },
+              name: { type: String, required: true, maxlength: 120 },
+              eligible: { type: Boolean, required: true },
+              reason: { type: String, required: true, maxlength: 400 },
+              applied: Boolean,
+            },
+            { _id: false, strict: 'throw', versionKey: false },
+          ),
+        ],
+        default: undefined,
+        validate: (v: unknown[] | undefined) => !v || v.length <= 50,
+      },
       expiresAt: { type: Date, required: true },
     },
     {

@@ -11,6 +11,7 @@ import { api, ApiFailure } from '../api';
 import { moneyText } from '../trip-draft';
 import { PlacePlanning } from './place-planning';
 import { SourceCredit } from './source-credit';
+import { AdminBatch } from './admin-batch';
 const AdminPlaceImport = lazy(() =>
   import('./admin-place-import').then((v) => ({ default: v.AdminPlaceImport })),
 );
@@ -63,9 +64,12 @@ const formFromDto = ({
 };
 export function AdminCatalog({
   destinations,
+  openPlace,
 }: {
   destinations: DestinationDto[];
+  openPlace?: { id: string; request: number } | null;
 }) {
+  const [selected, setSelected] = useState<AdminPlaceDto[]>([]);
   const [items, setItems] = useState<AdminPlaceDto[]>([]);
   const [importing, setImporting] = useState(false);
   const [status, setStatus] = useState('all');
@@ -84,6 +88,9 @@ export function AdminCatalog({
   const [success, setSuccess] = useState('');
   const key = useRef({ payload: '', key: '' });
   const previewPanel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (openPlace) void open(openPlace.id);
+  }, [openPlace]);
   useEffect(() => {
     if (preview) previewPanel.current?.scrollIntoView({ block: 'start' });
   }, [preview]);
@@ -137,6 +144,9 @@ export function AdminCatalog({
       setSaved(value.place);
       setForm(formFromDto(value.place));
       setHistory(value.history);
+      setSelected((v) =>
+        v.map((p) => (p.id === value.place.id ? value.place : p)),
+      );
       setPreview(false);
       window.scrollTo(0, 0);
     } catch (e) {
@@ -178,6 +188,9 @@ export function AdminCatalog({
       setSaved(value.place);
       setForm(formFromDto(value.place));
       setPreview(false);
+      setSelected((v) =>
+        v.map((p) => (p.id === value.place.id ? value.place : p)),
+      );
       setRetry((v) => v + 1);
       setHistory((v) =>
         [
@@ -219,11 +232,11 @@ export function AdminCatalog({
         </p>
       </header>
       {form && saved?.source && (
-        <p>
+        <div>
           Nhập từ nguồn lúc{' '}
           {new Date(saved.source.fetchedAt).toLocaleString('vi-VN')}. Thông tin
-          cần biên tập, giờ mở cửa chưa được xác minh. <SourceCredit />
-        </p>
+          cần biên tập, giờ mở cửa chưa được xác minh. <SourceCredit expanded />
+        </div>
       )}
       {error && (
         <div role="alert" className="admin-alert">
@@ -319,6 +332,34 @@ export function AdminCatalog({
               </select>
             </label>
           </div>
+          <AdminBatch
+            selected={selected}
+            onDone={(ids) => {
+              setSelected((v) => v.filter((p) => !ids.includes(p.id)));
+              setRetry((v) => v + 1);
+            }}
+          />
+          {!!items.length && (
+            <label className="admin-checkbox">
+              <input
+                type="checkbox"
+                checked={items.every((p) =>
+                  selected.some((s) => s.id === p.id),
+                )}
+                onChange={(e) =>
+                  setSelected((v) =>
+                    e.target.checked
+                      ? [
+                          ...v,
+                          ...items.filter((p) => !v.some((s) => s.id === p.id)),
+                        ].slice(0, 50)
+                      : v.filter((p) => !items.some((s) => s.id === p.id)),
+                  )
+                }
+              />
+              Chọn các địa điểm trên trang (tối đa 50)
+            </label>
+          )}
           {loading ? (
             <p role="status">Đang tải danh mục…</p>
           ) : listError ? (
@@ -332,6 +373,25 @@ export function AdminCatalog({
             <div className="admin-place-list">
               {items.map((p) => (
                 <article key={p.id} className="admin-place-card">
+                  <label className="admin-checkbox">
+                    <input
+                      type="checkbox"
+                      aria-label={`Chọn ${p.name}`}
+                      checked={selected.some((s) => s.id === p.id)}
+                      disabled={
+                        selected.length >= 50 &&
+                        !selected.some((s) => s.id === p.id)
+                      }
+                      onChange={(e) =>
+                        setSelected((v) =>
+                          e.target.checked
+                            ? [...v, p]
+                            : v.filter((s) => s.id !== p.id),
+                        )
+                      }
+                    />
+                    Chọn địa điểm
+                  </label>
                   <span
                     className={`admin-status status-${p.publicationStatus}`}
                   >
@@ -405,6 +465,9 @@ export function AdminCatalog({
             onClick={() => {
               if (
                 success ||
+                (saved &&
+                  JSON.stringify(form) ===
+                    JSON.stringify(formFromDto(saved))) ||
                 confirm('Về danh sách? Thay đổi chưa lưu sẽ bị bỏ.')
               ) {
                 setForm(null);
@@ -608,8 +671,8 @@ export function AdminCatalog({
                         })
                       }
                     >
-                      <option value="per_person">Mỗi người</option>
-                      <option value="group_total">Cả nhóm</option>
+                      <option value="per_person">Theo người</option>
+                      <option value="group_total">Cho cả nhóm</option>
                     </select>
                   </label>
                 </div>
@@ -729,7 +792,7 @@ export function AdminCatalog({
                   ? 'Đang lưu…'
                   : saved?.publicationStatus === 'published'
                     ? 'Cập nhật nội dung công khai'
-                    : 'Xuất bản cho khách'}
+                    : 'Đăng địa điểm'}
               </button>
             </section>
           )}
@@ -738,9 +801,17 @@ export function AdminCatalog({
               type="button"
               className="journey-outline"
               disabled={busy}
-              onClick={() => void save('draft')}
+              onClick={() =>
+                void save(
+                  saved?.publicationStatus === 'published'
+                    ? 'published'
+                    : 'draft',
+                )
+              }
             >
-              Lưu bản nháp
+              {saved?.publicationStatus === 'published'
+                ? 'Lưu thay đổi'
+                : 'Lưu bản nháp'}
             </button>
             <button type="submit" className="journey-primary" disabled={busy}>
               Xem trước để xuất bản

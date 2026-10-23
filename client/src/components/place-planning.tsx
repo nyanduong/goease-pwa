@@ -23,7 +23,6 @@ export function PlacePlanning({
   if (!planning) return null;
   return (
     <section className="place-planning">
-      {place.source && <SourceCredit />}
       <strong>Thông tin để xếp lịch</strong>
       {place.category === 'food' &&
         place.venueType !== 'restaurant' &&
@@ -69,7 +68,7 @@ export function PlacePlanning({
             target="_blank"
             rel="noreferrer"
           >
-            Nguồn giá tham khảo ↗
+            Xem chi tiết giá ↗
           </a>
           {place.referencePrice.reviewAfter < catalogToday() ? (
             <small>Giá đến hạn kiểm tra, chưa dùng cho dự toán mới.</small>
@@ -100,7 +99,7 @@ export function PlacePlanning({
             trước khi mua.
           </small>
           <a href={price.sourceUrl} target="_blank" rel="noreferrer">
-            Nguồn công bố ↗
+            Xem chi tiết giá ↗
           </a>
           {onPick && (
             <button
@@ -116,6 +115,7 @@ export function PlacePlanning({
       {!planning.priceOptions.length && !place.referencePrice && (
         <small>Chi phí: Chưa rõ. Bạn có thể nhập dự kiến bên dưới.</small>
       )}
+      {place.source && <SourceCredit />}
     </section>
   );
 }

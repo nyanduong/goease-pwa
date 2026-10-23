@@ -84,6 +84,7 @@ export function adminCatalog(
       throw new HttpError(404, 'PLACE_NOT_FOUND', 'Không tìm thấy địa điểm.');
   };
   return {
+    dto,
     requireAdmin,
     async list(
       actor: Types.ObjectId,
@@ -213,6 +214,43 @@ export function adminCatalog(
                 409,
                 'CATALOG_CONFLICT',
                 'Địa điểm đã được sửa ở nơi khác. Nội dung đang nhập vẫn giữ; mở bản mới để đối chiếu trước khi lưu.',
+              );
+            if (
+              current &&
+              input.publicationStatus === 'published' &&
+              current.publicationStatus !== 'published' &&
+              (await connection.collection('catalog_reviews').findOne(
+                {
+                  placeId: current._id,
+                  kind: { $in: ['source', 'duplicate'] },
+                  state: { $ne: 'resolved' },
+                },
+                { session },
+              ))
+            )
+              throw new HttpError(
+                409,
+                'CATALOG_REVIEW_REQUIRED',
+                'Mở Việc cần làm để quyết định thông tin nguồn hoặc nghi trùng trước khi đăng.',
+              );
+            if (
+              current?.sourceSnapshot?.closed &&
+              input.publicationStatus === 'published' &&
+              current.publicationStatus !== 'published' &&
+              !(await connection.collection('catalog_reviews').findOne(
+                {
+                  placeId: current._id,
+                  kind: 'source',
+                  state: 'resolved',
+                  decision: 'keep',
+                },
+                { session },
+              ))
+            )
+              throw new HttpError(
+                409,
+                'CATALOG_REVIEW_REQUIRED',
+                'Nguồn có dấu hiệu đóng cửa. Mở Việc cần làm để đối chiếu trước khi đăng.',
               );
             if (
               current &&

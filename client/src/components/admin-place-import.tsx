@@ -110,7 +110,7 @@ export function AdminPlaceImport({
         bản. Giá chưa rõ; ảnh là minh họa AI. Thời lượng mặc định 60 phút là ước
         tính cần chỉnh.
       </p>
-      <SourceCredit />
+      <SourceCredit expanded />
       <form
         className="admin-filters"
         onSubmit={(e) => {
