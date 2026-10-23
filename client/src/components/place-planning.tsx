@@ -7,6 +7,7 @@ import {
 } from '@goease/contracts';
 import { api } from '../api';
 import { moneyText } from '../trip-draft';
+import { SourceCredit } from './source-credit';
 
 type Price = NonNullable<PlaceDto['planning']>['priceOptions'][number];
 export function PlacePlanning({
@@ -22,6 +23,7 @@ export function PlacePlanning({
   if (!planning) return null;
   return (
     <section className="place-planning">
+      {place.source && <SourceCredit />}
       <strong>Thông tin để xếp lịch</strong>
       {place.category === 'food' &&
         place.venueType !== 'restaurant' &&

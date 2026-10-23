@@ -222,7 +222,19 @@ test(
               ).status,
               400,
             );
-          const pub = { ...input, publicationStatus: 'published' };
+          await product.explore.models.Place.updateOne(
+            { _id: place.id },
+            {
+              $set: {
+                tip: 'Giá chưa rõ; thời lượng 60 phút là gợi ý ban đầu.',
+              },
+            },
+          );
+          const pub = {
+            ...input,
+            durationMinutes: 45,
+            publicationStatus: 'published',
+          };
           assert.equal(
             (
               await call(
@@ -277,6 +289,9 @@ test(
       const publicPlace = (
         await read<{ place: PlaceDto }>(await call(`/places/${place.id}`))
       ).place;
+      assert.equal(publicPlace.planning?.durationMinutes, 45);
+      assert.equal(publicPlace.durationLabel, '45 phút');
+      assert.doesNotMatch(publicPlace.tip, /60 phút/);
       const trip: TripInput = {
         title: 'Test priced trip',
         destinations: [{ destinationId, order: 0 }],

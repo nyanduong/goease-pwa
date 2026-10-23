@@ -142,3 +142,7 @@ Auth feature reuses existing users/identities/sessions/challenges and audit. Nod
 Trip trash dùng GET /trips/trash và POST /trips/:id/restore trong module trips hiện có. Restore tái sử dụng transaction quản lý trip/revision/audit/idempotency, không sao chép expense, không mở lại share. Không thêm dịch vụ hoặc collection.
 
 Offline chỉ xem: service worker cache public standalone reader và fallback navigation, không cache API/SPA bundle. Private bounded snapshots trong localStorage theo owner/epoch, lấy GET trip hiện có; không mutation queue. Logout local immediate + server retry marker khi offline. Runtime và hosting: OFFLINE-ITINERARY.md.
+
+## Geoapify import adapter — 2026-10-23
+
+Existing explore feature adds a fixed-origin server adapter and admin import service. UI sends group/limit then preview ID + selected source IDs; normalized data stays server-owned. Import transaction reuses places/audit_logs/idempotency_keys; no provider call inside retriable transaction. Preview and search caps are bounded per process; no scheduler/worker/new collection. OSM canonical source identity has an additive partial unique index. Customer paths continue to consume only published catalog. See [GEOAPIFY-IMPORT](GEOAPIFY-IMPORT.md) for trial, contracts, metadata, rate limits and explicit unverified scope.

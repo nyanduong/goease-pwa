@@ -29,6 +29,7 @@ import type {
 import { api, ApiFailure } from '../api';
 import { inputFromTrip } from '../trip-draft';
 import { PlacePlanning } from './place-planning';
+import { SourceCredit } from './source-credit';
 const labels = { food: 'Ẩm thực', culture: 'Văn hóa', nature: 'Thiên nhiên' };
 const icons = { food: Utensils, culture: Landmark, nature: Leaf };
 const message = (e: unknown) =>
@@ -247,6 +248,7 @@ export function ExplorePage({
           Bản đồ
         </button>
       </div>
+      {items.some((p) => p.source) && <SourceCredit />}
       {error && (
         <div className="explore-status" role="alert">
           {error}{' '}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   adminPlaceInputSchema,
   catalogToday,
@@ -10,6 +10,10 @@ import {
 import { api, ApiFailure } from '../api';
 import { moneyText } from '../trip-draft';
 import { PlacePlanning } from './place-planning';
+import { SourceCredit } from './source-credit';
+const AdminPlaceImport = lazy(() =>
+  import('./admin-place-import').then((v) => ({ default: v.AdminPlaceImport })),
+);
 
 type HistoryItem = {
   action: string;
@@ -44,10 +48,17 @@ const newPrice = (): ReferencePrice => ({
   checkedAt: catalogToday(),
   reviewAfter: catalogToday(),
 });
-const formFromDto = ({ id, revision, updatedAt, ...input }: AdminPlaceDto) => {
+const formFromDto = ({
+  id,
+  revision,
+  updatedAt,
+  source,
+  ...input
+}: AdminPlaceDto) => {
   void id;
   void revision;
   void updatedAt;
+  void source;
   return input;
 };
 export function AdminCatalog({
@@ -56,6 +67,7 @@ export function AdminCatalog({
   destinations: DestinationDto[];
 }) {
   const [items, setItems] = useState<AdminPlaceDto[]>([]);
+  const [importing, setImporting] = useState(false);
   const [status, setStatus] = useState('all');
   const [q, setQ] = useState('');
   const [offset, setOffset] = useState(0);
@@ -123,16 +135,7 @@ export function AdminCatalog({
         `/admin/places/${id}`,
       );
       setSaved(value.place);
-      const {
-        id: _id,
-        revision: _revision,
-        updatedAt: _updatedAt,
-        ...input
-      } = value.place;
-      void _id;
-      void _revision;
-      void _updatedAt;
-      setForm(input);
+      setForm(formFromDto(value.place));
       setHistory(value.history);
       setPreview(false);
       window.scrollTo(0, 0);
@@ -215,6 +218,13 @@ export function AdminCatalog({
           Chuẩn bị dữ liệu để khách nhận được lịch trình và dự toán tự động.
         </p>
       </header>
+      {form && saved?.source && (
+        <p>
+          Nhập từ nguồn lúc{' '}
+          {new Date(saved.source.fetchedAt).toLocaleString('vi-VN')}. Thông tin
+          cần biên tập, giờ mở cửa chưa được xác minh. <SourceCredit />
+        </p>
+      )}
       {error && (
         <div role="alert" className="admin-alert">
           {error}
@@ -232,9 +242,32 @@ export function AdminCatalog({
           {success}
         </p>
       )}
-      {!form ? (
+      {importing ? (
+        <Suspense
+          fallback={<p role="status">Đang mở công cụ nhập địa điểm…</p>}
+        >
+          <AdminPlaceImport
+            onBack={() => {
+              setImporting(false);
+              setRetry((v) => v + 1);
+            }}
+            onOpen={(id) => {
+              setImporting(false);
+              setRetry((v) => v + 1);
+              void open(id);
+            }}
+          />
+        </Suspense>
+      ) : !form ? (
         <>
           <div className="admin-actions">
+            <button
+              className="journey-outline"
+              disabled={busy}
+              onClick={() => setImporting(true)}
+            >
+              Nhập địa điểm từ Geoapify
+            </button>
             <button
               className="journey-primary"
               disabled={busy || !destinations.length}

@@ -194,10 +194,17 @@ export function tripModels(connection: Connection) {
       leaseUntil: { type: Date, default: null },
       resourceType: {
         type: String,
-        enum: ['trip', 'trip_expense', 'place'],
+        enum: ['trip', 'trip_expense', 'place', 'place_import'],
         default: 'trip',
       },
       resourceId: { type: String, required: true },
+      resultIds: {
+        type: [String],
+        default: undefined,
+        validate: (v: string[] | undefined) =>
+          v === undefined ||
+          (v.length <= 50 && v.every((id) => /^[a-f0-9]{24}$/.test(id))),
+      },
       responseStatus: Number,
       expiresAt: { type: Date, required: true },
     },

@@ -1,8 +1,12 @@
 import { passwordRecovery } from './features/auth/password-recovery.js';
 import { adminCatalog } from './features/explore/admin-catalog.js';
+import { placeImportService } from './features/explore/place-import.js';
+import { geoapifyProvider } from './features/explore/geoapify.js';
 import {
   adminPlaceWriteSchema,
   adminPlaceQuerySchema,
+  placeImportSearchSchema,
+  placeImportCommitSchema,
 } from '@goease/contracts';
 import {
   resetEmailSender,
@@ -59,7 +63,11 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 export function createProduct(
   connection: Connection,
   config: Config,
-  dependencies: { resetEmail?: ResetEmailSender; logger?: Logger } = {},
+  dependencies: {
+    resetEmail?: ResetEmailSender;
+    logger?: Logger;
+    geoapify?: ReturnType<typeof geoapifyProvider>;
+  } = {},
 ) {
   const audit = businessAudit(connection, config.NODE_ENV);
   const auth = authService(connection, config, audit);
@@ -84,6 +92,14 @@ export function createProduct(
     auth.models.User,
   );
   const planner = plannerService(connection, config, trips, explore);
+  const placeImport = placeImportService(
+    connection,
+    catalog,
+    explore,
+    trips,
+    audit,
+    dependencies.geoapify ?? geoapifyProvider(config.GEOAPIFY_API_KEY),
+  );
   const google = googleAuth(connection, config, auth);
   const router = Router();
   let ready = false;
@@ -104,6 +120,8 @@ export function createProduct(
       '/destinations',
       '/places',
       '/admin/places',
+      '/admin/place-import/preview',
+      '/admin/place-import/commit',
       '/me/places',
       '/trips',
       '/trips/trash',
@@ -280,6 +298,25 @@ export function createProduct(
       data: await catalog.list(
         res.locals.authUser._id,
         parse(adminPlaceQuerySchema, req.query),
+      ),
+    }),
+  );
+  router.post('/admin/place-import/preview', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await placeImport.preview(
+        res.locals.authUser._id,
+        parse(placeImportSearchSchema, req.body),
+      ),
+    }),
+  );
+  router.post('/admin/place-import/commit', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await placeImport.commit(
+        res.locals.authUser._id,
+        parse(placeImportCommitSchema, req.body),
+        parse(z.string().regex(uuidPattern), req.get('Idempotency-Key')),
       ),
     }),
   );

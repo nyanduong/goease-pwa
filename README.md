@@ -224,3 +224,7 @@ Offline: mở chuyến → **Thông tin chuyến đi → Lưu để xem offline*
 Admin đăng nhập → **Quản trị** → thêm/sửa địa điểm hoặc quán ăn → lưu nháp → xem trước → xuất bản. Giá tham khảo có nguồn, ngày đối chiếu, hạn kiểm tra lại, điều kiện và số người áp dụng; AI và thao tác thêm/đổi điểm tự dùng giá đó. Server tính dự toán; chuyến cũ giữ snapshot, khách chủ động cập nhật giá hoặc nhập dự kiến riêng. Các mục chưa có giá phù hợp vẫn ghi chưa rõ.
 
 Cấp quyền local cho tài khoản đã đăng ký: `npm run admin:access --workspace @goease/server -- grant admin@example.test`, sau đó đăng nhập lại. Không có tài khoản/mật khẩu admin mặc định. Xem [hướng dẫn admin, API và giới hạn](docs/ADMIN-CATALOG.md). Giá trong kiểm thử là dữ liệu minh họa, không phải xác minh giá cơ sở thực tế.
+
+## Nhập địa điểm Geoapify
+
+Admin đã có tìm/xem trước/nhập bản nháp từ Geoapify cho Hội An. Thử live 50 kết quả giữ 45 bản hợp lệ; đã tạo 41 draft sau khi bỏ 4 mục nghi trùng. Thêm GEOAPIFY_API_KEY vào server/.env (không VITE_*), restart API, mở Quản trị → Nhập địa điểm từ Geoapify. Cần biên tập trước xuất bản; giờ/giá/vị trí chưa xác minh tại cơ sở. Chi tiết [luồng, thử dữ liệu và giới hạn](docs/GEOAPIFY-IMPORT.md). Lặp thử chỉ đọc bằng `npm run geoapify:sample --workspace @goease/server`.

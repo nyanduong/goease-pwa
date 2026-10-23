@@ -618,8 +618,18 @@
       "indexes": "Unique partial {source.provider,source.externalId} khi có externalId; {destinationId,publicationStatus,deletedAt}; 2dsphere location nếu dùng near.",
       "rules": "Nguồn bị gỡ/expired phải refresh hoặc ẩn theo rights. Snapshots trong trip có policy riêng. Không coi source hợp lệ là thông tin bảo đảm luôn chính xác.",
       "retention": "Theo source permissions; không mặc định dump raw API response vĩnh viễn.",
-      "brRefs": ["CAT-01", "CAT-02", "CAT-03", "CAT-04", "CAT-05", "CAT-07"],
-      "implementationStatus": "Local curated catalog: destinationId/destinationName/name/slug/description/category/subtitle/searchText/imageUrl/durationLabel/travelLabel/bestTimeLabel/tip/highlights/sourceUrl/imageCredit/publicationStatus/deletedAt and mutable metadata. Index destinationId/publicationStatus/deletedAt implemented. Remaining baseline fields/provider/geo/external indexes planned, not executable schema. Map runtime: optional mapLocation latitude/longitude/label/precision=area/sourceUrl/checkedAt with bounds and HTTPS/date validation; no geo index; absent-only backfill, see TRIP-MAP.md.",
+      "brRefs": [
+        "CAT-01",
+        "CAT-02",
+        "CAT-03",
+        "CAT-04",
+        "CAT-05",
+        "CAT-07",
+        "CAT-08",
+        "CAT-09",
+        "CAT-10"
+      ],
+      "implementationStatus": "Local curated catalog: destinationId/destinationName/name/slug/description/category/subtitle/searchText/imageUrl/durationLabel/travelLabel/bestTimeLabel/tip/highlights/sourceUrl/imageCredit/publicationStatus/deletedAt and mutable metadata. Index destinationId/publicationStatus/deletedAt implemented. Geoapify/OSM source subset and partial unique external index implemented; other providers/general SourceRef/geo index remain planned. Map runtime: optional mapLocation latitude/longitude/label/precision=area/sourceUrl/checkedAt with bounds and HTTPS/date validation; no geo index; absent-only backfill, see TRIP-MAP.md.",
       "runtimeFields": [
         [
           "destinationName; name; slug",
@@ -656,6 +666,12 @@
           "object?",
           "optional; legacy absent",
           "durationMinutes 1..1440 editorial; locationQuery max200; costNote max500; priceOptions max5 with label max120/amountMinor 0..1e12/basis per_person|group_total/sourceUrl max2048/checkedAt date-only. Seed inserts new IDs or fills absent planning; preserves existing edits. No public write API."
+        ],
+        [
+          "source",
+          "object?",
+          "optional; curated records may omit",
+          "provider=geoapify; externalId max512 canonical osm:node|way|relation:<id>; fetchedAt Date; attribution fixed Powered by Geoapify · © OpenStreetMap contributors; license=ODbL-1.0. Server only. Unique partial source.provider/source.externalId for geoapify with string ID. See GEOAPIFY-IMPORT.md."
         ]
       ]
     },
@@ -2152,7 +2168,14 @@
       "indexes": "Unique {operationId,action,entityType,entityId}; {entityType,entityId,occurredAt:-1}; {actor.userId,occurredAt:-1}; {requestId:1}.",
       "rules": "Ứng dụng chỉ insert/read được cấp. Mutation quan trọng cùng transaction audit; thất bại transaction không tự tạo audit thành công. Migration/privileged bypass cần actor và runId riêng.",
       "retention": "Append-only nghiệp vụ không đồng nghĩa giữ vĩnh viễn; purge/redact đặc quyền có policy và log độc lập.",
-      "brRefs": ["DATA-02", "DATA-03", "DATA-04", "DATA-07", "DATA-09"],
+      "brRefs": [
+        "DATA-02",
+        "DATA-03",
+        "DATA-04",
+        "DATA-07",
+        "DATA-09",
+        "CAT-10"
+      ],
       "implementation": {
         "phase": "F1-B",
         "status": "implemented-test-only",
@@ -2161,7 +2184,7 @@
         "qualification": "DB-BASELINE.md#12-audit-subset-f1-b-đã-triển-khai",
         "productionReady": false
       },
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only; account runtime 2026-10-23: profile.updated/password.changed; identifiers only, no PII/secrets; password.reset implemented transactionally, actor from validated challenge user, no credentials or token in changes; Runtime trip.restored, trip entity, no content/expense payload."
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted with trip_expense entity; no names or amounts; trip management local 2026-10-23: trip.deleted/trip.duplicated, identifiers only; account runtime 2026-10-23: profile.updated/password.changed; identifiers only, no PII/secrets; password.reset implemented transactionally, actor from validated challenge user, no credentials or token in changes; Runtime trip.restored, trip entity, no content/expense payload. Geoapify import: catalog.imported per created place, category catalog, entityType place; actor from session; no provider payload/key."
     },
     {
       "name": "analytics_events",
@@ -2329,8 +2352,16 @@
       "indexes": "Unique {actorId,operation,key}; TTL expiresAt.",
       "rules": "Idempotency không thay authorization: trả cached result vẫn kiểm tra actor/current access. Race duplicate-key phải đọc record hiện có.",
       "retention": "Đề xuất 24h cho trip create; payment không dựa TTL ngắn để ngăn thanh toán/cấp quyền trùng lâu dài.",
-      "brRefs": ["TRIP-09", "COM-04"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted, resourceType trip_expense, 24h TTL; trip management local 2026-10-23: trip.delete/trip.duplicate, TTL24h, reauthorize replay; Runtime trip.restore, 200, TTL24h; reauthorize and reject replay when trip deleted again."
+      "brRefs": ["TRIP-09", "COM-04", "CAT-10"],
+      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md; expense runtime 2026-10-23: expense.created/updated/deleted, resourceType trip_expense, 24h TTL; trip management local 2026-10-23: trip.delete/trip.duplicate, TTL24h, reauthorize replay; Runtime trip.restore, 200, TTL24h; reauthorize and reject replay when trip deleted again. Geoapify import runtime: operation catalog.import, resourceType place_import, resourceId UUID batch, optional resultIds <=50 ObjectId strings; TTL24h existing. Transactional batch receipt and permission-checked replay.",
+      "runtimeFields": [
+        [
+          "resultIds",
+          "string[]?",
+          "optional; absent on other operations",
+          "At most50 valid24hex ObjectId strings for created import records; same transaction as places/audit."
+        ]
+      ]
     },
     {
       "name": "schema_migrations",
@@ -2457,5 +2488,25 @@
     },
     "serverCollectionsChanged": false,
     "privateDataInCacheStorage": false
+  },
+  "geoapifyImport": {
+    "status": "implemented-local",
+    "rule": "CAT-10",
+    "evidence": "docs/GEOAPIFY-IMPORT.md",
+    "collections": ["places", "audit_logs", "idempotency_keys"],
+    "preview": "bounded owner-scoped memory15min; no import collection",
+    "trial": {
+      "received": 50,
+      "accepted": 45,
+      "importedDrafts": 41,
+      "possibleDuplicateItemsSkipped": 4
+    },
+    "planned": [
+      "other providers",
+      "refresh jobs",
+      "general SourceRef",
+      "structured opening hours",
+      "photo ingestion"
+    ]
   }
 }

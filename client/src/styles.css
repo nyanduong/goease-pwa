@@ -5906,3 +5906,60 @@ body:has(.quick-result-intro) .mobile-bottom-nav {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+.admin-import {
+  display: grid;
+  gap: 20px;
+}
+.admin-import h2 {
+  font-size: 28px;
+  color: #194e45;
+}
+.admin-import-summary {
+  padding: 20px;
+  background: #edf3e8;
+  border-radius: 16px;
+}
+.admin-import-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.admin-import-row {
+  border: 1px solid #dce2d5;
+  border-radius: 16px;
+  padding: 20px;
+  background: #fffdf8;
+  display: grid;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+.admin-import-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.admin-import-check input {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  accent-color: #194e45;
+}
+.admin-import-flags {
+  color: #80551d;
+  font-size: 13px;
+}
+.place-source-credit {
+  display: block;
+  color: #4e6259;
+  line-height: 1.7;
+}
+.place-source-credit a {
+  color: inherit;
+  text-decoration: underline;
+}
+@media (max-width: 850px) {
+  .admin-import-list {
+    grid-template-columns: 1fr;
+  }
+}

@@ -50,6 +50,11 @@ export function createApp(
     }),
   );
   if (productRouter) app.use('/api/v1/trips', express.json({ limit: '256kb' }));
+  if (productRouter)
+    app.use(
+      '/api/v1/admin/place-import/commit',
+      express.json({ limit: '48kb' }),
+    );
   app.use(express.json({ limit: '16kb' }));
   app.use('/api/v1/health', healthRouter(ping));
   if (productRouter) app.use('/api/v1', productRouter);

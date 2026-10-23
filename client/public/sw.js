@@ -1,5 +1,5 @@
 /* global self, caches, fetch, URL */
-const CACHE = 'goease-offline-shell-v1';
+const CACHE = 'goease-offline-shell-v2';
 const FILES = ['/offline.html', '/offline.js', '/offline.css'];
 self.addEventListener('install', (event) => {
   event.waitUntil(

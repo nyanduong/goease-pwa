@@ -1,4 +1,5 @@
 import { TripManagement } from './trip-management';
+import { SourceCredit } from './source-credit';
 import { TripOffline } from './trip-offline';
 import { Sheet } from './journey-sheet';
 import { TripExpenses } from './trip-expenses';
@@ -1831,6 +1832,7 @@ export function TripWorkspace({
           </small>
         </Sheet>
       )}
+      <SourceCredit snapshot />
     </section>
   );
 }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ActivityInput } from './product.js';
 import type { PlaceDto } from './explore.js';
+import type { PlaceProvenance } from './place-import.js';
 
 export const publicSourceSchema = z
   .string()
@@ -60,6 +61,7 @@ export const adminPlaceInputSchema = z
   });
 export type AdminPlaceInput = z.infer<typeof adminPlaceInputSchema>;
 export type AdminPlaceDto = AdminPlaceInput & {
+  source?: PlaceProvenance;
   id: string;
   revision: number;
   updatedAt: string;

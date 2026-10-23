@@ -33,6 +33,17 @@ export function adminCatalog(
   const { Destination, Key } = trips.models;
   type Doc = NonNullable<Awaited<ReturnType<typeof Place.findOne>>>;
   const dto = (doc: Doc): AdminPlaceDto => ({
+    ...(doc.source
+      ? {
+          source: {
+            provider: 'geoapify' as const,
+            externalId: doc.source.externalId,
+            fetchedAt: doc.source.fetchedAt.toISOString(),
+            attribution: doc.source.attribution,
+            license: doc.source.license,
+          },
+        }
+      : {}),
     id: String(doc._id),
     revision: doc.revision,
     updatedAt: doc.updatedAt.toISOString(),
@@ -232,6 +243,7 @@ export function adminCatalog(
               referencePrice: input.referencePrice,
               publicationStatus: input.publicationStatus,
               durationLabel: `${input.durationMinutes} phút`,
+              tip: 'Thời lượng là ước tính GoEase. Kiểm tra giờ mở cửa và giá với cơ sở trước khi đi.',
               planning: {
                 durationMinutes: input.durationMinutes,
                 locationQuery: input.locationQuery,

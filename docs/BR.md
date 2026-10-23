@@ -368,3 +368,11 @@ Mốc 1 đã được owner yêu cầu: quản trị địa điểm/quán ăn/gi
 ### CAT-08 / AUTH-08 — Admin desktop workspace
 
 Owner clarification: admin uses desktop administration only. Successful admin login goes directly to `/admin`, overriding customer return intents. Restored sessions and customer-route navigation return admin to this workspace; no travel navigation or customer onboarding is shown. Customer mobile journeys remain unchanged. This is UI separation with existing server role checks, not a new role/schema or a change to ownership authorization.
+
+## CAT-10 — Nhập địa điểm từ Geoapify (2026-10-23)
+
+| Mã | Quy tắc | Yêu cầu |
+| --- | --- | --- |
+| CAT-10 | Nhập địa điểm có duyệt | Admin tìm và chọn nguồn OSM, nhập nháp với provenance; chống trùng, không ghi đè hoặc tự xuất bản. |
+
+Owner yêu cầu thử 30–50 địa điểm Hội An trước rồi bổ sung import admin. Đã triển khai local: admin tìm 30/50 kết quả trong phạm vi Hội An cố định tại server, xem trước và chọn nhập bản nháp. Chỉ dữ liệu OSM có tên/tọa độ/ID hợp lệ được nhận; mã nguồn duy nhất chống nhập trùng, nghi trùng cần admin kiểm tra/xác nhận. Không ghi đè dữ liệu đã biên tập, không tự xuất bản, không biến thiếu giá thành miễn phí, không cập nhật trip cũ. Key/quota/request/provider normalization và quyền đều ở server; nguồn/ngày lấy/ODbL được giữ. Batch place/audit/receipt nguyên tử, retry idempotent và không nhận provenance từ client. Baseline provider/refresh rộng hơn chưa triển khai. Kết quả live 50→45, nhập 41 draft bỏ 4 mục nghi trùng; contract/giới hạn/bằng chứng tại [GEOAPIFY-IMPORT](GEOAPIFY-IMPORT.md). CAT-01–06/08/09 và AUTH-08 tiếp tục áp dụng; đây không phải booking hoặc xác nhận thông tin tại cơ sở.

@@ -33,6 +33,23 @@ export function exploreService(connection: Connection) {
       venueType: { type: String, enum: ['place', 'restaurant', 'food_idea'] },
       openingHoursNote: { type: String, maxlength: 400, default: '' },
       referencePrice: { type: referencePriceModelSchema, default: null },
+      source: {
+        type: new Schema(
+          {
+            provider: { type: String, enum: ['geoapify'], required: true },
+            externalId: { type: String, required: true, maxlength: 512 },
+            fetchedAt: { type: Date, required: true },
+            attribution: {
+              type: String,
+              required: true,
+              enum: ['Powered by Geoapify · © OpenStreetMap contributors'],
+            },
+            license: { type: String, required: true, enum: ['ODbL-1.0'] },
+          },
+          { _id: false, strict: 'throw', versionKey: false },
+        ),
+        required: false,
+      },
       destinationId: { type: Schema.Types.ObjectId, required: true },
       destinationName: { type: String, required: true, maxlength: 100 },
       name: { type: String, required: true, maxlength: 120 },
@@ -139,6 +156,16 @@ export function exploreService(connection: Connection) {
     },
   );
   placeSchema.index({ destinationId: 1, publicationStatus: 1, deletedAt: 1 });
+  placeSchema.index(
+    { 'source.provider': 1, 'source.externalId': 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        'source.provider': 'geoapify',
+        'source.externalId': { $type: 'string' },
+      },
+    },
+  );
   const favoriteSchema = new Schema(
     {
       userId: { type: Schema.Types.ObjectId, required: true },
@@ -174,6 +201,17 @@ export function exploreService(connection: Connection) {
     deletedAt: null,
   };
   const dto = (doc: PlaceRecord & { _id: Types.ObjectId }): PlaceDto => ({
+    ...(doc.source
+      ? {
+          source: {
+            provider: 'geoapify' as const,
+            externalId: doc.source.externalId,
+            fetchedAt: doc.source.fetchedAt.toISOString(),
+            attribution: doc.source.attribution,
+            license: doc.source.license,
+          },
+        }
+      : {}),
     revision: doc.revision,
     venueType:
       (doc.venueType as PlaceDto['venueType']) ??

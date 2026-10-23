@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "admin:access": "tsx scripts/admin-access.ts",
+    "geoapify:sample": "tsx scripts/geoapify-sample.ts",
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",

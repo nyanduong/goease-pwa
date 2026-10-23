@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import type { SharedTripDto } from '@goease/contracts';
 import { api } from '../api';
 import { Brand } from './ui';
+import { SourceCredit } from './source-credit';
 const TripMap = lazy(() =>
   import('./trip-map').then((v) => ({ default: v.TripMap })),
 );
@@ -152,6 +153,7 @@ export function SharedTripPage() {
           </p>
         </>
       )}
+      {trip && <SourceCredit snapshot />}
     </main>
   );
 }

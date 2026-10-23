@@ -56,6 +56,7 @@ export function auditModel(connection: Connection) {
         type: String,
         enum: [
           'catalog.created',
+          'catalog.imported',
           'catalog.updated',
           'catalog.publication_changed',
           'admin.granted',

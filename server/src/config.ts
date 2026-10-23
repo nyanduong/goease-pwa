@@ -43,6 +43,7 @@ const schema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().max(4096).optional(),
   GOOGLE_PKCE_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().max(4096).optional(),
+  GEOAPIFY_API_KEY: z.string().trim().max(4096).optional(),
   GEMINI_MODEL: z
     .string()
     .regex(/^gemini-[a-z0-9.-]+$/)

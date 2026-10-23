@@ -7,6 +7,7 @@ const id = z.string().regex(/^[a-f0-9]{24}$/);
 const input = z.strictObject({
   action: z.enum([
     'catalog.created',
+    'catalog.imported',
     'catalog.updated',
     'catalog.publication_changed',
     'admin.granted',
