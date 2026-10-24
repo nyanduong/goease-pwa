@@ -1,3 +1,4 @@
+import { images, resolveLegacyImageUrl } from '@goease/media';
 import mongoose, {
   type Connection,
   type Types,
@@ -50,7 +51,7 @@ export function adminCatalog(
     id: String(doc._id),
     revision: doc.revision,
     updatedAt: doc.updatedAt.toISOString(),
-    imageUrl: doc.imageUrl,
+    imageUrl: resolveLegacyImageUrl(doc.imageUrl),
     imageCredit: doc.imageCredit,
     internalNote: doc.internalNote ?? '',
     images: doc.images.map((i) => catalogImageSchema.parse(i.toObject())),
@@ -338,7 +339,7 @@ export function adminCatalog(
                         }
                       : current?.images.length
                         ? {
-                            imageUrl: '/images/explore-hoian.png',
+                            imageUrl: images.exploreHoian,
                             imageCredit:
                               'Ảnh minh họa AI, không phải ảnh cơ sở',
                           }
@@ -404,8 +405,7 @@ export function adminCatalog(
                   revision: 1,
                   createdBy: actor,
                   createdByType: 'user',
-                  imageUrl:
-                    input.images?.[0]?.url ?? '/images/explore-hoian.png',
+                  imageUrl: input.images?.[0]?.url ?? images.exploreHoian,
                   imageCredit:
                     input.images?.[0]?.credit ??
                     'Ảnh minh họa AI, không phải ảnh cơ sở',

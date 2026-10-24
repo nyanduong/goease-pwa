@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { mapLocationSchema, type MapLocation } from '@goease/contracts';
 import { Types } from 'mongoose';
 import { normalizeSearch, type exploreService } from './explore.service.js';
@@ -59,7 +60,7 @@ export async function seedPlaces(
       subtitle: 'Đi bộ chậm. Ngắm phố lâu.',
       description:
         'Những mái ngói cũ, con hẻm nhỏ và một nhịp sống để bạn chậm lại.',
-      imageUrl: '/images/explore-hoian.png',
+      imageUrl: images.exploreHoian,
       durationLabel: '2–3 giờ',
       travelLabel: 'Đi bộ',
       bestTimeLabel: 'Hợp buổi chiều',
@@ -79,7 +80,7 @@ export async function seedPlaces(
       subtitle: 'Một hương vị của phố Hội.',
       description:
         'Cơm vàng, gà xé và rau thơm — một bữa ăn giản dị để nghỉ chân giữa hành trình. Đây là gợi ý món ăn, không phải một nhà hàng cụ thể.',
-      imageUrl: '/images/explore-rice.png',
+      imageUrl: images.exploreRice,
       durationLabel: '45–60 phút',
       travelLabel: 'Ăn uống',
       bestTimeLabel: 'Hợp bữa trưa',
@@ -95,7 +96,7 @@ export async function seedPlaces(
       subtitle: 'Một khoảng xanh yên bình.',
       description:
         'Đi giữa những luống rau xanh, ngắm nhịp làm vườn và tìm một khoảng nghỉ ngoài phố cổ.',
-      imageUrl: '/images/explore-traque.png',
+      imageUrl: images.exploreTraque,
       durationLabel: '1–2 giờ',
       travelLabel: 'Dạo bộ',
       bestTimeLabel: 'Hợp sáng sớm',
@@ -114,7 +115,7 @@ export async function seedPlaces(
       subtitle: 'Một buổi chiều bên biển.',
       description:
         'Ghé bãi biển An Bàng, dành thời gian nghỉ chân và ngắm biển. Các dịch vụ ăn uống, ghế nghỉ và gửi xe được tính riêng tùy nơi cung cấp.',
-      imageUrl: '/images/explore-traque.png',
+      imageUrl: images.exploreTraque,
       durationLabel: '1–2 giờ',
       travelLabel: 'Tự chọn phương tiện',
       bestTimeLabel: 'Hợp chiều dịu nắng',
@@ -130,7 +131,7 @@ export async function seedPlaces(
       subtitle: 'Đi chậm giữa miền xanh.',
       description:
         'Khu vực Cẩm Thanh có cảnh quan nông thôn và dừa nước. Chọn hoạt động phù hợp tại địa phương; giá tour và dịch vụ phụ thuộc đơn vị tổ chức.',
-      imageUrl: '/images/explore-traque.png',
+      imageUrl: images.exploreTraque,
       durationLabel: '1–2 giờ',
       travelLabel: 'Tự chọn phương tiện',
       bestTimeLabel: 'Hợp buổi sáng',
@@ -146,7 +147,7 @@ export async function seedPlaces(
       subtitle: 'Thêm một bữa mang vị phố Hội.',
       description:
         'Cao lầu là gợi ý món ăn của Hội An, không đại diện cho một nhà hàng cụ thể. Bạn chọn quán thuận đường và phù hợp nhu cầu ăn uống.',
-      imageUrl: '/images/explore-rice.png',
+      imageUrl: images.exploreRice,
       durationLabel: '45–60 phút',
       travelLabel: 'Ăn uống',
       bestTimeLabel: 'Hợp bữa trưa hoặc tối',
@@ -162,7 +163,7 @@ export async function seedPlaces(
       subtitle: 'Một khoảng nghỉ khi phố lên đèn.',
       description:
         'Thêm thời gian dạo ven sông vào buổi ghé phố cổ. Đây là hoạt động dạo bộ; không bao gồm đặt thuyền, vé di tích hoặc các dịch vụ khác.',
-      imageUrl: '/images/explore-hoian.png',
+      imageUrl: images.exploreHoian,
       durationLabel: '45–60 phút',
       travelLabel: 'Đi bộ',
       bestTimeLabel: 'Hợp cuối buổi chiều',

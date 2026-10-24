@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { useState } from 'react';
 import type { DestinationDto, TripInput } from '@goease/contracts';
 import { withDays } from '../trip-draft';
@@ -57,7 +58,7 @@ export function QuickTripSetup({
   return (
     <div className="quick-setup">
       <div className="quick-intro">
-        <img src="/images/goe-mascot-cutout.png" alt="" />
+        <img src={images.goeMascot} alt="" />
         <h1>Bạn muốn đi đâu?</h1>
         <p>Chọn nơi đến, số ngày và số người. Goe xếp lịch giúp bạn.</p>
       </div>

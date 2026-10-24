@@ -486,7 +486,8 @@
       "indexes": "{ownerId,createdAt:-1}; {storageProvider,storageKey} unique nếu storage nội bộ.",
       "rules": "Authorization dựa owner/access và entity liên kết. Không public export giấy tờ. Xóa file không thể bảo đảm bằng TTL metadata đơn thuần.",
       "retention": "Theo entity sở hữu/license; xóa orphan và object storage bằng job có audit.",
-      "brRefs": ["CAT-06", "DATA-08"]
+      "brRefs": ["CAT-06", "DATA-08"],
+      "runtimeStatus": "Design only; no media_assets model/collection or user upload API. Static repository media is delivered from Cloudinary goease/app and goease/docs via @goease/media; public manifest includes SHA-256, bytes, dimensions and original URLs. Legacy known places.imageUrl paths are mapped on DTO read without database/history writes. See CLOUDINARY-MEDIA.md."
     },
     {
       "name": "destinations",

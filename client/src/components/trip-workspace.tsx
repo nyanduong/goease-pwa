@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { TripManagement } from './trip-management';
 import { TripOffline } from './trip-offline';
 import { Sheet } from './journey-sheet';
@@ -62,15 +63,15 @@ const shortDate = (date: string) =>
   date.slice(5).split('-').reverse().join('/');
 const travelImage = (name: string) =>
   /hội an/i.test(name)
-    ? '/images/explore-hoian.png'
+    ? images.exploreHoian
     : /sa pa/i.test(name)
-      ? '/images/destination-sapa.png'
-      : '/images/welcome-halong-bay.png';
+      ? images.destinationSapa
+      : images.welcomeHalongBay;
 const activityImage = (a: ActivityInput, destination: string) =>
   /cơm gà/i.test(a.title)
-    ? '/images/explore-rice.png'
+    ? images.exploreRice
     : /trà quế/i.test(a.title)
-      ? '/images/explore-traque.png'
+      ? images.exploreTraque
       : travelImage(destination);
 const tastes = [
   { code: 'food', label: 'Ẩm thực', Icon: Utensils },
@@ -88,7 +89,7 @@ const paces = [
 function Companion({ children }: { children: ReactNode }) {
   return (
     <aside className="journey-companion">
-      <img src="/images/goe-mascot-cutout.png" alt="Goe" />
+      <img src={images.goeMascot} alt="Goe" />
       <p>{children}</p>
     </aside>
   );
@@ -144,7 +145,7 @@ export function JourneyList({
         <p>Những nơi muốn đến. Những điều muốn nhớ.</p>
       </div>
       <button className="journey-create-card" onClick={onStart}>
-        <img src="/images/goe-mascot-cutout.png" alt="" />
+        <img src={images.goeMascot} alt="" />
         <span>
           <strong>Mình đi đâu tiếp nhỉ?</strong>
           <small>Tạo một hành trình của riêng bạn</small>
@@ -1248,7 +1249,7 @@ export function TripWorkspace({
                           setPlacesStatus('loading');
                         }}
                       >
-                        <img src="/images/goe-mascot-cutout.png" alt="Goe" />
+                        <img src={images.goeMascot} alt="Goe" />
                         <span>Tìm một nơi hợp gu? Xem gợi ý nhé.</span>
                         <ChevronRight size={18} />
                       </button>
@@ -1272,7 +1273,7 @@ export function TripWorkspace({
                     className="journey-companion journey-suggest-button"
                     onClick={() => onOpenGoe(dayIndex)}
                   >
-                    <img src="/images/goe-mascot-cutout.png" alt="Goe" />
+                    <img src={images.goeMascot} alt="Goe" />
                     <span>Muốn đổi nhịp? Hỏi Goe nhé.</span>
                     <ChevronRight size={18} />
                   </button>

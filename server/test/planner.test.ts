@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -74,7 +75,7 @@ const place: PlaceDto = {
   category: 'culture',
   subtitle: '',
   description: '',
-  imageUrl: '/images/explore-hoian.png',
+  imageUrl: images.exploreHoian,
   durationLabel: '',
   travelLabel: '',
   bestTimeLabel: '',

@@ -280,6 +280,8 @@ Theo dõi yêu cầu truy cập, xuất, sửa, rút consent hoặc xóa dữ li
 
 Metadata media; binary để file/object storage, không nhúng document.
 
+**Runtime ảnh tĩnh 24/10/2026 (CAT-06/AUTH-09):** `media_assets` vẫn design-only, chưa có model/collection/upload API. 73 ảnh repository chuyển sang Cloudinary `goease/app` và `goease/docs`; manifest công khai ở `packages/media/assets-manifest.json` giữ sourcePath lịch sử, assetId/publicId/assetFolder/version, URL bản gốc, byte size, width/height và SHA-256. Không có credential trong manifest. Catalog seed/import/write mới dùng URL CDN; DTO public/admin ánh xạ đúng imageUrl local cũ qua `@goease/media`, không ghi lại MongoDB, catalog_versions, audit hay lịch sử chuyến. Avatar mặc định dùng CDN; avatarUrl tài khoản HTTPS không thay đổi. Xem [Cloudinary media](CLOUDINARY-MEDIA.md).
+
 | Field                               | Kiểu                      | Required/default   | Ý nghĩa và ràng buộc                                             |
 | ----------------------------------- | ------------------------- | ------------------ | ---------------------------------------------------------------- |
 | ownerId                             | ObjectId?                 | Điều kiện          | Người upload; system ingest có actor riêng.                      |

@@ -1,7 +1,8 @@
+import { images } from '@goease/media';
 import { useState } from 'react';
 import type { UserDto } from '@goease/contracts';
 
-const fallback = '/images/default-traveler-avatar.png';
+const fallback = images.defaultAvatar;
 export function AccountAvatar({ user }: { user?: UserDto | null }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const src =

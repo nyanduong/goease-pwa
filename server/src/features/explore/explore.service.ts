@@ -1,3 +1,4 @@
+import { resolveLegacyImageUrl } from '@goease/media';
 import mongoose, {
   Schema,
   Types,
@@ -252,7 +253,7 @@ export function exploreService(connection: Connection) {
     category: doc.category as PlaceDto['category'],
     subtitle: doc.subtitle,
     description: doc.description,
-    imageUrl: doc.imageUrl,
+    imageUrl: resolveLegacyImageUrl(doc.imageUrl),
     durationLabel: doc.durationLabel,
     travelLabel: doc.travelLabel,
     bestTimeLabel: doc.bestTimeLabel,

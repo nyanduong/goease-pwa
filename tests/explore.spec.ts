@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { test, expect, type Page } from '@playwright/test';
 import type { PlaceDto, PlaceStateDto } from '@goease/contracts';
 import { initialDraft, withDays } from '../client/src/trip-draft';
@@ -13,7 +14,7 @@ const place: PlaceDto = {
   subtitle: 'Đi bộ chậm. Ngắm phố lâu.',
   description:
     'Những mái ngói cũ, con hẻm nhỏ và một nhịp sống để bạn chậm lại.',
-  imageUrl: '/images/explore-hoian.png',
+  imageUrl: images.exploreHoian,
   durationLabel: '2–3 giờ',
   travelLabel: 'Đi bộ',
   bestTimeLabel: 'Hợp buổi chiều',

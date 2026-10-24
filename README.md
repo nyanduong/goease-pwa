@@ -4,6 +4,8 @@
 
 GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Phát triển bằng MongoDB local; Atlas là bước sau khi bản local hoàn thành. Mobile tương lai sử dụng cùng REST API và contracts thuần TypeScript.
 
+Ảnh giao diện và tài liệu được lưu trên Cloudinary trong `goease/app` và `goease/docs`, không còn binary ảnh trong checkout. Package `@goease/media` chứa URL công khai; key/secret chỉ nằm trong `server/.env` cho công cụ upload. Xem [quản lý ảnh và kiểm tra CDN](docs/CLOUDINARY-MEDIA.md); chạy `npm run media:verify` để đối chiếu lại toàn bộ bản gốc.
+
 Đã có trang chủ sản phẩm, đăng ký/đăng nhập email-mật khẩu không phụ thuộc xác minh email, đăng xuất bằng phiên cookie và lịch trình lưu MongoDB theo tài khoản. Account dùng được ngay; email chưa xác minh vẫn được ghi nhận riêng. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. Có AI xếp/chỉnh lịch Hội An, bản lịch tải xuống chỉ đọc offline và quản trị danh mục/giá tham khảo; booking/payment, CMS nội dung rộng hơn và native mobile chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
 
 Luồng Hội An: 7 gợi ý trong catalog có nguồn, thêm địa điểm vào chuyến/ngày, chỉnh lịch và ngân sách server tính theo nhóm hoặc mỗi người. Chạy `npm run db:seed` sau khi cập nhật để bổ sung catalog/metadata còn thiếu (không ghi đè bản đã chỉnh). Giá chưa xác minh giữ Chưa rõ. `/budget` là bản minh họa UI; chi phí thật mở từ tab Chi phí trong chuyến đã tạo. [Goe](docs/AI-PLANNER.md) dùng Gemini qua server khi được cấu hình, cho xem đề xuất trước khi áp dụng.
@@ -55,7 +57,7 @@ npm run dev
 
 Mở [web local](http://localhost:5180). API ở [health](http://localhost:3000/api/v1/health) và [database health](http://localhost:3000/api/v1/health/db). Dùng `localhost` nhất quán với `CLIENT_ORIGIN`. Cổng 5180 được chọn vì 5173 đã có tiến trình khác trong môi trường kiểm tra; `strictPort` tránh âm thầm đổi cổng. Nút **Kiểm tra lại** lấy trạng thái mới; trang không tự polling.
 
-`npm run dev` build contracts trước rồi chạy web/API song song. Nếu sửa contracts, build lại package và khởi động lại dev. Vite proxy `/api` tới API trên `localhost:3000`. Web, API và MongoDB chỉ dùng localhost/loopback, không mở ra IP LAN. Khi đổi `server/.env`, khởi động lại dev để API đọc URI mới. Khi triển khai web/API khác origin, cấu hình `VITE_API_BASE_URL` là origin API và `CLIENT_ORIGIN` là origin web; đổi proxy nếu đổi cổng API local. Không dùng Vite dev server làm production server.
+`npm run dev` build media và contracts trước rồi chạy web/API song song. Nếu sửa package dùng chung, build lại package và khởi động lại dev. Vite proxy `/api` tới API trên `localhost:3000`. Web, API và MongoDB chỉ dùng localhost/loopback, không mở ra IP LAN. Khi đổi `server/.env`, khởi động lại dev để API đọc URI mới. Khi triển khai web/API khác origin, cấu hình `VITE_API_BASE_URL` là origin API và `CLIENT_ORIGIN` là origin web; đổi proxy nếu đổi cổng API local. Không dùng Vite dev server làm production server.
 
 ## MongoDB và phục hồi kết nối
 
@@ -106,7 +108,7 @@ Các override chỉ áp dụng Playwright và `tests/vite.config.mts`; không đ
 
 `npm test` kiểm tra HTTP thật với dependency ping được điều khiển, request context/concurrency, stdout/stderr JSON có scanner bí mật, startup/database error và guard database test; đây không phải bằng chứng kết nối MongoDB. Bằng chứng MongoDB thật đến từ `db:check`, integration và E2E. Test lỗi mạng dùng browser fault injection và được đặt tên rõ.
 
-`npm run build` tạo `client/dist`, `server/dist`, `packages/contracts/dist`. Sau build có thể chạy API bằng `npm run start --workspace @goease/server`; `npm run preview --workspace @goease/client` chỉ xem bundle (không có dev proxy, cần cấu hình public API URL hoặc reverse proxy để gọi API).
+`npm run build` tạo `client/dist`, `server/dist`, `packages/contracts/dist`, `packages/media/dist`. Sau build có thể chạy API bằng `npm run start --workspace @goease/server`; `npm run preview --workspace @goease/client` chỉ xem bundle (không có dev proxy, cần cấu hình public API URL hoặc reverse proxy để gọi API).
 
 CI GitHub chạy npm ci, format, lint, typecheck, unit test và build. E2E/database là kiểm tra local có điều kiện riêng. Trạng thái CI chỉ được xác nhận sau khi quan sát run trên GitHub; xem [bằng chứng F0](docs/F0-VERIFICATION.md).
 
@@ -131,6 +133,7 @@ server/
   scripts/                 Init replica set, smoke check và guard
   test/                    HTTP/configuration/guard tests
 packages/contracts/        Zod schemas và DTO; không phụ thuộc DOM/server models
+packages/media/            URL Cloudinary công khai, mapping legacy và manifest checksum
 tests/                     Browser E2E và MongoDB lifecycle thật
 docs/                      BR, kiến trúc, bằng chứng F0
 .github/workflows/ci.yml    Kiểm tra tái lập từ lockfile

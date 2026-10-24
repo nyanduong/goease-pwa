@@ -10,6 +10,8 @@ CAT-11–13: module explore thêm catalog-operations +3model có consumer thật
 
 Một web React gọi một Express API. Express thực thi nghiệp vụ, xác thực/phân quyền, truy cập MongoDB và kết nối nhà cung cấp bên ngoài. Mobile tương lai gọi cùng API.
 
+Ảnh tĩnh từ 24/10/2026 dùng Cloudinary: `packages/media` là package thuần TypeScript chứa URL công khai, được web và API sử dụng; không phụ thuộc React/Mongoose hoặc cấu hình riêng tư. Công cụ upload nằm trong server/scripts, chỉ đọc secret phía server và giới hạn đích `goease/`. Bản gốc/checksum trong manifest; binary ảnh không còn trong checkout. DTO catalog dịch đúng các đường dẫn local cũ sang CDN để dữ liệu/lịch sử đã lưu tiếp tục đọc được. Xem [Cloudinary media](CLOUDINARY-MEDIA.md).
+
 Backend ban đầu là một ứng dụng có các module theo nghiệp vụ. Chỉ thêm dịch vụ triển khai độc lập khi có nhu cầu vận hành cụ thể.
 
 | Phần             | Trách nhiệm                                                                      |

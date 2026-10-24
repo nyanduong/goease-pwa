@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { plannerTiming } from '@goease/contracts';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -184,7 +185,7 @@ export function GoeChat({
         >
           <ArrowLeft size={21} />
         </button>
-        <img src="/images/goe-mascot-cutout.png" alt="Goe" />
+        <img src={images.goeMascot} alt="Goe" />
         <div>
           <strong>Goe</strong>
           <small>Bạn đồng hành chuyến đi</small>
@@ -329,7 +330,7 @@ export function GoeChat({
         aria-live="polite"
       >
         <div className="goe-chat-line goe">
-          <img src="/images/goe-mascot-cutout.png" alt="" />
+          <img src={images.goeMascot} alt="" />
           <div className="goe-chat-bubble">
             <p>
               Bạn muốn đi thư thả hơn, đổi điểm dừng hay thêm một món ăn? Mình
@@ -339,9 +340,7 @@ export function GoeChat({
         </div>
         {lines.map((line) => (
           <div key={line.id} className={`goe-chat-line ${line.role}`}>
-            {line.role === 'goe' && (
-              <img src="/images/goe-mascot-cutout.png" alt="" />
-            )}
+            {line.role === 'goe' && <img src={images.goeMascot} alt="" />}
             <div className="goe-chat-bubble">
               <p>{line.text}</p>
             </div>

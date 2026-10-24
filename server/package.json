@@ -14,7 +14,9 @@
     "db:check": "tsx scripts/db-check.ts",
     "db:init": "tsx scripts/db-init.ts",
     "test:integration": "tsx --test --test-concurrency=1 test/*.integration.ts",
-    "db:seed": "tsx scripts/db-seed.ts"
+    "db:seed": "tsx scripts/db-seed.ts",
+    "media:upload": "tsx scripts/cloudinary-media.ts upload",
+    "media:verify": "tsx scripts/cloudinary-media.ts verify"
   },
   "dependencies": {
     "@goease/contracts": "*",
@@ -25,7 +27,8 @@
     "jose": "6.2.13",
     "mongoose": "9.11.3",
     "nodemailer": "10.2.1",
-    "zod": "4.6.7"
+    "zod": "4.6.7",
+    "@goease/media": "*"
   },
   "devDependencies": {
     "@types/cors": "2.8.19",

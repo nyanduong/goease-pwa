@@ -68,7 +68,7 @@ Bằng chứng lệnh, thử nguồn thật và ảnh nghiệm thu: [ADMIN-V2-VE
 
 ## Bộ ảnh và bố cục tham chiếu
 
-Theo yêu cầu owner, ảnh minh họa được tạo bằng built-in image_gen và lưu trong `client/public/images/admin/`: panorama Hội An, món ăn, món chay, cà phê, di sản và đèn lồng. PNG là bản gốc; WebP là bản tối ưu đang phục vụ giao diện. Prompt lưu trong `generation-manifest.json`. URL tập trung tại `client/src/components/admin-visuals.tsx`; sau khi upload Cloudinary, đổi các URL trong `adminAssets`.
+Theo yêu cầu owner, ảnh minh họa được tạo bằng built-in image_gen: panorama Hội An, món ăn, món chay, cà phê, di sản và đèn lồng. Từ 24/10/2026, PNG gốc và WebP đều lưu trong Cloudinary `goease/app/admin`; giao diện dùng URL từ `@goease/media` qua `adminAssets`. Prompt giữ trong `packages/media/admin-generation-manifest.json`, metadata/checksum bản gốc trong `packages/media/assets-manifest.json`. Xem [quản lý ảnh](CLOUDINARY-MEDIA.md).
 
 Ảnh AI chỉ bổ sung cho các mục chưa có ảnh thực tế hoặc ảnh lỗi, có nhãn AI và mô tả minh họa. Không ghi ảnh này vào bằng chứng nguồn, không làm tăng điểm chất lượng và không tự xuất bản. Ảnh có quyền đã nhập vẫn được ưu tiên.
 

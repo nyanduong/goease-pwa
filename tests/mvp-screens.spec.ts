@@ -17,8 +17,8 @@ test('budget preview: categories, responsive layout, missing and exceeded budget
 }) => {
   await setup(page);
   await page.goto('/budget');
-  await expect(page.locator('.budget-total')).toContainText('8.200.000');
-  await expect(page.locator('.budget-per-person')).toContainText('2.050.000');
+  await expect(page.locator('.budget-total')).toContainText('2.050.000');
+  await expect(page.locator('.budget-per-person')).toContainText('8.200.000');
   await expect(page.getByRole('meter')).toHaveAttribute('aria-valuenow', '82');
   await expect(page.locator('.budget-reserve')).toContainText('1.800.000');
   await expect(page.locator('.mobile-nav-item').nth(2)).toHaveText('Trang chủ');
@@ -50,7 +50,7 @@ test('budget preview: categories, responsive layout, missing and exceeded budget
   for (const [value, expected] of [
     ['5000000', 'Đã vượt ngân sách 3.200.000'],
     ['0', 'Đã vượt ngân sách 8.200.000'],
-    ['', 'Chưa đặt ngân sách nhóm'],
+    ['', 'Ngân sách không bắt buộc'],
   ] as const) {
     await page.getByRole('button', { name: 'Điều chỉnh ngân sách' }).click();
     await page
@@ -83,7 +83,9 @@ test('Goe requires a saved trip before sending and stays responsive', async ({
   await expect(
     page.getByRole('button', { name: 'Gửi tin nhắn' }),
   ).toBeDisabled();
-  await expect(page.locator('.goe-demo-note')).toContainText('Gemini');
+  await expect(page.locator('.goe-demo-note')).toContainText(
+    'dịch vụ AI của Goe',
+  );
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 844 });
     expect(

@@ -279,6 +279,8 @@ Q-02 không còn hỏi phương thức login. npm, localhost và stack không ph
 
 ## 10. Cách cập nhật nguồn chính
 
+**CAT-06 / AUTH-09 — lưu ảnh Cloudinary, owner xác nhận 24/10/2026:** ảnh tĩnh giao diện, avatar mặc định, minh họa AI và ảnh tài liệu chuyển sang `goease/app` và `goease/docs`. Giữ nguồn/credit/nhãn minh họa; thay nơi lưu không biến ảnh AI thành bằng chứng địa điểm. Key/secret chỉ phía server. Không thêm endpoint upload người dùng hoặc quyền truy cập mới; `media_assets` vẫn là schema dự kiến. URL HTTPS của avatar người dùng giữ nguyên. Xem [phạm vi và kiểm chứng](CLOUDINARY-MEDIA.md).
+
 Sửa nghiệp vụ phải cập nhật mã BR, dictionary/schema/contracts và tests liên quan trong cùng thay đổi; nếu chưa có implementation/test, ghi rõ trạng thái đó và acceptance dự kiến. Schema mục tiêu ở DB-BASELINE, registry là bản đọc máy để đối chiếu, không executable. Lưu quyết định mới cùng tiêu chí kiểm tra và tác động migration; không biến policy đề xuất thành đã xác nhận chỉ bằng sửa nhãn phiên bản.
 
 ## Tài liệu tham khảo sản phẩm

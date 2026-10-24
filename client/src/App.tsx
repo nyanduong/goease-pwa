@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import {
   beginOfflineLogout,
   clearOffline,
@@ -699,7 +700,7 @@ export function App() {
             <div className="welcome-hero">
               <img
                 className="welcome-landscape"
-                src="/images/welcome-halong-bay.png"
+                src={images.welcomeHalongBay}
                 alt=""
               />
               <div className="welcome-heading">
@@ -740,7 +741,7 @@ export function App() {
               </svg>
               <img
                 className="welcome-mascot"
-                src="/images/goe-mascot-cutout.png"
+                src={images.goeMascot}
                 alt="Goe, linh thú du lịch GoEase"
               />
             </div>

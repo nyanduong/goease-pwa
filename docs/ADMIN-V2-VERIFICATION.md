@@ -1,5 +1,7 @@
 # Admin Operations V2 — bằng chứng kiểm tra 24/10/2026
 
+Cập nhật sau yêu cầu owner: branch này đã fast-forward vào `main`; 73 ảnh repository đã chuyển lên Cloudinary và xóa binary khỏi checkout. Các ghi nhận branch/local/chưa upload bên dưới là bằng chứng trước lần chuyển, xem [Cloudinary media](CLOUDINARY-MEDIA.md) cho trạng thái hiện tại.
+
 Branch `nyan/admin-operations-v2`, không merge main. Windows, Node24/npm11, Edge headless, MongoDB8.2. Fixtures có nhãn và chỉ tồn tại trong replica set test riêng trên27021; không đổi service27017 hoặc dữ liệu goease. Không tạo production account/ảnh/địa điểm demo.
 
 ## Các kiểm tra đã quan sát

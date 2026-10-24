@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { images } from '@goease/media';
 import type { PlaceStateDto } from '@goease/contracts';
 async function readPayload(response: Response) {
   return (await response.json()) as {
@@ -75,11 +76,21 @@ test(
       const cookieA = await register('explore-a@example.invalid');
       const cookieB = await register('explore-b@example.invalid');
       const id = '100000000000000000000001';
+      // Old persisted paths must survive removal of public/images without rewriting history.
+      await product.explore.models.Place.updateOne(
+        { _id: id },
+        { $set: { imageUrl: '/images/explore-hoian.png' } },
+      );
       let r = await call('/places?q=pho%20co%20hoi%20an');
       assert.equal(r.status, 200);
       let payload = await readPayload(r);
       assert.equal(payload.data.items.length, 1);
       assert.equal(payload.data.items[0]?.id, id);
+      assert.equal(payload.data.items[0]?.imageUrl, images.exploreHoian);
+      assert.equal(
+        (await product.explore.models.Place.findById(id))?.imageUrl,
+        '/images/explore-hoian.png',
+      );
       r = await call('/places?category=food');
       payload = await readPayload(r);
       assert.equal(payload.data.items.length, 2);

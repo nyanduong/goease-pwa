@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { createHash, randomBytes } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -1436,8 +1437,8 @@ test('customer profile and password persist and revoke other browser sessions', 
       .fill('Người du lịch mới');
     await page.route('https://example.com/avatar.png', (r) =>
       r.fulfill({
-        path: resolve('client/public/images/default-traveler-avatar.png'),
-        contentType: 'image/png',
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="green"/></svg>',
+        contentType: 'image/svg+xml',
       }),
     );
     await page
@@ -1502,7 +1503,7 @@ test('customer profile and password persist and revoke other browser sessions', 
     );
     await expect(page.locator('.account-profile-head img')).toHaveAttribute(
       'src',
-      '/images/default-traveler-avatar.png',
+      images.defaultAvatar,
     );
     await page
       .getByLabel('Mật khẩu hiện tại', { exact: true })

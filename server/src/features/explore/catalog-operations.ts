@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import {
   ingestionScope,
   initialDestinationId,
@@ -1246,7 +1247,7 @@ export function catalogOperations(
             },
             referencePrice: null,
             publicationStatus: 'draft',
-            imageUrl: '/images/explore-hoian.png',
+            imageUrl: images.exploreHoian,
             imageCredit: 'Ảnh minh họa AI, không phải ảnh cơ sở',
             durationLabel: 'Ước tính 60 phút',
             travelLabel: 'Kiểm tra đường đi',

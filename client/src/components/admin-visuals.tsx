@@ -1,15 +1,16 @@
+import { images } from '@goease/media';
 import { useEffect, useState, type ReactNode } from 'react';
 import { MapPin, Sun } from 'lucide-react';
 
-// Replace these URLs with Cloudinary URLs after upload; presentation never changes catalog evidence.
+// Cloudinary illustrations are presentation assets, never catalog evidence.
 export const adminAssets = {
-  hero: '/images/admin/hoian-watercolor-v1.webp',
-  food: '/images/admin/food-v1.webp',
-  vegetarian: '/images/admin/vegetarian-v1.webp',
-  coffee: '/images/admin/coffee-v1.webp',
-  heritage: '/images/admin/heritage-v1.webp',
-  lanterns: '/images/admin/lanterns-v1.webp',
-  nature: '/images/explore-rice.png',
+  hero: images.adminHoianWatercolor,
+  food: images.adminFood,
+  vegetarian: images.adminVegetarian,
+  coffee: images.adminCoffee,
+  heritage: images.adminHeritage,
+  lanterns: images.adminLanterns,
+  nature: images.exploreRice,
 };
 type PlaceImage = {
   name: string;
@@ -39,7 +40,7 @@ export function AdminPlaceImage({
   const illustrated =
     !place.imageUrl ||
     /minh họa|\bAI\b/i.test(place.imageCredit ?? '') ||
-    place.imageUrl === '/images/explore-hoian.png' ||
+    place.imageUrl === images.exploreHoian ||
     failed === place.imageUrl;
   const src = illustrated ? adminIllustration(place) : place.imageUrl;
   return (

@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { test, expect } from '@playwright/test';
 
 // Mocked auth responses isolate browser routing/avatar presentation from provider setup.
@@ -54,7 +55,7 @@ for (const avatar of ['missing', 'account', 'broken'] as const) {
     });
     await expect(image).toHaveAttribute(
       'src',
-      avatar === 'account' ? avatarUrl! : '/images/default-traveler-avatar.png',
+      avatar === 'account' ? avatarUrl! : images.defaultAvatar,
     );
     await expect
       .poll(() =>
@@ -67,7 +68,7 @@ for (const avatar of ['missing', 'account', 'broken'] as const) {
     await expect(page).toHaveURL(/\/$/);
     await expect(image).toHaveAttribute(
       'src',
-      avatar === 'account' ? avatarUrl! : '/images/default-traveler-avatar.png',
+      avatar === 'account' ? avatarUrl! : images.defaultAvatar,
     );
   });
 }

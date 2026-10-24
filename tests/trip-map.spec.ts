@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { test, expect } from '@playwright/test';
 import { initialDraft, withDays } from '../client/src/trip-draft';
 import type { PlaceDto } from '@goease/contracts';
@@ -18,7 +19,7 @@ test('map markers follow day order, missing places break lines, and empty days s
         category: 'culture',
         subtitle: '',
         description: '',
-        imageUrl: '/images/explore-hoian.png',
+        imageUrl: images.exploreHoian,
         durationLabel: '',
         travelLabel: '',
         bestTimeLabel: '',

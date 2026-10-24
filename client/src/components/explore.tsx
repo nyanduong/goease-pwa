@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { useEffect, useRef, useState } from 'react';
 import { catalogCost } from '@goease/contracts';
 import {
@@ -690,7 +691,7 @@ export function PlaceDetail({
         </div>
         <p className="place-description">{place.description}</p>
         <aside className="place-tip">
-          <img src="/images/goe-mascot-cutout.png" alt="Goe" />
+          <img src={images.goeMascot} alt="Goe" />
           <div>
             <h2>
               <Sparkles size={16} />

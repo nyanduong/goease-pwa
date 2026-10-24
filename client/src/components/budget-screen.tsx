@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
@@ -132,8 +133,8 @@ export function BudgetScreen({
         <img
           src={
             /hội an/i.test(destinationName)
-              ? '/images/explore-hoian.png'
-              : '/images/welcome-halong-bay.png'
+              ? images.exploreHoian
+              : images.welcomeHalongBay
           }
           alt="Ảnh phong cảnh minh họa AI"
         />
@@ -168,11 +169,7 @@ export function BudgetScreen({
               ? `Cả nhóm ${travelers} người: ${moneyText(known)}`
               : 'Chưa xác định số người'}
         </p>
-        <img
-          className="budget-goe"
-          src="/images/goe-mascot-cutout.png"
-          alt="Goe"
-        />
+        <img className="budget-goe" src={images.goeMascot} alt="Goe" />
         {!incomplete && (
           <div className="budget-meter-row">
             <div

@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { cloneElement, useId, type ReactElement, type ReactNode } from 'react';
 
 export function Field({
@@ -48,7 +49,7 @@ export function Brand() {
     <span className="brand">
       <img
         className="brand-mark"
-        src="/images/goease-logo.webp"
+        src={images.logo}
         alt=""
         aria-hidden="true"
         width={36}
@@ -70,7 +71,7 @@ export function Goe({
   return (
     <img
       className={`goe-mascot goe-${size} ${className}`}
-      src="/images/goe-original.png"
+      src={images.goeOriginal}
       alt="Goe, linh thú xanh dương của GoEase"
       width={1254}
       height={1254}

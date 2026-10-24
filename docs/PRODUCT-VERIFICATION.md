@@ -45,9 +45,9 @@ Tooling E2E còn cảnh báo FORCE_COLOR/NO_COLOR và Vite test config import po
 
 ## Ảnh thực tế và khác biệt có chủ đích
 
-- [Trang chủ desktop](screenshots/product/home-desktop.png), [mobile](screenshots/product/home-mobile.png).
-- [Đăng nhập desktop](screenshots/product/login-desktop.png), [mobile](screenshots/product/login-mobile.png).
-- [Lịch trình desktop](screenshots/product/trip-desktop.png), [tablet](screenshots/product/trip-tablet.png), [mobile](screenshots/product/trip-mobile.png).
+- [Trang chủ desktop](https://res.cloudinary.com/dqc4hufot/image/upload/v1792838091/goease/docs/screenshots/product/home-desktop-png.png), [mobile](https://res.cloudinary.com/dqc4hufot/image/upload/v1792838093/goease/docs/screenshots/product/home-mobile-png.png).
+- [Đăng nhập desktop](https://res.cloudinary.com/dqc4hufot/image/upload/v1792838094/goease/docs/screenshots/product/login-desktop-png.png), [mobile](https://res.cloudinary.com/dqc4hufot/image/upload/v1792838095/goease/docs/screenshots/product/login-mobile-png.png).
+- [Lịch trình desktop](https://res.cloudinary.com/dqc4hufot/image/upload/v1792838096/goease/docs/screenshots/product/trip-desktop-png.png), [tablet](https://res.cloudinary.com/dqc4hufot/image/upload/v1792838098/goease/docs/screenshots/product/trip-tablet-png.png), [mobile](https://res.cloudinary.com/dqc4hufot/image/upload/v1792838097/goease/docs/screenshots/product/trip-mobile-png.png).
 
 Áp dụng palette của concept tại `docs/design/GoEase-Concept-Pack/GoEase-Concept-Pack/`, serif Lora hỗ trợ tiếng Việt (Google Fonts, SIL OFL, license kèm trong client/public/fonts), sans hệ thống cho form. Dùng nguyên ảnh Goe gốc từ reference, chỉ hiển thị bằng CSS; không tạo mascot mới. Font được host local từ nguồn Google Fonts chính thức, không gọi dịch vụ font bên ngoài lúc dùng app.
 

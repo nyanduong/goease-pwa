@@ -1,5 +1,9 @@
 # GoEase — Truy vết, Analytics và Vòng đời dữ liệu v0.2
 
+## Ảnh tĩnh Cloudinary — 24/10/2026
+
+CAT-06/AUTH-09: Git sourcePath → upload có chữ ký phía server, overwrite=false, đích cố định `goease/` → manifest assetId/publicId/folder/version/URL/bytes/dimensions/SHA-256 → GET bản gốc và đối chiếu checksum → thay URL web/API/tài liệu → xóa 73 binary khỏi checkout. Prompt/credit/nhãn AI được giữ. Không log secret hay raw provider error. Không ghi user/trip/catalog/audit hoặc sửa lịch sử để chuyển URL; DTO ánh xạ allowlist các path local cũ. Không tạo media_assets model, analytics, retention/purge job hay quyền upload người dùng. Xem [hướng dẫn và bằng chứng](CLOUDINARY-MEDIA.md); các ghi nhận “local/chưa upload Cloudinary” phía dưới là lịch sử trước lần chuyển này.
+
 ## Catalog automation trace — 23/10/2026
 
 CAT-11–13: admin session → revision-checked schedule + audit + receipt → MongoDB due schedule → atomic run claim → durable quota reservation → Geoapify fixed-scope allowlist → transaction fenced on run → draft places / separate sourceSnapshot + sourceCheckedAt / deduplicated catalog_reviews / run counts + audit. No provider call in transaction and no replay-dependent browser preview. Crash/failure before commit leaves no partial catalog writes; expired run can be reclaimed. Retry is bounded; failed run becomes an intervention item, backoff remains system work. Schedule default off; configured system actor does not inherit admin's trip visibility or publication power.

@@ -1,3 +1,4 @@
+import { images } from '@goease/media';
 import { useState } from 'react';
 import {
   ArrowRight,
@@ -15,14 +16,14 @@ const suggestions = [
     name: 'Hội An',
     subtitle: 'Phố cổ & ánh đèn',
     category: 'Văn hóa',
-    image: '/images/destination-hoian.png',
+    image: images.destinationHoian,
   },
   {
     slug: 'sa-pa',
     name: 'Sa Pa',
     subtitle: 'Núi rừng & mây trời',
     category: 'Thiên nhiên',
-    image: '/images/destination-sapa.png',
+    image: images.destinationSapa,
   },
 ];
 const fold = (value: string) =>
@@ -96,7 +97,7 @@ export function HomeDiscovery({
   if (mode === 'goe')
     return (
       <section className="goe-coming">
-        <img src="/images/goe-mascot-cutout.png" alt="Goe" />
+        <img src={images.goeMascot} alt="Goe" />
         <h1>Chào bạn, mình là Goe!</h1>
         <p>
           Goe đang chuẩn bị tính năng gợi ý hành trình. Hiện tại, bạn có thể tự
@@ -173,7 +174,7 @@ export function HomeDiscovery({
           <Sparkles className="banner-sparkles" size={27} aria-hidden="true" />
           <img
             className="discovery-banner-goe"
-            src="/images/goe-mascot-cutout.png"
+            src={images.goeMascot}
             alt="Goe, linh thú du lịch GoEase"
           />
         </section>
