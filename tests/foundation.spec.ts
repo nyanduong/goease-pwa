@@ -1444,9 +1444,30 @@ test('customer profile and password persist and revoke other browser sessions', 
         contentType: 'image/svg+xml',
       }),
     );
+    // Upload provider is mocked here; profile PATCH/reload still use the real API/DB.
+    await page.route('**/api/v1/me/avatar', (r) =>
+      r.fulfill({
+        json: {
+          ok: true,
+          data: { avatarUrl: 'https://example.com/avatar.png' },
+        },
+      }),
+    );
+    const avatarPng = await page.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 200;
+      canvas.height = 200;
+      canvas.getContext('2d')!.fillRect(0, 0, 200, 200);
+      return canvas.toDataURL('image/png').split(',')[1]!;
+    });
+    await page.getByLabel('Chọn ảnh đại diện từ máy').setInputFiles({
+      name: 'avatar-fixture.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(avatarPng, 'base64'),
+    });
     await page
-      .getByLabel('URL ảnh đại diện', { exact: true })
-      .fill('https://example.com/avatar.png');
+      .getByRole('button', { name: 'Dùng ảnh này', exact: true })
+      .click();
     let drop = true;
     await page.route('**/api/v1/me/profile', async (r) => {
       if (r.request().method() !== 'PATCH') return r.continue();

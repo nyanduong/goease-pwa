@@ -4,9 +4,23 @@ import {
   passwordChangeSchema,
   type AccountDto,
   type UserDto,
+  type AvatarUploadDto,
 } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
-import { AccountAvatar } from './account-avatar';
+import {
+  UserRound,
+  Mail,
+  CalendarDays,
+  RefreshCw,
+  ShieldCheck,
+  LockKeyhole,
+  KeyRound,
+  CircleCheck,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+import { AvatarPicker } from './avatar-picker';
+import { useAutomaticRetry } from '../use-automatic-retry';
 export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
   const [data, setData] = useState<AccountDto | null>(null),
     [loading, setLoading] = useState(true),
@@ -25,6 +39,11 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
     [passwordBusy, setPasswordBusy] = useState(false),
     [uncertain, setUncertain] = useState(false);
   const pending = useRef<{ key: string; body: string } | null>(null);
+  const [avatarFile, setAvatarFile] = useState<Blob | null>(null);
+  const uploadedAvatar = useRef<{ file: Blob; url: string } | null>(null);
+  useAutomaticRetry(loadError ? 'error' : loading ? 'loading' : 'ready', () =>
+    setReload((value) => value + 1),
+  );
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -38,6 +57,8 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
           onSaved(v.user);
           setName(v.user.displayName);
           setAvatar(v.user.avatarUrl ?? '');
+          setAvatarFile(null);
+          uploadedAvatar.current = null;
         }
       })
       .catch((e) => {
@@ -57,6 +78,7 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
         profileBusy ||
         passwordBusy ||
         uncertain ||
+        avatarFile ||
         oldPassword ||
         newPassword ||
         (data &&
@@ -76,6 +98,7 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
     data,
     name,
     avatar,
+    avatarFile,
   ]);
   async function saveProfile() {
     if (!data || profileBusy) return;
@@ -85,22 +108,38 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
       expectedRevision: data.revision,
     });
     if (!parsed.success) {
-      setProfileError(
-        'Tên từ 1–100 ký tự; ảnh là URL HTTPS không chứa tài khoản/mật khẩu, tối đa 2048 ký tự.',
-      );
+      setProfileError('Tên hiển thị cần từ 1–100 ký tự. Kiểm tra lại hồ sơ.');
       return;
     }
     setProfileBusy(true);
     setProfileError('');
     setProfileNotice('');
     try {
+      let avatarUrl = parsed.data.avatarUrl;
+      if (avatarFile) {
+        if (uploadedAvatar.current?.file !== avatarFile) {
+          const uploaded = await api<AvatarUploadDto>('/me/avatar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'image/jpeg' },
+            body: avatarFile,
+            signal: AbortSignal.timeout(45000),
+          });
+          uploadedAvatar.current = {
+            file: avatarFile,
+            url: uploaded.avatarUrl,
+          };
+        }
+        avatarUrl = uploadedAvatar.current.url;
+      }
       const result = await api<AccountDto>('/me/profile', {
         method: 'PATCH',
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({ ...parsed.data, avatarUrl }),
       });
       setData(result);
       setName(result.user.displayName);
       setAvatar(result.user.avatarUrl ?? '');
+      setAvatarFile(null);
+      uploadedAvatar.current = null;
       onSaved(result.user);
       setProfileNotice('Đã lưu hồ sơ.');
     } catch (e) {
@@ -172,31 +211,44 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
   if (!data) return null;
   return (
     <section className="account-page">
-      <span className="journey-eyebrow">TÀI KHOẢN CỦA BẠN</span>
-      <h1>Hồ sơ & bảo mật</h1>
-      <div className="account-profile-head">
-        <AccountAvatar user={data.user} />
-        <div>
-          <strong>{data.user.displayName}</strong>
-          <p>{data.user.email}</p>
-          <small>
-            {data.user.emailVerified
-              ? 'Email đã xác minh'
-              : 'Email chưa xác minh'}
-          </small>
-        </div>
-      </div>
+      <header className="account-heading">
+        <span className="journey-eyebrow">TÀI KHOẢN CỦA BẠN</span>
+        <h1>
+          Trung tâm <span>cá nhân</span>
+        </h1>
+        <p>Quản lý thông tin và bảo mật tài khoản</p>
+      </header>
       <form
-        className="expense-form account-card"
+        className="expense-form account-card account-profile-card"
         onSubmit={(e) => {
           e.preventDefault();
           void saveProfile();
         }}
       >
-        <h2>Hồ sơ cá nhân</h2>
+        <h2 className="sr-only">Hồ sơ cá nhân</h2>
         <fieldset disabled={profileBusy}>
+          <AvatarPicker
+            displayName={data.user.displayName}
+            emailVerified={data.user.emailVerified}
+            avatarUrl={avatar}
+            file={avatarFile}
+            disabled={profileBusy}
+            onCrop={(file) => {
+              setAvatarFile(file);
+              uploadedAvatar.current = null;
+              setProfileError('');
+              setProfileNotice('');
+            }}
+            onReset={() => {
+              setAvatar('');
+              setAvatarFile(null);
+              uploadedAvatar.current = null;
+            }}
+          />
           <label>
-            Tên hiển thị
+            <span>
+              <UserRound size={15} /> Tên hiển thị
+            </span>
             <input
               required
               maxLength={100}
@@ -206,22 +258,25 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
             />
           </label>
           <label>
-            URL ảnh đại diện
-            <input
-              type="url"
-              maxLength={2048}
-              placeholder="https://…"
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-            />
+            <span>
+              <Mail size={15} /> Email (cố định)
+            </span>
+            <input type="email" readOnly value={data.user.email} />
           </label>
-          <small>
-            Dùng link ảnh HTTPS, ví dụ Cloudinary. Chưa hỗ trợ tải ảnh từ thiết
-            bị.
-          </small>
-          <button type="button" onClick={() => setAvatar('')}>
-            Dùng avatar mặc định
-          </button>
+          <div className="account-date-fields">
+            <label>
+              <span>
+                <CalendarDays size={15} /> Ngày tham gia
+              </span>
+              <input readOnly value={accountDate(data.createdAt)} />
+            </label>
+            <label>
+              <span>
+                <RefreshCw size={15} /> Cập nhật lần cuối
+              </span>
+              <input readOnly value={accountDate(data.updatedAt)} />
+            </label>
+          </div>
         </fieldset>
         {profileError && (
           <p role="alert">
@@ -247,13 +302,21 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
         </button>
       </form>
       <form
-        className="expense-form account-card"
+        className="expense-form account-card account-security-card"
         onSubmit={(e) => {
           e.preventDefault();
           void changePassword();
         }}
       >
-        <h2>Đổi mật khẩu</h2>
+        <header className="account-security-heading">
+          <span className="account-security-icon">
+            <ShieldCheck size={26} />
+          </span>
+          <div>
+            <h2>Đổi mật khẩu</h2>
+            <p>Tăng cường bảo mật tài khoản</p>
+          </div>
+        </header>
         {data.canChangePassword ? (
           <>
             <p>Các phiên đăng nhập khác sẽ bị thu hồi sau khi đổi mật khẩu.</p>
@@ -264,41 +327,29 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
                 autoComplete="username"
                 value={data.user.email}
               />
-              <label>
-                Mật khẩu hiện tại
-                <input
-                  required
-                  type="password"
-                  autoComplete="current-password"
-                  maxLength={128}
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                />
-              </label>
-              <label>
-                Mật khẩu mới
-                <input
-                  required
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={12}
-                  maxLength={128}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-              </label>
-              <label>
-                Xác nhận mật khẩu mới
-                <input
-                  required
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={12}
-                  maxLength={128}
-                  value={confirmation}
-                  onChange={(e) => setConfirmation(e.target.value)}
-                />
-              </label>
+              <PasswordField
+                label="Mật khẩu hiện tại"
+                value={oldPassword}
+                onChange={setOldPassword}
+                autoComplete="current-password"
+                Icon={LockKeyhole}
+              />
+              <PasswordField
+                label="Mật khẩu mới"
+                value={newPassword}
+                onChange={setNewPassword}
+                autoComplete="new-password"
+                Icon={KeyRound}
+                minLength={12}
+              />
+              <PasswordField
+                label="Xác nhận mật khẩu mới"
+                value={confirmation}
+                onChange={setConfirmation}
+                autoComplete="new-password"
+                Icon={CircleCheck}
+                minLength={12}
+              />
             </fieldset>
             {passwordError && <p role="alert">{passwordError}</p>}
             {uncertain && (
@@ -328,5 +379,59 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
         )}
       </form>
     </section>
+  );
+}
+
+function accountDate(value: string | undefined) {
+  if (!value || !Number.isFinite(Date.parse(value))) return 'Chưa có thông tin';
+  return new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date(value));
+}
+function PasswordField({
+  label,
+  value,
+  onChange,
+  autoComplete,
+  Icon,
+  minLength,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  autoComplete: 'current-password' | 'new-password';
+  Icon: typeof Eye;
+  minLength?: number;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <label className="account-password-label">
+      <span>{label}</span>
+      <span className="account-password-input">
+        <Icon size={19} aria-hidden="true" />
+        <input
+          required
+          type={visible ? 'text' : 'password'}
+          autoComplete={autoComplete}
+          minLength={minLength}
+          maxLength={128}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <button
+          type="button"
+          aria-label={`${visible ? 'Ẩn' : 'Hiện'} ${label.toLowerCase()}`}
+          aria-pressed={visible}
+          onClick={() => setVisible(!visible)}
+        >
+          {visible ? <EyeOff size={19} /> : <Eye size={19} />}
+        </button>
+      </span>
+    </label>
   );
 }

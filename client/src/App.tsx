@@ -1,5 +1,6 @@
 import { images } from '@goease/media';
 import { loadDestinations } from './destinations';
+import { useAutomaticRetry } from './use-automatic-retry';
 import {
   beginOfflineLogout,
   clearOffline,
@@ -76,9 +77,22 @@ export function App() {
   const [tripHasMore, setTripHasMore] = useState(false);
   const [tripsRetry, setTripsRetry] = useState(0);
   const [detailRetry, setDetailRetry] = useState(0);
+  const [detailStatus, setDetailStatus] = useState('idle');
   const [saveState, setSaveState] = useState<
     'dirty' | 'saving' | 'saved' | 'error'
   >('dirty');
+
+  useAutomaticRetry(sessionStatus, () => setSessionRetry((value) => value + 1));
+  useAutomaticRetry(destinationStatus, () =>
+    setDestinationRetry((value) => value + 1),
+  );
+  useAutomaticRetry(tripsStatus, () => setTripsRetry((value) => value + 1));
+  useAutomaticRetry(
+    /^\/trips\/[a-f0-9]{24}$/.test(path) && user && sessionStatus === 'ready'
+      ? detailStatus
+      : 'idle',
+    () => setDetailRetry((value) => value + 1),
+  );
 
   const changeDraft = (value: TripInput) => {
     setDraft(value);
@@ -307,16 +321,29 @@ export function App() {
     let active = true;
     setBusy(true);
     setLoaded(null);
+    setDetailStatus('loading');
     void api<{ trip: TripDto }>(path)
       .then((v) => {
         if (active) {
           setLoaded(v.trip);
           setDraft(inputFromTrip(v.trip));
           setSaveState('saved');
+          setDetailStatus('ready');
+          setMessage('');
         }
       })
       .catch((e: unknown) => {
-        if (active) setMessage(errorText(e));
+        if (active) {
+          setMessage(errorText(e));
+          setDetailStatus(
+            !(e instanceof ApiFailure) ||
+              e.status >= 500 ||
+              e.status === 408 ||
+              e.status === 429
+              ? 'error'
+              : 'idle',
+          );
+        }
       })
       .finally(() => {
         if (active) setBusy(false);
@@ -427,9 +454,7 @@ export function App() {
       <main className="container">
         <Notice>
           Đã xóa bản offline. Đang chờ hoàn tất đăng xuất trên server.
-          <button onClick={() => setSessionRetry((v) => v + 1)}>
-            Thử kết nối lại
-          </button>
+          <span role="status">Ứng dụng đang tự kết nối lại.</span>
           <a href="/offline.html">Mở màn offline</a>
         </Notice>
       </main>
@@ -600,12 +625,7 @@ export function App() {
                       </button>
                     </div>
                   ) : sessionStatus === 'error' ? (
-                    <button
-                      className="button button-small button-outline"
-                      onClick={() => setSessionRetry((v) => v + 1)}
-                    >
-                      Thử kết nối lại
-                    </button>
+                    <span role="status">Đang kết nối lại…</span>
                   ) : (
                     link('/login', <AccountAvatar />, 'home-avatar-link')
                   )}
@@ -628,14 +648,12 @@ export function App() {
       {sessionError && (
         <div className="container">
           <Notice error>
-            {sessionError} <a href="/offline.html">Xem bản offline</a>{' '}
-            <button
-              type="button"
-              className="text-button inline-retry-btn"
-              onClick={() => setSessionRetry((v) => v + 1)}
-            >
-              Thử kết nối lại
-            </button>
+            <span role="status">
+              {online
+                ? 'Chưa kết nối được máy chủ. Ứng dụng đang tự thử lại.'
+                : 'Đang chờ mạng để tự kết nối lại.'}
+            </span>{' '}
+            <a href="/offline.html">Xem bản offline</a>
           </Notice>
         </div>
       )}
@@ -695,12 +713,7 @@ export function App() {
                 : 'Chưa kiểm tra được phiên đăng nhập.'}
             </p>
             {sessionStatus === 'error' && (
-              <button
-                className="button button-outline"
-                onClick={() => setSessionRetry((v) => v + 1)}
-              >
-                Thử kết nối lại
-              </button>
+              <p>Ứng dụng sẽ tự kết nối lại khi máy chủ sẵn sàng.</p>
             )}
           </section>
         ) : path === '/welcome' ? (

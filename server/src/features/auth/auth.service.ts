@@ -201,6 +201,8 @@ export function authService(
         user: userDto(value.user),
         revision: value.user.revision,
         canChangePassword,
+        createdAt: value.user.createdAt.toISOString(),
+        updatedAt: value.user.updatedAt.toISOString(),
       };
     },
     async updateProfile(

@@ -154,3 +154,7 @@ Offline chỉ xem: service worker cache public standalone reader và fallback na
 ## Geoapify import adapter — 2026-10-23
 
 Existing explore feature adds a fixed-origin server adapter and admin import service. UI sends group/limit then preview ID + selected source IDs; normalized data stays server-owned. Import transaction reuses places/audit_logs/idempotency_keys; no provider call inside retriable transaction. Preview and search caps are bounded per process; no scheduler/worker/new collection. OSM canonical source identity has an additive partial unique index. Customer paths continue to consume only published catalog. See [GEOAPIFY-IMPORT](GEOAPIFY-IMPORT.md) for trial, contracts, metadata, rate limits and explicit unverified scope.
+
+## Tự phục hồi kết nối giao diện — 24/10/2026
+
+`useAutomaticRetry` chỉ được nối vào các lượt đọc lỗi: phiên ban đầu, danh mục điểm đến, danh sách chuyến, mở chi tiết chuyến và tải hồ sơ. Chờ 2/4/8/16/30 giây (cap30), không request chồng nhau; offline/tab ẩn tạm dừng, online/focus/visibility trở lại thử ngay. Dừng/reset backoff sau thành công, cleanup timer/listener theo trạng thái/unmount. Không polling dữ liệu đã tải, không reload trang, không phát lại lưu/profile/password/upload/AI. Hoàn tất đăng xuất offline vẫn dùng hàng đợi đăng xuất đã được người dùng yêu cầu trước đó. Chi tiết chuyến chỉ retry lỗi mạng/5xx/408/429 khi còn phiên hợp lệ, không lặp 401/403/404 hoặc ghi đè bản nháp đang sửa. Các module khác giữ retry hiện có; chưa áp dụng tự động cho toàn bộ admin hoặc provider.

@@ -51,6 +51,12 @@ const schema = z.object({
     .default('fulldichvu/haiku-4.5'),
   GEMINI_API_KEY: z.string().max(4096).optional(),
   GEOAPIFY_API_KEY: z.string().trim().max(4096).optional(),
+  CLOUDINARY_CLOUD_NAME: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]*$/)
+    .optional(),
+  CLOUDINARY_API_KEY: z.string().max(512).optional(),
+  CLOUDINARY_API_SECRET: z.string().max(4096).optional(),
   GEMINI_MODEL: z
     .string()
     .regex(/^gemini-[a-z0-9.-]+$/)

@@ -286,7 +286,10 @@ export type AccountDto = {
   user: UserDto;
   revision: number;
   canChangePassword: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
+export type AvatarUploadDto = { avatarUrl: string };
 
 export const shareCreateSchema = z.strictObject({
   token: z.string().regex(/^[a-f0-9]{64}$/),

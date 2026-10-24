@@ -38,7 +38,7 @@
           "avatarUrl",
           "string?",
           "null",
-          "IMPLEMENTED HTTPS max2048, no credentials; owner PATCH profile can set/null with revision. Google claim only on new account. No file upload. See ACCOUNT-PROFILE.md."
+          "IMPLEMENTED HTTPS max2048, no credentials; owner PATCH profile with revision. Google claim on new account or server-validated 512x512 WebP upload at goease/avatars. No binary in MongoDB, no media_assets runtime. See ACCOUNT-PROFILE.md."
         ],
         [
           "status",

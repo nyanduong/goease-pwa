@@ -47,3 +47,7 @@ Seed/import/fallback mới dùng CDN. Catalog đã lưu có `/images/...` đư�
 - Browser: 11 kiểm tra liên quan avatar/khám phá/bản đồ/ngân sách/Goe PASS qua các lượt chạy; 2/2 Admin V2 PASS trên API/MongoDB test thật, desktop và zoom125%. Kỳ vọng cũ trong test ngân sách/nhãn AI được cập nhật theo UI/BR hiện hành, không thay đổi tính tiền hoặc nhà cung cấp AI.
 - Browser tài khoản mở rộng `customer profile and password persist and revoke other browser sessions`: FAIL timeout90s khi chờ nút “Thử lại đổi mật khẩu”. Trước đó test đã qua lưu/reload/profile conflict và kiểm tra avatar fallback CDN. Không coi bài này hoặc toàn suite E2E là PASS; chưa xác định nguyên nhân phần retry mật khẩu trong task đổi ảnh.
 - Đã quan sát trang chủ trên Chrome thật tải logo/Goe/ảnh điểm đến từ CDN; avatar HTTPS riêng của tài khoản giữ nguyên. Cloudinary Console xác nhận `goease` có hai nhánh `app`, `docs`, tổng73 assets. Screenshot bằng chứng local tại `.local/cloudinary-media/cloudinary-folder.png` (ignored).
+
+## Mở rộng avatar khách hàng — 24/10/2026
+
+Theo yêu cầu owner sau chuyển ảnh tĩnh, POST /me/avatar đã được thêm cho upload bản cắt từ thiết bị. Dùng cùng credentials server, chỉ goease/avatars, không ảnh source repository/manifest. Xem ACCOUNT-PROFILE.md cho xác thực, chuẩn hóa, giới hạn và lỗi. Phạm vi lịch sử chưa có upload user ở trên được mở rộng; media_assets và cleanup/retention tự động vẫn chưa triển khai.

@@ -27,7 +27,9 @@ import { shareCreateSchema } from '@goease/contracts';
 import { tripManagement } from './features/trips/trip-management.js';
 import { expenseService } from './features/expenses/expense.service.js';
 import { exploreService } from './features/explore/explore.service.js';
-import { Router } from 'express';
+import { Router, raw } from 'express';
+import { avatarUploader } from './features/auth/avatar-upload.js';
+import { authLimiter } from './features/auth/security.js';
 import mongoose, { type Connection } from 'mongoose';
 import { z } from 'zod';
 import {
@@ -84,10 +86,13 @@ export function createProduct(
     logger?: Logger;
     geoapify?: ReturnType<typeof geoapifyProvider>;
     generate?: Generate;
+    avatarUpload?: (bytes: Buffer) => Promise<string>;
   } = {},
 ) {
   const audit = businessAudit(connection, config.NODE_ENV);
   const auth = authService(connection, config, audit);
+  const uploadAvatar = dependencies.avatarUpload ?? avatarUploader(config);
+  const avatarLimit = authLimiter(10, 900);
   const recovery = passwordRecovery(
     connection,
     config,
@@ -151,6 +156,7 @@ export function createProduct(
       '/auth/options',
       '/auth/me',
       '/me/profile',
+      '/me/avatar',
       '/me/password',
       '/auth/register',
       '/auth/login',
@@ -308,6 +314,43 @@ export function createProduct(
   });
   router.get('/me/profile', async (req, res) =>
     res.json({ ok: true, data: await auth.account(req) }),
+  );
+  router.post(
+    '/me/avatar',
+    async (req, _res, next) => {
+      const account = await auth.account(req);
+      avatarLimit(req, account.user.id);
+      if (!req.is(['image/jpeg', 'image/png', 'image/webp']))
+        throw new HttpError(
+          415,
+          'INVALID_AVATAR_TYPE',
+          'Chỉ nhận ảnh JPG, PNG hoặc WebP.',
+        );
+      if (
+        req.get('Content-Encoding') &&
+        req.get('Content-Encoding') !== 'identity'
+      )
+        throw new HttpError(
+          415,
+          'INVALID_AVATAR_ENCODING',
+          'Gửi ảnh trực tiếp, không nén request.',
+        );
+      next();
+    },
+    raw({
+      type: ['image/jpeg', 'image/png', 'image/webp'],
+      limit: '2mb',
+      inflate: false,
+    }),
+    async (req, res) => {
+      if (!Buffer.isBuffer(req.body))
+        throw new HttpError(
+          400,
+          'INVALID_AVATAR',
+          'Chưa nhận được ảnh hợp lệ.',
+        );
+      res.json({ ok: true, data: { avatarUrl: await uploadAvatar(req.body) } });
+    },
   );
   router.patch('/me/profile', async (req, res) =>
     res.json({
