@@ -544,6 +544,12 @@
           "SourceRef",
           "Bắt buộc",
           "GoEase curated hoặc provider, provenance và rights."
+        ],
+        [
+          "catalogWriteFence",
+          "number",
+          "0",
+          "CAT-17 operational CAS fence shared by source/import/publish and dependent archive; not editorial/public revision."
         ]
       ],
       "indexes": "Unique active slug; {publicationStatus,deletedAt}; implemented {tourismRegion,publicationStatus,deletedAt,name,_id}; optional 2dsphere center is planned.",
@@ -620,7 +626,13 @@
           "[]; unknown",
           "Mức kiểm chứng/temporarily_closed/permanently_closed/operational/unknown."
         ],
-        ["publicationStatus", "enum", "draft", "draft/published/archived."]
+        ["publicationStatus", "enum", "draft", "draft/published/archived."],
+        [
+          "publicationModelVersion; publicRevision; proposalRevision; fieldLocks; fieldProvenance",
+          "2; number|null; number|null; enum[]; strict object[]",
+          "2; null; null; []; []",
+          "CAT-17: public fields remain stable on proposal save/restore. Arrays bounded by editable field set. Provenance origin/receivedAt/verifiedAt/validUntil/actorId/state, unknown remains unknown."
+        ]
       ],
       "indexes": "Unique partial {source.provider,source.externalId} khi có externalId; {destinationId,publicationStatus,deletedAt}; 2dsphere location nếu dùng near.",
       "rules": "Nguồn bị gỡ/expired phải refresh hoặc ẩn theo rights. Snapshots trong trip có policy riêng. Không coi source hợp lệ là thông tin bảo đảm luôn chính xác.",
@@ -2200,6 +2212,12 @@
           "string; Date?; boolean",
           "Bắt buộc; policy; false",
           "Không TTL blanket; legalHold cần căn cứ, expiry/review."
+        ],
+        [
+          "previousRevision; campaignId; batchId; runId",
+          "number?; ObjectId?; ObjectId?; ObjectId?",
+          "optional",
+          "CAT-17 links newly observed operations to immutable version history; legacy absent values are not backfilled. New actions proposal_saved/restore_prepared/published/campaign_paused/campaign_resumed/policy_created and entityType catalog_campaign/catalog_policy."
         ]
       ],
       "indexes": "Unique {operationId,action,entityType,entityId}; {entityType,entityId,occurredAt:-1}; {actor.userId,occurredAt:-1}; {requestId:1}.",
@@ -2582,6 +2600,12 @@
           "Date; Date",
           "timestamps",
           "Không raw response; không mảng history vô hạn."
+        ],
+        [
+          "campaignId; scopeSnapshot; policySnapshot; source",
+          "ObjectId|null; strict object|null; strict object; enum",
+          "null; null for legacy; disabled v0; geoapify",
+          "Captured destinationID/name/lat/lon/radius and policyID/version/autoApplyDraftHours/autoPublish=false; paused state; existing lease/fence/retry reused."
         ]
       ],
       "indexes": "Unique partial {scope:1,active:1} where active=true; {active:1,nextAttemptAt:1,leaseUntil:1}; {createdAt:-1}.",
@@ -2649,7 +2673,7 @@
       "name": "catalog_versions",
       "phase": "CORE",
       "base": "APPEND",
-      "purpose": "Server snapshot per place revision for draft restoration",
+      "purpose": "Server-owned public history and isolated editorial proposals per stable place/revision",
       "fields": [
         ["placeId; revision", "ObjectId; number", "required", "Unique pair."],
         [
@@ -2657,10 +2681,16 @@
           "Mixed; Date",
           "required; now",
           "Raw server place snapshot; no client write."
+        ],
+        [
+          "state; basePublicRevision; actorId; reason; restoredFromRevision; ruleRevision; runId",
+          "enum; number|null; ObjectId|null; enum; number|null; number|null; ObjectId|null",
+          "historical; null; null; legacy; null; null; null",
+          "State historical/proposal/published; reason legacy/save/publish/restore/source/backfill; no fabricated legacy attribution."
         ]
       ],
       "indexes": "Unique {placeId:1,revision:-1}",
-      "rules": "See ADMIN-OPERATIONS-V2.md and DB-BASELINE.md; no destructive migration.",
+      "rules": "CAT-17 / V3-BR-02/03: save/restore stage proposal; only explicit publish changes public; bounded server projection; ADMIN-OPERATIONS-V3.md.",
       "retention": "No new TTL/purge; snapshots/decisions retained.",
       "brRefs": ["CAT-15", "DATA-02"],
       "implementationStatus": "implemented-local"
@@ -2712,15 +2742,134 @@
           "regions",
           "object[]",
           "[]",
-          "Max20 unique published destination IDs with latitude/longitude/radiusMeters500..10000/enabled; configured via admin."
+          "Max100 unique nondeleted admin destination IDs including draft/archive; lat/lon/radiusMeters500..10000/enabled; GET never creates configuration."
         ]
       ],
       "indexes": "Unique {scope:1}",
-      "rules": "See ADMIN-OPERATIONS-V2.md and DB-BASELINE.md; no destructive migration.",
+      "rules": "CAT-17 explicit scopes, no implicit Hội An, immutable per-run policy rather than mutable global auto-apply. ADMIN-OPERATIONS-V3.md.",
       "retention": "No new TTL/purge; snapshots/decisions retained.",
       "brRefs": ["CAT-15", "DATA-02"],
       "implementationStatus": "implemented-local",
       "nationwideRuntime": "CAT-16: configured ingestion destination scopes bounded to100; 3/8 editorial taxonomy is independent of circular source search regions. Existing provider quotas/radius and disabled defaults unchanged."
+    },
+    {
+      "name": "catalog_campaigns",
+      "phase": "CORE",
+      "base": "MUTABLE",
+      "purpose": "Collection task campaign on the existing Mongo worker",
+      "fields": [
+        [
+          "actorId; requestKey; requestHash",
+          "ObjectId; UUID; SHA256",
+          "required",
+          "Unique actorId/requestKey idempotency."
+        ],
+        [
+          "source; policy; state",
+          "geoapify; strict captured policy; active|paused",
+          "geoapify; required; active",
+          "At most20 runs created; children stored separately, no task array."
+        ]
+      ],
+      "indexes": "Unique actorId+requestKey",
+      "rules": "CAT-17; ADMIN-OPERATIONS-V3.md; DB-BASELINE.md Runtime Admin V3",
+      "retention": "No automatic TTL/purge added; retention policy needed before long-term production use.",
+      "brRefs": ["CAT-17", "AUTH-08", "DATA-02"],
+      "implementationStatus": "implemented-local"
+    },
+    {
+      "name": "catalog_policies",
+      "phase": "CORE",
+      "base": "APPEND",
+      "purpose": "Immutable versioned low-risk rule configuration",
+      "fields": [
+        [
+          "name; version; autoApplyDraftHours; createdBy; requestKey; requestHash",
+          "string<=100; integer; boolean; ObjectId; UUID; SHA256",
+          "required; required; false; required; required; required",
+          "autoPublish false in captured policy; new configuration creates new version."
+        ]
+      ],
+      "indexes": "Unique version; unique createdBy+requestKey",
+      "rules": "CAT-17; ADMIN-OPERATIONS-V3.md; DB-BASELINE.md Runtime Admin V3",
+      "retention": "No automatic TTL/purge added; retention policy needed before long-term production use.",
+      "brRefs": ["CAT-17", "AUTH-08", "DATA-02"],
+      "implementationStatus": "implemented-local"
+    },
+    {
+      "name": "catalog_bulk_jobs",
+      "phase": "CORE",
+      "base": "MUTABLE",
+      "purpose": "Persistent frozen preview and result summary",
+      "fields": [
+        [
+          "actorId; requestKey; requestHash; action; state",
+          "ObjectId; UUID; SHA256; enum; enum",
+          "required",
+          "Actions publish/archive/archive_destination; preparing/preview/running/completed/partial."
+        ],
+        [
+          "selection; destinationId; destinationName; destinationRevision; snapshotAt; total",
+          "bounded object; ObjectId|null; string; number|null; Date; number",
+          "required; null; empty; null; now;0",
+          "Page<=50 or server filter; all IDs/revisions live in catalog_bulk_items."
+        ]
+      ],
+      "indexes": "Unique actorId+requestKey; destinationId+action+state",
+      "rules": "CAT-17; ADMIN-OPERATIONS-V3.md; DB-BASELINE.md Runtime Admin V3",
+      "retention": "No automatic TTL/purge added; retention policy needed before long-term production use.",
+      "brRefs": ["CAT-17", "AUTH-08", "DATA-02"],
+      "implementationStatus": "implemented-local"
+    },
+    {
+      "name": "catalog_bulk_items",
+      "phase": "CORE",
+      "base": "MUTABLE",
+      "purpose": "One frozen place/revision and durable outcome per job",
+      "fields": [
+        [
+          "jobId; placeId; expectedRevision; name; operationKey",
+          "ObjectId; ObjectId; number; string; UUID",
+          "required",
+          "Per-item transaction and audit; succeeded never repeated."
+        ],
+        [
+          "state; eligible; reason",
+          "pending|succeeded|blocked|failed; boolean; string<=500",
+          "pending; required; empty",
+          "Execute<=50, explicit failed retry, blocked needs fresh preview."
+        ]
+      ],
+      "indexes": "Unique jobId+placeId; jobId+state+_id",
+      "rules": "CAT-17; ADMIN-OPERATIONS-V3.md; DB-BASELINE.md Runtime Admin V3",
+      "retention": "No automatic TTL/purge added; retention policy needed before long-term production use.",
+      "brRefs": ["CAT-17", "AUTH-08", "DATA-02"],
+      "implementationStatus": "implemented-local"
+    },
+    {
+      "name": "catalog_source_usage",
+      "phase": "CORE",
+      "base": "MUTABLE",
+      "purpose": "Allowlisted internal provider request accounting",
+      "fields": [
+        [
+          "runId; provider; group; requestedLimit; state",
+          "ObjectId|null; geoapify; enum; integer; requested|fetched|failed",
+          "null; geoapify; required; required; requested",
+          "Worker/manual preview, no raw request URL/key/payload."
+        ],
+        [
+          "received; errorCode; internalRequests; providerCredits",
+          "number|null; string|null; number; number|null",
+          "null; null;1;null",
+          "Internal reservations differ from provider credits/balance; unknown never zero."
+        ]
+      ],
+      "indexes": "createdAt descending; runId",
+      "rules": "CAT-17; ADMIN-OPERATIONS-V3.md; DB-BASELINE.md Runtime Admin V3",
+      "retention": "No automatic TTL/purge added; retention policy needed before long-term production use.",
+      "brRefs": ["CAT-17", "AUTH-08", "DATA-02"],
+      "implementationStatus": "implemented-local"
     }
   ],
   "reviewedAt": "2026-10-22",
@@ -2891,5 +3040,36 @@
     "verification": "ADMIN-V2-VERIFICATION.md",
     "liveProvider": "Geoapify read-only sample verified; full mutations tested with isolated fixtures",
     "collections": ["catalog_settings", "catalog_versions", "catalog_decisions"]
+  },
+  "adminOperationsV3": {
+    "date": "2026-10-24",
+    "brRefs": [
+      "CAT-17",
+      "V3-BR-01",
+      "V3-BR-02",
+      "V3-BR-03",
+      "V3-BR-04",
+      "V3-BR-05",
+      "V3-BR-06",
+      "V3-BR-07",
+      "V3-BR-08",
+      "V3-BR-09",
+      "V3-BR-10",
+      "V3-BR-11",
+      "V3-BR-12"
+    ],
+    "documentation": "ADMIN-OPERATIONS-V3.md",
+    "verification": "ADMIN-V3-VERIFICATION.md",
+    "worker": "Existing catalog-operations MongoDB claim/lease/fence/retry",
+    "automaticPublicPublication": false,
+    "liveProviderVerifiedThisTask": false,
+    "migration": "Guarded owned local dev/test manifest plan/apply/rollback; no goease production application migration executed",
+    "collections": [
+      "catalog_campaigns",
+      "catalog_policies",
+      "catalog_bulk_jobs",
+      "catalog_bulk_items",
+      "catalog_source_usage"
+    ]
   }
 }

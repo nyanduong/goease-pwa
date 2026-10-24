@@ -413,7 +413,7 @@ AI-02/TRIP-08 kiểm chứng customer (24/10/2026): thay điểm khi đổi ngà
 
 ## CAT-14 / TRIP-07 / AI-01 — dữ liệu đủ giá và vé gói (24/10/2026)
 
-Theo yêu cầu owner, xuất bản trực tiếp và theo lô đều cần referencePrice còn hạn, nguồn HTTPS, điều kiện, phần bao gồm (`inclusions`) và không bao gồm (`exclusions`). Giá 0 chỉ do admin xác nhận miễn phí; thiếu dữ liệu giữ bản nháp. Kiểm tra cấu trúc không thay việc admin xác minh sự thật. Quy tắc này thay mô tả cũ cho phép xuất bản không giá.
+CAT-17 / V3-BR-01 thay gate xuất bản cũ: địa điểm đủ thông tin khám phá có thể xuất bản khi giá chưa biết. `referencePrice=null` không thành miễn phí. Giá tự động cho Goe/dự toán vẫn phải còn hạn, nguồn HTTPS, điều kiện, phần bao gồm (`inclusions`) và không bao gồm (`exclusions`); 0 chỉ là miễn phí được biên tập tường minh. Kiểm tra cấu trúc không thay xác minh sự thật.
 
 Goe chỉ chọn giá đủ điều kiện cho số người, địa chỉ/thời lượng có sẵn và ghi chú giờ có khoảng HH:mm–HH:mm hợp lệ, không chứa dấu chưa xác minh/chưa rõ. Lọc trước gọi model; thiếu số điểm/bữa ăn trả lỗi khả dụng, không dùng quota. Áp dụng cả chỉnh lịch và tìm điểm thay thế khi đổi ngày. Dữ liệu cũ không tự sửa/xóa; lịch đã lưu vẫn giữ snapshot.
 
@@ -427,10 +427,31 @@ AI-01 / TRIP-07 / EXP-01 — rà UX customer (24/10/2026): khi thiếu catalog, 
 
 ## CAT-15 — Admin Operations V2 (24/10/2026)
 
-Theo yêu cầu FULL ADMIN OPERATIONS V2 của owner: quản trị thống nhất bảy mục, dữ liệu thật, automation-first với can thiệp theo ngoại lệ. Giữ publication draft/published/archived; quality và review là trạng thái riêng. CAT-14 vẫn quyết định giá đủ điều kiện xuất bản/planner; không thêm policy hai người duyệt. Nhập mới luôn draft. Reject/ignore phải có lý do và giữ nguyên nội dung/trạng thái; yêu cầu chỉnh sửa giữ review mở. Chấp thuận kèm xuất bản phải qua cùng validation và blocker như catalog. Quyết định lưu actor/time/reason và revision trong transaction.
+Theo yêu cầu FULL ADMIN OPERATIONS V2 của owner: quản trị thống nhất, dữ liệu thật, automation-first với can thiệp theo ngoại lệ. Giữ publication draft/published/archived; quality và review là trạng thái riêng. CAT-17 thay gate xuất bản và phục hồi của V2; CAT-14 tiếp tục quyết định giá đủ điều kiện planner/dự toán. Không thêm policy hai người duyệt. Nhập mới luôn draft. Reject/ignore phải có lý do và giữ nguyên nội dung/trạng thái; yêu cầu chỉnh sửa giữ review mở. Chấp thuận kèm xuất bản phải qua cùng validation và blocker như catalog. Quyết định lưu actor/time/reason và revision trong transaction.
 
-Auto-apply mặc định tắt, chỉ áp dụng thay đổi duy nhất giờ mở cửa trên draft khi nội dung hiện tại bằng snapshot nguồn trước và không có nghi trùng/xung đột nguồn đang mở. Không tự áp dụng tên, tọa độ, loại hình hoặc đóng cửa. Restore lấy nội dung biên tập của revision được chọn, tạo draft/revision/audit mới, không quay lùi provenance nguồn hay lịch trình đã lưu. Không hard delete trong UI.
+Auto-apply mặc định tắt, chỉ áp dụng thay đổi duy nhất giờ mở cửa trên draft khi nội dung hiện tại bằng snapshot nguồn trước và không có nghi trùng/xung đột nguồn đang mở. Không tự áp dụng tên, tọa độ, loại hình hoặc đóng cửa. CAT-17: auto-apply tạo đề xuất với phiên bản quy tắc đóng băng; restore chuẩn bị đề xuất phục hồi, giữ bản công khai, nguồn hiện tại, khóa biên tập và lịch trình đã lưu. Không hard delete trong UI.
 
 Độ đầy đủ là tỷ lệ 6 tiêu chí có dữ liệu (tên không chứa ghi chú review, mô tả, địa chỉ, thời lượng, nguồn, giá đủ điều kiện), không phải điểm tin cậy. Cảnh báo bổ sung tọa độ/giờ/ghi công ảnh/tuổi biên tập. Cấu hình tuổi nhắc 7–365 ngày, mặc định90; chỉ là nhắc kiểm tra, không giả ngày xác minh. Ảnh người nhập cung cấp HTTPS, nguồn/tác giả/quyền sử dụng, tối đa8; không tự scrape/kiểm chứng quyền. Ghi chú nội bộ không trả public API.
 
-Scope quản trị theo destination hiện có; nhập/lịch ngoài Hội An chỉ bật khi admin lưu tâm/bán kính hợp lệ. Bán kính500–10000m, tối đa20 scope cấu hình; không tự kích hoạt thêm địa bàn. Scope Hội An cũ giữ tương thích; quota chung không nhân theo số vùng. Chi tiết implementation và phần chưa hỗ trợ tại ADMIN-OPERATIONS-V2.md. Các yêu cầu polygon, bulk review decisions và field-level verified attribution vẫn chưa triển khai.
+Scope quản trị theo destination hiện có; nhập/lịch chỉ bật khi admin lưu tâm/bán kính hợp lệ. Bán kính500–10000m, tối đa100 scope cấu hình theo CAT-16; không tự kích hoạt thêm địa bàn. Scope Hội An cũ giữ tương thích khi được chọn tường minh; quota chung không nhân theo số vùng. V3 tại ADMIN-OPERATIONS-V3.md thay giới hạn tổng hợp5000 và cách phục hồi của V2. Polygon, bulk quyết định ngoại lệ và xác minh thực địa tự động vẫn chưa triển khai.
+
+## CAT-17 — Admin V3, owner phê duyệt 24/10/2026
+
+Các mã V3-BR sau thể hiện đúng12 thay đổi trong yêu cầu triển khai của owner, bổ sung/thay các phần CAT-08/10/14/15 liên quan. Chi tiết vận hành/API/migration tại [ADMIN-OPERATIONS-V3](ADMIN-OPERATIONS-V3.md); bằng chứng tại [ADMIN-V3-VERIFICATION](ADMIN-V3-VERIFICATION.md).
+
+| Mã | Quy tắc hiện hành |
+| --- | --- |
+| V3-BR-01 | Tách khả năng khám phá, xếp lịch và dự toán. Đủ thông tin khám phá có thể publish thiếu giá. Unknown không thành0/free/24h/đã xác minh. CAT-09/14 và gate giờ/giá Goe vẫn áp dụng. |
+| V3-BR-02 | Save tạo đề xuất, giữ nội dung/revision công khai. Chỉ publish tường minh, đúng quyền/revision/điều kiện mới áp dụng. ID địa điểm và liên kết nguồn ổn định. |
+| V3-BR-03 | Chuẩn bị restore tạo đề xuất phục hồi; giữ public và khóa biên tập hiện tại. Revision cũ không đè nội dung mới. Backfill có manifest kiểm tra trước/sau, chạy lại và rollback có guard. |
+| V3-BR-04 | Quy tắc có phiên bản, mô phỏng không ghi catalog. Ban đầu chỉ tự tạo đề xuất giờ draft ít rủi ro, không khóa/trùng/xung đột và khớp nguồn trước. Tên/vị trí/loại/đóng cửa thành ngoại lệ. Không auto-publish. |
+| V3-BR-05 | Chọn trang hoặc tất cả khớp filter server; preview đóng băng ID/revision. Thực thi tái kiểm quyền/revision/điều kiện, lưu kết quả từng mục, tiếp tục pending/retry lỗi, không lặp succeeded. |
+| V3-BR-06 | Không fallback ngầm Hội An. Admin được quản lý destination draft/archived, không phụ thuộc danh sách public. GET không tạo settings/schedule. |
+| V3-BR-07 | Mỗi đợt/run chụp scope, nguồn và policy. Đổi filter/cấu hình không đổi đợt cũ. Pause/resume/retry dùng worker/lease/fence hiện có. |
+| V3-BR-08 | Chuẩn bị phạm vi Bắc→Trung→Nam gồm Tây Nam Bộ theo CAT-16. Cấu hình vùng tìm nguồn tường minh; không tuyên bố dữ liệu đầy đủ toàn quốc hay tạo collection theo miền. |
+| V3-BR-09 | Lưu trữ destination qua kế hoạch phụ thuộc: xử lý POI con trước, tái kiểm revision và không còn con hoạt động rồi archive cha. Phần lỗi/stale chặn bước cha. |
+| V3-BR-10 | Audit đúng hành động proposal_saved/restore_prepared/published và sự kiện đợt/lô; giữ actor, revision trước/sau và liên kết run/batch/campaign khi có. Lịch sử cũ thiếu metadata không được bịa lại. |
+| V3-BR-11 | Độ đầy đủ khác hợp lệ, độ mới, độ tin cậy và xác minh. Provenance theo trường giữ origin/receivedAt/verifiedAt/validUntil/actor/unknown; nhận nguồn không tự xác minh. Ảnh cần quyền riêng; không lưu raw payload trái quyền. |
+| V3-BR-12 | Chuyến đã lưu giữ snapshot giá/nội dung và không tự cập nhật khi catalog đổi/ẩn. Chưa có hệ thống thông báo thay đổi chuyến trong đợt này. |
+
+Tổng quan/count/hàng đợi và bản đồ tập lọc thực hiện ở server, không tính trên tập bị cắt5000. Tổng số POI khác số vấn đề; bản đồ theo viewport tách số thiếu tọa độ. Bản đồ thumbnail tổng quan giới hạn500 có nhãn riêng, không thay bản đồ toàn tập. Nguồn timeout/rỗng không chứng minh đóng cửa; credits nội bộ khác quota/số dư provider. Mở rộng nguồn khác chỉ khi có đầu vào và quyền thực tế, không mặc định thêm connector.
