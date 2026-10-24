@@ -140,7 +140,7 @@ test('mocked mobile catalog filters, map links, guest gating and detail', async 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/explore');
   await expect(
-    page.getByRole('heading', { name: 'Một Hội An của riêng bạn.' }),
+    page.getByRole('heading', { name: 'Một Việt Nam của riêng bạn.' }),
   ).toBeVisible();
   await expect(page.locator('.explore-card')).toHaveCount(1);
   await page.getByRole('button', { name: 'Ẩm thực', exact: true }).click();

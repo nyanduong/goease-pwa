@@ -16,6 +16,17 @@ const toClock = (minutes: number) =>
   ':' +
   `${minutes % 60}`.padStart(2, '0');
 
+// Editorial meal venues across Vietnam; drinks-only cafes remain unsuitable.
+export function mealSuitable(p: PlaceDto) {
+  return (
+    p.category === 'food' &&
+    p.venueType === 'restaurant' &&
+    /nhà hàng|restaurant|món chay|foods|quán ăn|cơm|phở|bún|hủ tiếu|bánh|mì|lẩu|buffet|eatery/i.test(
+      `${p.name} ${p.description}`,
+    )
+  );
+}
+
 // AI ranks candidates; the server constructs a feasible day from the supplied
 // catalog. This is not a fallback for provider errors or a routing service.
 export function arrangeCompleteDays(
@@ -49,12 +60,7 @@ export function arrangeCompleteDays(
       'Goe chọn nhầm mã địa điểm ngoài danh mục. Lịch cũ vẫn được giữ.',
     );
   const visits = places.filter((p) => p.category !== 'food');
-  const meals = places.filter(
-    (p) =>
-      p.category === 'food' &&
-      p.venueType === 'restaurant' &&
-      /nhà hàng|restaurant|món chay|foods/i.test(`${p.name} ${p.description}`),
-  );
+  const meals = places.filter(mealSuitable);
   if (visits.length < input.trip.days.length * 2 || meals.length < 2)
     throw new HttpError(
       409,
@@ -237,9 +243,7 @@ export function plannerCatalog(places: PlaceDto[]) {
     name: p.name,
     category: p.category,
     venueType: p.venueType,
-    mealSuitable:
-      p.venueType === 'restaurant' &&
-      /nhà hàng|restaurant|món chay|foods/i.test(`${p.name} ${p.description}`),
+    mealSuitable: mealSuitable(p),
     durationMinutes: p.planning!.durationMinutes,
     location: p.planning!.locationQuery,
     coordinates: p.mapLocation

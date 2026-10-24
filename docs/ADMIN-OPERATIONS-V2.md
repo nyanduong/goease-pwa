@@ -17,6 +17,8 @@ Chạy `npm run dev`, mở `http://localhost:5180/admin`, đăng nhập account 
 
 ## Khu vực và nguồn
 
+CAT-16 (24/10/2026): Cài đặt có quản lý điểm đến và phân vùng 3 miền/8 vùng, gồm Miền Tây trong miền Nam. Tạo/sửa destination có revision/idempotency/audit, không phải thêm POI hay tự gọi nguồn. Có bộ lọc miền/vùng trên topbar, giữ nguyên scope đang chọn tới khi người vận hành đổi điểm đến. Cấu hình nguồn nhập tối đa100 destination. Xem [chuẩn bị nhập theo vùng](VIETNAM-PLANNER.md); chưa có lệnh tự nhập toàn miền.
+
 Geoapify đọc `GEOAPIFY_API_KEY` chỉ trên server; restart API khi thay cấu hình. Không có biến VITE chứa secret. Thiếu khóa/lỗi nguồn hiển thị hướng xử lý, không báo thành công. Một provider được dùng cho dữ liệu OSM có stable identity; chưa có adapter nguồn thứ hai để tuyên bố kiểm chứng đối chiếu đa provider.
 
 Hội An giữ cấu hình cũ: 15.88, 108.328, bán kính 5.000 m. Trong Cài đặt → Phạm vi nhập theo khu vực, chọn destination có sẵn, nhập tọa độ đã kiểm tra và bán kính 500–10.000 m; thêm ở trạng thái tắt, bật và lưu để kích hoạt. Không tự seed thêm địa điểm/khu vực. Khu vực chưa cấu hình bị chặn trước khi gọi nguồn. Đây là phạm vi hình tròn, chưa hỗ trợ polygon/ranh giới hành chính hay suy ra phường xã từ tọa độ.

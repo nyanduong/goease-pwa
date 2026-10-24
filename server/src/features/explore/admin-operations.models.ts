@@ -47,6 +47,7 @@ export function adminOperationsModels(connection: Connection) {
           },
         ],
         default: [],
+        validate: (v: unknown[]) => v.length <= 100,
       },
     },
     {

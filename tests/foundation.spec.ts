@@ -11,6 +11,7 @@ import { parseConfig } from '../server/src/config.js';
 import { seedDestinations } from '../server/src/features/trips/destination-seed.js';
 import { seedPlaces } from '../server/src/features/explore/explore.seed.js';
 import type { TripDto, TripInput } from '@goease/contracts';
+import { catalogCost, type PlaceDto } from '@goease/contracts';
 // Build the HTTP write payload independently of browser modules. Mixing .ts/CJS
 // and .mts/ESM browser-helper imports makes the full Playwright suite ambiguous.
 function inputFromTrip(trip: TripDto): TripInput {
@@ -320,7 +321,9 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await expect(
     page.getByRole('button', { name: 'Lên lịch giúp mình' }),
   ).toBeDisabled();
-  await page.getByRole('button', { name: 'Hội An Goe tự lên lịch' }).click();
+  await page
+    .getByRole('button', { name: 'Hội An Goe kiểm tra dữ liệu khi lập lịch' })
+    .click();
   await page.getByRole('button', { name: 'Khác', exact: true }).click();
   await page
     .getByRole('combobox', { name: 'Số ngày', exact: true })
@@ -2505,7 +2508,10 @@ test('mobile newcomer resumes setup, sees unknown costs and recovers from failed
     .click();
   await expect(page).toHaveURL(/\/trips\/new$/);
   await expect(
-    page.getByRole('button', { name: 'Hội An Goe tự lên lịch', exact: true }),
+    page.getByRole('button', {
+      name: 'Hội An Goe kiểm tra dữ liệu khi lập lịch',
+      exact: true,
+    }),
   ).toBeVisible();
   await page
     .getByText('Sở thích, nhịp đi & ngân sách', { exact: false })
@@ -2638,11 +2644,15 @@ test('quick mobile plan: recover proposal, swap or undo a stop, choose dates onl
   expect(registered.status()).toBe(201);
   const user = (await registered.json()).data.user;
   await page.goto('/trips/new');
-  await page.getByRole('button', { name: 'Hà Nội Tự chọn điểm dừng' }).click();
+  await page
+    .getByRole('button', { name: 'Hà Nội Goe kiểm tra dữ liệu khi lập lịch' })
+    .click();
   await expect(
     page.getByRole('button', { name: 'Lên lịch giúp mình' }),
-  ).toBeDisabled();
-  await page.getByRole('button', { name: 'Hội An Goe tự lên lịch' }).click();
+  ).toBeEnabled();
+  await page
+    .getByRole('button', { name: 'Hội An Goe kiểm tra dữ liệu khi lập lịch' })
+    .click();
   await expect(
     page.getByRole('button', { name: '2 ngày', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
@@ -2684,6 +2694,35 @@ test('quick mobile plan: recover proposal, swap or undo a stop, choose dates onl
     )
     .asPromise();
   try {
+    // A successful-provider fixture must satisfy the same price/hours/venue guards as a real proposal.
+    // These changes are restricted to the test-owned database created by beforeAll.
+    const referencePrice = {
+      label: 'Explicit test price',
+      amountMinor: 20000,
+      basis: 'per_person' as const,
+      maxTravelers: 1000,
+      conditions: 'Test fixture',
+      inclusions: 'Test fixture',
+      exclusions: 'Test fixture',
+      sourceUrl: 'https://example.invalid/fixture-price',
+      checkedAt: catalogToday(),
+      reviewAfter: '2099-12-31',
+    };
+    for (const p of catalog as PlaceDto[]) {
+      p.referencePrice = referencePrice;
+      p.openingHoursNote = '07:00–22:00';
+      p.venueType = p.category === 'food' ? 'restaurant' : 'place';
+      await connection.collection('places').updateOne(
+        { _id: new mongoose.Types.ObjectId(p.id) },
+        {
+          $set: {
+            referencePrice,
+            openingHoursNote: p.openingHoursNote,
+            venueType: p.venueType,
+          },
+        },
+      );
+    }
     await page.route('**/api/v1/trips/ai-proposal', async (route) => {
       keys.push(route.request().headers()['idempotency-key']!);
       const request = route.request().postDataJSON();
@@ -2705,11 +2744,7 @@ test('quick mobile plan: recover proposal, swap or undo a stop, choose dates onl
             endLocalTime: n === 0 ? '12:00' : '14:00',
             notes: 'Explicit automated provider fixture',
             estimatedCost: {
-              amountMinor: null,
-              currency: 'VND',
-              basis: 'group_total',
-              quantity: 1,
-              confidence: 'user_entered',
+              ...catalogCost(p),
             },
             source: 'ai',
           })),
@@ -2820,7 +2855,13 @@ test('quick mobile plan: recover proposal, swap or undo a stop, choose dates onl
     expect(trip.days.map((d) => d.dayId)).toEqual(
       fixture!.days.map((d) => d.dayId),
     );
-    expect(trip.aiRunId).toBe(runId);
+    expect(trip.aiRunId).not.toBe(runId);
+    const rescheduledRun = await connection
+      .collection('ai_runs')
+      .findOne({ runId: trip.aiRunId });
+    expect(rescheduledRun?.promptVersion).toBe('date-reschedule-v1');
+    expect(String(rescheduledRun?.userId)).toBe(user.id);
+    expect(rescheduledRun?.status).toBe('succeeded');
   } finally {
     await connection.close();
   }
@@ -2981,7 +3022,7 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     );
     await customer.goto('/trips/new');
     await customer
-      .getByRole('button', { name: /Hội An Goe tự lên lịch/ })
+      .getByRole('button', { name: /Hội An Goe kiểm tra dữ liệu khi lập lịch/ })
       .click();
     await customer
       .getByRole('button', { name: 'Tự chọn điểm dừng', exact: true })

@@ -508,6 +508,12 @@
           "Code có source/version, không hardcode vĩnh viễn đơn vị hành chính."
         ],
         [
+          "tourismRegion",
+          "enum?",
+          "null cho legacy",
+          "IMPLEMENTED CAT-16: northwest/northeast/northern-delta/north-central/south-central-coast/central-highlands/southeast/mekong-delta; region north/central/south derived, not stored."
+        ],
+        [
           "parentDestinationId",
           "ObjectId?",
           "null",
@@ -540,11 +546,11 @@
           "GoEase curated hoặc provider, provenance và rights."
         ]
       ],
-      "indexes": "Unique active slug; {publicationStatus,deletedAt}; optional 2dsphere center nếu có query gần.",
+      "indexes": "Unique active slug; {publicationStatus,deletedAt}; implemented {tourismRegion,publicationStatus,deletedAt,name,_id}; optional 2dsphere center is planned.",
       "rules": "Không suy ra cả vùng là một POI. Không để đổi tên/codes làm đổi ID trip cũ.",
       "retention": "Nội dung nội bộ theo lifecycle; nguồn ngoài theo license.",
-      "brRefs": ["CAT-01", "CAT-02", "CAT-05"],
-      "implementationStatus": "local-product-subset; remaining baseline fields conditional; see PRODUCT-VERIFICATION.md"
+      "brRefs": ["CAT-01", "CAT-02", "CAT-05", "CAT-16"],
+      "implementationStatus": "Runtime destination admin/region query implemented; countryCode VN, name/slug max100, summary max1000, tourismRegion nullable legacy; new writes require a region. Mutation + audit destination entity + idempotency receipt atomic; no automatic backfill. See VIETNAM-PLANNER.md."
     },
     {
       "name": "places",
@@ -1169,8 +1175,16 @@
       "indexes": "Unique {userId,idempotencyKey}; {userId,createdAt:-1}; {tripId,createdAt:-1}; {status,updatedAt}.",
       "rules": "Không gửi email/token vào prompt; không log raw prompt/output. Mọi inputSummary có mục đích phục vụ planner chứ không tự được tái dùng marketing/training.",
       "retention": "Proposal ngắn hạn đề xuất 24h; metadata 90 ngày là đề xuất. Snapshot applied nằm trip_revisions với retention trip.",
-      "brRefs": ["AI-01", "AI-02", "AI-03", "AI-04", "AI-06", "AI-07"],
-      "implementationStatus": "Local Gemini planner subset implemented; exact runtime fields/indexes differ from generic baseline below; see AI-PLANNER.md. Generic remaining fields are planned; registry is not executable schema.",
+      "brRefs": [
+        "AI-01",
+        "AI-02",
+        "AI-03",
+        "AI-04",
+        "AI-06",
+        "AI-07",
+        "CAT-16"
+      ],
+      "implementationStatus": "Vietnam published-destination planner implemented, 1-7 days/single destination, bounded same-destination catalog and pre-quota coverage checks. Prompt vietnam-v1/vietnam-rank-v1/goe-v4, plannerVersion4. No nationwide catalog import or live provider claim. Runtime fields in AI-PLANNER.md and VIETNAM-PLANNER.md.",
       "runtimeContract": "AI-PLANNER.md#runtime-storage-authoritative-implemented-subset",
       "goeRuntime": "promptVersion goe-v1; bounded validated proposal extends with before/dayId/baseRevision; messages not persisted; apply requires owned successful run, target trip and expectedRevision. See AI-PLANNER.md."
     },
@@ -2225,7 +2239,8 @@
         "entityTypes": ["place", "catalog_schedule", "catalog_run"],
         "index": "{category:1,occurredAt:-1,_id:-1}",
         "payload": "Metadata/IDs/revision only; no addresses/secrets/raw source. run_failed outcome=failed."
-      }
+      },
+      "nationwideRuntime": "CAT-16: catalog.destination_created/updated, category catalog, entityType destination, catalogDetails allowlist; session actor required, no full name/summary/payload. Destination mutation and receipt use the same transaction."
     },
     {
       "name": "analytics_events",
@@ -2408,7 +2423,8 @@
           "catalogResults absent by default",
           "Up to50 typed item receipts, name<=120/reason<=400; schedule/run/review use resourceId. Same actor/operation/key/hash + TTL24h; transactional replay reauthorizes."
         ]
-      ]
+      ],
+      "nationwideRuntime": "CAT-16: resourceType destination, operation destination.write, actor-scoped UUID key + payload hash, reauthorization on retry, same transaction as destination and audit. Existing 24h lifetime policy unchanged."
     },
     {
       "name": "schema_migrations",
@@ -2703,7 +2719,8 @@
       "rules": "See ADMIN-OPERATIONS-V2.md and DB-BASELINE.md; no destructive migration.",
       "retention": "No new TTL/purge; snapshots/decisions retained.",
       "brRefs": ["CAT-15", "DATA-02"],
-      "implementationStatus": "implemented-local"
+      "implementationStatus": "implemented-local",
+      "nationwideRuntime": "CAT-16: configured ingestion destination scopes bounded to100; 3/8 editorial taxonomy is independent of circular source search regions. Existing provider quotas/radius and disabled defaults unchanged."
     }
   ],
   "reviewedAt": "2026-10-22",

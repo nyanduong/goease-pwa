@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import type { DestinationDto, TripDto, UserDto } from '@goease/contracts';
+import { DestinationRegions, matchesRegion } from './destination-regions';
 
 const suggestions = [
   {
@@ -55,6 +56,8 @@ export function HomeDiscovery({
 }: Props) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('Tất cả');
+  const [region, setRegion] = useState(''),
+    [subregion, setSubregion] = useState('');
   const storageKey = user ? `goease:saved-destinations:v1:${user.id}` : null;
   const [saved, setSaved] = useState<string[]>(() => {
     try {
@@ -87,9 +90,29 @@ export function HomeDiscovery({
       );
     }
   };
-  const visible = suggestions.filter(
+  const cards = [
+    ...destinations.map((d) => {
+      const known = suggestions.find((s) => fold(s.name) === fold(d.name));
+      return {
+        ...known,
+        slug: known?.slug ?? d.id,
+        name: d.name,
+        subtitle: d.summary || 'Khám phá theo cách của bạn',
+        category: known?.category ?? 'Khám phá',
+        image: known?.image ?? images.goeMascot,
+        destination: d,
+      };
+    }),
+    ...suggestions
+      .filter((s) => !destinations.some((d) => fold(s.name) === fold(d.name)))
+      .map((d) => ({ ...d, destination: undefined })),
+  ];
+  const visible = cards.filter(
     (d) =>
       (mode !== 'saved' || saved.includes(d.slug)) &&
+      (d.destination
+        ? matchesRegion(d.destination, region, subregion)
+        : !region && !subregion) &&
       (category === 'Tất cả' || category === d.category) &&
       fold(d.name).includes(fold(query)),
   );
@@ -197,6 +220,14 @@ export function HomeDiscovery({
             </button>
           ))}
         </div>
+        <DestinationRegions
+          region={region}
+          subregion={subregion}
+          onChange={(r, s) => {
+            setRegion(r);
+            setSubregion(s);
+          }}
+        />
         {saveError && (
           <p role="status" className="discovery-empty">
             {saveError}

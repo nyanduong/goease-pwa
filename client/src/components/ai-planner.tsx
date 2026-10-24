@@ -27,7 +27,7 @@ export function AiPlanner({
   const [quotaReached, setQuotaReached] = useState(false);
   const [catalogUnavailable, setCatalogUnavailable] = useState(false);
   const supported =
-    draft.destinations[0]?.destinationId === '000000000000000000000004' &&
+    Boolean(draft.destinations[0]?.destinationId) &&
     draft.days.length > 0 &&
     draft.days.length <= 7;
   const active = useRef(true);

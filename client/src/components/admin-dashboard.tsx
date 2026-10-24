@@ -1,6 +1,8 @@
 import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
 import { catalogQuality } from '@goease/contracts';
 import { AdminRegionSettings } from './admin-region-settings';
+import { AdminDestinations } from './admin-destinations';
+import { DestinationRegions, matchesRegion } from './destination-regions';
 import { useEffect, useState } from 'react';
 import {
   ArrowUpRight,
@@ -40,6 +42,8 @@ export function AdminTopbar({
   name: string;
 }) {
   const [q, setQ] = useState('');
+  const [region, setRegion] = useState(''),
+    [subregion, setSubregion] = useState('');
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -52,6 +56,14 @@ export function AdminTopbar({
   }, []);
   return (
     <header className="admin-topbar">
+      <DestinationRegions
+        region={region}
+        subregion={subregion}
+        onChange={(r, s) => {
+          setRegion(r);
+          setSubregion(s);
+        }}
+      />
       <label className="admin-region">
         <MapPin size={19} />
         <select
@@ -60,11 +72,15 @@ export function AdminTopbar({
           onChange={(e) => onScope(e.target.value)}
         >
           <option value="">Tất cả khu vực</option>
-          {destinations.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
+          {destinations
+            .filter(
+              (d) => d.id === scope || matchesRegion(d, region, subregion),
+            )
+            .map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
         </select>
       </label>
       <form
@@ -207,6 +223,7 @@ export function AdminDashboard({
           {notice}
         </p>
       )}
+      {screen === 'settings' && <AdminDestinations />}
       {!data && !error && (
         <p role="status">Đang tổng hợp dữ liệu từ danh mục…</p>
       )}

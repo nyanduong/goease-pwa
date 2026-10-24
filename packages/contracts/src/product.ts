@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { priceSnapshotSchema } from './catalog.js';
 import type { BudgetSummary } from './budget.js';
+import type { TourismRegion, TravelRegion } from './geography.js';
 
 export const interestCodes = [
   'nature',
@@ -154,6 +155,11 @@ export type DestinationDto = {
   name: string;
   timezone: string;
   summary: string;
+  slug?: string;
+  // Optional for older clients/fixtures. The current API always returns these fields.
+  countryCode?: 'VN';
+  tourismRegion?: TourismRegion | null;
+  region?: TravelRegion | null;
 };
 export type UserDto = {
   isAdmin?: boolean;

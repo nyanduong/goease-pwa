@@ -61,6 +61,8 @@ export function auditModel(connection: Connection) {
         type: String,
         enum: [
           'catalog.created',
+          'catalog.destination_created',
+          'catalog.destination_updated',
           'catalog.restored',
           'catalog.settings_saved',
           'catalog.review_keep',
@@ -117,6 +119,7 @@ export function auditModel(connection: Connection) {
           'trip',
           'trip_expense',
           'place',
+          'destination',
           'catalog_schedule',
           'catalog_run',
         ],

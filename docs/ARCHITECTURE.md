@@ -8,6 +8,8 @@ CAT-11–13: module explore thêm catalog-operations +3model có consumer thật
 
 ## 1. Ranh giới hệ thống
 
+Runtime Việt Nam 24/10/2026: taxonomy 3 miền/8 vùng ở contracts/geography, destinations.tourismRegion nullable cho legacy và miền tính từ taxonomy. destination-catalog dùng lại model Destination/IdempotencyKey và business audit; admin mới có CRUD destination, không tạo service/collection địa lý riêng. Planner/provider prompt dùng destination từ server, catalog published cùng ID và không có whitelist Hội An. Consumer web lọc miền/vùng, nhập theo destination và nhận lỗi coverage trước quota. Source import vẫn theo vùng tròn cấu hình riêng, chưa có polygon/nhập cả miền. Xem [phạm vi và kiểm chứng](VIETNAM-PLANNER.md).
+
 Một web React gọi một Express API. Express thực thi nghiệp vụ, xác thực/phân quyền, truy cập MongoDB và kết nối nhà cung cấp bên ngoài. Mobile tương lai gọi cùng API.
 
 Ảnh tĩnh từ 24/10/2026 dùng Cloudinary: `packages/media` là package thuần TypeScript chứa URL công khai, được web và API sử dụng; không phụ thuộc React/Mongoose hoặc cấu hình riêng tư. Công cụ upload nằm trong server/scripts, chỉ đọc secret phía server và giới hạn đích `goease/`. Bản gốc/checksum trong manifest; binary ảnh không còn trong checkout. DTO catalog dịch đúng các đường dẫn local cũ sang CDN để dữ liệu/lịch sử đã lưu tiếp tục đọc được. Xem [Cloudinary media](CLOUDINARY-MEDIA.md).

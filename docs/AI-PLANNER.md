@@ -1,5 +1,7 @@
 # Gemini planner — local customer MVP (2026-10-23)
 
+**Cập nhật 24/10/2026 — CAT-16:** runtime hiện dùng mọi destination published/VN có catalog đủ điều kiện, không giới hạn Hội An. Một điểm đến/chuyến, 1–7 ngày; 3 miền/8 vùng là taxonomy biên tập. Prompt vietnam-v1/vietnam-rank-v1/goe-v4 và plannerVersion4; quota/privacy/owner/revision giữ nguyên, apply nhận cả Goe cũ. Các ghi nhận Hội An bên dưới là lịch sử triển khai/thử nghiệm, chưa chứng minh dữ liệu thật toàn quốc. Xem [Việt Nam planner và bàn giao](VIETNAM-PLANNER.md).
+
 ## Implemented scope
 
 - Customer setup and saved-trip settings include **Tạo đề xuất bằng Gemini**. The existing catalog/manual path remains available. Goe chat (`/goe`) now supports selected-day adjustment; see the Goe section below.

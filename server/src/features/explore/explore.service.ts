@@ -18,6 +18,7 @@ import { referencePriceSchema, catalogImageSchema } from '@goease/contracts';
 import { referencePriceModelSchema } from './reference-price.js';
 import { mutableFields } from '../auth/auth.models.js';
 import { sourceSnapshotModel } from './catalog-operations.models.js';
+import { tourismRegions } from '@goease/contracts';
 const parseMapLocation = (v: unknown) =>
   mapLocationSchema.safeParse(
     v instanceof mongoose.Document ? v.toObject() : v,
@@ -221,6 +222,11 @@ export function exploreService(connection: Connection) {
     publicationStatus: 'published' as const,
     deletedAt: null,
   };
+  const publishedDestination = {
+    publicationStatus: 'published',
+    deletedAt: null,
+    $or: [{ countryCode: 'VN' }, { countryCode: { $exists: false } }],
+  };
   const dto = (doc: PlaceRecord & { _id: Types.ObjectId }): PlaceDto => ({
     ...(doc.source
       ? {
@@ -302,7 +308,15 @@ export function exploreService(connection: Connection) {
     if (!/^[a-f0-9]{24}$/.test(id))
       throw new HttpError(404, 'PLACE_NOT_FOUND', 'Không tìm thấy địa điểm.');
     const p = await Place.findOne({ _id: id, ...published });
-    if (!p)
+    if (
+      !p ||
+      !(await connection
+        .collection('destinations')
+        .findOne(
+          { ...publishedDestination, _id: p.destinationId },
+          { projection: { _id: 1 } },
+        ))
+    )
       throw new HttpError(
         404,
         'PLACE_NOT_FOUND',
@@ -322,14 +336,50 @@ export function exploreService(connection: Connection) {
       const parsed = placeQuerySchema.safeParse(query);
       if (!parsed.success)
         throw new HttpError(400, 'INVALID_INPUT', 'Bộ lọc chưa hợp lệ.');
-      const { q, category, offset, limit, destinationId } = parsed.data;
+      const {
+        q,
+        category,
+        offset,
+        limit,
+        destinationId,
+        region,
+        tourismRegion,
+      } = parsed.data;
+      const regional = await connection
+        .collection('destinations')
+        .find(
+          {
+            ...publishedDestination,
+            ...(region || tourismRegion
+              ? {
+                  tourismRegion: {
+                    $in: tourismRegion
+                      ? [tourismRegion]
+                      : tourismRegions
+                          .filter((r) => r.region === region)
+                          .map((r) => r.code),
+                  },
+                }
+              : {}),
+            ...(destinationId
+              ? { _id: new Types.ObjectId(destinationId) }
+              : {}),
+          },
+          { projection: { _id: 1 } },
+        )
+        .limit(2001)
+        .toArray();
+      if (regional.length > 2000)
+        throw new HttpError(
+          400,
+          'SCOPE_TOO_BROAD',
+          'Chọn vùng hoặc điểm đến cụ thể hơn để xem địa điểm.',
+        );
       const escaped = normalizeSearch(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const docs = await Place.find({
         ...published,
         ...(category ? { category } : {}),
-        ...(destinationId
-          ? { destinationId: new Types.ObjectId(destinationId) }
-          : {}),
+        destinationId: { $in: regional.map((d) => d._id) },
         ...(q ? { searchText: { $regex: escaped } } : {}),
       })
         .sort({ _id: 1 })
@@ -364,10 +414,25 @@ export function exploreService(connection: Connection) {
       })
         .sort({ createdAt: -1 })
         .limit(100);
-      const docs = await Place.find({
+      const stored = await Place.find({
         ...published,
         _id: { $in: favorites.map((f) => f.targetId) },
       });
+      const allowed = new Set(
+        (
+          await connection
+            .collection('destinations')
+            .find(
+              {
+                ...publishedDestination,
+                _id: { $in: stored.map((p) => p.destinationId) },
+              },
+              { projection: { _id: 1 } },
+            )
+            .toArray()
+        ).map((d) => String(d._id)),
+      );
+      const docs = stored.filter((p) => allowed.has(String(p.destinationId)));
       return {
         items: favorites.flatMap((f) => {
           const p = docs.find((p) => String(p._id) === String(f.targetId));

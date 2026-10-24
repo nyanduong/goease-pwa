@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { destinationQuerySchema, travelRegionOf } from './geography.js';
 import type { ReferencePrice, catalogImageSchema } from './catalog.js';
 import type { PlaceProvenance } from './place-import.js';
 export const placeCategorySchema = z.enum(['food', 'culture', 'nature']);
@@ -62,16 +63,25 @@ export type SavedPlacesDto = {
   items: { place: PlaceDto; state: PlaceStateDto }[];
   unavailable: { placeId: string; state: PlaceStateDto }[];
 };
-export const placeQuerySchema = z.strictObject({
-  destinationId: z
-    .string()
-    .regex(/^[a-f0-9]{24}$/)
-    .optional(),
-  q: z.string().trim().max(100).default(''),
-  category: placeCategorySchema.optional(),
-  offset: z.coerce.number().int().min(0).max(10000).default(0),
-  limit: z.coerce.number().int().min(1).max(30).default(20),
-});
+export const placeQuerySchema = z
+  .strictObject({
+    region: destinationQuerySchema.shape.region,
+    tourismRegion: destinationQuerySchema.shape.tourismRegion,
+    destinationId: z
+      .string()
+      .regex(/^[a-f0-9]{24}$/)
+      .optional(),
+    q: z.string().trim().max(100).default(''),
+    category: placeCategorySchema.optional(),
+    offset: z.coerce.number().int().min(0).max(10000).default(0),
+    limit: z.coerce.number().int().min(1).max(30).default(20),
+  })
+  .refine(
+    (q) =>
+      !q.region ||
+      !q.tourismRegion ||
+      travelRegionOf(q.tourismRegion) === q.region,
+  );
 export const placeStateInputSchema = z
   .strictObject({
     expectedRevision: z

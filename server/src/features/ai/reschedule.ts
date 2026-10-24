@@ -8,7 +8,11 @@ import {
 } from '@goease/contracts';
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '../../http-error.js';
-import { eligibleForPlanner, outsideKnownHours } from './itinerary-policy.js';
+import {
+  eligibleForPlanner,
+  outsideKnownHours,
+  mealSuitable,
+} from './itinerary-policy.js';
 
 const minutes = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3));
 const clock = (n: number) =>
@@ -48,13 +52,7 @@ export function rescheduleDates(
       }
       const original = places.find((p) => p.id === activity.placeId);
       const sameKind = (p: PlaceDto) =>
-        activity.kind === 'meal'
-          ? p.category === 'food' &&
-            p.venueType === 'restaurant' &&
-            /nhà hàng|restaurant|món chay|foods/i.test(
-              `${p.name} ${p.description}`,
-            )
-          : p.category !== 'food';
+        activity.kind === 'meal' ? mealSuitable(p) : p.category !== 'food';
       const alternatives = places.filter(
         (p) =>
           p.destinationId === day.destinationId &&

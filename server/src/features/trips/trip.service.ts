@@ -15,6 +15,7 @@ import { tokenHash } from '../auth/security.js';
 import { HttpError } from '../../http-error.js';
 import { calculateBudget } from './budget.js';
 import { validateCatalogCosts } from './catalog-costs.js';
+import { listDestinations } from './destination-catalog.js';
 
 export function tripService(
   connection: Connection,
@@ -91,22 +92,8 @@ export function tripService(
     models,
     dto,
     toInput,
-    async destinations() {
-      return {
-        items: (
-          await Destination.find({
-            publicationStatus: 'published',
-            deletedAt: null,
-          })
-            .sort({ name: 1 })
-            .limit(50)
-        ).map((d) => ({
-          id: d._id.toHexString(),
-          name: d.name,
-          summary: d.summary ?? '',
-          timezone: d.timezone,
-        })),
-      };
+    async destinations(query: unknown = {}) {
+      return listDestinations(Destination, query);
     },
     async list(ownerId: Types.ObjectId, query = tripListQuerySchema.parse({})) {
       const today = new Intl.DateTimeFormat('en-CA', {

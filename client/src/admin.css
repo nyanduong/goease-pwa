@@ -1781,3 +1781,38 @@
     flex-wrap: wrap;
   }
 }
+
+.admin-topbar {
+  height: auto;
+  min-height: 64px;
+}
+.admin-destination-manager table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.admin-destination-manager th,
+.admin-destination-manager td {
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid #e4eae2;
+}
+.admin-destination-manager th:first-child {
+  width: 28%;
+}
+.admin-destination-manager th:nth-child(2) {
+  width: 24%;
+}
+.admin-destination-manager th:nth-child(3) {
+  width: 18%;
+}
+.admin-destination-manager th:last-child {
+  width: 30%;
+}
+.admin-destination-manager td button {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}

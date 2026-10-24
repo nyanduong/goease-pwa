@@ -1,4 +1,5 @@
 import { images } from '@goease/media';
+import { loadDestinations } from './destinations';
 import {
   beginOfflineLogout,
   clearOffline,
@@ -217,7 +218,7 @@ export function App() {
   useEffect(() => {
     let active = true;
     setDestinationStatus('loading');
-    void api<{ items: DestinationDto[] }>('/destinations')
+    void loadDestinations()
       .then((v) => {
         if (active) {
           setDestinations(v.items);
@@ -231,6 +232,12 @@ export function App() {
       active = false;
     };
   }, [destinationRetry]);
+  useEffect(() => {
+    const reload = () => setDestinationRetry((v) => v + 1);
+    window.addEventListener('goease-destinations-changed', reload);
+    return () =>
+      window.removeEventListener('goease-destinations-changed', reload);
+  }, []);
 
   useEffect(() => {
     if (path !== '/' || sessionStatus !== 'ready' || user) return;

@@ -58,6 +58,13 @@ import { HttpError } from './http-error.js';
 import { uuidPattern } from './observability/context.js';
 import { calculateBudget } from './features/trips/budget.js';
 import { plannerService } from './features/ai/planner.js';
+import { destinationCatalog } from './features/trips/destination-catalog.js';
+import {
+  travelRegions,
+  tourismRegions,
+  destinationWriteSchema,
+} from '@goease/contracts';
+import type { Generate } from './features/ai/gemini.js';
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): T {
   const parsed = schema.safeParse(input);
@@ -76,6 +83,7 @@ export function createProduct(
     resetEmail?: ResetEmailSender;
     logger?: Logger;
     geoapify?: ReturnType<typeof geoapifyProvider>;
+    generate?: Generate;
   } = {},
 ) {
   const audit = businessAudit(connection, config.NODE_ENV);
@@ -100,7 +108,19 @@ export function createProduct(
     audit,
     auth.models.User,
   );
-  const planner = plannerService(connection, config, trips, explore);
+  const planner = plannerService(
+    connection,
+    config,
+    trips,
+    explore,
+    dependencies.generate,
+  );
+  const destinations = destinationCatalog(
+    connection,
+    trips.models,
+    catalog,
+    audit,
+  );
   const placeImport = placeImportService(
     connection,
     catalog,
@@ -140,6 +160,8 @@ export function createProduct(
       '/auth/google',
       '/auth/google/callback',
       '/destinations',
+      '/geography',
+      '/admin/destinations',
       '/places',
       '/admin/places',
       '/admin/place-import/preview',
@@ -174,6 +196,8 @@ export function createProduct(
       res.locals.logRoute = '/api/v1/places/:id';
     if (/^\/admin\/places\/[^/]+$/.test(req.path))
       res.locals.logRoute = '/api/v1/admin/places/:id';
+    if (/^\/admin\/destinations\/[^/]+$/.test(req.path))
+      res.locals.logRoute = '/api/v1/admin/destinations/:id';
     if (/^\/admin\/catalog\/reviews\/[^/]+\/decision$/.test(req.path))
       res.locals.logRoute = '/api/v1/admin/catalog/reviews/:id/decision';
     if (/^\/me\/places\/[^/]+$/.test(req.path))
@@ -303,8 +327,14 @@ export function createProduct(
   );
   router.get('/auth/google', google.begin);
   router.get('/auth/google/callback', google.callback);
-  router.get('/destinations', async (_req, res) =>
-    res.json({ ok: true, data: await trips.destinations() }),
+  router.get('/geography', (_req, res) =>
+    res.json({
+      ok: true,
+      data: { countryCode: 'VN', regions: travelRegions, tourismRegions },
+    }),
+  );
+  router.get('/destinations', async (req, res) =>
+    res.json({ ok: true, data: await trips.destinations(req.query) }),
   );
   router.get('/places', async (req, res) =>
     res.json({ ok: true, data: await explore.list(req.query) }),
@@ -333,6 +363,34 @@ export function createProduct(
       ),
     }),
   );
+  router.get('/admin/destinations', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await destinations.list(res.locals.authUser._id, req.query),
+    }),
+  );
+  for (const method of ['post', 'patch'] as const) {
+    router[method](
+      method === 'post' ? '/admin/destinations' : '/admin/destinations/:id',
+      async (req, res) => {
+        const value = parse(destinationWriteSchema, req.body);
+        const key = parse(
+          z.string().regex(uuidPattern),
+          req.get('Idempotency-Key'),
+        );
+        const data = await destinations.write(
+          res.locals.authUser._id,
+          value.destination,
+          key,
+          method === 'patch'
+            ? String('id' in req.params ? req.params.id : '')
+            : undefined,
+          value.expectedRevision,
+        );
+        res.status(method === 'post' ? 201 : 200).json({ ok: true, data });
+      },
+    );
+  }
   router.get('/admin/catalog/overview', async (req, res) =>
     res.json({
       ok: true,

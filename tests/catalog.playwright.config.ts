@@ -3,7 +3,7 @@ import { e2eApiOrigin, e2eWebOrigin } from './ports.js';
 
 export default defineConfig({
   testDir: '.',
-  testMatch: 'catalog-operations.spec.ts',
+  testMatch: ['catalog-operations.spec.ts', 'geography.spec.ts'],
   workers: 1,
   outputDir: '../test-results/catalog-browser',
   use: {

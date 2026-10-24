@@ -6170,3 +6170,45 @@ body:has(.quick-result-intro) .mobile-bottom-nav {
     grid-template-columns: 1fr;
   }
 }
+
+.destination-region-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-block: 14px;
+  min-width: 0;
+}
+.destination-region-filters label {
+  display: grid;
+  gap: 5px;
+  flex: 1 1 150px;
+  min-width: 0;
+  font-size: 13px;
+}
+.destination-region-filters select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd7ce;
+  border-radius: 10px;
+  background: #fff;
+  color: #253d31;
+}
+.admin-topbar {
+  flex-wrap: wrap;
+}
+.admin-topbar .destination-region-filters {
+  flex: 0 1 340px;
+  margin-block: 0;
+}
+.admin-destination-manager {
+  margin-bottom: 20px;
+}
+.admin-destination-manager > p {
+  max-width: 90ch;
+}
+.admin-destination-manager form {
+  max-width: 720px;
+  margin-top: 18px;
+}

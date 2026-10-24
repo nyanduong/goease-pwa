@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import type { tripModels } from './trip.models.js';
+import type { TourismRegion } from '@goease/contracts';
 export async function seedDestinations(
   Destination: ReturnType<typeof tripModels>['Destination'],
 ) {
@@ -29,6 +30,12 @@ export async function seedDestinations(
       'Khám phá phố phường theo cách của bạn.',
     ],
   ] as const;
+  const regions: Record<string, TourismRegion> = {
+    'hoi-an': 'south-central-coast',
+    'da-nang': 'south-central-coast',
+    'da-lat': 'central-highlands',
+    'ha-noi': 'northern-delta',
+  };
   for (const [id, slug, name, summary] of entries) {
     if (await Destination.exists({ $or: [{ _id: id }, { slug }] })) continue;
     await new Destination({
@@ -36,6 +43,7 @@ export async function seedDestinations(
       slug,
       name,
       summary,
+      tourismRegion: regions[slug],
       publicationStatus: 'published',
       source: {
         provider: 'goease_curated',

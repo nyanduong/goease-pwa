@@ -31,6 +31,7 @@ import { api, ApiFailure } from '../api';
 import { inputFromTrip } from '../trip-draft';
 import { PlacePlanning } from './place-planning';
 import { SourceCredit } from './source-credit';
+import { DestinationRegions } from './destination-regions';
 const labels = { food: 'Ẩm thực', culture: 'Văn hóa', nature: 'Thiên nhiên' };
 const icons = { food: Utensils, culture: Landmark, nature: Leaf };
 const message = (e: unknown) =>
@@ -46,6 +47,8 @@ export function ExplorePage({
 }: NavProps & { savedOnly?: boolean }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
+  const [region, setRegion] = useState(''),
+    [subregion, setSubregion] = useState('');
   const [view, setView] = useState<'list' | 'map'>('list');
   const [items, setItems] = useState<PlaceDto[]>([]);
   const [states, setStates] = useState<Record<string, PlaceStateDto>>({});
@@ -68,6 +71,8 @@ export function ExplorePage({
       const params = new URLSearchParams({
         q: query,
         ...(category ? { category } : {}),
+        ...(region ? { region } : {}),
+        ...(subregion ? { tourismRegion: subregion } : {}),
       });
       const request = savedOnly
         ? api<SavedPlacesDto>('/me/places').then((r) => {
@@ -107,7 +112,7 @@ export function ExplorePage({
       active = false;
       clearTimeout(timer);
     };
-  }, [query, category, retry, savedOnly, signedIn]);
+  }, [query, category, region, subregion, retry, savedOnly, signedIn]);
   useEffect(() => {
     let active = true;
     if (signedIn && !savedOnly)
@@ -201,7 +206,7 @@ export function ExplorePage({
             'Những nơi đã lưu.'
           ) : (
             <>
-              Một Hội An
+              Một Việt Nam
               <br />
               của riêng bạn.
             </>
@@ -213,6 +218,16 @@ export function ExplorePage({
             : 'Tìm nơi hợp gu, lưu cho chuyến tới.'}
         </p>
       </header>
+      {!savedOnly && (
+        <DestinationRegions
+          region={region}
+          subregion={subregion}
+          onChange={(r, s) => {
+            setRegion(r);
+            setSubregion(s);
+          }}
+        />
+      )}
       <label className="explore-search">
         <Search size={20} />
         <input

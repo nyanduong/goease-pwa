@@ -4,6 +4,7 @@ import type { TripInput } from '@goease/contracts';
 import { mutableFields } from '../auth/auth.models.js';
 import { calculateBudget } from './budget.js';
 import { referencePriceFields } from '../explore/reference-price.js';
+import { tourismRegions } from '@goease/contracts';
 
 export function tripModels(connection: Connection) {
   const noId = {
@@ -200,6 +201,7 @@ export function tripModels(connection: Connection) {
           'place',
           'place_import',
           'catalog_operation',
+          'destination',
         ],
         default: 'trip',
       },
@@ -261,10 +263,15 @@ export function tripModels(connection: Connection) {
   const destinations = new Schema(
     {
       ...mutableFields,
-      slug: { type: String, required: true },
-      name: { type: String, required: true },
-      countryCode: { type: String, default: 'VN' },
-      summary: String,
+      slug: { type: String, required: true, maxlength: 100 },
+      name: { type: String, required: true, maxlength: 100 },
+      countryCode: { type: String, enum: ['VN'], default: 'VN' },
+      tourismRegion: {
+        type: String,
+        enum: tourismRegions.map((r) => r.code),
+        default: null,
+      },
+      summary: { type: String, maxlength: 1000 },
       timezone: { type: String, default: 'Asia/Ho_Chi_Minh' },
       publicationStatus: {
         type: String,
@@ -290,6 +297,13 @@ export function tripModels(connection: Connection) {
     { unique: true, partialFilterExpression: { deletedAt: null } },
   );
   destinations.index({ publicationStatus: 1, deletedAt: 1 });
+  destinations.index({
+    tourismRegion: 1,
+    publicationStatus: 1,
+    deletedAt: 1,
+    name: 1,
+    _id: 1,
+  });
   return {
     Trip: connection.model('Trip', schema),
     Revision: connection.model('TripRevision', revisions),

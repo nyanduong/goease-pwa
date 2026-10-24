@@ -512,6 +512,7 @@ test('planner uses editorial hours and excludes food ideas and test data without
   const meal = plannerCatalog([
     {
       ...museum,
+      category: 'food',
       venueType: 'restaurant',
       description: 'Nhà hàng chay',
       name: 'Quán',

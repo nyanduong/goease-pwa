@@ -9,6 +9,8 @@ const id = z.string().regex(/^[a-f0-9]{24}$/);
 const input = z.strictObject({
   action: z.enum([
     'catalog.created',
+    'catalog.destination_created',
+    'catalog.destination_updated',
     'catalog.restored',
     'catalog.settings_saved',
     'catalog.review_keep',
@@ -115,9 +117,10 @@ export function businessAudit(
                   ? 'admin-bootstrap'
                   : 'auth',
             },
-        entityType:
-          v.action === 'catalog.schedule_saved' ||
-          v.action === 'catalog.settings_saved'
+        entityType: v.action.startsWith('catalog.destination_')
+          ? 'destination'
+          : v.action === 'catalog.schedule_saved' ||
+              v.action === 'catalog.settings_saved'
             ? 'catalog_schedule'
             : v.action.startsWith('catalog.run_')
               ? 'catalog_run'
@@ -164,7 +167,8 @@ export function businessAudit(
         catalog &&
         v.entityRevision !== undefined &&
         !v.action.includes('schedule') &&
-        !v.action.includes('settings')
+        !v.action.includes('settings') &&
+        !v.action.startsWith('catalog.destination_')
       )
         await capturePlace(v.entityId, session);
     },

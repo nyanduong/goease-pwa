@@ -1,5 +1,11 @@
 # GoEase — Truy vết, Analytics và Vòng đời dữ liệu v0.2
 
+## Việt Nam và phân vùng — 24/10/2026
+
+CAT-16/AI-01–04: admin session → strict destination input + expectedRevision + stable key/hash → destination update/create + actor metadata + catalog.destination_created/updated audit + idempotency receipt cùng transaction. Không audit snapshot/full name/ghi chú/quyền từ client. Đổi vùng giữ destinationId, place.source.externalId và trip snapshot. Thiếu vùng cũ không bị tự suy từ địa chỉ hoặc xóa. Region public được suy từ tourismRegion; query sai cặp miền/vùng bị từ chối. Public/admin pagination và publication boundary được kiểm tra.
+
+Planner: destination published/VN → published catalog đúng destinationId → lọc giá/giờ/nhóm khách → bounded/balanced candidate list → kiểm coverage trước quota → provider payload dùng tên điểm đến từ server → kiểm ID/ngày/giờ/giá → proposal có provenance → owner/revision apply hiện có. Prompt version vietnam-v1/vietnam-rank-v1/goe-v4, plannerVersion4; apply nhận cả goe-v1/v2/v3 cũ. Không thêm collection, purge, telemetry hay nhập/xóa dữ liệu ứng dụng. Xem [Việt Nam planner](VIETNAM-PLANNER.md).
+
 ## Ảnh tĩnh Cloudinary — 24/10/2026
 
 CAT-06/AUTH-09: Git sourcePath → upload có chữ ký phía server, overwrite=false, đích cố định `goease/` → manifest assetId/publicId/folder/version/URL/bytes/dimensions/SHA-256 → GET bản gốc và đối chiếu checksum → thay URL web/API/tài liệu → xóa 73 binary khỏi checkout. Prompt/credit/nhãn AI được giữ. Không log secret hay raw provider error. Không ghi user/trip/catalog/audit hoặc sửa lịch sử để chuyển URL; DTO ánh xạ allowlist các path local cũ. Không tạo media_assets model, analytics, retention/purge job hay quyền upload người dùng. Xem [hướng dẫn và bằng chứng](CLOUDINARY-MEDIA.md); các ghi nhận “local/chưa upload Cloudinary” phía dưới là lịch sử trước lần chuyển này.

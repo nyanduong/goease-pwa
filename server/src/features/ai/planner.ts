@@ -22,6 +22,7 @@ import {
   itineraryPolicy,
   outsideKnownHours,
   plannerCatalog,
+  mealSuitable,
 } from './itinerary-policy.js';
 import type { tripService } from '../trips/trip.service.js';
 import type { exploreService } from '../explore/explore.service.js';
@@ -245,6 +246,30 @@ export function plannerService(
   bucketSchema.index({ scope: 1, date: 1 }, { unique: true });
   const Run = connection.model('AiRun', runSchema),
     Bucket = connection.model('AiUsageBucket', bucketSchema);
+  // Scan published data only, balancing visits and meals before the 30-ID provider cap.
+  async function candidates(input: Pick<PlannerRequest, 'trip'>) {
+    const visits: PlaceDto[] = [],
+      meals: PlaceDto[] = [],
+      other: PlaceDto[] = [];
+    for (let offset = 0; offset < 1000; offset += 30) {
+      const page = await explore.list({
+        destinationId: input.trip.destinations[0]!.destinationId,
+        limit: 30,
+        offset,
+      });
+      for (const p of page.items) {
+        if (!eligibleForPlanner(p, input.trip.travelers.totalCount)) continue;
+        const pool =
+          p.category !== 'food' ? visits : mealSuitable(p) ? meals : other;
+        if (pool.length < 30) pool.push(p);
+      }
+      if (!page.hasMore || (visits.length >= 20 && meals.length >= 10)) break;
+    }
+    return [...visits.slice(0, 20), ...meals.slice(0, 10), ...other].slice(
+      0,
+      30,
+    );
+  }
   async function cached(owner: Types.ObjectId, key: string, hash: string) {
     const run = await Run.findOne({ userId: owner, key });
     if (!run) return null;
@@ -311,22 +336,7 @@ export function plannerService(
             'Nguồn hoạt động AI không hợp lệ.',
           );
       }
-      const items: PlaceDto[] = [];
-      for (let offset = 0; offset < 1000 && items.length < 30; offset += 30) {
-        const page = await explore.list({
-          destinationId: input.trip.destinations[0]!.destinationId,
-          limit: 30,
-          offset,
-        });
-        items.push(
-          ...page.items
-            .filter((p) =>
-              eligibleForPlanner(p, input.trip.travelers.totalCount),
-            )
-            .slice(0, 30 - items.length),
-        );
-        if (!page.hasMore) break;
-      }
+      const items = await candidates(input);
       let result: RescheduleResult;
       try {
         result = rescheduleDates(
@@ -421,7 +431,7 @@ export function plannerService(
         userId: owner,
         tripId,
         status: 'succeeded',
-        promptVersion: { $in: ['goe-v1', 'goe-v2', 'goe-v3'] },
+        promptVersion: { $in: ['goe-v1', 'goe-v2', 'goe-v3', 'goe-v4'] },
       });
       if (!run || run.expectedRevision !== expectedRevision)
         throw new HttpError(
@@ -472,14 +482,25 @@ export function plannerService(
           'Goe AI chưa được cấu hình. Bạn vẫn có thể tự xếp lịch.',
         );
       if (
-        input.trip.destinations[0]?.destinationId !==
-          '000000000000000000000004' ||
+        !input.trip.destinations[0]?.destinationId ||
         input.trip.days.length > 7
       )
         throw new HttpError(
           400,
           'AI_SCOPE',
-          'Goe AI hiện hỗ trợ Hội An từ 1–7 ngày. Chuyến dài hơn vẫn có thể tự xếp lịch.',
+          'Goe hỗ trợ một điểm đến tại Việt Nam từ 1–7 ngày khi có đủ dữ liệu. Chuyến dài hơn vẫn có thể tự xếp lịch.',
+        );
+      const destination = await trips.models.Destination.findOne({
+        _id: input.trip.destinations[0]!.destinationId,
+        publicationStatus: 'published',
+        deletedAt: null,
+        $or: [{ countryCode: 'VN' }, { countryCode: { $exists: false } }],
+      });
+      if (!destination)
+        throw new HttpError(
+          400,
+          'INVALID_DESTINATION',
+          'Điểm đến không còn khả dụng tại Việt Nam. Hãy chọn lại điểm đến.',
         );
       const hash = tokenHash(JSON.stringify(input));
       const prior = await cached(owner, key, hash);
@@ -493,25 +514,7 @@ export function plannerService(
             'Chuyến đi đã thay đổi. Tải bản mới trước khi nhờ Goe.',
           );
       }
-      const items: PlaceDto[] = [];
-      for (let offset = 0; offset < 1000 && items.length < 30; offset += 30) {
-        const page = await explore.list({
-          destinationId: input.trip.destinations[0]!.destinationId,
-          limit: 30,
-          offset,
-        });
-        items.push(
-          ...page.items
-            .filter((p) =>
-              eligibleForPlanner(p, input.trip.travelers.totalCount),
-            )
-            .slice(0, 30 - items.length),
-        );
-        if (!page.hasMore) break;
-      }
-      const places = items.filter((p) =>
-        eligibleForPlanner(p, input.trip.travelers.totalCount),
-      );
+      const places = await candidates(input);
       const selected = input.adjustment
         ? input.trip.days.find((d) => d.dayId === input.adjustment!.dayId)
         : undefined;
@@ -531,18 +534,12 @@ export function plannerService(
         !input.adjustment &&
         (places.filter((p) => p.category !== 'food').length <
           input.trip.days.length * 2 ||
-          places.filter(
-            (p) =>
-              p.venueType === 'restaurant' &&
-              /nhà hàng|restaurant|món chay|foods/i.test(
-                `${p.name} ${p.description}`,
-              ),
-          ).length < 2)
+          places.filter(mealSuitable).length < 2)
       )
         throw new HttpError(
           409,
           'AI_CATALOG_COVERAGE',
-          'Hội An chưa đủ địa điểm và bữa ăn có giá, điều kiện và giờ hoạt động rõ ràng cho chuyến này. Goe chưa tạo lịch hoặc sử dụng lượt AI.',
+          `${destination.name} chưa đủ địa điểm và bữa ăn có giá, điều kiện và giờ hoạt động rõ ràng cho chuyến này. Goe chưa tạo lịch hoặc sử dụng lượt AI.`,
         );
       const date = new Date().toISOString().slice(0, 10),
         scopes = ['global', owner.toHexString()];
@@ -591,11 +588,11 @@ export function plannerService(
                 ? config.FULLDICHVU_MODEL
                 : config.GEMINI_MODEL,
             promptVersion: input.adjustment
-              ? 'goe-v3'
+              ? 'goe-v4'
               : config.AI_PROVIDER === 'fulldichvu'
-                ? 'hoian-rank-v1'
-                : 'hoian-v4',
-            plannerVersion: '2',
+                ? 'vietnam-rank-v1'
+                : 'vietnam-v1',
+            plannerVersion: '4',
             status: 'pending',
             quotaState: 'reserved',
             inputSummary: {
@@ -618,7 +615,8 @@ export function plannerService(
       try {
         const result = await generate({
           selectionOnly: config.AI_PROVIDER === 'fulldichvu' && !selected,
-          destination: 'Hội An',
+          destination: destination.name,
+          countryCode: 'VN',
           maxStopsPerDay: itineraryPolicy(
             selected
               ? { ...input, trip: { ...input.trip, days: [selected] } }

@@ -20,7 +20,7 @@ export const adminSettingsSchema = z.strictObject({
         enabled: z.boolean(),
       }),
     )
-    .max(20)
+    .max(100)
     .refine((v) => new Set(v.map((r) => r.destinationId)).size === v.length)
     .optional(),
 });

@@ -18,6 +18,8 @@ async function main() {
     CLIENT_ORIGIN: e2eWebOrigin,
     MONGODB_URI: `mongodb://127.0.0.1:27021/${harness.connection.name}?replicaSet=${harness.setName}`,
     AUTH_MAX_ATTEMPTS: '100',
+    AI_PROVIDER: 'fulldichvu',
+    FULLDICHVU_API_KEY: 'fixture-never-sent',
   });
   const candidate = (
     id: number,
@@ -52,6 +54,9 @@ async function main() {
   };
   const product = createProduct(harness.connection, config, {
     geoapify: provider,
+    generate: async () => {
+      throw new Error('No eligible planner catalog in this browser fixture');
+    },
   });
   await product.initialize();
   await seedDestinations(product.trips.models.Destination);

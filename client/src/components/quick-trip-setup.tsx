@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { DestinationDto, TripInput } from '@goease/contracts';
 import { withDays } from '../trip-draft';
 import { AiPlanner } from './ai-planner';
+import { DestinationRegions, matchesRegion } from './destination-regions';
 
 export function QuickTripSetup({
   draft,
@@ -24,6 +25,11 @@ export function QuickTripSetup({
     draft.travelers.totalCount > 2,
   );
   const [customDays, setCustomDays] = useState(false);
+  const [region, setRegion] = useState(''),
+    [subregion, setSubregion] = useState('');
+  const visibleDestinations = destinations.filter((d) =>
+    matchesRegion(d, region, subregion),
+  );
   const duration =
     Math.round(
       (Date.parse(draft.endDate) - Date.parse(draft.startDate)) / 86400000,
@@ -31,8 +37,7 @@ export function QuickTripSetup({
   const destination = destinations.find(
     (d) => d.id === draft.destinations[0]?.destinationId,
   );
-  const supported =
-    destination?.id === '000000000000000000000004' && duration <= 7;
+  const supported = Boolean(destination) && duration <= 7;
   const valid =
     Number.isInteger(draft.travelers.totalCount) &&
     draft.travelers.totalCount >= 1 &&
@@ -64,8 +69,22 @@ export function QuickTripSetup({
       </div>
       <fieldset className="quick-fields" disabled={generating}>
         <legend className="sr-only">Thông tin để lên lịch</legend>
+        <DestinationRegions
+          region={region}
+          subregion={subregion}
+          onChange={(r, s) => {
+            setRegion(r);
+            setSubregion(s);
+          }}
+        />
+        {destination && !matchesRegion(destination, region, subregion) && (
+          <p role="status">
+            Đang chọn {destination.name}. Bộ lọc chỉ đổi danh sách gợi ý; chọn
+            điểm đến khác để thay đổi chuyến.
+          </p>
+        )}
         <div className="quick-destinations" role="group" aria-label="Điểm đến">
-          {destinations.map((d) => (
+          {visibleDestinations.map((d) => (
             <button
               key={d.id}
               aria-pressed={destination?.id === d.id}
@@ -80,14 +99,16 @@ export function QuickTripSetup({
               }
             >
               <strong>{d.name}</strong>
-              <small>
-                {d.id === '000000000000000000000004'
-                  ? 'Goe tự lên lịch'
-                  : 'Tự chọn điểm dừng'}
-              </small>
+              <small>Goe kiểm tra dữ liệu khi lập lịch</small>
             </button>
           ))}
         </div>
+        {!!destinations.length && !visibleDestinations.length && (
+          <p role="status">
+            Vùng này chưa có điểm đến được xuất bản. Bạn có thể đổi vùng hoặc
+            giữ lựa chọn hiện tại.
+          </p>
+        )}
         {!destinations.length && (
           <p role="status">
             Chưa tải được điểm đến. Vui lòng thử tải lại trang.
@@ -266,8 +287,8 @@ export function QuickTripSetup({
       </fieldset>
       {destination && !supported && (
         <p className="journey-notice">
-          Goe hiện hỗ trợ Hội An khi có đủ địa điểm phù hợp. Với lựa chọn này,
-          bạn có thể tự chọn điểm dừng hoặc đổi điểm đến.
+          Goe hiện xếp lịch 1–7 ngày tại một điểm đến có đủ dữ liệu. Chuyến dài
+          hơn có thể tự chọn điểm dừng.
         </p>
       )}
       {!valid && (
