@@ -118,6 +118,7 @@ export function HomeDiscovery({
       (category === 'Tất cả' || category === d.category) &&
       fold(d.name).includes(fold(query)),
   );
+  const IntroHeading = mode === 'home' ? 'h2' : 'h1';
 
   if (mode === 'goe')
     return (
@@ -149,11 +150,11 @@ export function HomeDiscovery({
             <p className="discovery-greeting">
               Xin chào{user ? `, ${user.displayName}` : ''},
             </p>
-            <h2>
+            <h1>
               Sẵn sàng cho
               <br />
               hành trình mới?
-            </h2>
+            </h1>
             <p>Những chuyến đi tuyệt vời luôn bắt đầu bằng một kế hoạch tốt.</p>
           </div>
           <span className="discovery-slogan">
@@ -276,7 +277,7 @@ export function HomeDiscovery({
       )}
       <section className="discovery-intro">
         <p className="discovery-eyebrow">KHÁM PHÁ VIỆT NAM CÙNG GOEASE</p>
-        <h1>
+        <IntroHeading>
           {mode === 'saved' ? (
             'Những nơi bạn muốn đến.'
           ) : mode === 'explore' ? (
@@ -284,7 +285,7 @@ export function HomeDiscovery({
           ) : (
             <>Tìm một nơi bạn muốn đến</>
           )}
-        </h1>
+        </IntroHeading>
         <label className="discovery-search">
           <Search size={20} aria-hidden="true" />
           <input

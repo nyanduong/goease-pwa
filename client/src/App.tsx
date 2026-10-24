@@ -537,9 +537,9 @@ export function App() {
       ? 0
       : path.startsWith('/trips') || path === '/budget'
         ? 1
-        : path === '/goe'
+        : path === '/saved'
           ? 3
-          : path === '/saved'
+          : path === '/account'
             ? 4
             : path === '/'
               ? 2

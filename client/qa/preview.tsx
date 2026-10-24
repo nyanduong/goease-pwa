@@ -168,6 +168,8 @@ window.fetch = (input, options) => {
     );
   if (path === '/auth/me') return response({ user: guest ? null : user });
   if (path === '/destinations') return response({ items: destinations });
+  if (path === '/admin/destinations')
+    return response({ items: destinations, hasMore: false });
   if (path === '/trips') return response({ items: [trip] });
   if (path === `/trips/${trip.id}`) return response({ trip });
   if (path === '/places') return response({ items: [place] });

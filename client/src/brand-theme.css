@@ -264,7 +264,7 @@ button:disabled {
   font-size: 11px;
   letter-spacing: 0.1em;
 }
-.discovery-intro h1 {
+.discovery-intro :is(h1, h2) {
   font-size: 24px;
   font-weight: 750;
   letter-spacing: -0.035em;
@@ -324,7 +324,7 @@ button:disabled {
   font-size: 16px;
   font-weight: 600;
 }
-.discovery-banner h2 {
+.discovery-banner h1 {
   color: var(--ink);
   font-size: clamp(30px, 3.6vw, 42px);
   font-weight: 800;
@@ -1553,7 +1553,7 @@ button:disabled {
     width: 85%;
     max-width: 310px;
   }
-  .discovery-banner h2 {
+  .discovery-banner h1 {
     font-size: 30px;
     line-height: 1.1;
     max-width: 300px;
@@ -1597,7 +1597,7 @@ button:disabled {
   .discovery-section-heading > button {
     font-size: 12px;
   }
-  .discovery-intro h1 {
+  .discovery-intro :is(h1, h2) {
     font-size: 22px;
     margin-bottom: 13px;
   }
@@ -1705,7 +1705,7 @@ button:disabled {
   .journey-sheet .journey-fields-row {
     grid-template-columns: minmax(0, 1fr);
   }
-  .discovery-banner h2 {
+  .discovery-banner h1 {
     font-size: 28px;
   }
   .discovery-shortcuts button {
@@ -1754,4 +1754,102 @@ button:disabled {
   .button:active:not(:disabled) {
     scale: 1;
   }
+}
+
+/* Keep the newer account, floating assistant and Admin V3 on the same palette. */
+.goe-floating-chat,
+.goe-floating-chat .goe-chat-header,
+.goe-floating-chat .goe-composer-area {
+  background: var(--paper-card);
+  border-color: var(--line);
+}
+.goe-floating-chat .goe-composer-area {
+  bottom: 0;
+}
+.goe-chat-launcher:not(:disabled) {
+  transition:
+    left 220ms ease-out,
+    top 220ms ease-out,
+    scale 180ms ease-out;
+}
+.goe-chat-launcher.is-dragging {
+  transition: none;
+  scale: 1;
+}
+.goe-chat-launcher:focus-visible {
+  outline-color: var(--teal);
+}
+.account-heading h1 > span,
+.account-card .account-identity-label,
+.avatar-picker-preview button:not(.avatar-camera) {
+  color: var(--teal-dark);
+}
+.account-card::before {
+  background: var(--teal-fill);
+}
+.account-security-card::before {
+  background: linear-gradient(90deg, var(--orange), var(--teal));
+}
+.account-security-icon {
+  color: var(--teal-dark);
+  background: var(--soft);
+}
+.avatar-picker-image > img {
+  border-color: var(--soft);
+}
+.avatar-picker-preview .avatar-camera {
+  width: 44px;
+  height: 44px;
+  right: -5px;
+  bottom: -5px;
+  background: var(--teal-dark);
+  border-color: var(--paper-card);
+}
+.avatar-picker-preview button:not(.avatar-camera) {
+  min-height: 40px;
+}
+.avatar-picker > small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.avatar-crop-controls input {
+  accent-color: var(--teal);
+}
+.account-password-input {
+  background: var(--paper-card);
+  border-color: var(--line);
+}
+.account-password-input:focus-within {
+  outline-color: var(--teal);
+}
+.admin-desktop-shell {
+  --admin-ink: var(--ink);
+  --admin-muted: var(--muted);
+  --admin-line: var(--line);
+  --admin-canvas: var(--paper);
+  --admin-teal: var(--teal);
+}
+.admin-sidebar,
+.admin-sidebar > a,
+.admin-sidebar .brand {
+  color: var(--teal-dark);
+}
+.admin-sidebar > p,
+.admin-sidebar > span,
+.admin-sidebar .admin-nav-section {
+  color: var(--muted);
+  border-color: var(--line);
+}
+.admin-sidebar .admin-navigation a {
+  color: var(--ink);
+}
+.admin-sidebar .admin-navigation a:hover,
+.admin-sidebar .admin-navigation a[aria-current] {
+  color: var(--teal-dark);
+  background: var(--soft);
+}
+.admin-sidebar > button {
+  color: var(--teal-dark);
+  border-color: var(--line);
+  background: var(--soft);
 }
