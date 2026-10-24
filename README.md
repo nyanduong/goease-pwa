@@ -234,6 +234,8 @@ Offline: mở chuyến → **Thông tin chuyến đi → Lưu để xem offline*
 
 ## Admin danh mục và dự toán tự động — 2026-10-23
 
+**Admin V3 (24/10/2026):** vận hành theo phạm vi/nguồn/quy tắc → đợt thu thập → ngoại lệ → preview/lô → lịch sử/phục hồi. Lưu và chuẩn bị phục hồi tạo đề xuất, giữ nguyên bản công khai; publish tường minh mới áp dụng. Khám phá có thể thiếu giá, Goe/dự toán vẫn giữ gate giá/giờ. Không còn Hội An mặc định. Xem [hướng dẫn hiện hành](docs/ADMIN-OPERATIONS-V3.md), [kết quả nghiệm thu và cách mở review](docs/ADMIN-V3-VERIFICATION.md), [checkpoint](docs/ADMIN-V3-CHECKPOINT.md). Các kết quả nhập nguồn bên dưới là lịch sử, không chứng minh một lần gọi provider trong phiên V3.
+
 Admin đăng nhập → **Quản trị** → thêm/sửa địa điểm hoặc quán ăn → lưu nháp → xem trước → xuất bản. Giá tham khảo có nguồn, ngày đối chiếu, hạn kiểm tra lại, điều kiện và số người áp dụng; AI và thao tác thêm/đổi điểm tự dùng giá đó. Server tính dự toán; chuyến cũ giữ snapshot, khách chủ động cập nhật giá hoặc nhập dự kiến riêng. Các mục chưa có giá phù hợp vẫn ghi chưa rõ.
 
 Cấp quyền local cho tài khoản đã đăng ký: `npm run admin:access --workspace @goease/server -- grant admin@example.test`, sau đó đăng nhập lại. Không có tài khoản/mật khẩu admin mặc định. Xem [hướng dẫn admin, API và giới hạn](docs/ADMIN-CATALOG.md). Giá trong kiểm thử là dữ liệu minh họa, không phải xác minh giá cơ sở thực tế.

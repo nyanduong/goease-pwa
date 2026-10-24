@@ -336,3 +336,11 @@ Bằng chứng: admin-v2.test.ts, admin-v2.integration.ts, catalog-operations.in
 ## Avatar thiết bị — 24/10/2026
 
 AUTH-09/CAT-06: file local → canvas cắt JPEG512 → POST /me/avatar (session/Origin/limiter) → sharp kiểm/re-encode WebP512 bỏ metadata → Cloudinary goease/avatars UUID → AvatarUploadDto URL → PATCH profile revision/audit → users.avatarUrl. GET profile trả timestamps có sẵn cho chính owner. Original không gửi cloud hoặc ghi disk/DB; bản chuẩn hóa/URL CDN công khai, UI thông báo trước lưu. Audit không chứa ảnh/URL/tên file/crop. URL thành công tạm giữ trong bộ nhớ để retry PATCH; chưa dọn asset mồ côi/thay thế, không có job retention/purge. Các ghi nhận upload chưa triển khai phía trên là lịch sử; xem ACCOUNT-PROFILE.md cho runtime hiện hành.
+
+## CAT-17 / V3-BR-01…12 — Admin V3
+
+Admin session → strict request/intent/role → catalog proposal/version + audit/receipt transaction → explicit publish → places publicRevision → public search/Goe/budget. Pending edits và restore không đi vào public; catalog-costs kiểm giá với publicRevision, lịch đã lưu không tự thay. Provenance/khóa có giới hạn theo trường, source receivedAt khác verifiedAt. Legacy provenance/audit thiếu căn cứ giữ unknown/legacy.
+
+Configured destination (draft/published/archived admin) → immutable campaign/run scope+source+policy → existing Mongo worker lease/fence/retry → normalized stable OSM ID → draft hoặc ngoại lệ/low-risk proposal → server frozen bulk item revisions → per-item atomic publish/results → history/version diff/restore proposal. Source usage ledger chỉ đếm lời gọi nội bộ; provider quota/credits chưa biết hiển thị unknown, không giả kết nối thành công.
+
+Verification liên kết: catalog-publication.test/integration (public isolation, locks, migration/rollback,13200 aggregate); admin-v3.test/integration (scope snapshot, policy dry-run, pause fence, retry, frozen-all scale/bulk/role/map); catalog.integration (public price snapshot trip save); catalog-operations.integration (worker crash/fence/retry/audit rollback); tests/catalog-operations.spec.ts và ảnh UI thật. Trạng thái thực tế cuối cùng tại ADMIN-V3-VERIFICATION.md.

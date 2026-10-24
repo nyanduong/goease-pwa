@@ -11,6 +11,21 @@ export function adminOperationsModels(connection: Connection) {
       placeId: { type: Schema.Types.ObjectId, required: true },
       revision: { type: Number, required: true },
       snapshot: { type: Schema.Types.Mixed, required: true },
+      state: {
+        type: String,
+        enum: ['historical', 'proposal', 'published'],
+        default: 'historical',
+      },
+      basePublicRevision: { type: Number, default: null },
+      actorId: { type: Schema.Types.ObjectId, default: null },
+      reason: {
+        type: String,
+        enum: ['save', 'restore', 'source', 'backfill', 'publish', 'legacy'],
+        default: 'legacy',
+      },
+      restoredFromRevision: { type: Number, default: null },
+      ruleRevision: { type: Number, default: null },
+      runId: { type: Schema.Types.ObjectId, default: null },
       recordedAt: { type: Date, default: Date.now },
     },
     {

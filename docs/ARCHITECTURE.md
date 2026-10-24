@@ -153,6 +153,8 @@ Offline chỉ xem: service worker cache public standalone reader và fallback na
 
 ## Geoapify import adapter — 2026-10-23
 
+**Cập nhật hiện hành:** đoạn bên dưới ghi slice lịch sử. Admin V3 (24/10/2026) tái sử dụng worker MongoDB catalog-operations, thêm campaign/policy đóng băng và bulk item bền vững, không dựng engine thứ hai. `places` là bản công khai, `catalog_versions` giữ đề xuất. `catalog-query.ts` dùng chung predicate list/count/map/bulk; `catalog-overview.ts` aggregate toàn scope. Chi tiết tại [ADMIN-OPERATIONS-V3](ADMIN-OPERATIONS-V3.md).
+
 Existing explore feature adds a fixed-origin server adapter and admin import service. UI sends group/limit then preview ID + selected source IDs; normalized data stays server-owned. Import transaction reuses places/audit_logs/idempotency_keys; no provider call inside retriable transaction. Preview and search caps are bounded per process; no scheduler/worker/new collection. OSM canonical source identity has an additive partial unique index. Customer paths continue to consume only published catalog. See [GEOAPIFY-IMPORT](GEOAPIFY-IMPORT.md) for trial, contracts, metadata, rate limits and explicit unverified scope.
 
 ## Tự phục hồi kết nối giao diện — 24/10/2026

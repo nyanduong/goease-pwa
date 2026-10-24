@@ -9,6 +9,12 @@ const id = z.string().regex(/^[a-f0-9]{24}$/);
 const input = z.strictObject({
   action: z.enum([
     'catalog.created',
+    'catalog.proposal_saved',
+    'catalog.restore_prepared',
+    'catalog.published',
+    'catalog.campaign_paused',
+    'catalog.campaign_resumed',
+    'catalog.policy_created',
     'catalog.destination_created',
     'catalog.destination_updated',
     'catalog.restored',
@@ -53,6 +59,10 @@ const input = z.strictObject({
   catalogSystem: z.literal(true).optional(),
   entityId: id,
   entityRevision: z.number().int().nonnegative().optional(),
+  previousRevision: z.number().int().nonnegative().optional(),
+  campaignId: id.optional(),
+  batchId: id.optional(),
+  runId: id.optional(),
   requestId: z.string().regex(uuidPattern),
   operationId: z.string().regex(uuidPattern),
 });
@@ -117,24 +127,32 @@ export function businessAudit(
                   ? 'admin-bootstrap'
                   : 'auth',
             },
-        entityType: v.action.startsWith('catalog.destination_')
-          ? 'destination'
-          : v.action === 'catalog.schedule_saved' ||
-              v.action === 'catalog.settings_saved'
-            ? 'catalog_schedule'
-            : v.action.startsWith('catalog.run_')
-              ? 'catalog_run'
-              : catalog
-                ? 'place'
-                : expense
-                  ? 'trip_expense'
-                  : trip
-                    ? 'trip'
-                    : authSession
-                      ? 'auth_session'
-                      : 'user',
+        entityType: v.action.startsWith('catalog.campaign_')
+          ? 'catalog_campaign'
+          : v.action === 'catalog.policy_created'
+            ? 'catalog_policy'
+            : v.action.startsWith('catalog.destination_')
+              ? 'destination'
+              : v.action === 'catalog.schedule_saved' ||
+                  v.action === 'catalog.settings_saved'
+                ? 'catalog_schedule'
+                : v.action.startsWith('catalog.run_')
+                  ? 'catalog_run'
+                  : catalog
+                    ? 'place'
+                    : expense
+                      ? 'trip_expense'
+                      : trip
+                        ? 'trip'
+                        : authSession
+                          ? 'auth_session'
+                          : 'user',
         entityId: v.entityId,
         entityRevision: v.entityRevision,
+        previousRevision: v.previousRevision,
+        campaignId: v.campaignId,
+        batchId: v.batchId,
+        runId: v.runId,
         requestId: v.requestId,
         operationId: v.operationId,
         occurredAt: now,

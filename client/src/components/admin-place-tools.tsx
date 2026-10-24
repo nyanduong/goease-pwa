@@ -1,6 +1,6 @@
 import { AdminPlaceImage } from './admin-visuals';
 import { AdminImageGallery } from './admin-image-gallery';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   catalogQuality,
   catalogToday,
@@ -24,12 +24,28 @@ export function AdminPlaceTools({
   busy: boolean;
 }) {
   const [versions, setVersions] = useState<
-    { revision: number; recordedAt: string; name: string; status: string }[]
+    {
+      revision: number;
+      recordedAt: string;
+      name: string;
+      status: string;
+      state?: string;
+      reason?: string;
+    }[]
   >([]);
+  const [comparison, setComparison] = useState<{
+    revision: number;
+    state: string;
+    reason: string;
+    changes: { field: string; current: unknown; historical: unknown }[];
+  } | null>(null);
+  const restoreKey = useRef({ identity: '', key: '' });
   const [error, setError] = useState(''),
     [restoring, setRestoring] = useState(false),
     [retry, setRetry] = useState(0);
   useEffect(() => {
+    setComparison(null);
+    setError('');
     if (!saved) return;
     let active = true;
     void api<{ items: typeof versions }>(`/admin/places/${saved.id}/versions`)
@@ -44,20 +60,44 @@ export function AdminPlaceTools({
       active = false;
     };
   }, [saved?.id, saved?.revision, retry]);
+  async function compare(revision: number) {
+    if (!saved) return;
+    setRestoring(true);
+    setError('');
+    try {
+      setComparison(
+        await api<{
+          revision: number;
+          state: string;
+          reason: string;
+          changes: { field: string; current: unknown; historical: unknown }[];
+        }>(`/admin/places/${saved.id}/versions/${revision}`),
+      );
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : 'Chưa tải được nội dung so sánh.',
+      );
+    } finally {
+      setRestoring(false);
+    }
+  }
   async function restore(revision: number) {
     if (
       !saved ||
       !confirm(
-        'Khôi phục nội dung phiên bản này thành bản nháp? Nội dung hiện tại được giữ trong lịch sử; địa điểm sẽ tạm ngừng hiển thị tới khi xuất bản lại.',
+        'Chuẩn bị đề xuất phục hồi từ phiên bản này? Bản công khai được giữ nguyên cho tới khi bạn xuất bản đề xuất.',
       )
     )
       return;
     setRestoring(true);
     setError('');
+    const identity = `${saved.id}:${saved.revision}:${revision}`;
+    if (restoreKey.current.identity !== identity)
+      restoreKey.current = { identity, key: crypto.randomUUID() };
     try {
       await api(`/admin/places/${saved.id}/restore`, {
         method: 'POST',
-        headers: { 'Idempotency-Key': crypto.randomUUID() },
+        headers: { 'Idempotency-Key': restoreKey.current.key },
         body: JSON.stringify({ revision, expectedRevision: saved.revision }),
       });
       onRestore();
@@ -234,18 +274,77 @@ export function AdminPlaceTools({
               sửa tiếp.
             </p>
           )}
+          {comparison && (
+            <div className="admin-version-comparison">
+              <h3>So sánh phiên bản {comparison.revision}</h3>
+              <p>
+                Đối chiếu bản đang biên tập đã lưu với bản lịch sử. Thời điểm
+                nhận không xác nhận bản nào đúng hơn. Phục hồi thay đề xuất đang
+                lưu và giữ các trường đã khóa; bản công khai giữ nguyên.
+              </p>
+              {comparison.changes.length ? (
+                <div className="admin-table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Trường</th>
+                        <th>Bản đang biên tập đã lưu</th>
+                        <th>Phiên bản {comparison.revision}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {comparison.changes.map((c) => (
+                        <tr key={c.field}>
+                          <th>{c.field}</th>
+                          <td>
+                            <pre>
+                              {typeof c.current === 'object'
+                                ? JSON.stringify(c.current, null, 2)
+                                : String(c.current ?? 'Chưa rõ')}
+                            </pre>
+                          </td>
+                          <td>
+                            <pre>
+                              {typeof c.historical === 'object'
+                                ? JSON.stringify(c.historical, null, 2)
+                                : String(c.historical ?? 'Chưa rõ')}
+                            </pre>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p>Không có khác biệt trong các trường đối chiếu.</p>
+              )}
+              <button
+                type="button"
+                className="journey-primary"
+                disabled={restoring || busy}
+                onClick={() => void restore(comparison.revision)}
+              >
+                Chuẩn bị đề xuất phục hồi
+              </button>
+            </div>
+          )}
           {versions.map((v) => (
             <div className="admin-version" key={v.revision}>
               <span>
                 Bản {v.revision} ·{' '}
-                {new Date(v.recordedAt).toLocaleString('vi-VN')}
+                {v.state === 'published'
+                  ? 'Công khai'
+                  : v.state === 'proposal'
+                    ? 'Đề xuất'
+                    : 'Lịch sử'}{' '}
+                · {new Date(v.recordedAt).toLocaleString('vi-VN')}
               </span>
               <button
                 type="button"
                 disabled={restoring || busy || v.revision === saved.revision}
-                onClick={() => void restore(v.revision)}
+                onClick={() => void compare(v.revision)}
               >
-                Khôi phục bản nháp
+                So sánh & chuẩn bị phục hồi
               </button>
             </div>
           ))}

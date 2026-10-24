@@ -40,7 +40,7 @@ export function AdminPlaceImport({
         p.possibleDuplicates.length,
     ) ?? false;
   async function search() {
-    if (busy) return;
+    if (busy || !destinationId) return;
     setBusy(true);
     setError('');
     setResult(null);
@@ -109,12 +109,17 @@ export function AdminPlaceImport({
           ← Về danh mục
         </button>
       </div>
-      <h2>Tìm và nhập địa điểm Hội An</h2>
+      <h2>Tìm và nhập địa điểm từ nguồn</h2>
       <p>
-        Tìm trong phạm vi đã cấu hình của khu vực đang chọn (mặc định Hội An).
-        Kết quả ưu tiên gần tâm tìm kiếm, không phải danh sách đầy đủ hay xếp
-        hạng chất lượng.
+        Tìm trong phạm vi đã lưu của điểm đến đang chọn. Kết quả ưu tiên gần tâm
+        tìm kiếm, không phải danh sách đầy đủ hay xếp hạng chất lượng.
       </p>
+      {!destinationId && (
+        <p className="admin-alert">
+          Chọn điểm đến cụ thể trên thanh phạm vi trước khi gọi nguồn. Tất cả
+          điểm đến chỉ dùng để xem danh mục.
+        </p>
+      )}
       <p>
         Chọn địa điểm để lưu bản nháp, sau đó mở từng mục để biên tập và xuất
         bản. Giá chưa rõ; ảnh là minh họa AI. Thời lượng mặc định 60 phút là ước
@@ -154,7 +159,11 @@ export function AdminPlaceImport({
             <option value={50}>50</option>
           </select>
         </label>
-        <button className="journey-primary" disabled={busy} type="submit">
+        <button
+          className="journey-primary"
+          disabled={busy || !destinationId}
+          type="submit"
+        >
           {busy ? 'Đang xử lý…' : 'Tìm địa điểm'}
         </button>
       </form>

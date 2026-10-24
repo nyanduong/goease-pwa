@@ -1,3 +1,7 @@
+import {
+  configureFixtureScope,
+  fixtureDestinationId,
+} from './support/catalog-scope.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
@@ -65,6 +69,7 @@ test(
     });
     await product.initialize();
     await seedDestinations(product.trips.models.Destination);
+    await configureFixtureScope(harness.connection);
     const app = createApp(
       config,
       async () => {},
@@ -105,6 +110,19 @@ test(
     });
     const { Schedule, Run, Review } = product.operations.models;
     const { Place } = product.explore.models;
+    t.beforeEach(async () => {
+      await Schedule.updateOne(
+        { scope: 'provider-quota' },
+        {
+          $set: {
+            quotaHour: Math.floor(Date.now() / 3600000),
+            searches: 0,
+            actorSearches: [],
+            slots: [],
+          },
+        },
+      );
+    });
     try {
       await other.initialize();
       const register = async (email: string) => {
@@ -127,7 +145,11 @@ test(
       );
       const work = () => product.operations.reviews(actor);
       const run = async () => {
-        await product.operations.enqueue(actor, randomUUID());
+        await product.operations.enqueue(
+          actor,
+          randomUUID(),
+          fixtureDestinationId,
+        );
         await product.operations.tick();
       };
       const decision = (
@@ -166,7 +188,8 @@ test(
             403,
           );
           assert.equal(
-            (await product.operations.status(actor)).schedule.enabled,
+            (await product.operations.status(actor, fixtureDestinationId))
+              .schedule.enabled,
             false,
           );
           assert.equal(
@@ -186,6 +209,7 @@ test(
           await product.operations.tick();
           assert.equal(calls, 0);
           const schedule = {
+            destinationId: fixtureDestinationId,
             enabled: true,
             frequency: 'weekly' as const,
             hour: 8,
@@ -200,7 +224,8 @@ test(
             product.operations.saveSchedule(actor, schedule, key),
           ]);
           assert.equal(
-            (await other.operations.status(actor)).schedule.revision,
+            (await other.operations.status(actor, fixtureDestinationId))
+              .schedule.revision,
             1,
           );
           assert.equal(
@@ -216,8 +241,8 @@ test(
         async () => {
           const key = randomUUID();
           const [a, b] = await Promise.all([
-            product.operations.enqueue(actor, key),
-            other.operations.enqueue(actor, key),
+            product.operations.enqueue(actor, key, fixtureDestinationId),
+            other.operations.enqueue(actor, key, fixtureDestinationId),
           ]);
           assert.equal(a.runId, b.runId);
           await Promise.all([
@@ -278,8 +303,16 @@ test(
             source: provenance,
             imageUrl,
             imageCredit,
+            proposalRevision,
+            publicRevision,
+            fieldProvenance,
+            capabilities,
             ...input
           } = current;
+          void proposalRevision;
+          void publicRevision;
+          void fieldProvenance;
+          void capabilities;
           void updatedAt;
           void provenance;
           void imageUrl;
@@ -307,6 +340,7 @@ test(
                   publicationStatus: 'published',
                 },
                 expectedRevision: revision,
+                intent: 'publish',
               },
               cookie,
             ),
@@ -362,15 +396,25 @@ test(
           await decision(review, 'apply');
           const edited = (await Place.findById(id))!;
           assert.equal(edited.name, 'Tên đã biên tập');
-          assert.equal(
+          assert.notEqual(
             edited.planning!.locationQuery,
+            'Địa chỉ thay đổi lần hai fixture',
+          );
+          const proposal = await harness.connection
+            .collection('catalog_versions')
+            .findOne({
+              placeId: edited._id,
+              revision: edited.proposalRevision,
+            });
+          assert.equal(
+            proposal!.snapshot.planning.locationQuery,
             'Địa chỉ thay đổi lần hai fixture',
           );
           assert.equal(edited.publicationStatus, 'published');
         },
       );
       await t.test(
-        'duplicates block publication, defer hides until due, distinct still requires a complete price; partial batch replay stable',
+        'duplicates block publication, defer hides until due, stale selections remain blocked after distinct; partial batch replay stable',
         async () => {
           const rows = (await work()).items.filter(
             (r) => r.kind === 'duplicate',
@@ -471,7 +515,7 @@ test(
         'restart resumes expired work and pause prevents new automatic runs',
         async () => {
           await Schedule.updateOne(
-            {},
+            { scope: 'hoi-an' },
             {
               $set: {
                 enabled: false,
@@ -484,7 +528,11 @@ test(
           const before = await Run.countDocuments();
           await other.operations.tick();
           assert.equal(await Run.countDocuments(), before);
-          const queued = await product.operations.enqueue(actor, randomUUID());
+          const queued = await product.operations.enqueue(
+            actor,
+            randomUUID(),
+            fixtureDestinationId,
+          );
           await Run.updateOne(
             { _id: queued.runId },
             {
@@ -505,7 +553,11 @@ test(
         'worker that loses its fence cannot commit; successor commits once',
         async () => {
           source = [candidate(904, 'Chỉ worker mới được ghi', 15.9)];
-          const queued = await product.operations.enqueue(actor, randomUUID());
+          const queued = await product.operations.enqueue(
+            actor,
+            randomUUID(),
+            fixtureDestinationId,
+          );
           beforeFetch = async () => {
             beforeFetch = undefined;
             await Run.updateOne(
@@ -529,17 +581,22 @@ test(
         '429/timeouts retry finitely and quota persists across workers',
         async () => {
           await Schedule.updateOne(
-            {},
+            { scope: 'provider-quota' },
             { $set: { searches: 0, actorSearches: [] } },
           );
           failure = new HttpError(429, 'GEOAPIFY_REJECTED', 'Fixture 429');
-          const queued = await product.operations.enqueue(actor, randomUUID());
+          const queued = await product.operations.enqueue(
+            actor,
+            randomUUID(),
+            fixtureDestinationId,
+          );
           await product.operations.tick();
           const retry = (await Run.findById(queued.runId))!;
           assert.equal(retry.state, 'retry');
           assert.ok(retry.nextAttemptAt.getTime() > Date.now());
           assert.equal(
-            (await product.operations.status(actor)).runs[0]!.counts.errors,
+            (await product.operations.status(actor, fixtureDestinationId))
+              .runs[0]!.counts.errors,
             0,
           );
           failure = new HttpError(
@@ -561,7 +618,7 @@ test(
           assert.equal((await Run.findById(queued.runId))!.attempts, 3);
           failure = undefined;
           await Schedule.updateOne(
-            {},
+            { scope: 'provider-quota' },
             {
               $set: {
                 quotaHour: Math.floor(Date.now() / 3600000),
@@ -575,7 +632,7 @@ test(
               e instanceof HttpError && e.code === 'IMPORT_SEARCH_LIMIT',
           );
           await Schedule.updateOne(
-            {},
+            { scope: 'provider-quota' },
             { $set: { searches: 0, actorSearches: [], slots: [] } },
           );
           const a = await product.operations.reserveSearch('actor-a');
@@ -589,7 +646,7 @@ test(
         'failure midway through fetching and audit failure roll back all domain writes; missed search is not closure',
         async () => {
           await Schedule.updateOne(
-            {},
+            { scope: 'hoi-an' },
             { $set: { group: 'mixed', searches: 0, actorSearches: [] } },
           );
           source = [candidate(905, 'Không được nhập nửa lượt', 15.9)];
@@ -602,7 +659,11 @@ test(
                 'Fixture second query timeout',
               );
           };
-          const queued = await product.operations.enqueue(actor, randomUUID());
+          const queued = await product.operations.enqueue(
+            actor,
+            randomUUID(),
+            fixtureDestinationId,
+          );
           await product.operations.tick();
           beforeFetch = undefined;
           assert.equal(
@@ -668,7 +729,7 @@ test(
         'separate OS workers exclude each other; killed worker is recovered by a new process with saved schedule intact',
         async () => {
           await Schedule.updateOne(
-            {},
+            { scope: 'hoi-an' },
             {
               $set: {
                 enabled: true,
@@ -679,7 +740,11 @@ test(
               },
             },
           );
-          const queued = await product.operations.enqueue(actor, randomUUID());
+          const queued = await product.operations.enqueue(
+            actor,
+            randomUUID(),
+            fixtureDestinationId,
+          );
           const spawnWorker = (hold: boolean) =>
             fork(
               fileURLToPath(
@@ -758,11 +823,16 @@ test(
           try {
             const noKey = createProduct(noKeyConnection, config);
             assert.equal(
-              (await noKey.operations.status(actor)).connected,
+              (await noKey.operations.status(actor, fixtureDestinationId))
+                .connected,
               false,
             );
             await assert.rejects(
-              noKey.operations.enqueue(actor, randomUUID()),
+              noKey.operations.enqueue(
+                actor,
+                randomUUID(),
+                fixtureDestinationId,
+              ),
               (e: unknown) =>
                 e instanceof HttpError && e.code === 'GEOAPIFY_NOT_CONFIGURED',
             );

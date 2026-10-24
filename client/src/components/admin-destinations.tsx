@@ -5,6 +5,7 @@ import {
   type DestinationInput,
 } from '@goease/contracts';
 import { api } from '../api';
+import { AdminBatch } from './admin-batch';
 import { DestinationRegions } from './destination-regions';
 
 type Form = Omit<DestinationInput, 'tourismRegion'> & {
@@ -19,6 +20,10 @@ const blank = (): Form => ({
 });
 export function AdminDestinations() {
   const generation = useRef(0);
+  const [archiveDestination, setArchiveDestination] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [rows, setRows] = useState<AdminDestinationDto[]>([]),
     [more, setMore] = useState(false);
   const [region, setRegion] = useState(''),
@@ -91,6 +96,7 @@ export function AdminDestinations() {
       setNotice(
         'Đã lưu điểm đến và phân vùng. Cấu hình nguồn nhập riêng trước khi chạy nhập dữ liệu.',
       );
+      window.dispatchEvent(new Event('goease-admin-destinations-changed'));
       setForm(blank());
       setEditing(null);
       request.current = null;
@@ -194,6 +200,16 @@ export function AdminDestinations() {
                     >
                       Sửa {d.name}
                     </button>
+                    {d.publicationStatus !== 'archived' && (
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          setArchiveDestination({ id: d.id, name: d.name })
+                        }
+                      >
+                        Lưu trữ theo kế hoạch
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -215,6 +231,23 @@ export function AdminDestinations() {
           Trang điểm đến sau
         </button>
       </div>
+      {archiveDestination && (
+        <>
+          <AdminBatch
+            selected={[]}
+            archiveDestination={archiveDestination}
+            onDone={() => {
+              setReload((v) => v + 1);
+              window.dispatchEvent(
+                new Event('goease-admin-destinations-changed'),
+              );
+            }}
+          />
+          <button onClick={() => setArchiveDestination(null)}>
+            Đóng kế hoạch lưu trữ
+          </button>
+        </>
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -286,9 +319,15 @@ export function AdminDestinations() {
             >
               <option value="draft">Bản nháp</option>
               <option value="published">Đang hiển thị</option>
-              <option value="archived">Đã lưu trữ</option>
+              {editing?.publicationStatus === 'archived' && (
+                <option value="archived">Đã lưu trữ</option>
+              )}
             </select>
           </label>
+          <p>
+            Lưu trữ điểm đến cần dùng kế hoạch ở bảng bên trên để kiểm tra và xử
+            lý các địa điểm phụ thuộc.
+          </p>
           <button type="submit" className="journey-primary">
             {busy ? 'Đang lưu điểm đến…' : 'Lưu điểm đến'}
           </button>
@@ -297,6 +336,9 @@ export function AdminDestinations() {
               type="button"
               onClick={() => {
                 setEditing(null);
+                window.dispatchEvent(
+                  new Event('goease-admin-destinations-changed'),
+                );
                 setForm(blank());
               }}
             >

@@ -6,7 +6,10 @@ import {
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   adminPlaceInputSchema,
+  adminPlaceQuerySchema,
   catalogToday,
+  catalogEditableFields,
+  catalogCapabilities,
   type AdminPlaceDto,
   type AdminOverview,
   type AdminPlaceInput,
@@ -18,7 +21,7 @@ import { PlacePlanning } from './place-planning';
 import { SourceCredit } from './source-credit';
 import { AdminBatch } from './admin-batch';
 import { AdminPlaceTable } from './admin-place-table';
-import { AdminMap } from './admin-map';
+import { AdminCatalogMap } from './admin-catalog-map';
 import { AdminPlaceTools } from './admin-place-tools';
 const AdminPlaceImport = lazy(() =>
   import('./admin-place-import').then((v) => ({ default: v.AdminPlaceImport })),
@@ -66,6 +69,10 @@ const formFromDto = ({
   source,
   imageUrl,
   imageCredit,
+  proposalRevision,
+  publicRevision,
+  capabilities,
+  fieldProvenance,
   ...input
 }: AdminPlaceDto) => {
   void id;
@@ -74,6 +81,10 @@ const formFromDto = ({
   void source;
   void imageUrl;
   void imageCredit;
+  void proposalRevision;
+  void publicRevision;
+  void capabilities;
+  void fieldProvenance;
   return input;
 };
 export function AdminCatalog({
@@ -81,13 +92,16 @@ export function AdminCatalog({
   openPlace,
   scope = '',
   locationKey = '',
+  refreshKey = 0,
 }: {
   destinations: DestinationDto[];
   scope?: string;
   locationKey?: string;
+  refreshKey?: number;
   openPlace?: { id: string; request: number } | null;
 }) {
   const [selected, setSelected] = useState<AdminPlaceDto[]>([]);
+  const [allMatching, setAllMatching] = useState(false);
   const [items, setItems] = useState<AdminPlaceDto[]>([]);
   const [importing, setImporting] = useState(false);
   const [category, setCategory] = useState('all');
@@ -108,11 +122,25 @@ export function AdminCatalog({
   const [listError, setListError] = useState('');
   const [form, setForm] = useState<AdminPlaceInput | null>(null);
   const [saved, setSaved] = useState<AdminPlaceDto | null>(null);
+  const [publicPlace, setPublicPlace] = useState<AdminPlaceDto | null>(null);
   const [duplicateCandidates, setDuplicateCandidates] = useState<
     AdminPlaceDto[]
   >([]);
   const [duplicateCheck, setDuplicateCheck] = useState('');
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  useEffect(() => {
+    setAllMatching(false);
+    setSelected([]);
+  }, [q, status, category, sourceFilter, qualityFilter, sort, scope]);
+  const filter = adminPlaceQuerySchema.parse({
+    q,
+    status,
+    category,
+    source: sourceFilter,
+    quality: qualityFilter,
+    sort,
+    ...(scope ? { destinationId: scope } : {}),
+  });
   const [sourceEvidence, setSourceEvidence] = useState<SourceEvidence>(null);
   const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -139,8 +167,20 @@ export function AdminCatalog({
     setForm(null);
     setImporting(false);
     setQ(params.get('q') ?? '');
-    setStatus(params.get('status') ?? 'all');
-    setQualityFilter(params.get('quality') ?? 'all');
+    setStatus(
+      ['all', 'draft', 'published', 'archived'].includes(
+        params.get('status') ?? '',
+      )
+        ? params.get('status')!
+        : 'all',
+    );
+    setQualityFilter(
+      ['all', 'price', 'hours', 'location'].includes(
+        params.get('quality') ?? '',
+      )
+        ? params.get('quality')!
+        : 'all',
+    );
     setMapView(params.get('view') === 'map');
     setOffset(0);
     if (params.get('import')) {
@@ -149,15 +189,23 @@ export function AdminCatalog({
     }
     if (params.get('create') && destinations.length) {
       setSaved(null);
+      setPublicPlace(null);
       setSourceEvidence(null);
       setHistory([]);
       setImporting(false);
-      setForm(newPlace(scope || destinations[0]!.id));
+      setForm(newPlace(scope));
     }
   }, [locationKey]);
   useEffect(() => {
     setOffset(0);
+    setSelected([]);
+    setSuccess('');
+    setError('');
+    setImporting(false);
   }, [scope]);
+  useEffect(() => {
+    setRetry((v) => v + 1);
+  }, [refreshKey]);
   useEffect(() => {
     if (
       !autosave ||
@@ -311,10 +359,12 @@ export function AdminCatalog({
     try {
       const value = await api<{
         place: AdminPlaceDto;
+        publicPlace?: AdminPlaceDto | null;
         history: HistoryItem[];
         sourceEvidence: SourceEvidence;
       }>(`/admin/places/${id}`);
       setSaved(value.place);
+      setPublicPlace(value.publicPlace ?? null);
       setForm(formFromDto(value.place));
       setHistory(value.history);
       setSourceEvidence(value.sourceEvidence);
@@ -329,7 +379,10 @@ export function AdminCatalog({
       setBusy(false);
     }
   }
-  async function save(publicationStatus: AdminPlaceInput['publicationStatus']) {
+  async function save(
+    publicationStatus: AdminPlaceInput['publicationStatus'],
+    intent: 'save' | 'publish' = 'save',
+  ) {
     if (!form || busy) return;
     const checked = adminPlaceInputSchema.safeParse({
       ...form,
@@ -352,6 +405,7 @@ export function AdminCatalog({
     setFieldErrors({});
     const payload = JSON.stringify({
       place: checked.data,
+      intent,
       ...(saved ? { expectedRevision: saved.revision } : {}),
     });
     if (key.current.payload !== payload)
@@ -369,6 +423,10 @@ export function AdminCatalog({
         },
       );
       setSaved(value.place);
+      if (intent === 'publish')
+        setPublicPlace(
+          value.place.publicationStatus === 'published' ? value.place : null,
+        );
       setForm(formFromDto(value.place));
       setPreview(false);
       setSelected((v) =>
@@ -386,11 +444,11 @@ export function AdminCatalog({
         ].slice(0, 20),
       );
       setSuccess(
-        publicationStatus === 'published'
-          ? 'Đã xuất bản. Khách có thể dùng địa điểm và giá tham khảo này trong lịch mới.'
+        intent === 'publish'
+          ? 'Đã áp dụng bản công khai. Khả năng khám phá, xếp lịch và ngân sách được kiểm tra riêng.'
           : publicationStatus === 'archived'
             ? 'Đã ngừng hiển thị. Lịch khách đã lưu vẫn được giữ.'
-            : 'Đã lưu bản nháp. Khách chưa nhìn thấy nội dung này.',
+            : 'Đã lưu đề xuất. Bản khách đang xem được giữ nguyên; xuất bản là bước riêng.',
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Chưa lưu được. Hãy thử lại.');
@@ -430,14 +488,9 @@ export function AdminCatalog({
                 disabled={busy || !destinations.length}
                 onClick={() => {
                   setSaved(null);
+                  setPublicPlace(null);
                   setSourceEvidence(null);
-                  setForm(
-                    newPlace(
-                      (scope ||
-                        destinations.find((d) => d.name === 'Hội An')?.id) ??
-                        destinations[0]!.id,
-                    ),
-                  );
+                  setForm(newPlace(scope));
                   setHistory([]);
                   setError('');
                   setSuccess('');
@@ -453,6 +506,21 @@ export function AdminCatalog({
         }
       />
 
+      {form && scope !== form.destinationId && (
+        <p className="admin-soft-notice">
+          Đang sửa địa điểm thuộc{' '}
+          {destinations.find((d) => d.id === form.destinationId)?.name ??
+            'điểm đến chưa chọn'}
+          . Đổi phạm vi xem không chuyển địa điểm sang phạm vi khác.
+        </p>
+      )}
+      {form && saved && (
+        <div className="admin-soft-notice">
+          Đề xuất: {saved.proposalRevision ?? 'chưa có'} · Bản công khai:{' '}
+          {saved.publicRevision ?? 'chưa xuất bản'}. Lưu chỉnh sửa không thay
+          đổi bản khách đang xem.
+        </div>
+      )}
       {form && saved?.source && (
         <div>
           Nhập từ nguồn lúc{' '}
@@ -664,11 +732,15 @@ export function AdminCatalog({
           <p className="admin-list-count">
             {total} địa điểm · Trang {Math.floor(offset / 20) + 1}
             {mapView
-              ? ' · Bản đồ hiển thị các kết quả trên trang hiện tại'
+              ? ' · Bản đồ truy vấn toàn bộ kết quả theo vùng đang xem'
               : ''}
           </p>
           <AdminBatch
             selected={selected}
+            filter={filter}
+            total={total}
+            allMatching={allMatching}
+            onAllMatching={setAllMatching}
             onDone={(ids) => {
               setSelected((v) => v.filter((p) => !ids.includes(p.id)));
               setRetry((v) => v + 1);
@@ -692,7 +764,7 @@ export function AdminCatalog({
                   )
                 }
               />
-              Chọn các địa điểm trên trang (tối đa 50)
+              Chọn toàn bộ trang hiện tại
             </label>
           )}
           {loading ? (
@@ -703,9 +775,30 @@ export function AdminCatalog({
               <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button>
             </div>
           ) : !items.length ? (
-            <p>Chưa có địa điểm phù hợp. Thêm địa điểm mới hoặc đổi bộ lọc.</p>
+            <div className="admin-empty">
+              <h2>Không có địa điểm khớp bộ lọc</h2>
+              <p>
+                Thử bớt điều kiện hoặc chọn một phạm vi khác. Kết quả rỗng không
+                có nghĩa nguồn đã đóng cửa.
+              </p>
+              <button
+                onClick={() => {
+                  setQ('');
+                  setStatus('all');
+                  setCategory('all');
+                  setSourceFilter('all');
+                  setQualityFilter('all');
+                  setOffset(0);
+                }}
+              >
+                Xóa bộ lọc tìm kiếm
+              </button>
+              <a href="#automatic" className="journey-primary">
+                Thiết lập đợt thu thập
+              </a>
+            </div>
           ) : mapView ? (
-            <AdminMap places={items} onOpen={(id) => void open(id)} />
+            <AdminCatalogMap filter={filter} onOpen={(id) => void open(id)} />
           ) : (
             <div className="admin-catalog-columns">
               <div>
@@ -730,7 +823,10 @@ export function AdminCatalog({
                       Mở rộng ↗
                     </button>
                   </div>
-                  <AdminMap places={items} onOpen={(id) => void open(id)} />
+                  <AdminCatalogMap
+                    filter={filter}
+                    onOpen={(id) => void open(id)}
+                  />
                 </section>
                 <section className="admin-panel">
                   <h2>Nhóm địa điểm</h2>
@@ -862,6 +958,7 @@ export function AdminCatalog({
                   <label>
                     Điểm đến
                     <select
+                      required
                       aria-label="Điểm đến"
                       disabled={!!saved}
                       value={form.destinationId}
@@ -869,6 +966,7 @@ export function AdminCatalog({
                         update({ destinationId: e.target.value })
                       }
                     >
+                      <option value="">Chọn điểm đến cụ thể</option>
                       {destinations.map((d) => (
                         <option key={d.id} value={d.id}>
                           {d.name}
@@ -1018,9 +1116,9 @@ export function AdminCatalog({
                 </legend>
                 {fieldError('referencePrice')}
                 <p>
-                  Chọn một mức tham khảo áp dụng chung cho nhóm khách. Giá trẻ
-                  em, ưu đãi có điều kiện riêng không tự suy ra. Thiếu giá hoặc
-                  điều kiện thì chỉ lưu bản nháp.
+                  Giá được dùng riêng cho dự toán và Goe. Thiếu giá vẫn có thể
+                  xuất bản để khám phá nếu đủ điều kiện; không tự suy ra miễn
+                  phí.
                 </p>
                 <label className="admin-checkbox">
                   <input
@@ -1292,14 +1390,94 @@ export function AdminCatalog({
                   </>
                 ) : (
                   <p>
-                    Chỉ lưu bản nháp. Cần giá và điều kiện đầy đủ trước khi xuất
-                    bản.
+                    Chưa có căn cứ giá. Địa điểm có thể phục vụ khám phá; Goe và
+                    ngân sách vẫn cần dữ liệu đủ điều kiện.
                   </p>
                 )}
               </fieldset>
             </div>
             <aside>
               <section className="admin-panel" id="admin-section-evidence">
+                <details>
+                  <summary>Khóa biên tập theo trường</summary>
+                  <p>
+                    Trường khóa được bảo vệ khi nguồn cập nhật, xuất bản và phục
+                    hồi. Khóa không tự xác minh dữ kiện.
+                  </p>
+                  <div className="admin-lock-fields">
+                    {catalogEditableFields.map((field) => (
+                      <label className="admin-checkbox" key={field}>
+                        <input
+                          type="checkbox"
+                          checked={form.fieldLocks?.includes(field) ?? false}
+                          onChange={(e) =>
+                            update({
+                              fieldLocks: e.target.checked
+                                ? [...(form.fieldLocks ?? []), field]
+                                : (form.fieldLocks?.filter(
+                                    (v) => v !== field,
+                                  ) ?? []),
+                            })
+                          }
+                        />
+                        {
+                          {
+                            name: 'Tên địa điểm',
+                            description: 'Mô tả',
+                            category: 'Nhóm trải nghiệm',
+                            venueType: 'Loại địa điểm',
+                            locationQuery: 'Địa chỉ',
+                            durationMinutes: 'Thời lượng',
+                            openingHoursNote: 'Giờ mở cửa',
+                            sourceUrl: 'Nguồn thông tin',
+                            referencePrice: 'Giá',
+                            mapLocation: 'Tọa độ',
+                            images: 'Ảnh',
+                          }[field]
+                        }
+                      </label>
+                    ))}
+                  </div>
+                </details>
+                {saved?.fieldProvenance?.length ? (
+                  <details>
+                    <summary>Lịch sử nguồn theo trường</summary>
+                    {saved.fieldProvenance.map((p) => (
+                      <div key={p.field} className="admin-version">
+                        <strong>{p.field}</strong>
+                        <span>
+                          Nguồn: {p.origin} ·{' '}
+                          {p.state === 'verified'
+                            ? 'Đã xác minh'
+                            : p.state === 'edited'
+                              ? 'Đã biên tập'
+                              : p.state === 'observed'
+                                ? 'Quan sát nguồn'
+                                : 'Chưa rõ'}
+                        </span>
+                        <small>
+                          Nhận:{' '}
+                          {p.receivedAt
+                            ? new Date(p.receivedAt).toLocaleString('vi-VN')
+                            : 'chưa có'}{' '}
+                          · xác minh:{' '}
+                          {p.verifiedAt
+                            ? new Date(p.verifiedAt).toLocaleString('vi-VN')
+                            : 'chưa có'}
+                        </small>
+                        {p.sourceUrl && (
+                          <a
+                            href={p.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Mở căn cứ nguồn ↗
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </details>
+                ) : null}
                 <AdminFieldEvidence
                   form={form}
                   evidence={saved ? sourceEvidence : null}
@@ -1323,7 +1501,38 @@ export function AdminCatalog({
               className="admin-preview"
               aria-label="Xem trước nội dung"
             >
-              <span className="admin-eyebrow">KHÁCH SẼ THẤY</span>
+              <span className="admin-eyebrow">XEM TRƯỚC TÁC ĐỘNG XUẤT BẢN</span>
+              <div className="admin-diff">
+                <div>
+                  <strong>
+                    Bản khách đang thấy · {saved?.publicRevision ?? 'chưa có'}
+                  </strong>
+                  <pre>
+                    {publicPlace
+                      ? `${publicPlace.name}\n${publicPlace.description}\n${publicPlace.locationQuery}\nGiờ: ${publicPlace.openingHoursNote || 'Chưa rõ'}\nGiá: ${publicPlace.referencePrice ? `${publicPlace.referencePrice.amountMinor.toLocaleString('vi-VN')} VND` : 'Chưa rõ'}`
+                      : 'Chưa có bản công khai.'}
+                  </pre>
+                </div>
+                <div>
+                  <strong>Đề xuất đang xem</strong>
+                  <pre>{`${form.name}\n${form.description}\n${form.locationQuery}\nGiờ: ${form.openingHoursNote || 'Chưa rõ'}\nGiá: ${form.referencePrice ? `${form.referencePrice.amountMinor.toLocaleString('vi-VN')} VND` : 'Chưa rõ'}`}</pre>
+                </div>
+              </div>
+              <p>
+                Khả năng sử dụng sau khi xuất bản:{' '}
+                {catalogCapabilities(form).discovery
+                  ? 'khám phá đủ điều kiện'
+                  : 'khám phá chưa đủ'}{' '}
+                ·{' '}
+                {catalogCapabilities(form).scheduling
+                  ? 'Goe đủ dữ liệu'
+                  : 'Goe chưa đủ dữ liệu'}{' '}
+                ·{' '}
+                {catalogCapabilities(form).budgeting
+                  ? 'dự toán đủ dữ liệu'
+                  : 'dự toán chưa đủ dữ liệu'}
+                .
+              </p>
               <h2>{form.name}</h2>
               <p>{form.description}</p>
               <p>{form.locationQuery}</p>
@@ -1366,7 +1575,7 @@ export function AdminCatalog({
                 type="button"
                 className="journey-primary"
                 disabled={busy}
-                onClick={() => void save('published')}
+                onClick={() => void save('published', 'publish')}
               >
                 {busy
                   ? 'Đang lưu…'
@@ -1390,8 +1599,8 @@ export function AdminCatalog({
               }
             >
               {saved?.publicationStatus === 'published'
-                ? 'Lưu thay đổi'
-                : 'Lưu bản nháp'}
+                ? 'Lưu đề xuất'
+                : 'Lưu đề xuất'}
             </button>
             <button type="submit" className="journey-primary" disabled={busy}>
               Xem trước để xuất bản
@@ -1406,7 +1615,7 @@ export function AdminCatalog({
                       'Ngừng hiển thị địa điểm này cho khách mới? Lịch đã lưu vẫn giữ nguyên.',
                     )
                   )
-                    void save('archived');
+                    void save('archived', 'publish');
                 }}
               >
                 Ngừng hiển thị

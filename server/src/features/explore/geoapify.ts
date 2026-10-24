@@ -89,8 +89,8 @@ export type GeoapifyBatch = {
 export function distanceMeters(
   longitude: number,
   latitude: number,
-  otherLongitude = hoiAnArea.longitude as number,
-  otherLatitude = hoiAnArea.latitude as number,
+  otherLongitude: number,
+  otherLatitude: number,
 ) {
   const rad = Math.PI / 180;
   const a =
@@ -104,7 +104,7 @@ export function distanceMeters(
 export function normalizeGeoapify(
   data: unknown,
   group: GeoapifyGroup,
-  area: IngestionArea = hoiAnArea,
+  area: IngestionArea,
 ): GeoapifyBatch {
   const collection = responseSchema.parse(data);
   const items: GeoapifyCandidate[] = [];
@@ -200,8 +200,14 @@ export function geoapifyProvider(
   return async (
     group: GeoapifyGroup,
     limit: number,
-    area: IngestionArea = hoiAnArea,
+    area?: IngestionArea,
   ): Promise<GeoapifyBatch> => {
+    if (!area)
+      throw new HttpError(
+        400,
+        'SCOPE_REQUIRED',
+        'Chọn phạm vi nguồn trước khi thu thập.',
+      );
     if (!apiKey?.trim())
       throw new HttpError(
         503,

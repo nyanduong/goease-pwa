@@ -111,7 +111,8 @@ export function QuickTripSetup({
         )}
         {!destinations.length && (
           <p role="status">
-            Chưa tải được điểm đến. Vui lòng thử tải lại trang.
+            Chưa có điểm đến được xuất bản để chọn. Nếu trang báo lỗi tải dữ
+            liệu, dùng thao tác thử lại trước khi lập lịch.
           </p>
         )}
         <div className="quick-question">

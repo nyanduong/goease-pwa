@@ -85,7 +85,7 @@ export type CatalogReviewDto = {
 };
 export type CatalogRunDto = {
   id: string;
-  state: 'queued' | 'running' | 'retry' | 'succeeded' | 'failed';
+  state: 'queued' | 'running' | 'retry' | 'paused' | 'succeeded' | 'failed';
   actor: 'user' | 'system';
   createdAt: string;
   finishedAt: string | null;
@@ -108,4 +108,19 @@ export type CatalogOperationsDto = {
     nextRunAt: string | null;
   };
   runs: CatalogRunDto[];
+};
+export type CatalogHistoryDto = {
+  id: string;
+  action: string;
+  actor: string;
+  placeId: string | null;
+  name: string;
+  occurredAt: string;
+  outcome: string;
+  note: string;
+  entityRevision?: number;
+  previousRevision?: number;
+  campaignId?: string;
+  batchId?: string;
+  runId?: string;
 };

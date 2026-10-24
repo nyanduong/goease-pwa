@@ -82,7 +82,36 @@ test('admin import UI: failure/retry, duplicate review, same-key lost response, 
           isAdmin: true,
         },
       });
-    if (path === '/destinations')
+    if (path === '/admin/catalog/overview')
+      return ok({
+        total: 0,
+        draft: 0,
+        published: 0,
+        archived: 0,
+        complete: 0,
+        needsAttention: 0,
+        issues: [],
+        places: [],
+        mapTruncated: false,
+        sources: {
+          manual: 0,
+          geoapify: 0,
+          lastAttempt: null,
+          lastSuccess: null,
+          lastError: null,
+        },
+        jobs: { active: 0, succeeded: 0, failed: 0 },
+      });
+    if (path === '/admin/catalog/settings')
+      return ok({
+        revision: 0,
+        defaultDestinationId: null,
+        freshnessDays: 90,
+        showQualityAlerts: true,
+        autoApplyDraftHours: false,
+        regions: [],
+      });
+    if (path === '/destinations' || path === '/admin/destinations')
       return ok({
         items: [
           {
@@ -112,7 +141,11 @@ test('admin import UI: failure/retry, duplicate review, same-key lost response, 
       return ok({ items: [], total: 0, hasMore: false });
     if (path === '/admin/place-import/preview') {
       searches++;
-      expect(r.request().postDataJSON()).toEqual({ group: 'mixed', limit: 50 });
+      expect(r.request().postDataJSON()).toEqual({
+        group: 'mixed',
+        limit: 50,
+        destinationId: current.destinationId,
+      });
       return searches === 1
         ? r.fulfill({
             status: 502,
@@ -146,6 +179,7 @@ test('admin import UI: failure/retry, duplicate review, same-key lost response, 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/admin');
   await page.getByRole('link', { name: 'Địa điểm', exact: true }).click();
+  await page.getByLabel('Khu vực quản lý').selectOption(current.destinationId);
   await page
     .getByRole('button', { name: 'Nhập địa điểm từ Geoapify', exact: true })
     .click();
@@ -226,10 +260,13 @@ test('admin import UI: failure/retry, duplicate review, same-key lost response, 
   await expect(
     page.getByText('Nhập từ nguồn lúc', { exact: false }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Đã lưu bản nháp');
+  await page.getByRole('button', { name: 'Lưu đề xuất', exact: true }).click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Đã lưu đề xuất' }),
+  ).toContainText('Đã lưu đề xuất');
   expect(patch).toMatchObject({
     expectedRevision: 1,
+    intent: 'save',
     place: { name: current.name, publicationStatus: 'draft' },
   });
   expect((patch as { place: unknown }).place).not.toHaveProperty('source');

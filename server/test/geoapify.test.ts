@@ -5,6 +5,7 @@ import {
   normalizeGeoapify,
 } from '../src/features/explore/geoapify.js';
 import { HttpError } from '../src/http-error.js';
+const fixtureArea = { longitude: 108.328, latitude: 15.88, radiusMeters: 5000 };
 const feature = (
   properties: Record<string, unknown> = {},
   coordinates = [108.328, 15.88],
@@ -39,6 +40,7 @@ test('Geoapify fixtures: reject unnamed, invalid coordinates, outside area/count
       feature({ categories: ['commercial.supermarket'] }),
     ),
     'cafe',
+    fixtureArea,
   );
   assert.equal(batch.received, 6);
   assert.equal(batch.rejected, 5);
@@ -57,13 +59,16 @@ test('Geoapify fixtures: reject unnamed, invalid coordinates, outside area/count
         }),
       ),
       'cafe',
+      fixtureArea,
     ).items.length,
     0,
   );
-  const original = normalizeGeoapify(collection(feature()), 'cafe').items[0]!;
+  const original = normalizeGeoapify(collection(feature()), 'cafe', fixtureArea)
+    .items[0]!;
   const moved = normalizeGeoapify(
     collection(feature({ place_id: 'changed-provider-id' }, [108.329, 15.88])),
     'cafe',
+    fixtureArea,
   ).items[0]!;
   assert.equal(original.externalId, moved.externalId);
 });
@@ -89,6 +94,7 @@ test('Geoapify fixtures: OSM compact types produce public permalinks and allowli
         }),
       ),
       'cafe',
+      fixtureArea,
     );
     assert.equal(
       batch.items[0]!.sourceUrl,
@@ -110,14 +116,14 @@ test('Geoapify fixtures: fixed provider origin, bounded scope and limit', async 
     assert.equal(init?.redirect, 'error');
     return Response.json(collection(feature()));
   });
-  await get('cafe', 30);
+  await get('cafe', 30, fixtureArea);
   assert.equal(calls, 1);
-  await assert.rejects(get('cafe', 51));
+  await assert.rejects(get('cafe', 51, fixtureArea));
   assert.equal(calls, 1);
   await assert.rejects(
     geoapifyProvider(undefined, async () => {
       throw new Error('must not call');
-    })('cafe', 30),
+    })('cafe', 30, fixtureArea),
     (e: unknown) =>
       e instanceof HttpError && e.code === 'GEOAPIFY_NOT_CONFIGURED',
   );
@@ -138,19 +144,20 @@ test('Geoapify fixtures: provider failure, malformed/oversized output and timeou
   ];
   for (const request of requests)
     await assert.rejects(
-      geoapifyProvider('fixture-secret', request)('cafe', 30),
+      geoapifyProvider('fixture-secret', request)('cafe', 30, fixtureArea),
       (e: unknown) =>
         e instanceof HttpError && !String(e).includes('fixture-secret'),
     );
   const empty = await geoapifyProvider('fixture-secret', async () =>
     Response.json(collection()),
-  )('cafe', 30);
+  )('cafe', 30, fixtureArea);
   assert.equal(empty.items.length, 0);
 });
 
 test('Geoapify explicit closure is unverified; 429 retry time and bad credentials are actionable', async () => {
   assert.equal(
-    normalizeGeoapify(collection(feature()), 'cafe').items[0]!.closed,
+    normalizeGeoapify(collection(feature()), 'cafe', fixtureArea).items[0]!
+      .closed,
     null,
   );
   assert.equal(
@@ -164,6 +171,7 @@ test('Geoapify explicit closure is unverified; 429 retry time and bad credential
         }),
       ),
       'cafe',
+      fixtureArea,
     ).items[0]!.closed,
     true,
   );
@@ -173,7 +181,7 @@ test('Geoapify explicit closure is unverified; 429 retry time and bad credential
       'fixture-secret',
       async () =>
         new Response('', { status: 429, headers: { 'Retry-After': '120' } }),
-    )('cafe', 30),
+    )('cafe', 30, fixtureArea),
     (e: unknown) =>
       e instanceof HttpError &&
       e.code === 'GEOAPIFY_REJECTED' &&
@@ -185,7 +193,7 @@ test('Geoapify explicit closure is unverified; 429 retry time and bad credential
     geoapifyProvider(
       'fixture-secret',
       async () => new Response('', { status: 403 }),
-    )('cafe', 30),
+    )('cafe', 30, fixtureArea),
     (e: unknown) =>
       e instanceof HttpError &&
       e.code === 'GEOAPIFY_AUTH' &&

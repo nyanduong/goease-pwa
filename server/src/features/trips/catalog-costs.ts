@@ -55,7 +55,7 @@ export async function validateCatalogCosts(
         activity.estimatedCost,
         catalogCost({
           referencePrice: parsed.data,
-          revision: place.revision ?? 0,
+          revision: place.publicRevision ?? place.revision ?? 0,
         }),
       )
     )

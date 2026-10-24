@@ -1,9 +1,9 @@
 import { scopeKey } from './ingestion-scope.js';
+import { catalogOverview } from './catalog-overview.js';
 import { randomUUID } from 'node:crypto';
 import { Types, type Connection } from 'mongoose';
 import {
   adminPlaceInputSchema,
-  catalogQuality,
   type AdminOverview,
   type AdminSettings,
   type adminSettingsSchema,
@@ -70,7 +70,6 @@ export function adminInsights(
           !(await connection.collection('destinations').findOne(
             {
               _id: new Types.ObjectId(input.defaultDestinationId),
-              publicationStatus: 'published',
               deletedAt: null,
             },
             { session },
@@ -86,7 +85,6 @@ export function adminInsights(
             !(await connection.collection('destinations').findOne(
               {
                 _id: new Types.ObjectId(region.destinationId),
-                publicationStatus: 'published',
                 deletedAt: null,
               },
               { session },
@@ -128,33 +126,15 @@ export function adminInsights(
       destinationId?: string,
     ): Promise<AdminOverview> {
       const config = await settings(actor);
-      const places = await explore.models.Place.find({
-        deletedAt: null,
-        ...(destinationId ? { destinationId } : {}),
-      })
-        .sort({ _id: 1 })
-        .limit(5001);
-      if (places.length > 5000)
-        throw new HttpError(
-          409,
-          'CATALOG_LIMIT',
-          'Chọn một khu vực nhỏ hơn để xem tối đa 5.000 địa điểm.',
-        );
-      const values = places.map(catalog.dto);
-      const quality = values
-        .filter((p) => p.publicationStatus !== 'archived')
-        .map((p) => catalogQuality(p, config.freshnessDays));
-      const counts = new Map<
-        string,
-        { code: string; label: string; count: number }
-      >();
-      for (const q of quality)
-        for (const issue of q.issues)
-          counts.set(issue.code, {
-            code: issue.code,
-            label: issue.label,
-            count: (counts.get(issue.code)?.count ?? 0) + 1,
-          });
+      const [stats, places] = await Promise.all([
+        catalogOverview(connection, config.freshnessDays, destinationId),
+        explore.models.Place.find({
+          deletedAt: null,
+          ...(destinationId ? { destinationId } : {}),
+        })
+          .sort({ _id: 1 })
+          .limit(500),
+      ]);
       // The currently configured ingestion scope is explicit; another region never inherits its job health.
       const runFilter = destinationId ? { scope: scopeKey(destinationId) } : {};
       const runs = connection.collection('catalog_runs');
@@ -170,25 +150,20 @@ export function adminInsights(
         runs.countDocuments({ ...runFilter, state: 'failed' }),
       ]);
       return {
-        total: values.length,
-        draft: values.filter((p) => p.publicationStatus === 'draft').length,
-        published: values.filter((p) => p.publicationStatus === 'published')
-          .length,
-        archived: values.filter((p) => p.publicationStatus === 'archived')
-          .length,
-        needsAttention: quality.filter((q) => q.issues.length).length,
-        complete: quality.filter((q) => q.completeness === 100).length,
-        located: values.filter((p) => p.mapLocation).length,
-        categories: ['food', 'culture', 'nature'].map((category) => ({
-          category,
-          count: values.filter((p) => p.category === category).length,
-        })),
-        issues: [...counts.values()],
-        places: values.slice(0, 500),
-        mapTruncated: values.length > 500,
+        total: stats.total,
+        draft: stats.draft,
+        published: stats.published,
+        archived: stats.archived,
+        needsAttention: stats.needsAttention,
+        complete: stats.complete,
+        located: stats.located,
+        categories: stats.categories,
+        issues: stats.issues,
+        places: places.map(catalog.dto),
+        mapTruncated: stats.total > places.length,
         sources: {
-          manual: values.filter((p) => !p.source).length,
-          geoapify: values.filter((p) => p.source).length,
+          manual: stats.manual,
+          geoapify: stats.geoapify,
           lastAttempt: last?.createdAt?.toISOString() ?? null,
           lastSuccess: success?.finishedAt?.toISOString() ?? null,
           lastError:
@@ -202,7 +177,9 @@ export function adminInsights(
     async versions(actor: Types.ObjectId, id: string) {
       await catalog.read(actor, id);
       const docs = await Version.find({ placeId: id })
-        .select('revision recordedAt snapshot.name snapshot.publicationStatus')
+        .select(
+          'revision recordedAt state reason basePublicRevision snapshot.name snapshot.publicationStatus',
+        )
         .sort({ revision: -1 })
         .limit(30);
       return {
@@ -211,7 +188,52 @@ export function adminInsights(
           recordedAt: p.recordedAt,
           name: p.snapshot.name,
           status: p.snapshot.publicationStatus,
+          state: p.state,
+          reason: p.reason,
+          basePublicRevision: p.basePublicRevision,
         })),
+      };
+    },
+    async version(actor: Types.ObjectId, id: string, revision: number) {
+      const current = await catalog.read(actor, id);
+      const version = await Version.findOne({ placeId: id, revision });
+      if (!version)
+        throw new HttpError(
+          404,
+          'VERSION_NOT_FOUND',
+          'Không có bản lưu để đối chiếu.',
+        );
+      const snapshot = catalog.dto(
+        explore.models.Place.hydrate({
+          ...version.snapshot,
+          revision: version.revision,
+          updatedAt: version.snapshot.updatedAt ?? version.recordedAt,
+          proposalRevision: null,
+        }),
+      );
+      // Restore replaces the saved editorial proposal, so compare that content.
+      // Public content remains unchanged until an explicit publish.
+      const baseline = current.place;
+      const changes = Object.keys(adminPlaceInputSchema.shape)
+        .filter(
+          (field) =>
+            JSON.stringify(baseline[field as keyof typeof baseline]) !==
+            JSON.stringify(snapshot[field as keyof typeof snapshot]),
+        )
+        .map((field) => ({
+          field,
+          current: baseline[field as keyof typeof baseline] ?? null,
+          historical: snapshot[field as keyof typeof snapshot] ?? null,
+        }));
+      return {
+        revision: version.revision,
+        recordedAt: version.recordedAt,
+        state: version.state,
+        reason: version.reason,
+        basePublicRevision: version.basePublicRevision,
+        snapshot,
+        current: baseline,
+        changes,
       };
     },
     async restore(

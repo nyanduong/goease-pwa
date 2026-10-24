@@ -1,5 +1,9 @@
 import { Schema, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
+import {
+  policySnapshotSchema,
+  scopeSnapshotSchema,
+} from './admin-v3.models.js';
 
 const options = {
   strict: 'throw' as const,
@@ -31,7 +35,7 @@ export const sourceSnapshotModel = new Schema(
 export function catalogOperationsModels(connection: Connection) {
   const schedule = new Schema(
     {
-      scope: { type: String, maxlength: 24, default: 'hoi-an' },
+      scope: { type: String, maxlength: 24, required: true },
       revision: { type: Number, default: 0 },
       enabled: { type: Boolean, default: false },
       frequency: { type: String, enum: ['daily', 'weekly'], default: 'weekly' },
@@ -61,11 +65,18 @@ export function catalogOperationsModels(connection: Connection) {
   const run = new Schema(
     {
       operationId: { type: String, default: randomUUID, required: true },
-      scope: { type: String, maxlength: 24, default: 'hoi-an' },
+      scope: { type: String, maxlength: 24, required: true },
+      campaignId: { type: Schema.Types.ObjectId, default: null },
+      scopeSnapshot: { type: scopeSnapshotSchema, default: null },
+      policySnapshot: {
+        type: policySnapshotSchema,
+        default: () => ({ autoApplyDraftHours: false }),
+      },
+      source: { type: String, enum: ['geoapify'], default: 'geoapify' },
       active: { type: Boolean, default: true },
       state: {
         type: String,
-        enum: ['queued', 'running', 'retry', 'succeeded', 'failed'],
+        enum: ['queued', 'running', 'retry', 'paused', 'succeeded', 'failed'],
         default: 'queued',
       },
       actorId: { type: Schema.Types.ObjectId, default: null },
@@ -97,6 +108,7 @@ export function catalogOperationsModels(connection: Connection) {
   );
   run.index({ active: 1, nextAttemptAt: 1, leaseUntil: 1 });
   run.index({ createdAt: -1 });
+  run.index({ campaignId: 1, createdAt: 1 });
   const review = new Schema(
     {
       placeId: { type: Schema.Types.ObjectId, required: true },

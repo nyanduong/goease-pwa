@@ -140,6 +140,22 @@ export function destinationCatalog(
             let saved: Destination | null;
             if (id) {
               if (
+                input.publicationStatus === 'archived' &&
+                (await connection.collection('places').findOne(
+                  {
+                    destinationId: new Types.ObjectId(id),
+                    deletedAt: null,
+                    publicationStatus: { $ne: 'archived' },
+                  },
+                  { session, projection: { _id: 1 } },
+                ))
+              )
+                throw new HttpError(
+                  409,
+                  'ARCHIVE_PLAN_REQUIRED',
+                  'Điểm đến còn địa điểm đang hoạt động. Dùng kế hoạch lưu trữ phạm vi để xem trước và xử lý các địa điểm phụ thuộc.',
+                );
+              if (
                 input.publicationStatus !== 'published' &&
                 (await connection.collection('places').findOne(
                   {

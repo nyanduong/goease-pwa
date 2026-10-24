@@ -19,6 +19,7 @@ import { referencePriceModelSchema } from './reference-price.js';
 import { mutableFields } from '../auth/auth.models.js';
 import { sourceSnapshotModel } from './catalog-operations.models.js';
 import { tourismRegions } from '@goease/contracts';
+import { catalogPublicationFields } from './catalog-provenance.js';
 const parseMapLocation = (v: unknown) =>
   mapLocationSchema.safeParse(
     v instanceof mongoose.Document ? v.toObject() : v,
@@ -33,6 +34,7 @@ export function exploreService(connection: Connection) {
   const placeSchema = new Schema(
     {
       ...mutableFields,
+      ...catalogPublicationFields,
       sourceSnapshot: { type: sourceSnapshotModel, default: null },
       internalNote: { type: String, maxlength: 1000, default: '' },
       images: {
@@ -239,7 +241,7 @@ export function exploreService(connection: Connection) {
           },
         }
       : {}),
-    revision: doc.revision,
+    revision: doc.publicRevision ?? doc.revision,
     venueType:
       (doc.venueType as PlaceDto['venueType']) ??
       (doc.category === 'food' ? 'food_idea' : 'place'),

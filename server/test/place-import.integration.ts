@@ -1,3 +1,7 @@
+import {
+  configureFixtureScope,
+  fixtureDestinationId,
+} from './support/catalog-scope.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
@@ -77,6 +81,7 @@ test(
     });
     await product.initialize();
     await seedDestinations(product.trips.models.Destination);
+    await configureFixtureScope(harness.connection);
 
     const server = createApp(
       config,
@@ -127,7 +132,11 @@ test(
       const admin = await register('import-admin@example.invalid', true),
         admin2 = await register('import-other@example.invalid', true),
         customer = await register('import-customer@example.invalid');
-      const query = { group: 'cafe', limit: 30 };
+      const query = {
+        group: 'cafe',
+        limit: 30,
+        destinationId: fixtureDestinationId,
+      };
       const preview = () =>
         call('/admin/place-import/preview', 'POST', query, admin).then(
           read<PlaceImportPreview>,
@@ -294,8 +303,16 @@ test(
             source,
             imageUrl,
             imageCredit,
+            proposalRevision,
+            publicRevision,
+            fieldProvenance,
+            capabilities,
             ...input
           } = saved.place;
+          void proposalRevision;
+          void publicRevision;
+          void fieldProvenance;
+          void capabilities;
           void updatedAt;
           void source;
           void imageUrl;
@@ -321,7 +338,7 @@ test(
             await call(
               '/admin/places/' + id,
               'PATCH',
-              { place: edited, expectedRevision: revision },
+              { place: edited, expectedRevision: revision, intent: 'publish' },
               admin,
             ),
           );

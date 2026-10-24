@@ -197,6 +197,7 @@ test(
                 name: 'Bản lưu trữ fixture',
                 publicationStatus: 'archived',
               },
+              intent: 'publish',
             }),
           );
           const list = await read<{ items: AdminPlaceDto[]; total: number }>(
@@ -207,7 +208,7 @@ test(
         },
       );
       await t.test(
-        'publish, version snapshots, restore to draft and stale restore conflict',
+        'explicit publish, immutable versions, restore proposal keeps public and stale restore conflicts',
         async () => {
           input = {
             ...input,
@@ -230,6 +231,7 @@ test(
               await call(`/admin/places/${place.id}`, 'PATCH', {
                 place: input,
                 expectedRevision: place.revision,
+                intent: 'publish',
               }),
             )
           ).place;
@@ -241,10 +243,10 @@ test(
           );
           assert.deepEqual(
             versions.items.map((v) => v.revision),
-            [2, 1],
+            [3, 2, 1],
           );
           const key = randomUUID(),
-            body = { revision: 1, expectedRevision: 2 };
+            body = { revision: 1, expectedRevision: place.revision };
           place = (
             await read<{ place: AdminPlaceDto }>(
               await call(
@@ -255,10 +257,17 @@ test(
               ),
             )
           ).place;
-          assert.equal(place.revision, 3);
+          assert.equal(place.revision, 4);
           assert.equal(place.publicationStatus, 'draft');
           assert.equal(place.referencePrice, null);
-          assert.equal((await call(`/places/${place.id}`)).status, 404);
+          assert.equal((await call(`/places/${place.id}`)).status, 200);
+          const stillPublic = (await (
+            await call(`/places/${place.id}`)
+          ).json()) as { data: { place: { referencePrice: unknown } } };
+          assert.ok(
+            stillPublic.data.place.referencePrice,
+            'restore preparation retains published price snapshot',
+          );
           assert.equal(
             (
               await read<{ place: AdminPlaceDto }>(
@@ -270,7 +279,7 @@ test(
                 ),
               )
             ).place.revision,
-            3,
+            4,
           );
           assert.equal(
             (await call(`/admin/places/${place.id}/restore`, 'POST', body))
@@ -285,7 +294,7 @@ test(
                   place.id,
                 ),
               }),
-            3,
+            4,
           );
         },
       );
@@ -295,7 +304,7 @@ test(
           assert.equal(
             await harness.connection.collection('audit_logs').countDocuments({
               entityId: place.id,
-              action: 'catalog.restored',
+              action: 'catalog.restore_prepared',
             }),
             1,
           );
@@ -324,6 +333,7 @@ test(
               await call(`/admin/places/${place.id}`, 'PATCH', {
                 place: input,
                 expectedRevision: place.revision,
+                intent: 'publish',
               }),
             )
           ).place;
@@ -339,6 +349,7 @@ test(
               await call(`/admin/places/${place.id}`, 'PATCH', {
                 place: input,
                 expectedRevision: place.revision,
+                intent: 'publish',
               }),
             )
           ).place;
@@ -479,6 +490,13 @@ test(
             defaultDestinationId: '000000000000000000000003',
             regions: [
               {
+                destinationId: '000000000000000000000004',
+                latitude: 15.88,
+                longitude: 108.328,
+                radiusMeters: 1000,
+                enabled: true,
+              },
+              {
                 destinationId: '000000000000000000000003',
                 latitude: 21,
                 longitude: 105.8,
@@ -543,7 +561,24 @@ test(
         'low risk hours auto-apply only on unedited drafts; identity conflict goes to review and reject preserves data',
         async () => {
           const run = async () => {
-            await product.operations.enqueue(actor, randomUUID());
+            const queued = await product.operations.enqueue(
+              actor,
+              randomUUID(),
+              '000000000000000000000004',
+            );
+            // Controlled fixture: a run owns a fixed policy snapshot; mutable settings cannot change it.
+            await product.operations.models.Run.updateOne(
+              { _id: queued.runId },
+              {
+                $set: {
+                  policySnapshot: {
+                    autoApplyDraftHours: true,
+                    autoPublish: false,
+                    version: 1,
+                  },
+                },
+              },
+            );
             await product.operations.tick();
           };
           await run();
@@ -553,8 +588,11 @@ test(
           hours = '09:00–18:00';
           await run();
           assert.equal(
-            (await product.explore.models.Place.findById(p._id))
-              ?.openingHoursNote,
+            (
+              await read<{ place: AdminPlaceDto }>(
+                await call(`/admin/places/${p._id}`),
+              )
+            ).place.openingHoursNote,
             hours,
           );
           assert.equal(

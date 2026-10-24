@@ -1340,6 +1340,8 @@ Runtime CAT-14: `referencePrice.minTravelers?: integer 1..1000`, phải <= maxTr
 
 ## Runtime Admin Operations V2 — 2026-10-24 (CAT-15)
 
+**Lịch sử V2:** metadata/version/publication và giới hạn tổng hợp bên dưới được thay bởi Runtime Admin V3 ở cuối tài liệu; không hiểu mô tả V2 là hành vi hiện tại.
+
 Ba collection mới thực thi qua Mongoose/initialize, registry vẫn chỉ tài liệu. Không destructive migration/backfill/drop/syncIndexes.
 
 | Collection        | Fields thực thi                                                                                                                                                                                                     | Index / vòng đời                                                                                                                      |
@@ -1355,3 +1357,25 @@ catalog_reviews thêm kind quality, decision reject/revise, decisionNote/decided
 ## Avatar upload runtime — 24/10/2026
 
 AUTH-09/CAT-06: users.avatarUrl giữ URL HTTPS CDN từ upload hoặc URL legacy; không đổi type/default/index và không thêm collection. GET profile thêm projection createdAt/updatedAt đã có; không cho client sửa. Binary bản cắt chỉ trong request/memory, không MongoDB, audit, log hoặc registry. Cloud asset UUID ở goease/avatars, chưa tham chiếu avatarAssetId/media_assets. Giới hạn, lỗi, retry và asset chưa dùng: ACCOUNT-PROFILE.md. Ghi nhận chưa có upload phía trên là lịch sử trước runtime này.
+
+## Runtime Admin V3 — 2026-10-24 (CAT-17 / V3-BR-01…12)
+
+Một document places vẫn là một POI. Thêm publicationModelVersion=2; publicRevision/proposalRevision nullable; fieldLocks và fieldProvenance giới hạn tập trường editor. Provenance strict: field, origin manual/geoapify/legacy, sourceUrl, receivedAt, verifiedAt, validUntil, actorId, state unknown/observed/edited/verified. Legacy không tự thành verified. Public revision ổn định khi save đề xuất; editorial revision tăng để chặn xung đột. Goe/giá mới đọc public; trips/trip_revisions giữ snapshot cũ.
+
+catalog_versions giữ unique placeId+revision, snapshot server-owned như hiện có; state historical/proposal/published, basePublicRevision, actorId, reason legacy/save/publish/restore/source/backfill, restoredFromRevision, ruleRevision, runId, recordedAt. Snapshot không nhận raw client/provider tùy ý. Proposal/public tách bằng revision pointers; không mảng lịch sử tăng vô hạn trong places. Migration manifest metadata-only, guard hash/revision/source và rollback tại ADMIN-OPERATIONS-V3.md; chưa chạy trên database goease.
+
+| Collection           | Fields / giới hạn                                                                                                                                                                                            | Index / vòng đời                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| catalog_campaigns    | actorId/requestKey/requestHash, source=geoapify, policySnapshot immutable, state active/paused; tối đa20 task theo destination khi tạo                                                                       | unique actorId+requestKey; tasks trong catalog_runs, không mảng vô hạn                   |
+| catalog_policies     | name<=100, version, autoApplyDraftHours, createdBy/requestKey/requestHash; autoPublish luôn false ở snapshot/API                                                                                             | unique version và createdBy+requestKey; tạo phiên bản mới, không mutate policy đang dùng |
+| catalog_bulk_jobs    | actorId/requestKey/requestHash, action publish/archive/archive_destination, state preparing/preview/running/completed/partial, selection filter hoặc page<=50, destinationId/name/revision, snapshotAt,total | unique actorId+requestKey; destinationId+action+state; ID toàn tập nằm trong items       |
+| catalog_bulk_items   | jobId/placeId/expectedRevision/name, state pending/succeeded/blocked/failed, eligible,reason<=500,operationKey                                                                                               | unique jobId+placeId; jobId+state+_id; transaction từng mục, execute<=50                 |
+| catalog_source_usage | runId nullable, provider=geoapify, group/requestedLimit, state requested/fetched/failed,received/errorCode/internalRequests,providerCredits nullable                                                         | createdAt desc; runId; request nội bộ không chứng minh credits provider                  |
+
+catalog_runs thêm campaignId,scopeSnapshot(destinationID/name/lat/lon/radius),policySnapshot(policyID/version/autoApplyDraftHours/autoPublish=false),source,paused; giữ lease/fence/retry nguyên tử. catalog_schedules có provider-quota singleton kỹ thuật để giữ quota toàn cục; không tạo khi GET. Settings.regions<=100 và không đòi destination published; importer không nhận scope thiếu cấu hình. Nguồn rỗng/timeout không tự đóng cửa.
+
+audit_logs thêm proposal_saved/restore_prepared/published/campaign_paused/campaign_resumed/policy_created; entityType catalog_campaign/catalog_policy; optional previousRevision,campaignId,batchId,runId. Before/after đầy đủ đọc qua version snapshots với quyền admin; audit không nhận raw facts, khóa hay secrets. Không viết lại sự kiện legacy thiếu thông tin. Existing unique audit dedupe giữ nguyên.
+
+Không thêm TTL/purge mới trên các collection này; cần chốt retention trước vận hành dài hạn. Khởi tạo indexes additive từ product.initialize, không syncIndexes/drop. Registry là mirror tài liệu, không executable schema. Server aggregates toàn scope thay cap5000; bounded sample500 dashboard map vẫn được đánh dấu riêng. Map toàn tập và bulk dùng cùng predicate catalog-query; không trả toàn bộ catalog cho client.
+
+Destination.catalogWriteFence mặc định0: chốt ghi chung của source/ingest/publish/archive trong transaction, khác revision biên tập. Archive đòi tắt schedule, pause/hoàn tất run; stale parent bị chặn trước sửa child, lỗi finalization đưa lô partial và giải phóng chốt.

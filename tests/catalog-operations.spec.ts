@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 
-test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom', async ({
+test('V3 operator preserves public content through proposals, publishes a frozen batch, and keeps responsive operations usable', async ({
   page,
   context,
 }) => {
@@ -17,16 +18,16 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
     .fill('Browser-fixture-2026!');
   await page.getByRole('button', { name: /^Đăng nhập/ }).click();
   await expect(
-    page.getByRole('heading', { name: 'Xin chào, Admin!' }),
+    page.getByRole('heading', { name: 'Tổng quan dữ liệu' }),
   ).toBeVisible();
   await expect(page.locator('.admin-kpi').first()).toContainText('4');
   await page.screenshot({
     path: 'test-results/catalog-evidence/00-dashboard-1366.png',
     fullPage: true,
   });
-  await page.getByRole('link', { name: 'Việc cần làm', exact: true }).click();
+  await page.getByRole('link', { name: 'Ngoại lệ', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Việc cần làm', exact: true }),
+    page.getByRole('heading', { name: 'Ngoại lệ', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('heading', { name: /Thông tin nguồn thay đổi/ }),
@@ -55,16 +56,38 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
   await expect(
     page.getByText('Giữ phần đã biên tập', { exact: true }).first(),
   ).toBeVisible();
+  const comparisonColors = await page
+    .locator('.admin-comparison tr.has-difference')
+    .first()
+    .locator('td')
+    .evaluateAll((cells) =>
+      cells.map((cell) => getComputedStyle(cell).backgroundColor),
+    );
+  expect(comparisonColors).toHaveLength(2);
+  expect(comparisonColors[0]).toBe(comparisonColors[1]);
   await page.screenshot({
     path: 'test-results/catalog-evidence/02-compare-1366.png',
     fullPage: true,
   });
+  const publicBeforeProposal = await (
+    await page.request.get(
+      '/api/v1/places?destinationId=000000000000000000000004',
+    )
+  ).json();
   await page
-    .getByRole('button', { name: 'Áp dụng thay đổi', exact: true })
+    .getByRole('button', { name: 'Lưu đề xuất từ nguồn', exact: true })
     .click();
   await expect(
-    page.getByRole('status').filter({ hasText: 'Đã áp dụng' }),
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Đã lưu đề xuất thay đổi từ nguồn' }),
   ).toBeVisible();
+  const publicAfterProposal = await (
+    await page.request.get(
+      '/api/v1/places?destinationId=000000000000000000000004',
+    )
+  ).json();
+  expect(publicAfterProposal).toEqual(publicBeforeProposal);
   await page.getByRole('link', { name: 'Địa điểm', exact: true }).click();
   await page.getByLabel('Tìm trong danh mục').fill('thử');
   await expect(
@@ -74,14 +97,23 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
     }),
   ).toBeVisible();
   await page
-    .getByRole('checkbox', { name: /Chọn các địa điểm trên trang/ })
+    .getByRole('checkbox', { name: 'Chọn toàn bộ trang hiện tại' })
     .check();
   await page
-    .getByRole('button', { name: 'Xem trước để đăng', exact: true })
+    .getByRole('button', {
+      name: 'Chọn toàn bộ 4 kết quả khớp bộ lọc',
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole('button', { name: 'Xem trước xuất bản', exact: true })
     .click();
   await expect(
-    page.getByText('1/4 mục đủ điều kiện.', { exact: false }),
-  ).toBeVisible();
+    page
+      .locator('.admin-bulk-preview .admin-metrics > div')
+      .filter({ hasText: 'Đủ điều kiện' })
+      .locator('strong'),
+  ).toHaveText('2');
   await expect(
     page
       .getByText('Cần quyết định thông tin nguồn hoặc nghi trùng trước.', {
@@ -93,12 +125,73 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
     path: 'test-results/catalog-evidence/03-batch-preview.png',
     fullPage: true,
   });
+  const previewCdp = await context.newCDPSession(page);
+  for (const size of [
+    { width: 683, height: 450, zoom: 2 },
+    { width: 390, height: 800, zoom: 1 },
+    { width: 320, height: 800, zoom: 1 },
+  ]) {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    await previewCdp.send('Emulation.setDeviceMetricsOverride', {
+      width: size.width,
+      height: size.height,
+      deviceScaleFactor: size.zoom,
+      mobile: false,
+    });
+    const previewHeading = page.getByRole('heading', {
+      name: 'Xem trước lô thay đổi',
+      exact: true,
+    });
+    await previewHeading.scrollIntoViewIfNeeded();
+    await expect(previewHeading).toBeInViewport({ ratio: 1 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: `test-results/catalog-evidence/bulk-preview-${size.zoom === 2 ? '200' : size.width}-content.png`,
+      fullPage: false,
+    });
+    const apply = page.getByRole('button', {
+      name: 'Áp dụng 2 mục đủ điều kiện',
+      exact: true,
+    });
+    await apply.scrollIntoViewIfNeeded();
+    await expect(apply).toBeEnabled();
+    await expect(apply).toBeInViewport({ ratio: 1 });
+    await page.screenshot({
+      path: `test-results/catalog-evidence/bulk-preview-${size.zoom === 2 ? '200' : size.width}-actions.png`,
+      fullPage: false,
+    });
+  }
+  await previewCdp.send('Emulation.clearDeviceMetricsOverride');
+  await page.setViewportSize({ width: 1366, height: 768 });
   await page
-    .getByRole('button', { name: 'Đăng các mục đủ điều kiện', exact: true })
+    .getByRole('button', { name: 'Áp dụng 2 mục đủ điều kiện', exact: true })
     .click();
   await expect(
-    page.getByRole('status').filter({ hasText: 'Đã hoàn tất 1/4' }),
+    page.getByRole('heading', { name: 'Kết quả lô thay đổi', exact: true }),
   ).toBeVisible();
+  await expect(
+    page
+      .locator('.admin-bulk-preview .admin-metrics > div')
+      .filter({ hasText: 'Đã áp dụng' })
+      .locator('strong'),
+  ).toHaveText('2');
+  await expect(
+    page
+      .locator('.admin-bulk-preview .admin-metrics > div')
+      .filter({ hasText: 'Bị chặn / lỗi' })
+      .locator('strong'),
+  ).toHaveText('2');
+  await page
+    .getByRole('heading', { name: 'Kết quả lô thay đổi', exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/03b-publication-results.png',
+    fullPage: false,
+  });
   const published = await page.request.get(
     '/api/v1/places?destinationId=000000000000000000000004',
   );
@@ -106,9 +199,18 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
   const body = await published.json();
   expect(JSON.stringify(body)).toContain('Vườn Cẩm');
   expect(JSON.stringify(body)).not.toContain('Quán Bình');
+  const publicItems = body.data.items as {
+    name: string;
+    referencePrice?: unknown;
+  }[];
+  expect(
+    publicItems.find((p) => p.name.includes('Quán An'))?.referencePrice ?? null,
+  ).toBeNull();
+  expect(publicItems.some((p) => p.name.includes('Quán An'))).toBe(true);
+  await page.getByRole('link', { name: 'Quy tắc & lịch', exact: true }).click();
   await page
-    .getByRole('link', { name: 'Tự động cập nhật', exact: true })
-    .click();
+    .getByLabel('Khu vực quản lý')
+    .selectOption('000000000000000000000004');
   await page.getByLabel('Tần suất').selectOption('weekly');
   await page.getByLabel('Ngày trong tuần').selectOption('1');
   await page.getByLabel('Giờ chạy · Việt Nam').fill('08:30');
@@ -149,7 +251,7 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
   ).toBeVisible();
   // Match browser zoom: smaller CSS viewport AND higher pixel ratio, including media queries.
   const cdp = await context.newCDPSession(page);
-  for (const zoom of [1, 1.25]) {
+  for (const zoom of [1, 2]) {
     for (const viewport of [
       { width: 1366, height: 768 },
       { width: 1440, height: 900 },
@@ -164,10 +266,14 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
         deviceScaleFactor: zoom,
         mobile: false,
       });
+      expect(await page.evaluate(() => window.devicePixelRatio)).toBe(zoom);
+      expect(await page.evaluate(() => window.innerWidth)).toBe(
+        Math.floor(viewport.width / zoom),
+      );
       for (const tab of [
-        'Việc cần làm',
+        'Ngoại lệ',
         'Địa điểm',
-        'Tự động cập nhật',
+        'Quy tắc & lịch',
         'Lịch sử & phê duyệt',
       ]) {
         await page
@@ -175,9 +281,9 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
           .getByRole('link', { name: tab, exact: true })
           .click();
         await expect(page.locator('main')).toBeVisible();
-        if (tab === 'Việc cần làm')
+        if (tab === 'Ngoại lệ')
           await expect(page.locator('.admin-overview')).toBeVisible();
-        if (tab === 'Tự động cập nhật')
+        if (tab === 'Quy tắc & lịch')
           await expect(page.getByLabel('Tần suất')).toBeVisible();
         if (tab === 'Lịch sử & phê duyệt')
           await expect(
@@ -189,12 +295,45 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
           ),
         ).toBe(true);
         await page.screenshot({
-          path: `test-results/catalog-evidence/${zoom === 1 ? 'normal' : 'zoom'}-${viewport.width}-${tab === 'Việc cần làm' ? 'work' : tab === 'Địa điểm' ? 'places' : tab === 'Lịch sử & phê duyệt' ? 'history' : 'automatic'}.png`,
-          fullPage: true,
+          path: `test-results/catalog-evidence/${zoom === 1 ? 'normal' : 'zoom'}-${viewport.width}-${tab === 'Ngoại lệ' ? 'work' : tab === 'Địa điểm' ? 'places' : tab === 'Lịch sử & phê duyệt' ? 'history' : 'automatic'}.png`,
+          fullPage: false,
         });
       }
     }
   }
+  for (const width of [390, 320]) {
+    await cdp.send('Emulation.clearDeviceMetricsOverride');
+    await page.setViewportSize({ width, height: 800 });
+    for (const tab of [
+      'Ngoại lệ',
+      'Địa điểm',
+      'Quy tắc & lịch',
+      'Lịch sử & phê duyệt',
+    ]) {
+      await page
+        .getByRole('navigation', { name: 'Quản trị danh mục' })
+        .getByRole('link', { name: tab, exact: true })
+        .click();
+      await expect(page.locator('main')).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+        ),
+      ).toBe(true);
+      await page.screenshot({
+        path: `test-results/catalog-evidence/narrow-${width}-${tab === 'Địa điểm' ? 'places' : tab === 'Ngoại lệ' ? 'work' : tab === 'Quy tắc & lịch' ? 'rules' : 'history'}.png`,
+        fullPage: false,
+      });
+    }
+  }
+  await cdp.send('Emulation.clearDeviceMetricsOverride');
+  await page.setViewportSize({ width: 683, height: 450 });
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: 683,
+    height: 450,
+    deviceScaleFactor: 2,
+    mobile: false,
+  });
   await page.getByRole('link', { name: 'Địa điểm', exact: true }).click();
   await page
     .getByRole('button', {
@@ -202,22 +341,55 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
       exact: true,
     })
     .click();
-  await expect(
-    page.getByLabel('Tên địa điểm / quán ăn', { exact: true }),
-  ).toBeVisible();
+  const editorName = page.getByLabel('Tên địa điểm / quán ăn', { exact: true });
+  await editorName.scrollIntoViewIfNeeded();
+  await expect(editorName).toBeInViewport({ ratio: 1 });
   await page.screenshot({
-    path: 'test-results/catalog-evidence/06-editor-125.png',
-    fullPage: true,
+    path: 'test-results/catalog-evidence/06-editor-200-content.png',
+    fullPage: false,
+  });
+  const saveProposal = page.getByRole('button', {
+    name: 'Lưu đề xuất',
+    exact: true,
+  });
+  await saveProposal.scrollIntoViewIfNeeded();
+  await expect(saveProposal).toBeEnabled();
+  await expect(saveProposal).toBeInViewport({ ratio: 1 });
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/06-editor-200-actions.png',
+    fullPage: false,
   });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     ),
   ).toBe(true);
+  await cdp.send('Emulation.clearDeviceMetricsOverride');
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 800 });
+    await editorName.scrollIntoViewIfNeeded();
+    await expect(editorName).toBeInViewport({ ratio: 1 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: `test-results/catalog-evidence/editor-narrow-${width}-content.png`,
+      fullPage: false,
+    });
+    await saveProposal.scrollIntoViewIfNeeded();
+    await expect(saveProposal).toBeEnabled();
+    await expect(saveProposal).toBeInViewport({ ratio: 1 });
+    await page.screenshot({
+      path: `test-results/catalog-evidence/editor-narrow-${width}-actions.png`,
+      fullPage: false,
+    });
+  }
   await page
     .getByRole('button', { name: '← Về danh sách', exact: true })
     .click();
-  await page.getByRole('link', { name: 'Việc cần làm', exact: true }).click();
+  await page.getByRole('link', { name: 'Ngoại lệ', exact: true }).click();
   const duplicate = page
     .getByRole('article')
     .filter({ hasText: 'Quán Bình' })
@@ -231,7 +403,7 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
   expect((await context.cookies()).some((c) => c.httpOnly)).toBe(true);
 });
 
-test('V2 dashboard, filters, editor autosave, sources and persisted settings use real APIs', async ({
+test('V3 dashboard, filters, editor autosave, map, sources and persisted settings use real APIs', async ({
   page,
 }) => {
   test.setTimeout(90000);
@@ -245,7 +417,7 @@ test('V2 dashboard, filters, editor autosave, sources and persisted settings use
     .fill('Browser-fixture-2026!');
   await page.getByRole('button', { name: /^Đăng nhập/ }).click();
   await expect(
-    page.getByRole('heading', { name: 'Xin chào, Admin!' }),
+    page.getByRole('heading', { name: 'Tổng quan dữ liệu' }),
   ).toBeVisible();
   const response = await page.request.get('/api/v1/admin/catalog/overview');
   const overview = (await response.json()).data;
@@ -261,6 +433,10 @@ test('V2 dashboard, filters, editor autosave, sources and persisted settings use
   await expect(
     page.getByRole('heading', { name: 'Bắt đầu xây dựng danh mục' }),
   ).toBeVisible();
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/v3-empty-overview.png',
+    fullPage: false,
+  });
   await page
     .getByLabel('Khu vực quản lý')
     .selectOption('000000000000000000000004');
@@ -269,7 +445,7 @@ test('V2 dashboard, filters, editor autosave, sources and persisted settings use
     .click();
   await page
     .getByLabel('Tên địa điểm / quán ăn', { exact: true })
-    .fill('Địa điểm V2 giao diện fixture');
+    .fill('Địa điểm V3 giao diện fixture');
   await page
     .getByLabel('Giới thiệu ngắn')
     .fill('Nội dung dành riêng cho kiểm thử giao diện.');
@@ -284,48 +460,64 @@ test('V2 dashboard, filters, editor autosave, sources and persisted settings use
   await page
     .getByLabel('Chỉ quản trị viên nhìn thấy')
     .fill('Ghi chú kiểm thử riêng');
-  await page.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click();
+  await page.getByRole('button', { name: 'Lưu đề xuất', exact: true }).click();
   await expect(
-    page.getByRole('status').filter({ hasText: 'Đã lưu bản nháp' }),
+    page.getByRole('status').filter({ hasText: 'Đã lưu đề xuất' }),
   ).toBeVisible();
   await page.getByLabel('Tự lưu bản nháp hợp lệ sau 2 giây').check();
   await page
     .getByLabel('Tên địa điểm / quán ăn', { exact: true })
-    .fill('Địa điểm V2 đã tự lưu fixture');
+    .fill('Địa điểm V3 đã tự lưu fixture');
   await expect(
-    page.getByRole('status').filter({ hasText: 'Đã lưu bản nháp' }),
+    page.getByRole('status').filter({ hasText: 'Đã lưu đề xuất' }),
   ).toBeVisible({ timeout: 10000 });
-  const result = await page.request.get('/api/v1/admin/places?q=V2');
+  const result = await page.request.get('/api/v1/admin/places?q=V3');
   expect((await result.json()).data.items[0].name).toBe(
-    'Địa điểm V2 đã tự lưu fixture',
+    'Địa điểm V3 đã tự lưu fixture',
   );
   await page.screenshot({
-    path: 'test-results/catalog-evidence/v2-editor.png',
+    path: 'test-results/catalog-evidence/v3-editor.png',
     fullPage: true,
   });
   await page
     .getByRole('button', { name: '← Về danh sách', exact: true })
     .click();
-  await page.getByLabel('Tìm trong danh mục').fill('V2');
+  await page.getByLabel('Tìm trong danh mục').fill('V3');
   await expect(page.locator('.admin-data-table tbody tr')).toHaveCount(1);
+  await page.route('https://tile.openstreetmap.org/**', (route) =>
+    route.abort(),
+  );
   await page.getByRole('button', { name: 'Xem bản đồ', exact: true }).click();
-  await expect(page.locator('.admin-map-marker')).toHaveCount(1);
+  await expect(page.locator('.admin-cluster')).toHaveCount(1);
+  const fullMap = page.getByRole('region', {
+    name: 'Bản đồ toàn bộ catalog theo bộ lọc',
+  });
+  await expect(fullMap.getByRole('alert')).toContainText(
+    'Chưa tải được nền OpenStreetMap',
+  );
+  await expect(fullMap).toContainText('1 địa điểm trong vùng đang xem');
+  await expect(
+    fullMap.getByRole('button', { name: 'Thử lại nền bản đồ', exact: true }),
+  ).toBeEnabled();
   // Global no-referrer stays in place; map tiles identify only the app origin.
   await expect(page.locator('.leaflet-tile').first()).toHaveAttribute(
     'referrerpolicy',
     'origin',
   );
   await page.screenshot({
-    path: 'test-results/catalog-evidence/v2-map.png',
+    path: 'test-results/catalog-evidence/v3-map.png',
     fullPage: true,
   });
+  await page.unroute('https://tile.openstreetmap.org/**');
   await page.getByRole('link', { name: 'Nguồn dữ liệu', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Nguồn dữ liệu & chất lượng' }),
   ).toBeVisible();
-  await expect(page.locator('.admin-source-card')).toContainText('Geoapify');
+  await expect(page.locator('.admin-source-connection')).toContainText(
+    'Geoapify',
+  );
   await page.screenshot({
-    path: 'test-results/catalog-evidence/v2-sources.png',
+    path: 'test-results/catalog-evidence/v3-sources.png',
     fullPage: true,
   });
   await page.getByRole('link', { name: 'Cài đặt', exact: true }).click();
@@ -337,7 +529,7 @@ test('V2 dashboard, filters, editor autosave, sources and persisted settings use
     page.getByLabel('Nhắc kiểm tra sau số ngày chưa biên tập'),
   ).toHaveValue('45');
   await page.screenshot({
-    path: 'test-results/catalog-evidence/v2-settings.png',
+    path: 'test-results/catalog-evidence/v3-settings.png',
     fullPage: true,
   });
   await page
@@ -346,7 +538,284 @@ test('V2 dashboard, filters, editor autosave, sources and persisted settings use
   await page.getByRole('button', { name: /^Chờ phê duyệt/ }).click();
   await expect(page.getByLabel('Loại việc')).toBeVisible();
   await page.screenshot({
-    path: 'test-results/catalog-evidence/v2-review-queue.png',
+    path: 'test-results/catalog-evidence/v3-review-queue.png',
     fullPage: true,
   });
+});
+
+test('V3 policy simulation is read-only, historical restore stages a proposal, and frozen bulk context survives reload', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await mkdir('test-results/catalog-evidence', { recursive: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/login');
+  await page
+    .getByLabel('Email', { exact: true })
+    .fill('catalog-browser@example.invalid');
+  await page
+    .getByLabel('Mật khẩu', { exact: true })
+    .fill('Browser-fixture-2026!');
+  await page.getByRole('button', { name: /^Đăng nhập/ }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Tổng quan dữ liệu', exact: true }),
+  ).toBeVisible();
+  await page
+    .getByLabel('Khu vực quản lý')
+    .selectOption('000000000000000000000004');
+
+  const suffix = randomUUID().slice(0, 8);
+  const name = `Địa điểm phục hồi V3 fixture ${suffix}`;
+  const initialDescription =
+    'Nội dung công khai ban đầu của fixture phục hồi, không phải dữ kiện du lịch.';
+  const created = await page.request.post('/api/v1/admin/places', {
+    headers: {
+      Origin: new URL(page.url()).origin,
+      'X-GoEase-Client': 'web',
+      'Idempotency-Key': randomUUID(),
+    },
+    data: {
+      intent: 'publish',
+      place: {
+        destinationId: '000000000000000000000004',
+        name,
+        category: 'culture',
+        venueType: 'place',
+        description: initialDescription,
+        locationQuery: 'Địa chỉ fixture Hội An',
+        durationMinutes: 60,
+        openingHoursNote: '08:00–18:00 · fixture',
+        sourceUrl: 'https://example.com/history-fixture',
+        referencePrice: null,
+        publicationStatus: 'published',
+        fieldLocks: ['name'],
+      },
+    },
+  });
+  expect(created.ok()).toBe(true);
+  const initial = (await created.json()).data.place as {
+    id: string;
+    revision: number;
+    publicRevision: number;
+  };
+  expect(initial.publicRevision).toBeGreaterThan(0);
+  const publicPath = '/api/v1/places?destinationId=000000000000000000000004';
+  const publicBefore = await (await page.request.get(publicPath)).json();
+  const adminBefore = (
+    await (await page.request.get(`/api/v1/admin/places/${initial.id}`)).json()
+  ).data;
+
+  await page.getByRole('link', { name: 'Quy tắc & lịch', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Tạo phiên bản quy tắc', exact: true })
+    .click();
+  const policyName = `Quy tắc mô phỏng fixture ${suffix}`;
+  await page.getByLabel('Tên quy tắc', { exact: true }).fill(policyName);
+  await page
+    .getByRole('checkbox', {
+      name: 'Tự áp dụng giờ nguồn cho bản nháp đủ điều kiện',
+      exact: true,
+    })
+    .check();
+  const policyResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/v1/admin/v3/policies') &&
+      response.request().method() === 'POST',
+  );
+  await page
+    .getByRole('button', { name: 'Lưu phiên bản quy tắc', exact: true })
+    .click();
+  const policyResponse = await policyResponsePromise;
+  expect(policyResponse.ok()).toBe(true);
+  const policy = (await policyResponse.json()).data as {
+    id: string;
+    version: number;
+    autoApplyDraftHours: boolean;
+    autoPublish: boolean;
+  };
+  expect(policy.version).toBeGreaterThan(0);
+  expect(policy.autoApplyDraftHours).toBe(true);
+  expect(policy.autoPublish).toBe(false);
+  const policyRadio = page.getByRole('radio', { name: new RegExp(policyName) });
+  await expect(policyRadio).toBeChecked();
+  const simulationPromise = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/v1/admin/v3/policies/dry-run') &&
+      response.request().method() === 'POST',
+  );
+  await page
+    .getByRole('button', { name: 'Mô phỏng tác động', exact: true })
+    .click();
+  const simulationResponse = await simulationPromise;
+  expect(simulationResponse.ok()).toBe(true);
+  expect(simulationResponse.request().postDataJSON()).toEqual({
+    policyId: policy.id,
+    destinationId: '000000000000000000000004',
+    offset: 0,
+  });
+  const simulation = (await simulationResponse.json()).data as {
+    dryRun: boolean;
+    policy: { id: string; version: number };
+    total: number;
+    items: { eligible: boolean; reason: string }[];
+  };
+  expect(simulation.dryRun).toBe(true);
+  expect(simulation.policy.id).toBe(policy.id);
+  expect(simulation.policy.version).toBe(policy.version);
+  expect(simulation.total).toBeGreaterThanOrEqual(0);
+  for (const item of simulation.items) {
+    expect(typeof item.eligible).toBe('boolean');
+    expect(item.reason.length).toBeGreaterThan(0);
+  }
+  expect(
+    (
+      await (
+        await page.request.get(`/api/v1/admin/places/${initial.id}`)
+      ).json()
+    ).data,
+  ).toEqual(adminBefore);
+  expect(await (await page.request.get(publicPath)).json()).toEqual(
+    publicBefore,
+  );
+  const simulationHeading = page.getByRole('heading', {
+    name: `Kết quả mô phỏng · ${policyName} · bản ${policy.version}`,
+    exact: true,
+  });
+  await simulationHeading.scrollIntoViewIfNeeded();
+  await expect(simulationHeading).toBeInViewport({ ratio: 1 });
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/v3-policy-read-only-simulation.png',
+    fullPage: false,
+  });
+
+  await page.getByRole('link', { name: 'Địa điểm', exact: true }).click();
+  await page.getByLabel('Tìm trong danh mục').fill(name);
+  await page
+    .getByRole('button', { name: `Chỉnh sửa ${name}`, exact: true })
+    .click();
+  const proposalDescription = `Nội dung đề xuất chưa xuất bản của fixture ${suffix}.`;
+  await page.getByLabel('Giới thiệu ngắn').fill(proposalDescription);
+  await page.getByRole('button', { name: 'Lưu đề xuất', exact: true }).click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Đã lưu đề xuất' }),
+  ).toBeVisible();
+  const staged = (
+    await (await page.request.get(`/api/v1/admin/places/${initial.id}`)).json()
+  ).data;
+  expect(staged.place.revision).toBeGreaterThan(initial.revision);
+  expect(staged.place.proposalRevision).toBe(staged.place.revision);
+  expect(staged.publicPlace.description).toBe(initialDescription);
+  expect(await (await page.request.get(publicPath)).json()).toEqual(
+    publicBefore,
+  );
+
+  const historical = page
+    .locator('.admin-version')
+    .filter({ hasText: `Bản ${initial.publicRevision} · Công khai` });
+  await historical
+    .getByRole('button', { name: 'So sánh & chuẩn bị phục hồi', exact: true })
+    .click();
+  const comparisonHeading = page.getByRole('heading', {
+    name: `So sánh phiên bản ${initial.publicRevision}`,
+    exact: true,
+  });
+  await comparisonHeading.scrollIntoViewIfNeeded();
+  await expect(comparisonHeading).toBeInViewport({ ratio: 1 });
+  await expect(page.locator('.admin-version-comparison')).toContainText(
+    proposalDescription,
+  );
+  await expect(page.locator('.admin-version-comparison')).toContainText(
+    initialDescription,
+  );
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/v3-history-restore-preview.png',
+    fullPage: false,
+  });
+  page.once('dialog', async (dialog) => {
+    expect(dialog.type()).toBe('confirm');
+    expect(dialog.message()).toContain('Bản công khai được giữ nguyên');
+    await dialog.accept();
+  });
+  const restorePromise = page.waitForResponse(
+    (response) =>
+      response.url().endsWith(`/api/v1/admin/places/${initial.id}/restore`) &&
+      response.request().method() === 'POST',
+  );
+  await page
+    .getByRole('button', { name: 'Chuẩn bị đề xuất phục hồi', exact: true })
+    .click();
+  const restoreResponse = await restorePromise;
+  expect(restoreResponse.ok()).toBe(true);
+  await expect(page.getByLabel('Giới thiệu ngắn')).toHaveValue(
+    initialDescription,
+  );
+  const restored = (
+    await (await page.request.get(`/api/v1/admin/places/${initial.id}`)).json()
+  ).data;
+  expect(restored.place.revision).toBeGreaterThan(staged.place.revision);
+  expect(restored.place.proposalRevision).toBe(restored.place.revision);
+  expect(restored.place.publicRevision).toBe(initial.publicRevision);
+  expect(restored.publicPlace.description).toBe(initialDescription);
+  expect(restored.place.fieldLocks).toContain('name');
+  expect(await (await page.request.get(publicPath)).json()).toEqual(
+    publicBefore,
+  );
+
+  await page
+    .getByRole('button', { name: '← Về danh sách', exact: true })
+    .click();
+  await page.getByLabel('Tìm trong danh mục').fill(name);
+  await expect(page.locator('.admin-data-table tbody tr')).toHaveCount(1);
+  await page
+    .getByRole('checkbox', { name: 'Chọn toàn bộ trang hiện tại', exact: true })
+    .check();
+  await page
+    .getByRole('button', {
+      name: 'Chọn toàn bộ 1 kết quả khớp bộ lọc',
+      exact: true,
+    })
+    .click();
+  const previewPromise = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/v1/admin/v3/bulk/preview') &&
+      response.request().method() === 'POST',
+  );
+  await page
+    .getByRole('button', { name: 'Xem trước xuất bản', exact: true })
+    .click();
+  const previewResponse = await previewPromise;
+  expect(previewResponse.ok()).toBe(true);
+  const frozen = (await previewResponse.json()).data;
+  expect(frozen.selection.mode).toBe('filter');
+  expect(frozen.selection.filter.q).toBe(name);
+  expect(frozen.selection.filter.destinationId).toBe(
+    '000000000000000000000004',
+  );
+  expect(frozen.items).toHaveLength(1);
+  expect(frozen.items[0].expectedRevision).toBe(restored.place.revision);
+  await page.reload();
+  await expect(page.getByLabel('Tìm trong danh mục')).toHaveValue('');
+  const recovered = page.locator('.admin-bulk-preview');
+  await expect(recovered).toContainText(`tìm “${name}”`);
+  await expect(recovered).toContainText('Hội An');
+  await expect(recovered).toContainText('Chốt lúc');
+  const persisted = (
+    await (await page.request.get(`/api/v1/admin/v3/bulk/${frozen.id}`)).json()
+  ).data;
+  expect(persisted.selection).toEqual(frozen.selection);
+  expect(persisted.snapshotAt).toBe(frozen.snapshotAt);
+  expect(persisted.items[0].expectedRevision).toBe(restored.place.revision);
+  const recoveredHeading = recovered.getByRole('heading', {
+    name: 'Xem trước lô thay đổi',
+    exact: true,
+  });
+  await recoveredHeading.scrollIntoViewIfNeeded();
+  await expect(recoveredHeading).toBeInViewport({ ratio: 1 });
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/v3-frozen-bulk-recovered.png',
+    fullPage: false,
+  });
+  expect(await (await page.request.get(publicPath)).json()).toEqual(
+    publicBefore,
+  );
 });

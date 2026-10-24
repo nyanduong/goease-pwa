@@ -1,4 +1,6 @@
 import { AdminScopeSummary } from './admin-scope-summary';
+import { AdminCampaigns } from './admin-campaigns';
+import { AdminPolicies } from './admin-policies';
 import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type {
@@ -8,7 +10,6 @@ import type {
   DestinationDto,
   ReviewDecision,
   SourceSnapshot,
-  AdminSettings,
 } from '@goease/contracts';
 import { api } from '../api';
 import { AdminCatalog } from './admin-catalog';
@@ -26,12 +27,13 @@ import {
 
 const tabs = {
   overview: 'Tổng quan',
-  work: 'Việc cần làm',
+  work: 'Ngoại lệ',
   places: 'Địa điểm',
-  automatic: 'Tự động cập nhật',
+  automatic: 'Đợt thu thập',
   history: 'Lịch sử & phê duyệt',
   sources: 'Nguồn dữ liệu',
   settings: 'Cài đặt',
+  rules: 'Quy tắc & lịch',
 };
 const navIcons = {
   overview: LayoutDashboard,
@@ -41,6 +43,7 @@ const navIcons = {
   history: HistoryIcon,
   sources: Database,
   settings: Settings,
+  rules: Settings,
 };
 type Tab = keyof typeof tabs;
 const currentTab = (): Tab => {
@@ -82,6 +85,7 @@ export const catalogTime = (value: string | null) =>
       })
     : 'Chưa có';
 const runLabels = {
+  paused: 'Đã tạm dừng',
   queued: 'Đang chờ',
   running: 'Đang lấy và kiểm tra',
   retry: 'Sẽ tự thử lại',
@@ -97,20 +101,27 @@ const groups = {
 };
 const actionLabels: Record<string, string> = {
   'catalog.created': 'Thêm địa điểm',
-  'catalog.restored': 'Khôi phục phiên bản thành bản nháp',
+  'catalog.restored': 'Chuẩn bị đề xuất phục hồi',
+  'catalog.proposal_saved': 'Lưu đề xuất biên tập',
+  'catalog.proposal_restored': 'Chuẩn bị đề xuất phục hồi',
+  'catalog.restore_prepared': 'Chuẩn bị đề xuất phục hồi',
+  'catalog.published': 'Áp dụng bản công khai',
   'catalog.imported': 'Nhập bản nháp từ nguồn',
   'catalog.source_changed': 'Nguồn có thông tin mới, chờ đối chiếu',
-  'catalog.updated': 'Lưu nội dung',
+  'catalog.updated': 'Lưu nội dung (sự kiện cũ)',
   'catalog.publication_changed': 'Đổi trạng thái hiển thị',
   'catalog.review_keep': 'Giữ thông tin hiện tại',
   'catalog.review_revise': 'Yêu cầu chỉnh sửa',
   'catalog.review_reject': 'Từ chối đề xuất, giữ nguyên nội dung',
   'catalog.settings_saved': 'Lưu cài đặt vận hành',
-  'catalog.review_apply': 'Áp dụng thay đổi nguồn',
+  'catalog.review_apply': 'Chuẩn bị đề xuất từ nguồn',
   'catalog.review_ignore': 'Bỏ qua việc có lý do',
   'catalog.review_later': 'Hẹn xem lại',
   'catalog.review_distinct': 'Xác nhận hai địa điểm riêng',
   'catalog.schedule_saved': 'Lưu cấu hình cập nhật',
+  'catalog.campaign_paused': 'Tạm dừng đợt thu thập',
+  'catalog.campaign_resumed': 'Tiếp tục đợt thu thập',
+  'catalog.policy_created': 'Tạo phiên bản quy tắc',
   'catalog.run_requested': 'Yêu cầu cập nhật',
   'catalog.run_succeeded': 'Hoàn tất cập nhật',
   'catalog.run_failed': 'Cập nhật cần can thiệp',
@@ -124,30 +135,71 @@ type History = {
   occurredAt: string;
   outcome: string;
   note?: string;
+  campaignId?: string | null;
+  batchId?: string | null;
+  runId?: string | null;
+  entityRevision?: number | null;
+  previousRevision?: number | null;
 };
 
 export function AdminWorkspace({
-  destinations,
+  destinations: initialDestinations,
   name = 'Admin',
 }: {
   destinations: DestinationDto[];
   name?: string;
 }) {
-  const [scope, setScope] = useState('');
+  const [destinations, setDestinations] = useState(initialDestinations);
+  const [destinationReload, setDestinationReload] = useState(0);
+  const [destinationError, setDestinationError] = useState('');
+  useEffect(() => {
+    const changed = () => setDestinationReload((v) => v + 1);
+    window.addEventListener('goease-admin-destinations-changed', changed);
+    return () =>
+      window.removeEventListener('goease-admin-destinations-changed', changed);
+  }, []);
+  const [scope, setScope] = useState(
+    () => localStorage.getItem('goease-admin-view-scope') ?? '',
+  );
+  const [catalogRevision, setCatalogRevision] = useState(0);
+  useEffect(() => {
+    localStorage.setItem('goease-admin-view-scope', scope);
+    setNotice('');
+    setError('');
+    setDetail(null);
+    setData(null);
+    setOffset(0);
+  }, [scope]);
   const [workQuery, setWorkQuery] = useState(''),
     [workKind, setWorkKind] = useState('');
   const [locationKey, setLocationKey] = useState(location.hash);
   useEffect(() => {
     let active = true;
-    void api<AdminSettings>('/admin/catalog/settings')
-      .then((s) => {
-        if (active) setScope(s.defaultDestinationId ?? '');
-      })
-      .catch(() => {});
+    setDestinationError('');
+    void (async () => {
+      const all: DestinationDto[] = [];
+      let offset = 0,
+        more = true;
+      while (more) {
+        const value = await api<{ items: DestinationDto[]; hasMore: boolean }>(
+          `/admin/destinations?offset=${offset}&limit=20`,
+        );
+        all.push(...value.items);
+        more = value.hasMore;
+        offset += value.items.length;
+        if (!value.items.length) break;
+      }
+      if (active) setDestinations(all);
+    })().catch(() => {
+      if (active)
+        setDestinationError(
+          'Chưa tải được toàn bộ điểm đến quản trị. Thử tải lại trang để chọn điểm đến nháp/lưu trữ.',
+        );
+    });
     return () => {
       active = false;
     };
-  }, []);
+  }, [destinationReload]);
   const [tab, setTab] = useState<Tab>(currentTab);
   const [historyView, setHistoryView] = useState<'events' | 'reviews'>(
     'events',
@@ -179,8 +231,10 @@ export function AdminWorkspace({
     window.addEventListener('hashchange', changed);
     return () => window.removeEventListener('hashchange', changed);
   }, []);
+  const refreshGeneration = useRef(0);
   const refresh = useCallback(
     async (quiet = false) => {
+      const generation = ++refreshGeneration.current;
       if (!quiet) {
         setLoading(true);
         setError('');
@@ -189,6 +243,7 @@ export function AdminWorkspace({
         const state = await api<CatalogOperationsDto>(
           `/admin/catalog/operations${scope ? `?destinationId=${scope}` : ''}`,
         );
+        if (generation !== refreshGeneration.current) return;
         setData(state);
         if (tab === 'work' || tab === 'history') {
           const work = await api<{
@@ -198,6 +253,7 @@ export function AdminWorkspace({
           }>(
             `/admin/catalog/reviews?${new URLSearchParams({ offset: String(offset), q: workQuery, ...(scope ? { destinationId: scope } : {}), ...(workKind ? { kind: workKind } : {}) })}`,
           );
+          if (generation !== refreshGeneration.current) return;
           setItems(work.items);
           setTotal(work.total);
           setMore(work.hasMore);
@@ -206,17 +262,19 @@ export function AdminWorkspace({
           const value = await api<{ items: History[]; hasMore: boolean }>(
             `/admin/catalog/history?offset=${historyOffset}`,
           );
+          if (generation !== refreshGeneration.current) return;
           setHistory(value.items);
           setHistoryMore(value.hasMore);
         }
       } catch (e) {
+        if (generation !== refreshGeneration.current) return;
         setError(
           e instanceof Error
             ? e.message
             : 'Chưa tải được dữ liệu. Hãy thử lại.',
         );
       } finally {
-        setLoading(false);
+        if (generation === refreshGeneration.current) setLoading(false);
       }
     },
     [tab, offset, historyOffset, scope, workQuery, workKind],
@@ -243,12 +301,21 @@ export function AdminWorkspace({
         onScope={setScope}
         name={name}
       />
+      {destinationError && (
+        <div className="admin-alert" role="alert">
+          {destinationError}
+          <button onClick={() => setDestinationReload((v) => v + 1)}>
+            Tải lại điểm đến quản trị
+          </button>
+        </div>
+      )}
       <div hidden={tab !== 'places'}>
         <AdminCatalog
           destinations={destinations}
           openPlace={openPlace}
           scope={scope}
           locationKey={locationKey}
+          refreshKey={catalogRevision}
         />
       </div>
       {['overview', 'sources', 'settings'].includes(tab) && (
@@ -260,7 +327,49 @@ export function AdminWorkspace({
           destinations={destinations}
         />
       )}
-      {!['places', 'overview', 'sources', 'settings'].includes(tab) && (
+      {tab === 'automatic' && (
+        <section className="admin-v2-content">
+          <AdminPageHeader
+            title="Đợt thu thập"
+            description="Phạm vi, nguồn và quy tắc được chốt riêng cho từng đợt."
+          />
+          <AdminCampaigns
+            destinations={destinations}
+            scope={scope}
+            operations={data}
+            onRefresh={() => refresh(true)}
+          />
+        </section>
+      )}
+      {tab === 'rules' && (
+        <section className="admin-v2-content">
+          <AdminPageHeader
+            title="Quy tắc & lịch"
+            description="Mô phỏng tác động trước khi áp dụng tự động."
+          />
+          <AdminPolicies scope={scope} />
+          {scope && data ? (
+            <Automatic
+              key={scope}
+              data={data}
+              onChange={setData}
+              onRefresh={() => refresh(true)}
+            />
+          ) : (
+            <div className="admin-empty">
+              Chọn một điểm đến cụ thể trên thanh phạm vi để cấu hình lịch.
+            </div>
+          )}
+        </section>
+      )}
+      {![
+        'places',
+        'overview',
+        'sources',
+        'settings',
+        'automatic',
+        'rules',
+      ].includes(tab) && (
         <section className="admin-catalog admin-operations">
           <AdminPageHeader
             title={tabs[tab]}
@@ -329,12 +438,14 @@ export function AdminWorkspace({
                         ))}
                       </aside>
                       <ReviewDetail
+                        key={`${detail.id}:${detail.revision}`}
                         review={detail}
                         onBack={() => setDetail(null)}
                         onEdit={() => edit(detail.place.id)}
                         onInspectDuplicate={edit}
                         onDone={async (message) => {
                           setNotice(message);
+                          setCatalogRevision((v) => v + 1);
                           setDetail(null);
                           await refresh();
                         }}
@@ -519,14 +630,23 @@ export function AdminWorkspace({
                     {history.map((h) => (
                       <article key={h.id} className="admin-work-row">
                         <div>
-                          <h3>
-                            {actionLabels[h.action] ?? 'Cập nhật danh mục'}
-                          </h3>
+                          <h3>{actionLabels[h.action] ?? h.action}</h3>
                           <p>
                             {h.actor} · {catalogTime(h.occurredAt)}
                           </p>
                           <p>{h.name}</p>
                           {h.note && <p>Ghi chú: {h.note}</p>}
+                          <details>
+                            <summary>Dấu vết thay đổi</summary>
+                            <p>
+                              Sự kiện: {h.action} · revision:{' '}
+                              {h.previousRevision ?? 'chưa ghi nhận'} →{' '}
+                              {h.entityRevision ?? 'chưa ghi nhận'}
+                            </p>
+                            {h.campaignId && <p>Đợt: {h.campaignId}</p>}
+                            {h.runId && <p>Tác vụ: {h.runId}</p>}
+                            {h.batchId && <p>Lô: {h.batchId}</p>}
+                          </details>
                           <small>
                             {h.action === 'catalog.run_failed'
                               ? 'Cần xử lý'
@@ -696,7 +816,7 @@ function ReviewDetail({
               : decision === 'reject'
                 ? 'Đã từ chối đề xuất. Nội dung địa điểm được giữ nguyên.'
                 : decision === 'apply'
-                  ? 'Đã áp dụng thay đổi được đề nghị từ nguồn. Các chuyến đã lưu giữ nguyên.'
+                  ? 'Đã lưu đề xuất thay đổi từ nguồn. Bản công khai được giữ nguyên cho tới khi xuất bản.'
                   : decision === 'ignore'
                     ? 'Đã bỏ qua việc. Nội dung và trạng thái địa điểm được giữ nguyên.'
                     : decision === 'distinct'
@@ -728,7 +848,7 @@ function ReviewDetail({
       <p>
         {r.reason}.{' '}
         {r.place.publicationStatus === 'published'
-          ? 'Khách vẫn thấy bản hiện tại cho tới khi bạn áp dụng thay đổi.'
+          ? 'Khách vẫn thấy bản công khai hiện tại cho tới khi xuất bản đề xuất.'
           : 'Khách chưa thấy bản nháp này.'}
       </p>
       {error && (
@@ -857,8 +977,8 @@ function ReviewDetail({
           )}
           {r.incoming?.closed && (
             <p className="admin-alert">
-              Áp dụng dấu hiệu đóng cửa sẽ ngừng hiển thị địa điểm cho khách.
-              Lịch đã lưu không thay đổi.
+              Nguồn có dấu hiệu đóng cửa; cần xác nhận trước khi thay đổi hiển
+              thị. Lưu đề xuất không đổi bản công khai.
             </p>
           )}
         </div>
@@ -883,7 +1003,7 @@ function ReviewDetail({
             </button>
             {r.kind === 'source' && (
               <button disabled={busy} onClick={() => void decide('apply')}>
-                Áp dụng thay đổi
+                Lưu đề xuất từ nguồn
               </button>
             )}
             {['source', 'draft'].includes(r.kind) && (

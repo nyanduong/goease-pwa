@@ -37,6 +37,13 @@ for (const avatar of ['missing', 'account', 'broken'] as const) {
             body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="green"/></svg>',
           }),
     );
+    // This is a mocked routing/avatar test. CDN availability is verified separately.
+    await page.route(images.defaultAvatar, (r) =>
+      r.fulfill({
+        contentType: 'image/svg+xml',
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="20" fill="teal"/></svg>',
+      }),
+    );
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(
       avatar === 'missing' ? '/login?next=https://example.invalid' : '/login',
