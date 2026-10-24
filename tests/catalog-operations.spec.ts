@@ -185,6 +185,13 @@ test('V3 operator preserves public content through proposals, publishes a frozen
       .filter({ hasText: 'Bị chặn / lỗi' })
       .locator('strong'),
   ).toHaveText('2');
+  await page
+    .getByRole('heading', { name: 'Kết quả lô thay đổi', exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/03b-publication-results.png',
+    fullPage: false,
+  });
   const published = await page.request.get(
     '/api/v1/places?destinationId=000000000000000000000004',
   );
