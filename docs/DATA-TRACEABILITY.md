@@ -1,5 +1,9 @@
 # GoEase — Truy vết, Analytics và Vòng đời dữ liệu v0.2
 
+## Đăng ký OTP — AUTH-10, 25/10/2026
+
+Register payload → Argon2id/hash browser binding + OTP → auth_challenges tạm → SMTP → verify có binding/expiry/attempt cap → consume + user/identity verified + session + audit cùng transaction. Email/tên/hash tạm chỉ trong challenge; OTP raw ở mail adapter, raw browser binding trong response và RAM client, không URL/log/audit/storage. Thành công xóa tên/passwordHash/OTPHash; TTL dọn challenge sau10phút, không thay kiểm tra hạn khi dùng. Mã sai/cooldown lưu MongoDB; hạn mức network/account vẫn bộ nhớ process. Không thêm analytics, outbox hoặc retention job tổng thể. SMTP lỗi thu hồi challenge, không tạo account. Chưa xác nhận giao thư live; account cũ và flag false giữ hành vi cũ. Xem [EMAIL-REGISTRATION](EMAIL-REGISTRATION.md).
+
 ## Việt Nam và phân vùng — 24/10/2026
 
 CAT-16/AI-01–04: admin session → strict destination input + expectedRevision + stable key/hash → destination update/create + actor metadata + catalog.destination_created/updated audit + idempotency receipt cùng transaction. Không audit snapshot/full name/ghi chú/quyền từ client. Đổi vùng giữ destinationId, place.source.externalId và trip snapshot. Thiếu vùng cũ không bị tự suy từ địa chỉ hoặc xóa. Region public được suy từ tourismRegion; query sai cặp miền/vùng bị từ chối. Public/admin pagination và publication boundary được kiểm tra.

@@ -39,6 +39,11 @@ const schema = z.object({
     .min(300)
     .max(3600)
     .default(900),
+  // Existing installations retain direct registration until explicitly enabled.
+  REGISTRATION_OTP_REQUIRED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   GOOGLE_CLIENT_ID: z.string().max(512).optional(),
   GOOGLE_CLIENT_SECRET: z.string().max(4096).optional(),
   GOOGLE_PKCE_KEY: z.string().optional(),
