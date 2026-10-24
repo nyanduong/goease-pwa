@@ -1572,6 +1572,40 @@ textarea::placeholder {
   display: none;
 }
 
+.goe-chat-launcher {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  z-index: 51;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.goe-chat-launcher > img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+.goe-chat-launcher:focus-visible {
+  outline: 3px solid #155c4c;
+  outline-offset: 4px;
+}
+
+@media (max-width: 760px) {
+  .app-shell:has(.mobile-bottom-nav) .goe-chat-launcher {
+    bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+}
+
 /* Media Queries & Responsive Refinements */
 @media (max-width: 1080px) {
   .editor-layout {
@@ -6211,4 +6245,52 @@ body:has(.quick-result-intro) .mobile-bottom-nav {
 .admin-destination-manager form {
   max-width: 720px;
   margin-top: 18px;
+}
+
+/* Chat stays above the current page; only its contents scroll. */
+.goe-floating-chat {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 52;
+  width: min(400px, calc(100vw - 24px));
+  max-height: calc(100dvh - 120px - env(safe-area-inset-bottom));
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #dfe3d8;
+  border-radius: 22px;
+  background: #fbf8f0;
+  box-shadow: 0 12px 45px #154c4330;
+}
+.goe-floating-chat[hidden] {
+  display: none;
+}
+.goe-floating-chat .goe-chat-page {
+  padding: 0 16px 12px;
+}
+.goe-floating-chat .goe-chat-header {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: #fbf8f0;
+}
+.goe-floating-chat .goe-chat-header > button {
+  order: 3;
+}
+.goe-floating-chat .goe-chat-page h1 {
+  font-size: 28px;
+}
+.goe-floating-chat .goe-composer-area {
+  bottom: 0;
+  background: #fbf8f0;
+  padding-top: 10px;
+}
+@media (max-width: 760px) {
+  .goe-floating-chat {
+    right: 12px;
+  }
+  .app-shell:has(.mobile-bottom-nav) .goe-floating-chat {
+    bottom: calc(160px + env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 176px - env(safe-area-inset-bottom));
+  }
 }

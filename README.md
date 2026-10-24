@@ -1,5 +1,7 @@
 # GoEase
 
+Thanh điều hướng mobile: Khám phá → Chuyến đi → Trang chủ → Đã lưu → Tài khoản. Goe là nút hình linh thú không nền ở góc phải, mở khung chat nổi ngay trên trang đang xem, không đổi URL. Có thể thu gọn/mở lại mà giữ hội thoại trong trang; Escape đóng khung và trả focus về Goe. Trong chuyến đã lưu, chat nhận ngữ cảnh chuyến hiện tại. Bong bóng không hiển thị trên màn đăng nhập, chào mừng, quản trị hoặc khi đang mở chat Goe.
+
 **Admin Operations V2:** `/admin` mở Tổng quan với KPI từ MongoDB, Việc cần làm, Địa điểm, Tự động cập nhật, Lịch sử & phê duyệt, Nguồn dữ liệu và Cài đặt. Có bảng/bản đồ, editor, gallery có nguồn, review, xuất bản theo lô và phục hồi phiên bản. Geoapify/OSM dùng key phía server; lịch mặc định tắt và worker chạy cùng API. Xem [hướng dẫn vận hành V2](docs/ADMIN-OPERATIONS-V2.md) và [bằng chứng kiểm tra, giới hạn](docs/ADMIN-V2-VERIFICATION.md).
 
 GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Phát triển bằng MongoDB local; Atlas là bước sau khi bản local hoàn thành. Mobile tương lai sử dụng cùng REST API và contracts thuần TypeScript.

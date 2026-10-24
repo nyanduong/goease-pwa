@@ -19,12 +19,22 @@ type Line = { id: number; role: 'user' | 'goe'; text: string };
 export function GoeChat({
   signedIn,
   onNavigate,
+  embedded = false,
+  initialTripId,
+  onClose,
+  onApplied,
 }: {
   signedIn: boolean;
   onNavigate: (path: string) => void;
+  embedded?: boolean;
+  initialTripId?: string | undefined;
+  onClose?: () => void;
+  onApplied?: () => void;
 }) {
-  const params = new URLSearchParams(location.search);
-  const [tripId, setTripId] = useState(params.get('trip') ?? '');
+  const params = new URLSearchParams(embedded ? '' : location.search);
+  const [tripId, setTripId] = useState(
+    initialTripId ?? params.get('trip') ?? '',
+  );
   const [trip, setTrip] = useState<TripDto | null>(null),
     [choices, setChoices] = useState<TripDto[]>([]);
   const [dayIndex, setDayIndex] = useState(
@@ -166,6 +176,7 @@ export function GoeChat({
       setProposal(null);
       generationKey.current = null;
       add('goe', 'Đã lưu thay đổi vào chuyến đi. Ngân sách đã được tính lại.');
+      onApplied?.();
     } catch (e) {
       setError(
         e instanceof Error ? e.message : 'Chưa lưu được thay đổi. Hãy thử lại.',
@@ -179,11 +190,15 @@ export function GoeChat({
     <section className="goe-chat-page">
       <header className="goe-chat-header">
         <button
-          aria-label="Quay lại"
-          disabled={busy}
-          onClick={() => onNavigate(trip ? `/trips/${trip.id}` : '/')}
+          aria-label={embedded ? 'Thu gọn chat Goe' : 'Quay lại'}
+          disabled={!embedded && busy}
+          onClick={() =>
+            embedded
+              ? onClose?.()
+              : onNavigate(trip ? `/trips/${trip.id}` : '/')
+          }
         >
-          <ArrowLeft size={21} />
+          {embedded ? <X size={21} /> : <ArrowLeft size={21} />}
         </button>
         <img src={images.goeMascot} alt="Goe" />
         <div>
@@ -217,7 +232,8 @@ export function GoeChat({
                 onClick={() => {
                   setTripId(t.id);
                   setDayIndex(0);
-                  history.replaceState({}, '', `/goe?trip=${t.id}&day=0`);
+                  if (!embedded)
+                    history.replaceState({}, '', `/goe?trip=${t.id}&day=0`);
                 }}
               >
                 {t.title} →
@@ -262,7 +278,7 @@ export function GoeChat({
             disabled={busy}
             onClick={() => {
               setTripId('');
-              history.replaceState({}, '', '/goe');
+              if (!embedded) history.replaceState({}, '', '/goe');
             }}
           >
             Chọn chuyến đi khác

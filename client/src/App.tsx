@@ -18,7 +18,7 @@ import {
 } from './components/admin-workspace';
 import { ExplorePage, PlaceDetail, placeActivity } from './components/explore';
 import { AccountAvatar } from './components/account-avatar';
-import { Compass, Map, House, Bird, Bookmark } from 'lucide-react';
+import { Compass, Map, House, Bookmark, UserRound } from 'lucide-react';
 import { HomeDiscovery } from './components/home-discovery';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
@@ -35,6 +35,7 @@ import { AuthPage } from './components/auth';
 import { JourneyList, TripWorkspace } from './components/trip-workspace';
 import { BudgetPreview } from './components/budget-screen';
 import { GoeChat } from './components/goe-chat';
+import { GoeChatWidget } from './components/goe-chat-widget';
 import { initialDraft, inputFromTrip, withDays } from './trip-draft';
 
 export type Link = (
@@ -1061,8 +1062,8 @@ export function App() {
               { to: '/explore', label: 'Khám phá', Icon: Compass },
               { to: '/trips', label: 'Chuyến đi', Icon: Map },
               { to: '/', label: 'Trang chủ', Icon: House },
-              { to: '/goe', label: 'Goe', Icon: Bird },
               { to: '/saved', label: 'Đã lưu', Icon: Bookmark },
+              { to: '/account', label: 'Tài khoản', Icon: UserRound },
             ].map(({ to, label, Icon }) => (
               <a
                 key={to}
@@ -1088,6 +1089,20 @@ export function App() {
             ))}
           </nav>
         )}
+      {!isAuth && !isWelcome && path !== '/admin' && path !== '/goe' && (
+        <GoeChatWidget
+          key={`${path}:${user?.id ?? 'guest'}`}
+          signedIn={sessionStatus === 'ready' && Boolean(user)}
+          tripId={loaded && isEditor ? loaded.id : undefined}
+          onNavigate={go}
+          onApplied={() => {
+            setTripsRetry((value) => value + 1);
+            if (isEditor && saveState === 'saved') {
+              setDetailRetry((value) => value + 1);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
