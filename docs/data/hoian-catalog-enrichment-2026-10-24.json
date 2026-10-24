@@ -1,0 +1,1205 @@
+{
+  "version": 1,
+  "destinationId": "000000000000000000000004",
+  "preparedAt": "2026-10-24T04:24:12.766Z",
+  "status": "applied-local-drafts",
+  "publication": "All touched records are draft; owner publishes after review.",
+  "notes": [
+    "Web-source verification only, no venue contact or field visit.",
+    "Review deadline and group caps are GoEase editorial scope. Duration is a GoEase suggestion.",
+    "No new bundled ticket is assigned.",
+    "Unresolved tax, holiday surcharge and hours remain explicit."
+  ],
+  "entries": [
+    {
+      "id": "6adb397724ca59199af9de58",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Bảo tàng Văn hóa Sa Huỳnh",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Trưng bày hiện vật khảo cổ về văn hóa Sa Huỳnh và cư dân cổ của Hội An.",
+        "locationQuery": "149 Trần Phú, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "07:30–21:30; đóng cửa ngày 10 và 25 hằng tháng. Theo website bảo tàng, đối chiếu 24/10/2026; kiểm tra thông báo đột xuất trước khi đi.",
+        "sourceUrl": "https://hoianmuseum.com/vi/about/bao-tang-van-hoa-sa-huynh.html",
+        "referencePrice": {
+          "label": "Phí tham quan một công trình — mức phổ thông",
+          "amountMinor": 20000,
+          "basis": "per_person",
+          "maxTravelers": 10,
+          "conditions": "Mức phổ thông 20.000đ/người/công trình theo thông tin Nghị quyết 98/2026/NQ-HĐND, áp dụng từ 10/8/2026. Chưa áp dụng miễn/giảm theo đối tượng. Không cộng với vé gói đã mua khi chưa xác nhận cách khấu trừ. Nhóm 1–10 là phạm vi dự toán GoEase, không phải sức chứa cơ sở.",
+          "inclusions": "Phí tham quan một công trình: Bảo tàng Văn hóa Sa Huỳnh.",
+          "exclusions": "Các công trình khác, hướng dẫn riêng, hoạt động tính phí riêng, mua sắm, ăn uống và di chuyển; không phải vé gói phố cổ.",
+          "sourceUrl": "https://nhandan.vn/da-nang-dieu-chinh-phi-tham-quan-cac-cong-trinh-van-hoa-va-di-san-post980432.html",
+          "checkedAt": "2026-10-24",
+          "reviewAfter": "2026-11-23"
+        },
+        "publicationStatus": "draft"
+      },
+      "evidence": [
+        {
+          "url": "https://hoianmuseum.com/vi/about/bao-tang-van-hoa-sa-huynh.html",
+          "fields": [
+            "name",
+            "locationQuery",
+            "openingHoursNote",
+            "description"
+          ],
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://nhandan.vn/da-nang-dieu-chinh-phi-tham-quan-cac-cong-trinh-van-hoa-va-di-san-post980432.html",
+          "fields": ["referencePrice.amountMinor", "referencePrice.conditions"],
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://www.danangtv.vn/chi_tiet-188121",
+          "fields": ["referencePrice.amountMinor"],
+          "checkedAt": "2026-10-24",
+          "access": "Search-index text corroboration; direct fetch timed out"
+        }
+      ],
+      "unresolved": []
+    },
+    {
+      "id": "6adb397724ca59199af9de51",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Bảo tàng Thổ sản",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Tìm hiểu hương liệu, thổ sản xứ Quảng và vai trò thương cảng Hội An.",
+        "locationQuery": "57 Trần Phú, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "07:30–21:30; đóng cửa ngày 03 và 16 hằng tháng. Theo website bảo tàng, đối chiếu 24/10/2026; kiểm tra thông báo đột xuất trước khi đi.",
+        "sourceUrl": "https://hoianmuseum.com/vi/about/bao-tang-nghe-y.html",
+        "referencePrice": {
+          "label": "Phí tham quan một công trình — mức phổ thông",
+          "amountMinor": 20000,
+          "basis": "per_person",
+          "maxTravelers": 10,
+          "conditions": "Mức phổ thông 20.000đ/người/công trình theo thông tin Nghị quyết 98/2026/NQ-HĐND, áp dụng từ 10/8/2026. Chưa áp dụng miễn/giảm theo đối tượng. Không cộng với vé gói đã mua khi chưa xác nhận cách khấu trừ. Nhóm 1–10 là phạm vi dự toán GoEase, không phải sức chứa cơ sở.",
+          "inclusions": "Phí tham quan một công trình: Bảo tàng Thổ sản.",
+          "exclusions": "Các công trình khác, hướng dẫn riêng, hoạt động tính phí riêng, mua sắm, ăn uống và di chuyển; không phải vé gói phố cổ.",
+          "sourceUrl": "https://nhandan.vn/da-nang-dieu-chinh-phi-tham-quan-cac-cong-trinh-van-hoa-va-di-san-post980432.html",
+          "checkedAt": "2026-10-24",
+          "reviewAfter": "2026-11-23"
+        },
+        "publicationStatus": "draft"
+      },
+      "evidence": [
+        {
+          "url": "https://hoianmuseum.com/vi/about/bao-tang-nghe-y.html",
+          "fields": [
+            "name",
+            "locationQuery",
+            "openingHoursNote",
+            "description"
+          ],
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://nhandan.vn/da-nang-dieu-chinh-phi-tham-quan-cac-cong-trinh-van-hoa-va-di-san-post980432.html",
+          "fields": ["referencePrice.amountMinor", "referencePrice.conditions"],
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://www.danangtv.vn/chi_tiet-188121",
+          "fields": ["referencePrice.amountMinor"],
+          "checkedAt": "2026-10-24",
+          "access": "Search-index text corroboration; direct fetch timed out"
+        }
+      ],
+      "unresolved": []
+    },
+    {
+      "id": null,
+      "expectedRevision": null,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Bảo tàng Văn hóa Dân gian",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Khám phá văn hóa dân gian và đời sống cư dân Hội An qua trưng bày trong nhà cổ.",
+        "locationQuery": "33 Nguyễn Thái Học - 62 Bạch Đằng, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "07:30–21:30; đóng cửa ngày 13 và 28 hằng tháng. Theo website bảo tàng, đối chiếu 24/10/2026; kiểm tra thông báo đột xuất trước khi đi.",
+        "sourceUrl": "https://hoianmuseum.com/vi/about/bao-tang-van-hoa-dan-gian.html",
+        "referencePrice": {
+          "label": "Phí tham quan một công trình — mức phổ thông",
+          "amountMinor": 20000,
+          "basis": "per_person",
+          "maxTravelers": 10,
+          "conditions": "Mức phổ thông 20.000đ/người/công trình theo thông tin Nghị quyết 98/2026/NQ-HĐND, áp dụng từ 10/8/2026. Chưa áp dụng miễn/giảm theo đối tượng. Không cộng với vé gói đã mua khi chưa xác nhận cách khấu trừ. Nhóm 1–10 là phạm vi dự toán GoEase, không phải sức chứa cơ sở.",
+          "inclusions": "Phí tham quan một công trình: Bảo tàng Văn hóa Dân gian.",
+          "exclusions": "Các công trình khác, hướng dẫn riêng, hoạt động tính phí riêng, mua sắm, ăn uống và di chuyển; không phải vé gói phố cổ.",
+          "sourceUrl": "https://nhandan.vn/da-nang-dieu-chinh-phi-tham-quan-cac-cong-trinh-van-hoa-va-di-san-post980432.html",
+          "checkedAt": "2026-10-24",
+          "reviewAfter": "2026-11-23"
+        },
+        "publicationStatus": "draft"
+      },
+      "evidence": [
+        {
+          "url": "https://hoianmuseum.com/vi/about/bao-tang-van-hoa-dan-gian.html",
+          "fields": [
+            "name",
+            "locationQuery",
+            "openingHoursNote",
+            "description"
+          ],
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://nhandan.vn/da-nang-dieu-chinh-phi-tham-quan-cac-cong-trinh-van-hoa-va-di-san-post980432.html",
+          "fields": ["referencePrice.amountMinor", "referencePrice.conditions"],
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://www.danangtv.vn/chi_tiet-188121",
+          "fields": ["referencePrice.amountMinor"],
+          "checkedAt": "2026-10-24",
+          "access": "Search-index text corroboration; direct fetch timed out"
+        }
+      ],
+      "unresolved": []
+    },
+    {
+      "id": null,
+      "expectedRevision": null,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Bảo tàng Nghề Y truyền thống",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Tìm hiểu nghề y truyền thống qua không gian tiệm thuốc và công cụ, hiện vật.",
+        "locationQuery": "46 Nguyễn Thái Học, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "07:30–21:30; đóng cửa ngày 12 và 27 hằng tháng. Theo website bảo tàng, đối chiếu 24/10/2026; kiểm tra thông báo đột xuất trước khi đi.",
+        "sourceUrl": "https://hoianmuseum.com/vi/about/bao-tang-nghe-y-truyen-thong.html",
+        "referencePrice": {
+          "label": "Phí tham quan một công trình — mức phổ thông",
+          "amountMinor": 20000,
+          "basis": "per_person",
+          "maxTravelers": 10,
+          "conditions": "Mức phổ thông 20.000đ/người/công trình theo thông tin Nghị quyết 98/2026/NQ-HĐND, áp dụng từ 10/8/2026. Chưa áp dụng miễn/giảm theo đối tượng. Không cộng với vé gói đã mua khi chưa xác nhận cách khấu trừ. Nhóm 1–10 là phạm vi dự toán GoEase, không phải sức chứa cơ sở.",
+          "inclusions": "Phí tham quan một công trình: Bảo tàng Nghề Y truyền thống.",
+          "exclusions": "Các công trình khác, hướng dẫn riêng, hoạt động tính phí riêng, mua sắm, ăn uống và di chuyển; không phải vé gói phố cổ.",
+          "sourceUrl": "https://nhandan.vn/da-nang-dieu-chinh-phi-tham-quan-cac-cong-trinh-van-hoa-va-di-san-post980432.html",
+          "checkedAt": "2026-10-24",
+          "reviewAfter": "2026-11-23"
+        },
+        "publicationStatus": "draft"
+      },
+      "evidence": [
+        {
+          "url": "https://hoianmuseum.com/vi/about/bao-tang-nghe-y-truyen-thong.html",
+          "fields": [
+            "name",
+            "locationQuery",
+            "openingHoursNote",
+            "description"
+          ],
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://nhandan.vn/da-nang-dieu-chinh-phi-tham-quan-cac-cong-trinh-van-hoa-va-di-san-post980432.html",
+          "fields": ["referencePrice.amountMinor", "referencePrice.conditions"],
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://www.danangtv.vn/chi_tiet-188121",
+          "fields": ["referencePrice.amountMinor"],
+          "checkedAt": "2026-10-24",
+          "access": "Search-index text corroboration; direct fetch timed out"
+        }
+      ],
+      "unresolved": []
+    },
+    {
+      "id": "100000000000000000000003",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Làng rau Trà Quế",
+        "category": "nature",
+        "venueType": "place",
+        "description": "Đi giữa những luống rau xanh, ngắm nhịp làm vườn và tìm một khoảng nghỉ ngoài phố cổ.",
+        "locationQuery": "Làng rau Trà Quế Hội An",
+        "durationMinutes": 120,
+        "openingHoursNote": "Chưa xác minh giờ đón khách từ nguồn đơn vị quản lý. Liên hệ Văn phòng Hướng dẫn Tham quan Hội An trước khi đi.",
+        "sourceUrl": "https://hoianworldheritage.org.vn/en/news/Traditional-occupational-Village/tra-que-vegetable-village-tourist-attraction-583.hwh",
+        "referencePrice": {
+          "label": "Vé tham quan Trà Quế — mức phổ thông",
+          "amountMinor": 35000,
+          "basis": "per_person",
+          "maxTravelers": 14,
+          "conditions": "Giá vé phổ thông 35.000đ/người theo nguồn du lịch Hội An. Chưa áp dụng giảm giá trẻ em, sinh viên, người trên 60 tuổi và đối tượng ưu đãi. Từ 15 vé có ưu đãi cần tính riêng; GoEase giới hạn 1–14 khách. Cần xác nhận giờ đón khách trước xuất bản cho Goe.",
+          "inclusions": "Tham quan di tích tại làng, tìm hiểu nghề trồng rau, trải nghiệm làm nông và nước hạt é theo nội dung quyền lợi do đơn vị du lịch Hội An giới thiệu.",
+          "exclusions": "Ăn uống, lớp nấu ăn, lưu trú, di chuyển và hướng dẫn riêng ngoài quyền lợi vé; không phải vé chung cho hai làng nghề.",
+          "sourceUrl": "https://hoiancreativecity.com/vi/vui-cung-lang-nghe-day-them-trai-nghiem",
+          "checkedAt": "2026-10-24",
+          "reviewAfter": "2026-11-23"
+        },
+        "publicationStatus": "draft"
+      },
+      "evidence": [
+        {
+          "url": "https://hoiancreativecity.com/vi/vui-cung-lang-nghe-day-them-trai-nghiem",
+          "fields": ["referencePrice.amountMinor", "referencePrice.conditions"],
+          "checkedAt": "2026-10-24"
+        },
+        {
+          "url": "https://hoianworldheritage.org.vn/en/news/Traditional-occupational-Village/tra-que-vegetable-village-tourist-attraction-583.hwh",
+          "fields": ["referencePrice.inclusions"],
+          "checkedAt": "2026-10-24"
+        }
+      ],
+      "unresolved": [
+        "Chưa có nguồn giờ đón khách của đơn vị quản lý; giữ nháp, chưa đủ điều kiện Goe."
+      ]
+    },
+    {
+      "id": null,
+      "expectedRevision": null,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Nhà hàng Lê Bá Truyền I",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Nhà hàng tại 67–69 Phan Châu Trinh. Dự toán chọn đúng một phần cao lầu niêm yết trên website nhà hàng, không coi đây là giá một bữa đầy đủ.",
+        "locationQuery": "Nhà hàng Lê Bá Truyền I, 67–69 Phan Châu Trinh, Hội An",
+        "durationMinutes": 60,
+        "openingHoursNote": "08:00–23:00 hằng ngày; theo website nhà hàng, đối chiếu 24/10/2026. Đoàn đông cần liên hệ trước.",
+        "sourceUrl": "https://lebatruyenrestaurant.com/en",
+        "referencePrice": {
+          "label": "Một phần cao lầu/người",
+          "amountMinor": 50000,
+          "basis": "per_person",
+          "maxTravelers": 10,
+          "conditions": "Một phần cao lầu 50.000đ theo menu, mỗi người một phần. Không phải giá trung bình toàn bữa hoặc xác nhận đặt bàn. Thuế/phí chưa được nguồn làm rõ. Giới hạn 1–10 là phạm vi dự toán GoEase, không phải sức chứa nhà hàng.",
+          "inclusions": "Một phần cao lầu theo món niêm yết trên website nhà hàng.",
+          "exclusions": "Đồ uống, món gọi thêm, thuế/phí phát sinh chưa được xác nhận và di chuyển. Không gồm các món đặc sản khác trên menu.",
+          "sourceUrl": "https://lebatruyenrestaurant.com/en",
+          "checkedAt": "2026-10-24",
+          "reviewAfter": "2026-11-23"
+        },
+        "publicationStatus": "draft"
+      },
+      "evidence": [
+        {
+          "url": "https://lebatruyenrestaurant.com/en",
+          "fields": [
+            "name",
+            "locationQuery",
+            "openingHoursNote",
+            "referencePrice.amountMinor",
+            "referencePrice.inclusions"
+          ],
+          "checkedAt": "2026-10-24"
+        }
+      ],
+      "unresolved": [
+        "Nguồn chưa làm rõ thuế/phí: cần kiểm tra trước khi coi là tổng tiền thanh toán."
+      ]
+    },
+    {
+      "id": null,
+      "expectedRevision": null,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Tropical Cafe & Bistro",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Nhà hàng tại 393 Cửa Đại. Giá tham khảo là một phần Vegan Curry theo mục menu chính trên website; thời lượng 60 phút là gợi ý GoEase.",
+        "locationQuery": "Tropical Cafe & Bistro, 393 Cửa Đại, Cẩm Châu, Hội An",
+        "durationMinutes": 60,
+        "openingHoursNote": "08:00–16:30 nhận món; cơ sở đóng 17:00 hằng ngày. Nguồn ghi last order 16:30 và có phụ thu lễ; đối chiếu 24/10/2026.",
+        "sourceUrl": "https://www.tropicalhoianbistro.com/",
+        "referencePrice": {
+          "label": "Một phần Vegan Curry/người",
+          "amountMinor": 110000,
+          "basis": "per_person",
+          "maxTravelers": 10,
+          "conditions": "Một phần Vegan Curry 110.000đ ở mục menu chính, kèm cơm hoặc bánh sourdough; mỗi người một phần. Nguồn ghi có phụ thu ngày lễ nhưng chưa nêu mức; không dùng giá này như báo giá trọn bữa. Nhóm 1–10 là phạm vi GoEase.",
+          "inclusions": "Một phần cà ri rau củ, nấm, đậu phụ và nước cốt dừa; kèm cơm hoặc bánh sourdough theo menu chính.",
+          "exclusions": "Đồ uống, món thêm, phụ thu ngày lễ chưa biết mức, thuế/phí chưa rõ và di chuyển.",
+          "sourceUrl": "https://www.tropicalhoianbistro.com/",
+          "checkedAt": "2026-10-24",
+          "reviewAfter": "2026-11-23"
+        },
+        "publicationStatus": "draft"
+      },
+      "evidence": [
+        {
+          "url": "https://www.tropicalhoianbistro.com/",
+          "fields": [
+            "locationQuery",
+            "openingHoursNote",
+            "referencePrice.amountMinor",
+            "referencePrice.inclusions",
+            "referencePrice.exclusions"
+          ],
+          "checkedAt": "2026-10-24"
+        }
+      ],
+      "unresolved": [
+        "Có phụ thu lễ chưa biết mức; không dùng giá làm báo giá thanh toán.",
+        "Website có hai phần menu với một số thông tin không đồng nhất; cần đối chiếu menu tại quán trước xuất bản."
+      ]
+    },
+    {
+      "id": "100000000000000000000002",
+      "expectedRevision": 0,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Cơm gà Hội An",
+        "category": "food",
+        "venueType": "food_idea",
+        "description": "Cơm vàng, gà xé và rau thơm — một bữa ăn giản dị để nghỉ chân giữa hành trình. Đây là gợi ý món ăn, không phải một nhà hàng cụ thể.",
+        "locationQuery": "Cơm gà Hội An",
+        "durationMinutes": 60,
+        "openingHoursNote": "",
+        "sourceUrl": "https://vietnam.travel/things-to-do/explore-food-hoi-an",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "100000000000000000000004",
+      "expectedRevision": 0,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Biển An Bàng",
+        "category": "nature",
+        "venueType": "place",
+        "description": "Ghé bãi biển An Bàng, dành thời gian nghỉ chân và ngắm biển. Các dịch vụ ăn uống, ghế nghỉ và gửi xe được tính riêng tùy nơi cung cấp.",
+        "locationQuery": "An Bang Beach Hoi An",
+        "durationMinutes": 120,
+        "openingHoursNote": "",
+        "sourceUrl": "https://vietnam.travel/node/965",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "100000000000000000000005",
+      "expectedRevision": 0,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Cẩm Thanh",
+        "category": "nature",
+        "venueType": "place",
+        "description": "Khu vực Cẩm Thanh có cảnh quan nông thôn và dừa nước. Chọn hoạt động phù hợp tại địa phương; giá tour và dịch vụ phụ thuộc đơn vị tổ chức.",
+        "locationQuery": "Cam Thanh Hoi An",
+        "durationMinutes": 120,
+        "openingHoursNote": "",
+        "sourceUrl": "https://vietnam.travel/node/99",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "100000000000000000000006",
+      "expectedRevision": 0,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Cao lầu Hội An",
+        "category": "food",
+        "venueType": "food_idea",
+        "description": "Cao lầu là gợi ý món ăn của Hội An, không đại diện cho một nhà hàng cụ thể. Bạn chọn quán thuận đường và phù hợp nhu cầu ăn uống.",
+        "locationQuery": "Cao lau Hoi An",
+        "durationMinutes": 60,
+        "openingHoursNote": "",
+        "sourceUrl": "https://vietnam.travel/node/99",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "100000000000000000000007",
+      "expectedRevision": 0,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Dạo bên sông Hoài",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Thêm thời gian dạo ven sông vào buổi ghé phố cổ. Đây là hoạt động dạo bộ; không bao gồm đặt thuyền, vé di tích hoặc các dịch vụ khác.",
+        "locationQuery": "Song Hoai Hoi An",
+        "durationMinutes": 60,
+        "openingHoursNote": "",
+        "sourceUrl": "https://www.hoianworldheritage.org.vn/vi/news/Du-lich-Hoi-An/cap-nhat-ve-tham-quan-khu-pho-co-hoi-an-hanh-trinh-cham-ve-nguyen-ban-giua-long-di-san-3033.hwh",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb345b4fd870b677f1c06c",
+      "expectedRevision": 1,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "[TEST] Quán ăn nghiệm thu",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Dữ liệu thử nghiệm, không phải quán thật",
+        "locationQuery": "Địa chỉ minh họa Hội An",
+        "durationMinutes": 60,
+        "openingHoursNote": "",
+        "sourceUrl": "https://example.com/quan-thu",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de4f",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Đình Hội An (đình Ông Voi)",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Đình Hội An, còn gọi là đình Ông Voi, là di tích gắn với sinh hoạt tín ngưỡng của cộng đồng địa phương. Khi tham quan, giữ yên tĩnh và tôn trọng không gian thờ tự. Thời lượng 30 phút là gợi ý GoEase; chi phí tham quan chưa xác minh.",
+        "locationQuery": "Đình Hội An, 27 Lê Lợi, Hội An",
+        "durationMinutes": 30,
+        "openingHoursNote": "Chưa xác minh giờ mở cửa hiện hành. Liên hệ cơ sở trước khi đi.",
+        "sourceUrl": "https://hoianheritage.danang.gov.vn/vi/news/Tin-tuc-su-kien/di-tich-dinh-hoi-an-duoc-xep-hang-di-tich-cap-tinh-1288.html",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de52",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Bill Coffee & Tea",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Quán cà phê và trà tại 22 Trần Hưng Đạo, Hội An. Có thể dùng làm điểm nghỉ trong lịch dạo phố. Thời lượng 45 phút là gợi ý GoEase; giá đồ uống chưa xác minh.",
+        "locationQuery": "Bill Coffee & Tea, 22 Trần Hưng Đạo, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "Website cơ sở ghi 07:00–22:00 hằng ngày (đối chiếu 23/10/2026). Có thể thay đổi vào dịp lễ.",
+        "sourceUrl": "https://billcoffeetea.com/",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de53",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "The Seeds – Plant-Based Foods & Desserts",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Quán món chay và món tráng miệng tại 124/2 Trần Cao Vân, được HappyCow giới thiệu là cơ sở phục vụ thực phẩm thuần thực vật. Khách có dị ứng cần hỏi trực tiếp thành phần. Thời lượng 60 phút là gợi ý GoEase; giá chưa xác minh.",
+        "locationQuery": "The Seeds, 124/2 Trần Cao Vân, Hội An",
+        "durationMinutes": 60,
+        "openingHoursNote": "Giờ hiện hành chưa thống nhất giữa các nguồn. HappyCow ghi nghỉ thứ Năm và thứ Sáu; cần xác nhận với quán trước khi đi (đối chiếu 23/10/2026).",
+        "sourceUrl": "https://www.happycow.net/reviews/the-seeds-plant-based-foods-and-desserts-hoi-an-419917",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de54",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Nhà cổ Đức An",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Nhà cổ Đức An tại 129 Trần Phú gắn với hoạt động hiệu sách và lịch sử cách mạng ở Hội An. Đây cũng là địa chỉ Nhà lưu niệm đồng chí Cao Hồng Lãnh. Thời lượng 45 phút là gợi ý GoEase; giá và điều kiện vé chưa xác minh.",
+        "locationQuery": "Nhà cổ Đức An, 129 Trần Phú, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "Chưa xác minh giờ mở cửa hiện hành. Liên hệ cơ sở trước khi đi.",
+        "sourceUrl": "https://hoianheritage.net/vi/trao-doi-chuyen-nganh/chuyen-de-nghien-cuu-trao-doi/SU-KIEN-THANH-LAP-TO-CHUC-HOI-VIET-NAM-CACH-MANG-THIEN-NIEN-O-HOI-AN-94.html",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de55",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Nhà cổ Quân Thắng",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Nhà cổ Quân Thắng tại 77 Trần Phú từng gắn với hoạt động buôn bán của thương nhân. Ngôi nhà lưu giữ kiến trúc và các chi tiết trang trí gỗ đặc trưng. Thời lượng 45 phút là gợi ý GoEase; giá và điều kiện vé chưa xác minh.",
+        "locationQuery": "Nhà cổ Quân Thắng, 77 Trần Phú, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "Chưa xác minh giờ mở cửa hiện hành. Liên hệ cơ sở trước khi đi.",
+        "sourceUrl": "https://hoianheritage.danang.gov.vn/vi/bao-chi/bao-chi-ve-di-san/hoi-an-lap-ho-so-dang-ky-giai-thuong-ve-bao-ton-di-san-van-hoa-doi-voi-nha-co-quan-thang-464.html",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de57",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Tượng đài Kazik (Kazimierz Kwiatkowski)",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Tượng đài tưởng niệm kiến trúc sư Ba Lan Kazimierz Kwiatkowski, thường gọi là Kazik, người có đóng góp cho công tác bảo tồn di sản miền Trung. Nằm trong công viên Kazik trên đường Trần Phú. Thời lượng 20 phút là gợi ý GoEase; chưa xác minh chi phí.",
+        "locationQuery": "Tượng đài Kazik, Công viên Kazik, Trần Phú, Hội An",
+        "durationMinutes": 20,
+        "openingHoursNote": "Không gian công viên; chưa xác minh giới hạn giờ tiếp cận hoặc các đợt bảo trì.",
+        "sourceUrl": "https://hoianheritage.net/vi/bao-chi/bao-chi-ve-di-san/tuong-niem-kien-truc-su-kazik-an-nhan-cua-pho-co-hoi-an-288.html",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de5a",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "The Espresso Station",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Quán cà phê nằm trong hẻm tại 28/2 Trần Hưng Đạo, Hội An, có không gian sân vườn. Thời lượng nghỉ 45 phút là gợi ý GoEase; giá đồ uống chưa xác minh.",
+        "locationQuery": "The Espresso Station, 28/2 Trần Hưng Đạo, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "Chưa xác minh giờ hiện hành: các nguồn khác nhau về giờ đóng cửa. Liên hệ quán trước khi đi.",
+        "sourceUrl": "https://www.vietnamairlines.com/sa/en/plan-book/travel/travel-guide/coffee-hoi-an",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de5c",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Giếng cổ Bá Lễ",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Giếng cổ Bá Lễ gắn với đời sống và việc sử dụng nước của cư dân Hội An. Điểm dừng ngắn để tìm hiểu di sản trong khu dân cư; giữ gìn vệ sinh và tôn trọng sinh hoạt địa phương. Thời lượng 20 phút là gợi ý GoEase; chưa xác minh chi phí.",
+        "locationQuery": "Giếng cổ Bá Lễ, Kiệt 44 Phan Châu Trinh, Hội An",
+        "durationMinutes": 20,
+        "openingHoursNote": "Chưa xác minh giờ mở cửa hiện hành. Liên hệ cơ sở trước khi đi.",
+        "sourceUrl": "https://www.hoianworldheritage.org.vn/vi/news/Diem-tham-quan/Gieng-co-Ba-Le-95.hwh",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de62",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Nhà hàng Cánh Buồm Trắng — Lê Lợi",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Nhà hàng Cánh Buồm Trắng tại 2/24 Lê Lợi, Hội An. Có thể chọn làm điểm ăn uống sau khi liên hệ xác nhận phục vụ. Thời lượng 60 phút là gợi ý GoEase; giá món ăn chưa xác minh.",
+        "locationQuery": "Nhà hàng Cánh Buồm Trắng, 2/24 Lê Lợi, Hội An",
+        "durationMinutes": 60,
+        "openingHoursNote": "Chưa xác minh giờ hiện hành; các danh bạ ghi giờ đóng cửa khác nhau. Liên hệ nhà hàng trước khi đi.",
+        "sourceUrl": "https://www.momo.vn/page/9851301",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de72",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Starbucks — Trần Hưng Đạo Hội An",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Cửa hàng Starbucks tại 40 Trần Hưng Đạo, Hội An, phục vụ cà phê và đồ uống. Thời lượng nghỉ 45 phút là gợi ý GoEase; giá và thực đơn hiện hành cần kiểm tra tại cửa hàng.",
+        "locationQuery": "Starbucks, 40 Trần Hưng Đạo, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "Chưa xác minh giờ mở cửa hiện hành. Liên hệ cơ sở trước khi đi.",
+        "sourceUrl": "https://dineout.grab.com/vn/en/restaurants/starbucks-coffee-tran-hung-ao--5-C36GTLCCATAGTT",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de73",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "JEERA – Indian Restaurant",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Nhà hàng món Ấn tại 126 Trần Cao Vân, Hội An. Khi có yêu cầu ăn chay hoặc dị ứng, hỏi trực tiếp nhà hàng về món và thành phần phù hợp. Thời lượng 60 phút là gợi ý GoEase; giá chưa xác minh.",
+        "locationQuery": "JEERA Indian Restaurant, 126 Trần Cao Vân, Hội An",
+        "durationMinutes": 60,
+        "openingHoursNote": "Hồ sơ cơ sở trên Tripadvisor ghi 11:00–23:00 hằng ngày (đối chiếu 23/10/2026); cần xác nhận trước khi đi.",
+        "sourceUrl": "https://www.tripadvisor.com/Restaurant_Review-g298082-d27148524-Reviews-Jeera_Indian_Restaurant-Hoi_An_Quang_Nam_Province.html",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de74",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Hội quán Quảng Triệu (Quảng Đông)",
+        "category": "culture",
+        "venueType": "place",
+        "description": "Hội quán của cộng đồng người Hoa Quảng Đông tại 176 Trần Phú. Công trình có kết cấu gỗ, đá và không gian thờ Quan Công, Tiền hiền. Giữ trang phục phù hợp khi tham quan. Thời lượng 45 phút là gợi ý GoEase; giá và điều kiện vé chưa xác minh.",
+        "locationQuery": "Hội quán Quảng Triệu, 176 Trần Phú, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "Chưa xác minh giờ mở cửa hiện hành. Liên hệ cơ sở trước khi đi.",
+        "sourceUrl": "https://hoianworldheritage.org.vn/vi/news/Diem-di-tich/Hoi-quan-Quang-Dong-17.hwh",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    },
+    {
+      "id": "6adb397724ca59199af9de76",
+      "expectedRevision": 2,
+      "place": {
+        "destinationId": "000000000000000000000004",
+        "name": "Thom’s Sourdough Bakery & Coffee – Phố cổ Hội An",
+        "category": "food",
+        "venueType": "restaurant",
+        "description": "Chi nhánh phố cổ của Thom’s tại 146 Nguyễn Trường Tộ, phục vụ bánh mì sourdough, bánh và cà phê. Thời lượng 45 phút là gợi ý GoEase; giá món ăn, đồ uống chưa xác minh.",
+        "locationQuery": "Thom’s Sourdough Bakery & Coffee, 146 Nguyễn Trường Tộ, Hội An",
+        "durationMinutes": 45,
+        "openingHoursNote": "Website thương hiệu ghi 07:00–17:00 hằng ngày (đối chiếu 23/10/2026). Kiểm tra lại vào dịp lễ.",
+        "sourceUrl": "https://www.thomsbakery.cafe/en",
+        "publicationStatus": "draft",
+        "referencePrice": null
+      },
+      "evidence": [],
+      "unresolved": [
+        "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+      ],
+      "reason": "Legacy publication does not meet current mandatory price/source/inclusions/exclusions guard; retain content as draft for owner review."
+    }
+  ],
+  "appliedAt": "2026-10-24T04:25:47.900Z",
+  "results": [
+    {
+      "id": "6adb397724ca59199af9de58",
+      "name": "Bảo tàng Văn hóa Sa Huỳnh",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de51",
+      "name": "Bảo tàng Thổ sản",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adc330fd7843fd5e3b2fb02",
+      "name": "Bảo tàng Văn hóa Dân gian",
+      "revision": 1,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adc330fd7843fd5e3b2fb05",
+      "name": "Bảo tàng Nghề Y truyền thống",
+      "revision": 1,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "100000000000000000000003",
+      "name": "Làng rau Trà Quế",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adc330fd7843fd5e3b2fb0a",
+      "name": "Nhà hàng Lê Bá Truyền I",
+      "revision": 1,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adc330fd7843fd5e3b2fb0d",
+      "name": "Tropical Cafe & Bistro",
+      "revision": 1,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "100000000000000000000002",
+      "name": "Cơm gà Hội An",
+      "revision": 1,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "100000000000000000000004",
+      "name": "Biển An Bàng",
+      "revision": 1,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "100000000000000000000005",
+      "name": "Cẩm Thanh",
+      "revision": 1,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "100000000000000000000006",
+      "name": "Cao lầu Hội An",
+      "revision": 1,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "100000000000000000000007",
+      "name": "Dạo bên sông Hoài",
+      "revision": 1,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb345b4fd870b677f1c06c",
+      "name": "[TEST] Quán ăn nghiệm thu",
+      "revision": 2,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de4f",
+      "name": "Đình Hội An (đình Ông Voi)",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de52",
+      "name": "Bill Coffee & Tea",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de53",
+      "name": "The Seeds – Plant-Based Foods & Desserts",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de54",
+      "name": "Nhà cổ Đức An",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de55",
+      "name": "Nhà cổ Quân Thắng",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de57",
+      "name": "Tượng đài Kazik (Kazimierz Kwiatkowski)",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de5a",
+      "name": "The Espresso Station",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de5c",
+      "name": "Giếng cổ Bá Lễ",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de62",
+      "name": "Nhà hàng Cánh Buồm Trắng — Lê Lợi",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de72",
+      "name": "Starbucks — Trần Hưng Đạo Hội An",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de73",
+      "name": "JEERA – Indian Restaurant",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de74",
+      "name": "Hội quán Quảng Triệu (Quảng Đông)",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    },
+    {
+      "id": "6adb397724ca59199af9de76",
+      "name": "Thom’s Sourdough Bakery & Coffee – Phố cổ Hội An",
+      "revision": 3,
+      "status": "draft",
+      "auditConfirmed": true,
+      "publicReadStatus": 404
+    }
+  ],
+  "verification": {
+    "savedDrafts": 26,
+    "completedReceipts": 26,
+    "matchingAuditEvents": 26,
+    "publicDraftReads404": 26,
+    "untouchedPlacesPreserved": true,
+    "providerProvenancePreserved": true,
+    "publishedEntriesPassCurrentSchema": 4,
+    "tripHashComparedUnchangedDuringApply": true
+  },
+  "remainingDrafts": [
+    {
+      "id": "6adb397724ca59199af9de4e",
+      "name": "STREETS Restaurant Café — địa chỉ cũ",
+      "revision": 2,
+      "sourceUrl": "https://www.streetsinternational.org/visit-us",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de50",
+      "name": "Cà phê Nhà Nguyên",
+      "revision": 2,
+      "sourceUrl": "https://www.openstreetmap.org/node/13124293801",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de59",
+      "name": "Artbook — cần đối chiếu chi nhánh",
+      "revision": 2,
+      "sourceUrl": "https://artbook.com.vn/pages/he-thong-cua-hang?view=amp",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de5b",
+      "name": "Cánh Buồm Trắng — Trần Cao Vân, cần đối chiếu",
+      "revision": 2,
+      "sourceUrl": "https://riviu.vn/canh-buom-trang-white-sail-cafe-fresh-seafood",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de5d",
+      "name": "Thằng Bờm — cần đối chiếu địa chỉ",
+      "revision": 2,
+      "sourceUrl": "https://hoianmemoriesland.com/vi/an-gi-o-hoi-an-20-dac-san-hoi-an-du-khach-nhat-dinh-phai-thu-khi-ghe-tham-pho-co-d311",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de5e",
+      "name": "Good Morning Vietnam",
+      "revision": 2,
+      "sourceUrl": "https://wanderlog.com/place/details/443831/goodmorning-vietnam",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de5f",
+      "name": "Quán ăn Anh Vũ — cần đối chiếu",
+      "revision": 2,
+      "sourceUrl": "https://www.tripadvisor.com.vn/Restaurant_Review-g298082-d25339641-Reviews-Banh_Bao_Anh_Vu-Hoi_An_Quang_Nam_Province.html",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de60",
+      "name": "Minh Dang",
+      "revision": 2,
+      "sourceUrl": "https://www.openstreetmap.org/node/4905288125",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de61",
+      "name": "Highlands Coffee — Vĩnh Hưng, cần xác nhận",
+      "revision": 2,
+      "sourceUrl": "https://dauan1000.highlandsstore.vn/Step3",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de63",
+      "name": "Phùng Hưng — cần đối chiếu địa điểm",
+      "revision": 2,
+      "sourceUrl": "https://hoianworldheritage.org.vn/vi/news/Diem-di-tich/Nha-co-Phung-Hung-12.hwh",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de64",
+      "name": "Quán mì Quảng / cao lầu — chưa rõ tên",
+      "revision": 2,
+      "sourceUrl": "https://www.openstreetmap.org/node/5407132257",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de65",
+      "name": "Day & Night Restaurant",
+      "revision": 2,
+      "sourceUrl": "https://www.tripadvisor.co.uk/Restaurant_Review-g298082-d1568915-Reviews-Day_and_Night_Restaurant-Hoi_An_Quang_Nam_Province.html",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de66",
+      "name": "Đen Đá Hội An",
+      "revision": 2,
+      "sourceUrl": "https://www.viet-biz.com/%C4%91en-%C4%91%C3%A1-coffee-h%E1%BB%99i-an-0235-3922-339",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de67",
+      "name": "combishort bleue — chưa xác định cơ sở",
+      "revision": 2,
+      "sourceUrl": "https://www.openstreetmap.org/node/5447436926",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de68",
+      "name": "The Juicer",
+      "revision": 2,
+      "sourceUrl": "https://www.openstreetmap.org/node/5583714422",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de69",
+      "name": "BoBo Café — cần xác nhận hoạt động",
+      "revision": 2,
+      "sourceUrl": "https://4travel.jp/os_shisetsu/10413961",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de6a",
+      "name": "Hoi An Smoothie — cần đối chiếu địa chỉ",
+      "revision": 2,
+      "sourceUrl": "https://www.tripadvisor.ca/Restaurant_Review-g298082-d14176176-Reviews-Hoi_An_Smoothie-Hoi_An_Quang_Nam_Province.html",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de6b",
+      "name": "Bún thịt nướng — chưa rõ tên quán",
+      "revision": 2,
+      "sourceUrl": "https://www.openstreetmap.org/node/5985205286",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de6c",
+      "name": "Fine Arts Handicrafts Workshop — cần xác minh",
+      "revision": 2,
+      "sourceUrl": "https://www.openstreetmap.org/node/6151083386",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de6d",
+      "name": "Sô.Va Art Hand Embroidery — cần xác minh",
+      "revision": 2,
+      "sourceUrl": "https://mapcarta.com/N6151083387",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de6e",
+      "name": "Cơm gà Phúc — cần đối chiếu địa chỉ",
+      "revision": 2,
+      "sourceUrl": "https://quangnamtourism.com.vn/com-ga-hoi-an/",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de6f",
+      "name": "Herbs & Spices Cooking School",
+      "revision": 2,
+      "sourceUrl": "https://wanderlog.com/place/details/2667836",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de70",
+      "name": "Macaroni Hoi An",
+      "revision": 2,
+      "sourceUrl": "https://restaurantguru.com/Macaroni-Hoi-An-tp-Hoi-An",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de71",
+      "name": "Ốp la Đông — cần xác minh",
+      "revision": 2,
+      "sourceUrl": "https://www.openstreetmap.org/node/7094838485",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb397724ca59199af9de75",
+      "name": "Bảo tàng Hội An — tạm đóng cửa",
+      "revision": 2,
+      "sourceUrl": "https://hoianmuseum.com/vi/about/bao-tang-hoi-an.html",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb92f07e2cfbe3b21eb987",
+      "name": "Elephant",
+      "revision": 1,
+      "sourceUrl": "https://www.openstreetmap.org/node/11581561445",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb92f07e2cfbe3b21eb98a",
+      "name": "Elephant",
+      "revision": 1,
+      "sourceUrl": "https://www.openstreetmap.org/node/11581561449",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb92f07e2cfbe3b21eb9d1",
+      "name": "Cafe 99",
+      "revision": 1,
+      "sourceUrl": "https://www.openstreetmap.org/node/4794363125",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    },
+    {
+      "id": "6adb92f07e2cfbe3b21eb9d4",
+      "name": "Café 99",
+      "revision": 1,
+      "sourceUrl": "https://www.openstreetmap.org/node/4853418921",
+      "reason": "Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng."
+    }
+  ],
+  "catalogCounts": {
+    "total": 61,
+    "draft": 55,
+    "published": 4,
+    "archived": 2
+  }
+}
