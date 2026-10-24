@@ -28,3 +28,4 @@ export * from './place-import.js';
 export * from './catalog-operations.js';
 export * from './admin-operations.js';
 export * from './geography.js';
+export * from './admin-v3.js';

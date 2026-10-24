@@ -3,7 +3,6 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import {
   geoapifyProvider,
-  hoiAnArea,
   type GeoapifyBatch,
   type GeoapifyGroup,
 } from '../src/features/explore/geoapify.js';
@@ -11,14 +10,30 @@ import {
 // Read-only provider trial: no MongoDB connection and no catalog writes.
 const apiKey = process.env.GEOAPIFY_API_KEY?.trim();
 try {
+  const latitude = Number(process.env.GEOAPIFY_SAMPLE_LATITUDE);
+  const longitude = Number(process.env.GEOAPIFY_SAMPLE_LONGITUDE);
+  const radiusMeters = Number(process.env.GEOAPIFY_SAMPLE_RADIUS_METERS);
+  if (
+    !Number.isFinite(latitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    !Number.isFinite(longitude) ||
+    longitude < -180 ||
+    longitude > 180 ||
+    !Number.isFinite(radiusMeters) ||
+    radiusMeters < 500 ||
+    radiusMeters > 10000 ||
+    process.env.GEOAPIFY_SAMPLE_USAGE_PREFLIGHT !== 'confirmed'
+  )
+    throw new Error('Explicit scope and verified account quota required');
+  const area = { latitude, longitude, radiusMeters };
   const get = geoapifyProvider(apiKey);
   const groups: { group: GeoapifyGroup; limit: number }[] = [
-    { group: 'sights', limit: 20 },
-    { group: 'restaurant', limit: 15 },
-    { group: 'cafe', limit: 15 },
+    { group: 'restaurant', limit: 20 },
   ];
   const results: GeoapifyBatch[] = [];
-  for (const { group, limit } of groups) results.push(await get(group, limit));
+  for (const { group, limit } of groups)
+    results.push(await get(group, limit, area));
   const items = [
     ...new Map(
       results.flatMap((r) => r.items).map((p) => [p.externalId, p]),
@@ -40,9 +55,9 @@ try {
   };
   const directory = new URL('../../.local/', import.meta.url);
   await mkdir(directory, { recursive: true });
-  const path = new URL('geoapify-hoian-sample.json', directory);
+  const path = new URL('geoapify-scoped-sample.json', directory);
   const serialized = JSON.stringify(
-    { fetchedAt: new Date().toISOString(), area: hoiAnArea, summary, results },
+    { fetchedAt: new Date().toISOString(), area, summary, results },
     null,
     2,
   );

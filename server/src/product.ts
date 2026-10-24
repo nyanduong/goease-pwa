@@ -4,6 +4,8 @@ import { placeImportService } from './features/explore/place-import.js';
 import { geoapifyProvider } from './features/explore/geoapify.js';
 import { catalogOperations } from './features/explore/catalog-operations.js';
 import { adminInsights } from './features/explore/admin-insights.js';
+import { adminV3Service } from './features/explore/admin-v3.js';
+import { adminV3Router } from './features/explore/admin-v3.router.js';
 import { adminSettingsSchema } from '@goease/contracts';
 import {
   catalogScheduleSchema,
@@ -143,6 +145,15 @@ export function createProduct(
   );
   placeImport.setQuotaGuard(operations.reserveSearch);
   const insights = adminInsights(connection, catalog, explore, audit);
+  const v3 = adminV3Service(
+    connection,
+    catalog,
+    operations,
+    explore,
+    trips,
+    audit,
+    Boolean(dependencies.geoapify || config.GEOAPIFY_API_KEY),
+  );
   const router = Router();
   let ready = false;
   router.use((req, res, next) => {
@@ -354,6 +365,7 @@ export function createProduct(
     res.locals.authUser = value.user;
     next();
   });
+  router.use('/admin/v3', adminV3Router(v3));
   router.get('/admin/places', async (req, res) =>
     res.json({
       ok: true,
@@ -427,6 +439,16 @@ export function createProduct(
       data: await insights.versions(
         res.locals.authUser._id,
         String(req.params.id),
+      ),
+    }),
+  );
+  router.get('/admin/places/:id/versions/:revision', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await insights.version(
+        res.locals.authUser._id,
+        String(req.params.id),
+        parse(z.coerce.number().int().nonnegative(), req.params.revision),
       ),
     }),
   );
@@ -605,6 +627,8 @@ export function createProduct(
               ? String('id' in req.params ? req.params.id : '')
               : undefined,
             body.expectedRevision,
+            undefined,
+            body.intent,
           ),
         });
       },
@@ -915,6 +939,7 @@ export function createProduct(
     expenses,
     sharing,
     operations,
+    v3,
     async initialize() {
       ready = false;
       const all = [
@@ -925,6 +950,7 @@ export function createProduct(
         ...Object.values(sharing.models),
         ...Object.values(planner.models),
         ...Object.values(operations.models),
+        ...Object.values(v3.models),
       ];
       for (const model of all) {
         await model.createCollection();

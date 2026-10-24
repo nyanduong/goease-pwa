@@ -214,6 +214,7 @@ export function tripModels(connection: Connection) {
           (v.length <= 50 && v.every((id) => /^[a-f0-9]{24}$/.test(id))),
       },
       responseStatus: Number,
+      catalogPlaceResponse: { type: Schema.Types.Mixed, default: undefined },
       catalogResults: {
         type: [
           new Schema(
@@ -262,6 +263,7 @@ export function tripModels(connection: Connection) {
   );
   const destinations = new Schema(
     {
+      catalogWriteFence: { type: Number, default: 0 },
       ...mutableFields,
       slug: { type: String, required: true, maxlength: 100 },
       name: { type: String, required: true, maxlength: 100 },

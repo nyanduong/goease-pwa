@@ -12,6 +12,8 @@ import {
   mapLocationSchema,
   catalogImageSchema,
   sourceSnapshotSchema,
+  catalogCapabilities,
+  fieldProvenanceSchema,
   type AdminPlaceDto,
   type AdminPlaceInput,
   type adminPlaceQuerySchema,
@@ -25,6 +27,12 @@ import type { tripService } from '../trips/trip.service.js';
 import type { exploreService } from './explore.service.js';
 import { normalizeSearch } from './explore.service.js';
 import { HttpError } from '../../http-error.js';
+import { catalogQuery } from './catalog-query.js';
+import { adminOperationsModels } from './admin-operations.models.js';
+import {
+  catalogProvenance,
+  preserveCatalogLocks,
+} from './catalog-provenance.js';
 
 export function adminCatalog(
   connection: Connection,
@@ -35,6 +43,7 @@ export function adminCatalog(
 ) {
   const { Place } = explore.models;
   const { Destination, Key } = trips.models;
+  const { Version } = adminOperationsModels(connection);
   type Doc = NonNullable<Awaited<ReturnType<typeof Place.findOne>>>;
   const dto = (doc: Doc): AdminPlaceDto => ({
     ...(doc.source
@@ -73,6 +82,26 @@ export function adminCatalog(
     referencePrice: doc.referencePrice
       ? referencePriceSchema.parse(doc.toObject().referencePrice)
       : null,
+    proposalRevision: doc.proposalRevision ?? null,
+    publicRevision:
+      doc.publicRevision ??
+      (doc.publicationStatus === 'published' ? doc.revision : null),
+    fieldLocks: (doc.fieldLocks ?? []) as AdminPlaceInput['fieldLocks'],
+    fieldProvenance: (doc.toObject().fieldProvenance ?? []).map((p) =>
+      fieldProvenanceSchema.parse(p),
+    ),
+    capabilities: catalogCapabilities({
+      name: doc.name,
+      description: doc.description,
+      locationQuery: doc.planning?.locationQuery ?? '',
+      sourceUrl: doc.sourceUrl,
+      durationMinutes: doc.planning?.durationMinutes ?? 0,
+      openingHoursNote: doc.openingHoursNote ?? '',
+      referencePrice: doc.referencePrice
+        ? referencePriceSchema.parse(doc.toObject().referencePrice)
+        : null,
+      venueType: (doc.venueType as AdminPlaceInput['venueType']) ?? 'place',
+    }),
   });
   async function requireAdmin(actor: Types.ObjectId, session?: ClientSession) {
     if (
@@ -93,46 +122,327 @@ export function adminCatalog(
     if (!/^[a-f0-9]{24}$/.test(id))
       throw new HttpError(404, 'PLACE_NOT_FOUND', 'Không tìm thấy địa điểm.');
   };
+  function input(doc: Doc): AdminPlaceInput {
+    const value = dto(doc);
+    return Object.fromEntries(
+      Object.keys(adminPlaceInputSchema.shape).map((key) => [
+        key,
+        value[key as keyof AdminPlaceInput],
+      ]),
+    ) as AdminPlaceInput;
+  }
+  async function proposal(doc: Doc, session?: ClientSession): Promise<Doc> {
+    if (doc.proposalRevision == null) return doc;
+    const version = await Version.findOne({
+      placeId: doc._id,
+      revision: doc.proposalRevision,
+      state: 'proposal',
+    }).session(session ?? null);
+    if (!version)
+      throw new HttpError(
+        409,
+        'CATALOG_PROPOSAL_MISSING',
+        'Bản đề xuất không còn hợp lệ. Tải lại để đối chiếu.',
+      );
+    return Place.hydrate({
+      ...version.snapshot,
+      _id: doc._id,
+      revision: doc.revision,
+      publicRevision: doc.publicRevision,
+      proposalRevision: doc.proposalRevision,
+      updatedAt: doc.updatedAt,
+      fieldLocks: doc.fieldLocks,
+      source: doc.toObject().source,
+      sourceSnapshot: doc.toObject().sourceSnapshot,
+      sourceCheckedAt: doc.sourceCheckedAt,
+      deletedAt: doc.deletedAt,
+    });
+  }
+  async function stageInSession(
+    current: Doc,
+    fields: Record<string, unknown>,
+    session: ClientSession,
+    options: {
+      origin?: 'manual' | 'geoapify';
+      actorId?: string | null;
+      reason?: 'save' | 'restore' | 'source';
+      restoredFromRevision?: number;
+      ruleRevision?: number;
+      runId?: Types.ObjectId;
+      receivedAt?: string | null;
+    } = {},
+  ) {
+    const effective = await proposal(current, session);
+    const before = effective.toObject() as Record<string, unknown>;
+    const merged = { ...before, ...fields };
+    const snapshot =
+      options.reason === 'restore' || options.origin === 'geoapify'
+        ? preserveCatalogLocks(before, merged)
+        : merged;
+    snapshot.fieldLocks =
+      options.reason === 'restore' || options.origin === 'geoapify'
+        ? (before.fieldLocks ?? [])
+        : (fields.fieldLocks ?? before.fieldLocks ?? []);
+    snapshot.subtitle = String(snapshot.description ?? '').slice(0, 150);
+    snapshot.searchText = normalizeSearch(
+      `${snapshot.name ?? ''} ${snapshot.description ?? ''} ${(snapshot.planning as { locationQuery?: string } | undefined)?.locationQuery ?? ''}`,
+    ).slice(0, 2500);
+    snapshot.fieldProvenance = catalogProvenance(
+      before,
+      snapshot,
+      options.origin ?? 'manual',
+      options.actorId ?? null,
+      options.receivedAt ?? null,
+    );
+    const revision = current.revision + 1;
+    snapshot.revision = revision;
+    await Version.create(
+      [
+        {
+          placeId: current._id,
+          revision,
+          snapshot,
+          state: 'proposal',
+          basePublicRevision:
+            current.publicRevision ??
+            (current.publicationStatus === 'published'
+              ? current.revision
+              : null),
+          actorId: options.actorId ?? null,
+          reason: options.reason ?? 'save',
+          restoredFromRevision: options.restoredFromRevision ?? null,
+          ruleRevision: options.ruleRevision ?? null,
+          runId: options.runId ?? null,
+        },
+      ],
+      { session },
+    );
+    const saved = await Place.findOneAndUpdate(
+      { _id: current._id, revision: current.revision },
+      {
+        $set: {
+          proposalRevision: revision,
+          fieldLocks: snapshot.fieldLocks,
+          publicRevision:
+            current.publicRevision ??
+            (current.publicationStatus === 'published'
+              ? current.revision
+              : null),
+          ...(options.actorId
+            ? { updatedBy: options.actorId, updatedByType: 'user' }
+            : {}),
+        },
+        $inc: { revision: 1 },
+      },
+      { session, returnDocument: 'after', runValidators: true },
+    );
+    if (!saved)
+      throw new HttpError(
+        409,
+        'CATALOG_CONFLICT',
+        'Có thay đổi đồng thời. Hãy tải lại để đối chiếu.',
+      );
+    return saved;
+  }
+  async function publishInSession(
+    actor: Types.ObjectId,
+    id: string,
+    expectedRevision: number,
+    session: ClientSession,
+    status: 'published' | 'archived' = 'published',
+  ) {
+    await requireAdmin(actor, session);
+    checkId(id);
+    const current = await Place.findOne({ _id: id, deletedAt: null }).session(
+      session,
+    );
+    if (!current)
+      throw new HttpError(404, 'PLACE_NOT_FOUND', 'Không tìm thấy địa điểm.');
+    if (current.revision !== expectedRevision)
+      throw new HttpError(
+        409,
+        'CATALOG_CONFLICT',
+        'Bản xem trước đã cũ. Tải lại trước khi áp dụng.',
+      );
+    const effective = await proposal(current, session);
+    if (current.proposalRevision != null) {
+      const version = await Version.findOne({
+        placeId: current._id,
+        revision: current.proposalRevision,
+      }).session(session);
+      const publicRevision =
+        current.publicRevision ??
+        (current.publicationStatus === 'published' ? current.revision : null);
+      if (version?.basePublicRevision !== publicRevision)
+        throw new HttpError(
+          409,
+          'CATALOG_CONFLICT',
+          'Bản công khai đã đổi sau khi chuẩn bị đề xuất. Tải lại để đối chiếu.',
+        );
+    }
+    const checked = adminPlaceInputSchema.safeParse({
+      ...input(effective),
+      publicationStatus: status,
+    });
+    if (!checked.success)
+      throw new HttpError(
+        400,
+        'INVALID_INPUT',
+        checked.error.issues[0]?.message ?? 'Chưa đủ thông tin khám phá.',
+      );
+    if (status === 'published') {
+      if (
+        !(await Destination.exists({
+          _id: current.destinationId,
+          publicationStatus: 'published',
+          deletedAt: null,
+        }).session(session))
+      )
+        throw new HttpError(
+          409,
+          'INVALID_DESTINATION',
+          'Điểm đến chưa được xuất bản.',
+        );
+      if (
+        await connection.collection('catalog_bulk_jobs').findOne(
+          {
+            destinationId: current.destinationId,
+            action: 'archive_destination',
+            state: 'running',
+          },
+          { session },
+        )
+      )
+        throw new HttpError(
+          409,
+          'REGION_ARCHIVING',
+          'Điểm đến đang được lưu trữ theo kế hoạch. Hoàn tất lô trước khi xuất bản.',
+        );
+      // Serialize public publication with scope archive finalization. A read-only
+      // destination gate would allow both transactions to commit on disjoint docs.
+      const destinationFence = await Destination.updateOne(
+        {
+          _id: current.destinationId,
+          publicationStatus: 'published',
+          deletedAt: null,
+        },
+        { $inc: { catalogWriteFence: 1 } },
+        { session },
+      );
+      if (destinationFence.modifiedCount !== 1)
+        throw new HttpError(
+          409,
+          'CATALOG_CONFLICT',
+          'Phạm vi đã thay đổi. Tải lại trước khi xuất bản.',
+        );
+      if (
+        await connection.collection('catalog_reviews').findOne(
+          {
+            placeId: current._id,
+            kind: { $in: ['source', 'duplicate'] },
+            state: { $ne: 'resolved' },
+          },
+          { session },
+        )
+      )
+        throw new HttpError(
+          409,
+          'CATALOG_REVIEW_REQUIRED',
+          'Cần xử lý thông tin nguồn hoặc nghi trùng trước khi đăng.',
+        );
+      if (
+        current.sourceSnapshot?.closed &&
+        !(await connection.collection('catalog_reviews').findOne(
+          {
+            placeId: current._id,
+            kind: 'source',
+            state: 'resolved',
+            decision: 'keep',
+          },
+          { session },
+        ))
+      )
+        throw new HttpError(
+          409,
+          'CATALOG_REVIEW_REQUIRED',
+          'Cần đối chiếu dấu hiệu đóng cửa trước khi đăng.',
+        );
+    }
+    await audit.capturePlace(id, session);
+    const snapshot = effective.toObject() as Record<string, unknown>;
+    const fields = Object.fromEntries(
+      Object.entries(snapshot).filter(
+        ([key]) =>
+          ![
+            '_id',
+            'revision',
+            'createdAt',
+            'updatedAt',
+            'createdBy',
+            'createdByType',
+            'publicRevision',
+            'proposalRevision',
+            // Observations and source identity can advance while content awaits approval.
+            // Publishing a content version must never rewind that operational evidence.
+            'source',
+            'sourceSnapshot',
+            'sourceCheckedAt',
+            'destinationId',
+            'destinationName',
+            'deletedAt',
+          ].includes(key),
+      ),
+    );
+    const saved = await Place.findOneAndUpdate(
+      { _id: id, revision: expectedRevision },
+      {
+        $set: {
+          ...fields,
+          publicationStatus: status,
+          proposalRevision: null,
+          publicRevision: expectedRevision + 1,
+          updatedBy: actor,
+          updatedByType: 'user',
+        },
+        $inc: { revision: 1 },
+      },
+      { session, returnDocument: 'after', runValidators: true },
+    );
+    if (!saved)
+      throw new HttpError(
+        409,
+        'CATALOG_CONFLICT',
+        'Có thay đổi đồng thời. Hãy tải lại.',
+      );
+    await Version.create(
+      [
+        {
+          placeId: saved._id,
+          revision: saved.revision,
+          snapshot: saved.toObject(),
+          state: 'published',
+          reason: 'publish',
+          basePublicRevision: current.publicRevision ?? null,
+          actorId: actor,
+        },
+      ],
+      { session },
+    );
+    return saved;
+  }
   return {
     dto,
+    input,
+    proposal,
+    stageInSession,
+    publishInSession,
     requireAdmin,
     async list(
       actor: Types.ObjectId,
       query: z.infer<typeof adminPlaceQuerySchema>,
     ) {
       await requireAdmin(actor);
-      const q = normalizeSearch(query.q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const filter = {
-        deletedAt: null,
-        ...(query.destinationId ? { destinationId: query.destinationId } : {}),
-        ...(query.category !== 'all' ? { category: query.category } : {}),
-        ...(query.source === 'geoapify'
-          ? { 'source.provider': 'geoapify' as const }
-          : query.source === 'manual'
-            ? { source: { $exists: false } }
-            : {}),
-        ...(query.quality === 'hours'
-          ? { openingHoursNote: { $in: ['', null] } }
-          : query.quality === 'location'
-            ? { mapLocation: null }
-            : query.quality === 'price'
-              ? {
-                  $or: [
-                    { referencePrice: null },
-                    { 'referencePrice.reviewAfter': { $lt: catalogToday() } },
-                    { 'referencePrice.checkedAt': { $gt: catalogToday() } },
-                    { 'referencePrice.inclusions': { $in: ['', null] } },
-                    { 'referencePrice.exclusions': { $in: ['', null] } },
-                  ],
-                }
-              : {}),
-        ...(query.status === 'all'
-          ? query.quality === 'all'
-            ? {}
-            : { publicationStatus: { $ne: 'archived' as const } }
-          : { publicationStatus: query.status }),
-        ...(q ? { searchText: { $regex: q } } : {}),
-      };
+      const filter = catalogQuery(query);
       const docs = await Place.find(filter)
         .sort(
           query.sort === 'name'
@@ -144,7 +454,9 @@ export function adminCatalog(
         .skip(query.offset)
         .limit(21);
       return {
-        items: docs.slice(0, 20).map(dto),
+        items: await Promise.all(
+          docs.slice(0, 20).map(async (p) => dto(await proposal(p))),
+        ),
         hasMore: docs.length > 20,
         total: await Place.countDocuments(filter),
       };
@@ -167,7 +479,8 @@ export function adminCatalog(
         .limit(20)
         .toArray();
       return {
-        place: dto(doc),
+        place: dto(await proposal(doc)),
+        publicPlace: doc.publicationStatus === 'published' ? dto(doc) : null,
         history,
         sourceEvidence: doc.sourceSnapshot
           ? {
@@ -189,6 +502,7 @@ export function adminCatalog(
       id?: string,
       expectedRevision?: number,
       restoredFromRevision?: number,
+      intent: 'save' | 'publish' = 'save',
     ) {
       await requireAdmin(actor);
       if (id) checkId(id);
@@ -199,11 +513,10 @@ export function adminCatalog(
           'INVALID_INPUT',
           parsed.error.issues[0]?.message ?? 'Thông tin chưa hợp lệ.',
         );
+      input = parsed.data;
       if (
         input.referencePrice &&
-        (input.referencePrice.checkedAt > catalogToday() ||
-          (input.publicationStatus === 'published' &&
-            input.referencePrice.reviewAfter < catalogToday()))
+        input.referencePrice.checkedAt > catalogToday()
       )
         throw new HttpError(
           400,
@@ -219,11 +532,19 @@ export function adminCatalog(
       const operation =
         restoredFromRevision !== undefined
           ? 'catalog.restore'
-          : id
-            ? 'catalog.update'
-            : 'catalog.create';
+          : intent === 'publish'
+            ? 'catalog.publish'
+            : id
+              ? 'catalog.update'
+              : 'catalog.create';
       const requestHash = tokenHash(
-        JSON.stringify({ id, input, expectedRevision, restoredFromRevision }),
+        JSON.stringify({
+          id,
+          input,
+          expectedRevision,
+          restoredFromRevision,
+          intent,
+        }),
       );
       const operationId = randomUUID(),
         reqId = requestId();
@@ -243,27 +564,31 @@ export function adminCatalog(
                   'IDEMPOTENCY_CONFLICT',
                   'Nội dung lần lưu này đã thay đổi. Hãy lưu bằng thao tác mới.',
                 );
-              const saved = await Place.findById(receipt.resourceId).session(
-                session,
-              );
+              const saved = await Place.findOne({
+                _id: receipt.resourceId,
+                deletedAt: null,
+              }).session(session);
               if (!saved)
                 throw new HttpError(
                   404,
                   'PLACE_NOT_FOUND',
                   'Không tìm thấy địa điểm.',
                 );
-              return { place: dto(saved) };
+              return {
+                place:
+                  receipt.catalogPlaceResponse ??
+                  dto(await proposal(saved, session)),
+              };
             }
             const destination = await Destination.findOne({
               _id: input.destinationId,
-              publicationStatus: 'published',
               deletedAt: null,
             }).session(session);
             if (!destination)
               throw new HttpError(
                 400,
                 'INVALID_DESTINATION',
-                'Chọn điểm đến đang được hiển thị.',
+                'Chọn điểm đến trong phạm vi quản trị.',
               );
             const current = id
               ? await Place.findOne({ _id: id, deletedAt: null }).session(
@@ -284,43 +609,6 @@ export function adminCatalog(
               );
             if (
               current &&
-              input.publicationStatus === 'published' &&
-              current.publicationStatus !== 'published' &&
-              (await connection.collection('catalog_reviews').findOne(
-                {
-                  placeId: current._id,
-                  kind: { $in: ['source', 'duplicate'] },
-                  state: { $ne: 'resolved' },
-                },
-                { session },
-              ))
-            )
-              throw new HttpError(
-                409,
-                'CATALOG_REVIEW_REQUIRED',
-                'Mở Việc cần làm để quyết định thông tin nguồn hoặc nghi trùng trước khi đăng.',
-              );
-            if (
-              current?.sourceSnapshot?.closed &&
-              input.publicationStatus === 'published' &&
-              current.publicationStatus !== 'published' &&
-              !(await connection.collection('catalog_reviews').findOne(
-                {
-                  placeId: current._id,
-                  kind: 'source',
-                  state: 'resolved',
-                  decision: 'keep',
-                },
-                { session },
-              ))
-            )
-              throw new HttpError(
-                409,
-                'CATALOG_REVIEW_REQUIRED',
-                'Nguồn có dấu hiệu đóng cửa. Mở Việc cần làm để đối chiếu trước khi đăng.',
-              );
-            if (
-              current &&
               String(current.destinationId) !== input.destinationId
             )
               throw new HttpError(
@@ -328,6 +616,7 @@ export function adminCatalog(
                 'PLACE_DESTINATION_FIXED',
                 'Địa điểm đã tạo giữ nguyên điểm đến để bảo vệ các lịch đang dùng. Hãy tạo mục mới cho điểm đến khác.',
               );
+            const editable = current ? await proposal(current, session) : null;
             const fields = {
               ...(input.images !== undefined
                 ? {
@@ -337,7 +626,7 @@ export function adminCatalog(
                           imageUrl: input.images[0].url,
                           imageCredit: input.images[0].credit,
                         }
-                      : current?.images.length
+                      : editable?.images.length
                         ? {
                             imageUrl: images.exploreHoian,
                             imageCredit:
@@ -361,18 +650,19 @@ export function adminCatalog(
               ).slice(0, 2500),
               sourceUrl: input.sourceUrl,
               openingHoursNote: input.openingHoursNote,
-              ...(current &&
-              current.planning?.locationQuery !== input.locationQuery
+              ...(editable &&
+              editable.planning?.locationQuery !== input.locationQuery
                 ? { mapLocation: null }
                 : {}),
               ...(input.mapLocation !== undefined
                 ? {
                     mapLocation:
-                      current &&
-                      current.planning?.locationQuery !== input.locationQuery &&
-                      current.mapLocation?.latitude ===
+                      editable &&
+                      editable.planning?.locationQuery !==
+                        input.locationQuery &&
+                      editable.mapLocation?.latitude ===
                         input.mapLocation?.latitude &&
-                      current.mapLocation?.longitude ===
+                      editable.mapLocation?.longitude ===
                         input.mapLocation?.longitude
                         ? null
                         : input.mapLocation,
@@ -380,6 +670,7 @@ export function adminCatalog(
                 : {}),
               referencePrice: input.referencePrice,
               publicationStatus: input.publicationStatus,
+              fieldLocks: input.fieldLocks ?? editable?.fieldLocks ?? [],
               durationLabel: `${input.durationMinutes} phút`,
               tip: 'Thời lượng là ước tính GoEase. Kiểm tra giờ mở cửa và giá với cơ sở trước khi đi.',
               planning: {
@@ -388,20 +679,31 @@ export function adminCatalog(
                 costNote: input.referencePrice
                   ? input.referencePrice.conditions
                   : 'Chưa có giá tham khảo để tự tính.',
-                priceOptions: current?.toObject().planning?.priceOptions ?? [],
+                priceOptions: editable?.toObject().planning?.priceOptions ?? [],
               },
               updatedBy: actor,
               updatedByType: 'user',
             };
             if (current) await audit.capturePlace(String(current._id), session);
-            const saved = current
-              ? await Place.findOneAndUpdate(
-                  { _id: current._id, revision: current.revision },
-                  { $set: fields, $inc: { revision: 1 } },
-                  { session, returnDocument: 'after', runValidators: true },
-                )
+            let saved = current
+              ? await stageInSession(current, fields, session, {
+                  actorId: String(actor),
+                  reason:
+                    restoredFromRevision === undefined ? 'save' : 'restore',
+                  ...(restoredFromRevision !== undefined
+                    ? { restoredFromRevision }
+                    : {}),
+                })
               : await new Place({
                   ...fields,
+                  publicationStatus: 'draft',
+                  proposalRevision: 1,
+                  fieldProvenance: catalogProvenance(
+                    null,
+                    fields,
+                    'manual',
+                    String(actor),
+                  ),
                   revision: 1,
                   createdBy: actor,
                   createdByType: 'user',
@@ -414,6 +716,33 @@ export function adminCatalog(
                   tip: 'Thông tin tham khảo; liên hệ cơ sở để xác nhận.',
                   highlights: [],
                 }).save({ session });
+            if (!current)
+              await Version.create(
+                [
+                  {
+                    placeId: saved._id,
+                    revision: 1,
+                    state: 'proposal',
+                    reason: 'save',
+                    actorId: actor,
+                    snapshot: {
+                      ...saved.toObject(),
+                      publicationStatus: input.publicationStatus,
+                    },
+                  },
+                ],
+                { session },
+              );
+            if (intent === 'publish')
+              saved = await publishInSession(
+                actor,
+                String(saved._id),
+                saved.revision,
+                session,
+                input.publicationStatus === 'archived'
+                  ? 'archived'
+                  : 'published',
+              );
             if (!saved)
               throw new HttpError(
                 409,
@@ -423,16 +752,22 @@ export function adminCatalog(
             await audit.append(
               {
                 action:
-                  restoredFromRevision !== undefined
-                    ? 'catalog.restored'
-                    : !current
-                      ? 'catalog.created'
-                      : current.publicationStatus !== input.publicationStatus
-                        ? 'catalog.publication_changed'
-                        : 'catalog.updated',
+                  intent === 'publish'
+                    ? 'catalog.published'
+                    : restoredFromRevision !== undefined
+                      ? 'catalog.restore_prepared'
+                      : 'catalog.proposal_saved',
                 actorUserId: String(actor),
                 entityId: String(saved._id),
                 entityRevision: saved.revision,
+                ...(current
+                  ? {
+                      previousRevision:
+                        intent === 'publish'
+                          ? (current.publicRevision ?? current.revision)
+                          : current.revision,
+                    }
+                  : {}),
                 requestId: reqId,
                 operationId,
               },
@@ -446,10 +781,11 @@ export function adminCatalog(
               status: 'completed',
               resourceType: 'place',
               resourceId: String(saved._id),
+              catalogPlaceResponse: dto(await proposal(saved, session)),
               responseStatus: id ? 200 : 201,
               expiresAt: new Date(Date.now() + 86400000),
             }).save({ session });
-            return { place: dto(saved) };
+            return { place: dto(await proposal(saved, session)) };
           });
         } catch (e) {
           if (

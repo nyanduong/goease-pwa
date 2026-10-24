@@ -2,8 +2,15 @@ import type { Connection, ClientSession } from 'mongoose';
 import { adminOperationsModels } from './admin-operations.models.js';
 import { HttpError } from '../../http-error.js';
 export const initialDestinationId = '000000000000000000000004';
-export const scopeKey = (id = initialDestinationId) =>
-  id === initialDestinationId ? 'hoi-an' : id;
+export function scopeKey(id?: string) {
+  if (!id || !/^[a-f0-9]{24}$/.test(id))
+    throw new HttpError(
+      400,
+      'SCOPE_REQUIRED',
+      'Chọn điểm đến rõ ràng trước khi vận hành nguồn.',
+    );
+  return id === initialDestinationId ? 'hoi-an' : id;
+}
 export const scopeDestination = (scope: string) =>
   scope === 'hoi-an' ? initialDestinationId : scope;
 export type IngestionArea = {
@@ -13,9 +20,10 @@ export type IngestionArea = {
 };
 export async function ingestionScope(
   connection: Connection,
-  destinationId = initialDestinationId,
+  destinationId?: string,
   session?: ClientSession,
 ): Promise<IngestionArea> {
+  scopeKey(destinationId);
   const settings = await adminOperationsModels(connection)
     .Settings.findOne({ scope: 'global' })
     .session(session ?? null);
@@ -33,8 +41,6 @@ export async function ingestionScope(
       longitude: saved.longitude,
       radiusMeters: saved.radiusMeters,
     };
-  if (!saved && destinationId === initialDestinationId)
-    return { latitude: 15.88, longitude: 108.328, radiusMeters: 5000 };
   throw new HttpError(
     400,
     'REGION_NOT_CONFIGURED',

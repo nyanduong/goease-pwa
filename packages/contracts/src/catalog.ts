@@ -56,6 +56,35 @@ export const catalogImageSchema = z.strictObject({
 export const priceSnapshotSchema = referencePriceSchema.safeExtend({
   placeRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 });
+export const catalogEditableFields = [
+  'name',
+  'description',
+  'category',
+  'venueType',
+  'locationQuery',
+  'durationMinutes',
+  'openingHoursNote',
+  'sourceUrl',
+  'referencePrice',
+  'mapLocation',
+  'images',
+] as const;
+export const catalogFieldSchema = z.enum(catalogEditableFields);
+export type CatalogField = z.infer<typeof catalogFieldSchema>;
+export const fieldProvenanceSchema = z.strictObject({
+  field: catalogFieldSchema,
+  origin: z.enum(['manual', 'geoapify', 'legacy']),
+  sourceUrl: publicSourceSchema.nullable(),
+  receivedAt: z.iso.datetime().nullable(),
+  verifiedAt: z.iso.datetime().nullable(),
+  validUntil: z.iso.date().nullable(),
+  actorId: z
+    .string()
+    .regex(/^[a-f0-9]{24}$/)
+    .nullable(),
+  state: z.enum(['unknown', 'observed', 'edited', 'verified']),
+});
+export type FieldProvenance = z.infer<typeof fieldProvenanceSchema>;
 export const adminPlaceInputSchema = z
   .strictObject({
     destinationId: z.string().regex(/^[a-f0-9]{24}$/),
@@ -72,6 +101,11 @@ export const adminPlaceInputSchema = z
     mapLocation: mapLocationSchema.nullable().optional(),
     internalNote: z.string().trim().max(1000).optional(),
     images: z.array(catalogImageSchema).max(8).optional(),
+    fieldLocks: z
+      .array(catalogFieldSchema)
+      .max(catalogEditableFields.length)
+      .refine((fields) => new Set(fields).size === fields.length)
+      .optional(),
   })
   .superRefine((v, ctx) => {
     if (
@@ -84,15 +118,6 @@ export const adminPlaceInputSchema = z
         code: 'custom',
         message:
           'Chuyển ghi chú rà soát vào ghi chú nội bộ trước khi xuất bản.',
-      });
-    if (
-      v.publicationStatus === 'published' &&
-      !priceReady(v.referencePrice, v.referencePrice?.minTravelers ?? 1)
-    )
-      ctx.addIssue({
-        code: 'custom',
-        message:
-          'Chỉ xuất bản khi có giá còn hạn, nguồn, điều kiện, phần bao gồm và không bao gồm rõ ràng.',
       });
     if (v.referencePrice?.bundle && v.category === 'food')
       ctx.addIssue({
@@ -118,6 +143,14 @@ export type AdminPlaceDto = AdminPlaceInput & {
   updatedAt: string;
   imageUrl?: string;
   imageCredit?: string;
+  proposalRevision?: number | null;
+  publicRevision?: number | null;
+  fieldProvenance?: FieldProvenance[];
+  capabilities?: {
+    discovery: boolean;
+    scheduling: boolean;
+    budgeting: boolean;
+  };
 };
 export const adminPlaceWriteSchema = z.strictObject({
   place: adminPlaceInputSchema,
@@ -127,7 +160,55 @@ export const adminPlaceWriteSchema = z.strictObject({
     .min(0)
     .max(Number.MAX_SAFE_INTEGER)
     .optional(),
+  intent: z.enum(['save', 'publish']).default('save'),
 });
+
+// Discovery is independent of scheduling and money. Missing facts remain unknown.
+// The same narrow editorial hours gate is used by the actual Goe planner.
+export function plannerHoursReady(note: string | null | undefined) {
+  return (
+    !/chưa xác minh|chưa thống nhất|chưa rõ|tạm đóng cửa/i.test(note ?? '') &&
+    /(?:[01]\d|2[0-3]):[0-5]\d\s*[–-]\s*(?:[01]\d|2[0-3]):[0-5]\d/.test(
+      note ?? '',
+    )
+  );
+}
+export function catalogCapabilities(
+  place: Pick<
+    AdminPlaceInput,
+    | 'name'
+    | 'description'
+    | 'locationQuery'
+    | 'sourceUrl'
+    | 'durationMinutes'
+    | 'openingHoursNote'
+    | 'referencePrice'
+    | 'venueType'
+  >,
+  travelers = 1,
+) {
+  const discovery =
+    !!place.name.trim() &&
+    !!place.description.trim() &&
+    !!place.locationQuery.trim() &&
+    publicSourceSchema.safeParse(place.sourceUrl).success &&
+    !/cần đối chiếu|đang rà soát|cần xác minh/i.test(
+      `${place.name} ${place.description}`,
+    );
+  const budgeting =
+    place.venueType !== 'food_idea' &&
+    priceReady(place.referencePrice, travelers);
+  return {
+    discovery,
+    scheduling:
+      discovery &&
+      budgeting &&
+      plannerHoursReady(place.openingHoursNote) &&
+      place.durationMinutes > 0 &&
+      !/^\s*\[(?:TEST|KIỂM THỬ)\]/i.test(place.name),
+    budgeting,
+  };
+}
 export const adminPlaceQuerySchema = z.strictObject({
   q: z.string().trim().max(100).default(''),
   status: z.enum(['all', 'draft', 'published', 'archived']).default('all'),
@@ -165,11 +246,7 @@ export function catalogCost(
   place: Pick<PlaceDto, 'referencePrice' | 'revision'>,
 ): ActivityInput['estimatedCost'] {
   const price = place.referencePrice;
-  if (
-    !price ||
-    price.checkedAt > catalogToday() ||
-    price.reviewAfter < catalogToday()
-  )
+  if (!price || !priceReady(price, price.minTravelers ?? 1))
     return {
       amountMinor: null,
       currency: 'VND',

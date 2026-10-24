@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import {
   catalogCost,
   catalogToday,
+  priceReady,
   adminPlaceInputSchema,
   type AdminPlaceInput,
   type AdminPlaceDto,
@@ -114,32 +115,32 @@ test(
         },
       };
       await t.test(
-        'publication rejects unknown or incomplete prices, while drafts remain editable',
+        'discovery accepts unknown or incomplete price without bypassing money and planner gates',
         async () => {
           for (const referencePrice of [
             null,
             { ...input.referencePrice!, inclusions: undefined },
             { ...input.referencePrice!, exclusions: undefined },
-            { ...input.referencePrice!, reviewAfter: '2000-01-01' },
           ]) {
-            const response = await call(
-              '/admin/places',
-              'POST',
-              {
-                place: {
-                  ...input,
-                  referencePrice,
-                  publicationStatus: 'published',
-                },
-              },
-              admin,
+            assert.ok(
+              adminPlaceInputSchema.safeParse({
+                ...input,
+                referencePrice,
+                publicationStatus: 'published',
+              }).success,
             );
-            assert.equal(response.status, 400);
+            assert.equal(priceReady(referencePrice), false);
+            assert.equal(catalogCost({ referencePrice }).amountMinor, null);
           }
           assert.equal(
-            adminPlaceInputSchema.safeParse({ ...input, referencePrice: null })
-              .success,
-            true,
+            adminPlaceInputSchema.safeParse({
+              ...input,
+              referencePrice: {
+                ...input.referencePrice!,
+                reviewAfter: '2000-01-01',
+              },
+            }).success,
+            false,
           );
         },
       );
@@ -290,7 +291,11 @@ test(
               await call(
                 `/admin/places/${place.id}`,
                 'PATCH',
-                { place: pub, expectedRevision: place.revision },
+                {
+                  place: pub,
+                  expectedRevision: place.revision,
+                  intent: 'publish',
+                },
                 admin,
               ),
             )
@@ -437,6 +442,35 @@ test(
               ),
             )
           ).place;
+          const pendingPublic = (
+            await read<{ place: PlaceDto }>(await call(`/places/${place.id}`))
+          ).place;
+          assert.equal(pendingPublic.referencePrice!.amountMinor, 50000);
+          assert.equal(pendingPublic.revision, publicPlace.revision);
+          const pendingTrip = (
+            await read<{ trip: TripDto }>(
+              await call('/trips', 'POST', { trip }, customer),
+            )
+          ).trip;
+          assert.equal(
+            pendingTrip.budgetSummary!.knownEstimatedMinor,
+            100000,
+            'an unchanged public snapshot remains valid while a proposal is pending',
+          );
+          place = (
+            await read<{ place: AdminPlaceDto }>(
+              await call(
+                `/admin/places/${place.id}`,
+                'PATCH',
+                {
+                  place: { ...input, publicationStatus: 'published' },
+                  expectedRevision: place.revision,
+                  intent: 'publish',
+                },
+                admin,
+              ),
+            )
+          ).place;
           const reloaded = (
             await read<{ trip: TripDto }>(
               await call(`/trips/${saved.id}`, 'GET', undefined, customer),
@@ -518,7 +552,10 @@ test(
             { action: 1 },
             {
               unique: true,
-              partialFilterExpression: { action: 'catalog.created' },
+              partialFilterExpression: {
+                action: 'catalog.proposal_saved',
+                entityRevision: 1,
+              },
               name: 'catalog_test_failure',
             },
           );
@@ -571,6 +608,7 @@ test(
               {
                 place: { ...input, publicationStatus: 'archived' },
                 expectedRevision: place.revision,
+                intent: 'publish',
               },
               admin,
             ),
@@ -592,7 +630,7 @@ test(
           const detail = await read<{ history: unknown[] }>(
             await call(`/admin/places/${place.id}`, 'GET', undefined, admin),
           );
-          assert.equal(detail.history.length, 4);
+          assert.equal(detail.history.length, 5);
           await product.auth.models.User.updateOne(
             { _id: adminUser!._id },
             { $set: { roles: ['traveler'] } },

@@ -51,13 +51,7 @@ export function catalogQuality(
   now = Date.now(),
 ) {
   const checks: [string, string, boolean, 'high' | 'medium'][] = [
-    [
-      'name',
-      'Tên công khai cần biên tập',
-      !!p.name?.trim() &&
-        !/cần đối chiếu|đang rà soát|cần xác minh/i.test(p.name),
-      'high',
-    ],
+    ['name', 'Tên công khai cần biên tập', !!p.name?.trim(), 'high'],
     ['description', 'Thiếu giới thiệu', !!p.description?.trim(), 'medium'],
     ['address', 'Thiếu địa chỉ', !!p.locationQuery?.trim(), 'high'],
     ['duration', 'Thiếu thời lượng ước tính', p.durationMinutes > 0, 'medium'],
@@ -65,13 +59,28 @@ export function catalogQuality(
     [
       'price',
       'Giá thiếu, chưa đủ điều kiện hoặc quá hạn',
-      !!priceReady(p.referencePrice, p.referencePrice?.minTravelers ?? 1),
+      !!p.referencePrice,
       'high',
     ],
   ];
   const issues: QualityIssue[] = checks
     .filter((c) => !c[2])
     .map(([code, label, , severity]) => ({ code, label, severity }));
+  if (p.name?.trim() && /cần đối chiếu|đang rà soát|cần xác minh/i.test(p.name))
+    issues.push({
+      code: 'name',
+      label: 'Tên công khai cần biên tập',
+      severity: 'high',
+    });
+  if (
+    p.referencePrice &&
+    !priceReady(p.referencePrice, p.referencePrice.minTravelers ?? 1)
+  )
+    issues.push({
+      code: 'price',
+      label: 'Giá chưa đủ điều kiện hoặc quá hạn',
+      severity: 'high',
+    });
   if (!p.mapLocation)
     issues.push({
       code: 'location',
@@ -101,6 +110,12 @@ export function catalogQuality(
       (checks.filter((c) => c[2]).length / checks.length) * 100,
     ),
     issues,
+    freshness:
+      now - new Date(p.updatedAt).getTime() > freshnessDays * 86400000
+        ? ('stale' as const)
+        : ('current' as const),
+    // Completeness/freshness never assert that the content has been verified.
+    verification: 'unknown' as const,
   };
 }
 export type AdminOverview = {

@@ -1,5 +1,5 @@
 import { images } from '@goease/media';
-import { ingestionScope, initialDestinationId } from './ingestion-scope.js';
+import { ingestionScope, scopeKey } from './ingestion-scope.js';
 import mongoose, { Types, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import type {
@@ -18,6 +18,8 @@ import { tokenHash } from '../auth/security.js';
 import { requestId } from '../auth/auth.service.js';
 import { HttpError } from '../../http-error.js';
 import { sourceSnapshotSchema } from '@goease/contracts';
+import { adminV3Models } from './admin-v3.models.js';
+import { initialSourceProvenance } from './catalog-rules.js';
 import {
   distanceMeters,
   type geoapifyProvider,
@@ -52,11 +54,11 @@ export function placeImportService(
     );
   async function requireDestination(
     session?: mongoose.ClientSession,
-    destinationId = initialDestinationId,
+    destinationId?: string,
   ) {
+    scopeKey(destinationId);
     const destination = await Destination.findOne({
       _id: destinationId,
-      publicationStatus: 'published',
       deletedAt: null,
     }).session(session ?? null);
     if (!destination)
@@ -65,33 +67,89 @@ export function placeImportService(
         'INVALID_DESTINATION',
         'Danh mục khu vực chưa sẵn sàng.',
       );
+    if (destination.publicationStatus === 'archived')
+      throw new HttpError(
+        409,
+        'REGION_ARCHIVED',
+        'Điểm đến đã lưu trữ. Mở lại điểm đến trước khi tiếp nhận thêm dữ liệu nguồn.',
+      );
+    if (
+      await connection.collection('catalog_bulk_jobs').findOne(
+        {
+          destinationId: destination._id,
+          action: 'archive_destination',
+          state: 'running',
+        },
+        session ? { session } : {},
+      )
+    )
+      throw new HttpError(
+        409,
+        'REGION_ARCHIVING',
+        'Điểm đến đang được lưu trữ theo kế hoạch. Hoàn tất lô trước khi tiếp nhận dữ liệu nguồn.',
+      );
+    if (session) {
+      const fence = await Destination.updateOne(
+        {
+          _id: destination._id,
+          revision: destination.revision,
+          publicationStatus: { $ne: 'archived' },
+        },
+        { $inc: { catalogWriteFence: 1 } },
+        { session },
+      );
+      if (fence.modifiedCount !== 1)
+        throw new HttpError(
+          409,
+          'CATALOG_CONFLICT',
+          'Phạm vi đã thay đổi. Mở lại để đối chiếu.',
+        );
+    }
     return destination;
   }
   async function markDuplicates(
     items: PlaceImportCandidate[],
     session?: mongoose.ClientSession,
-    destinationId = initialDestinationId,
+    destinationId?: string,
   ) {
-    const stored = await Place.find({
-      $or: [
-        { destinationId },
-        {
-          'source.provider': 'geoapify',
-          'source.externalId': { $in: items.map((p) => p.externalId) },
-        },
-      ],
-    })
-      .select('_id name source.externalId mapLocation')
-      .session(session ?? null)
-      .limit(5001);
-    if (stored.length > 5000)
-      throw new HttpError(
-        409,
-        'IMPORT_CATALOG_LIMIT',
-        'Danh mục đã vượt giới hạn đối chiếu của bản thử. Hãy kiểm tra trước khi nhập tiếp.',
-      );
-    return items.map((p) => {
-      const exact = stored.find((s) => s.source?.externalId === p.externalId);
+    scopeKey(destinationId);
+    const matched: PlaceImportCandidate[] = [];
+    for (const p of items) {
+      const exact = await Place.findOne({
+        'source.provider': 'geoapify',
+        'source.externalId': p.externalId,
+      })
+        .select('_id')
+        .session(session ?? null);
+      // Narrow candidate matching in MongoDB, then measure actual distance. A
+      // crowded catalog never truncates all comparisons at an arbitrary cap.
+      const stored = exact
+        ? []
+        : await Place.find({
+            destinationId: destinationId!,
+            deletedAt: null,
+            $or: [
+              {
+                name: {
+                  $regex: `^${p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+                  $options: 'i',
+                },
+              },
+              {
+                'mapLocation.latitude': {
+                  $gte: p.latitude - 0.0002,
+                  $lte: p.latitude + 0.0002,
+                },
+                'mapLocation.longitude': {
+                  $gte: p.longitude - 0.0002,
+                  $lte: p.longitude + 0.0002,
+                },
+              },
+            ],
+          })
+            .select('_id name source.externalId mapLocation')
+            .session(session ?? null)
+            .limit(100);
       const possibleDuplicates = [
         ...p.possibleDuplicates,
         ...stored
@@ -122,12 +180,13 @@ export function placeImportService(
           )
           .map((s) => s.name),
       ];
-      return {
+      matched.push({
         ...p,
         ...(exact ? { existingPlaceId: String(exact._id) } : {}),
         possibleDuplicates: [...new Set(possibleDuplicates)].slice(0, 20),
-      };
-    });
+      });
+    }
+    return matched;
   }
   return {
     setQuotaGuard(guard: typeof quotaGuard) {
@@ -140,7 +199,8 @@ export function placeImportService(
       input: PlaceImportSearch,
     ): Promise<PlaceImportPreview> {
       await catalog.requireAdmin(actor);
-      const destinationId = input.destinationId ?? initialDestinationId;
+      scopeKey(input.destinationId);
+      const destinationId = input.destinationId!;
       await requireDestination(undefined, destinationId);
       const area = await ingestionScope(connection, destinationId);
       const now = Date.now();
@@ -158,8 +218,35 @@ export function placeImportService(
               ]
             : [{ group: input.group, limit: input.limit }];
         const batches = [];
-        for (const q of queries)
-          batches.push(await get(q.group, q.limit, area));
+        for (const q of queries) {
+          const { Usage } = adminV3Models(connection);
+          const usage = await new Usage({
+            group: q.group,
+            requestedLimit: q.limit,
+          }).save();
+          try {
+            const batch = await get(q.group, q.limit, area);
+            batches.push(batch);
+            await Usage.updateOne(
+              { _id: usage._id },
+              { $set: { state: 'fetched', received: batch.received } },
+            );
+          } catch (error) {
+            await Usage.updateOne(
+              { _id: usage._id },
+              {
+                $set: {
+                  state: 'failed',
+                  errorCode:
+                    error instanceof HttpError
+                      ? error.code
+                      : 'PROVIDER_UNAVAILABLE',
+                },
+              },
+            );
+            throw error;
+          }
+        }
         await catalog.requireAdmin(actor);
         const candidates = batches.flatMap((b) => b.items);
         const unique = [
@@ -281,6 +368,10 @@ export function placeImportService(
                 createdByType: 'user',
                 updatedByType: 'user',
                 name: p.name,
+                fieldProvenance: initialSourceProvenance(
+                  p,
+                  preview.value.fetchedAt,
+                ),
                 category: p.category,
                 venueType: p.venueType,
                 description:

@@ -2,6 +2,7 @@ import { HttpError } from '../../http-error.js';
 import {
   catalogCost,
   priceReady,
+  plannerHoursReady,
   type PlaceDto,
   type PlannerRequest,
 } from '@goease/contracts';
@@ -175,15 +176,9 @@ export function eligibleForPlanner(place: PlaceDto, travelers = 1) {
     Boolean(place.planning) &&
     priceReady(place.referencePrice, travelers) &&
     !!place.planning?.locationQuery.trim() &&
-    !/chưa xác minh|chưa thống nhất|chưa rõ/i.test(
-      place.openingHoursNote ?? '',
-    ) &&
-    /(?:[01]\d|2[0-3]):[0-5]\d\s*[–-]\s*(?:[01]\d|2[0-3]):[0-5]\d/.test(
-      place.openingHoursNote ?? '',
-    ) &&
+    plannerHoursReady(place.openingHoursNote) &&
     place.venueType !== 'food_idea' &&
-    !/^\s*\[(?:TEST|KIỂM THỬ)\]/i.test(place.name) &&
-    !/tạm đóng cửa/i.test(place.openingHoursNote ?? '')
+    !/^\s*\[(?:TEST|KIỂM THỬ)\]/i.test(place.name)
   );
 }
 
