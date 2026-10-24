@@ -1,3 +1,4 @@
+import { ingestionScope, initialDestinationId } from './ingestion-scope.js';
 import mongoose, { Types, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import type {
@@ -26,7 +27,6 @@ const nameKey = (s: string) =>
   normalizeSearch(s)
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
-const destinationId = '000000000000000000000004';
 const ttl = 15 * 60_000;
 export function placeImportService(
   connection: Connection,
@@ -40,7 +40,7 @@ export function placeImportService(
   const { Key, Destination } = trips.models;
   const previews = new Map<
     string,
-    { actor: string; value: PlaceImportPreview }
+    { actor: string; value: PlaceImportPreview; destinationId: string }
   >();
   let quotaGuard: (actor: string) => Promise<() => Promise<void>>;
   const expired = () =>
@@ -49,10 +49,12 @@ export function placeImportService(
       'IMPORT_PREVIEW_EXPIRED',
       'Bản xem trước đã hết hạn hoặc server vừa khởi động lại. Tìm lại địa điểm trước khi nhập.',
     );
-  async function requireDestination(session?: mongoose.ClientSession) {
+  async function requireDestination(
+    session?: mongoose.ClientSession,
+    destinationId = initialDestinationId,
+  ) {
     const destination = await Destination.findOne({
       _id: destinationId,
-      slug: 'hoi-an',
       publicationStatus: 'published',
       deletedAt: null,
     }).session(session ?? null);
@@ -60,13 +62,14 @@ export function placeImportService(
       throw new HttpError(
         400,
         'INVALID_DESTINATION',
-        'Danh mục Hội An chưa sẵn sàng.',
+        'Danh mục khu vực chưa sẵn sàng.',
       );
     return destination;
   }
   async function markDuplicates(
     items: PlaceImportCandidate[],
     session?: mongoose.ClientSession,
+    destinationId = initialDestinationId,
   ) {
     const stored = await Place.find({
       $or: [
@@ -136,7 +139,9 @@ export function placeImportService(
       input: PlaceImportSearch,
     ): Promise<PlaceImportPreview> {
       await catalog.requireAdmin(actor);
-      await requireDestination();
+      const destinationId = input.destinationId ?? initialDestinationId;
+      await requireDestination(undefined, destinationId);
+      const area = await ingestionScope(connection, destinationId);
       const now = Date.now();
       for (const [id, entry] of previews)
         if (Date.parse(entry.value.expiresAt) <= now) previews.delete(id);
@@ -152,7 +157,8 @@ export function placeImportService(
               ]
             : [{ group: input.group, limit: input.limit }];
         const batches = [];
-        for (const q of queries) batches.push(await get(q.group, q.limit));
+        for (const q of queries)
+          batches.push(await get(q.group, q.limit, area));
         await catalog.requireAdmin(actor);
         const candidates = batches.flatMap((b) => b.items);
         const unique = [
@@ -167,13 +173,15 @@ export function placeImportService(
           duplicateExternalIds: candidates.length - unique.length,
           items: await markDuplicates(
             unique.map((p) => ({ ...p, possibleDuplicates: [] })),
+            undefined,
+            destinationId,
           ),
         };
         for (const [id, entry] of previews)
           if (entry.actor === actorId) previews.delete(id);
         while (previews.size >= 10)
           previews.delete(previews.keys().next().value!);
-        previews.set(value.previewId, { actor: actorId, value });
+        previews.set(value.previewId, { actor: actorId, value, destinationId });
         return value;
       } finally {
         await release();
@@ -240,6 +248,7 @@ export function placeImportService(
             const items = await markDuplicates(
               selected as PlaceImportCandidate[],
               session,
+              preview.destinationId,
             );
             if (
               items.some(
@@ -252,7 +261,11 @@ export function placeImportService(
                 'IMPORT_DUPLICATE_REVIEW',
                 'Có địa điểm nghi trùng. Xem lại và xác nhận trước khi nhập.',
               );
-            const destination = await requireDestination(session);
+            await ingestionScope(connection, preview.destinationId, session);
+            const destination = await requireDestination(
+              session,
+              preview.destinationId,
+            );
             const placeIds: string[] = [];
             for (const p of items) {
               if (p.existingPlaceId) continue;
@@ -322,10 +335,9 @@ export function placeImportService(
                 highlights: [],
                 planning: {
                   durationMinutes: 60,
-                  locationQuery: (p.address || `${p.name}, Hội An`).slice(
-                    0,
-                    200,
-                  ),
+                  locationQuery: (
+                    p.address || `${p.name}, ${destination.name}`
+                  ).slice(0, 200),
                   costNote:
                     'Chưa rõ giá. Thời lượng là ước tính GoEase, chưa kiểm tra tại cơ sở.',
                   priceOptions: [],

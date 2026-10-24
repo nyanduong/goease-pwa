@@ -1,6 +1,6 @@
 # GoEase
 
-**Quản trị danh mục Hội An:** `/admin` mở Việc cần làm; có Địa điểm, Tự động cập nhật và Lịch sử. Điền `GEOAPIFY_API_KEY` server rồi restart API, chọn tần suất/giờ Việt Nam và **Lưu và bật tự động**. Lịch mặc định tắt; worker đi cùng backend, chạy khi `npm run dev` hoặc API đang hoạt động kể cả đóng admin. Máy tắt/API dừng thì không chạy; khởi động lại nhận lịch quá hạn/lượt hết khóa. Hệ thống chỉ nhập bản nháp và phát hiện thay đổi, người vận hành quyết định xuất bản theo lô. Xem [hướng dẫn cho người vận hành](docs/ADMIN-CATALOG.md) và [bằng chứng kiểm tra](docs/CATALOG-AUTOMATION-VERIFICATION.md).
+**Admin Operations V2:** `/admin` mở Tổng quan với KPI từ MongoDB, Việc cần làm, Địa điểm, Tự động cập nhật, Lịch sử & phê duyệt, Nguồn dữ liệu và Cài đặt. Có bảng/bản đồ, editor, gallery có nguồn, review, xuất bản theo lô và phục hồi phiên bản. Geoapify/OSM dùng key phía server; lịch mặc định tắt và worker chạy cùng API. Xem [hướng dẫn vận hành V2](docs/ADMIN-OPERATIONS-V2.md) và [bằng chứng kiểm tra, giới hạn](docs/ADMIN-V2-VERIFICATION.md).
 
 GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Phát triển bằng MongoDB local; Atlas là bước sau khi bản local hoàn thành. Mobile tương lai sử dụng cùng REST API và contracts thuần TypeScript.
 

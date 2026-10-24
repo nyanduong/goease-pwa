@@ -61,7 +61,11 @@ export function auditModel(connection: Connection) {
         type: String,
         enum: [
           'catalog.created',
+          'catalog.restored',
+          'catalog.settings_saved',
           'catalog.review_keep',
+          'catalog.review_reject',
+          'catalog.review_revise',
           'catalog.review_apply',
           'catalog.review_ignore',
           'catalog.review_later',

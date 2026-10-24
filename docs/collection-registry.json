@@ -630,7 +630,8 @@
         "CAT-10",
         "CAT-11",
         "CAT-12",
-        "CAT-13"
+        "CAT-13",
+        "CAT-15"
       ],
       "implementationStatus": "Local curated catalog: destinationId/destinationName/name/slug/description/category/subtitle/searchText/imageUrl/durationLabel/travelLabel/bestTimeLabel/tip/highlights/sourceUrl/imageCredit/publicationStatus/deletedAt and mutable metadata. Index destinationId/publicationStatus/deletedAt implemented. Geoapify/OSM source subset and partial unique external index implemented; other providers/general SourceRef/geo index remain planned. Map runtime: optional mapLocation latitude/longitude/label/precision=area/sourceUrl/checkedAt with bounds and HTTPS/date validation; no geo index; absent-only backfill, see TRIP-MAP.md.",
       "runtimeFields": [
@@ -681,6 +682,18 @@
           "SourceSnapshot|null; Date|null",
           "null; null",
           "Strict allowlist name(max120), address(max200), latitude(-90..90), longitude(-180..180), category food/culture/nature, venueType place/restaurant, categories<=100(max160 each), openingHoursNote(max400), closed boolean|null, sourceUrl(max2048). Latest normalized source only; never editable content. sourceCheckedAt/fetchedAt are fetch dates, not human verification."
+        ],
+        [
+          "internalNote",
+          "string",
+          "empty",
+          "Admin-only max1000; never public DTO. CAT-15."
+        ],
+        [
+          "images",
+          "object[]",
+          "[]",
+          "Max8 HTTPS url/credit/license/sourceUrl; first image projects hero; no upload or server rights verification. CAT-15."
         ]
       ]
     },
@@ -2444,7 +2457,12 @@
       "base": "MUTABLE",
       "purpose": "Singleton lịch và quota Geoapify Hội An, consumer worker và admin.",
       "fields": [
-        ["scope", "enum", "hoi-an, unique", "Chỉ một cấu hình Hội An."],
+        [
+          "scope",
+          "string",
+          "hoi-an, unique",
+          "Chỉ một cấu hình Hội An. CAT-15: scope hoi-an legacy or destination ObjectId max24; configured ingestion regions only."
+        ],
         [
           "revision; enabled",
           "number; boolean",
@@ -2489,7 +2507,7 @@
         ]
       ],
       "indexes": "Unique {scope:1}.",
-      "rules": "Cấu hình admin có revision/audit/receipt; quota transaction dùng chung mọi process; mặc định tắt.",
+      "rules": "Cấu hình admin có revision/audit/receipt; quota transaction dùng chung mọi process; mặc định tắt. CAT-15: per-region schedules/runs; shared provider quota remains global.",
       "retention": "Chưa purge tự động; counters và slots bounded, tự thay thế khi hết cửa sổ.",
       "brRefs": ["CAT-11", "CAT-13", "AUTH-08", "DATA-02"],
       "implementationStatus": "implemented-local"
@@ -2508,9 +2526,9 @@
         ],
         [
           "scope; active; state",
-          "enum; boolean; enum",
+          "string; boolean; enum",
           "hoi-an; true; queued",
-          "state queued/running/retry/succeeded/failed; active false khi kết thúc."
+          "state queued/running/retry/succeeded/failed; active false khi kết thúc. CAT-15: scope hoi-an legacy or destination ObjectId max24; configured ingestion regions only."
         ],
         [
           "actorId; group",
@@ -2538,7 +2556,7 @@
         ],
         [
           "counts",
-          "{created,unchanged,review,skipped,errors:number}",
+          "{created,updated,unchanged,review,skipped,errors:number}",
           "all zero",
           "Thống kê committed; review có thể gồm địa điểm mới nghi trùng. Failed atomic run ghi errors=1, không giả số địa điểm đã nhập."
         ],
@@ -2550,7 +2568,7 @@
         ]
       ],
       "indexes": "Unique partial {scope:1,active:1} where active=true; {active:1,nextAttemptAt:1,leaseUntil:1}; {createdAt:-1}.",
-      "rules": "Một active Hội An; source fetch ngoài transaction, tất cả place/review/result/audit commit nguyên tử với fence; pause không hủy lượt đã nhận.",
+      "rules": "Một active Hội An; source fetch ngoài transaction, tất cả place/review/result/audit commit nguyên tử với fence; pause không hủy lượt đã nhận. CAT-15: per-region schedules/runs; shared provider quota remains global.",
       "retention": "Chưa TTL/purge; API30lượt gần nhất, audit phân trang.",
       "brRefs": ["CAT-11", "CAT-13", "DATA-02", "DATA-03"],
       "implementationStatus": "implemented-local"
@@ -2565,7 +2583,7 @@
           "placeId; kind; signature",
           "ObjectId; enum; SHA256 string",
           "required",
-          "kind draft/duplicate/source/price; signature revision draft, normalized snapshot source/duplicate, price hash."
+          "kind draft/duplicate/source/price; signature revision draft, normalized snapshot source/duplicate, price hash. CAT-15 kind also quality."
         ],
         [
           "revision; state",
@@ -2577,7 +2595,7 @@
           "decision; revisitAt",
           "enum|null; Date|null",
           "null; null",
-          "keep/apply/ignore/later/distinct; later sau now, tối đa90ngày."
+          "keep/apply/ignore/later/distinct; later sau now, tối đa90ngày. CAT-15 adds reject/revise; reject preserves content, revise stays open."
         ],
         [
           "incoming; previous",
@@ -2596,12 +2614,94 @@
           "Date; Date",
           "timestamps",
           "Không payload ngoài allowlist."
+        ],
+        [
+          "decisionNote; decidedBy; decidedAt",
+          "string; ObjectId|null; Date|null",
+          "empty; null; null",
+          "Reason max500 and authenticated actor; append decisions stored separately."
         ]
       ],
       "indexes": "Unique {placeId:1,kind:1}; {state:1,revisitAt:1,updatedAt:-1}.",
-      "rules": "Signature không đổi giữ quyết định; source mới mở lại; snooze đến hạn mở lại. Không đổi publicationStatus trừ quyết định ignore/apply đóng cửa rõ ràng.",
+      "rules": "Signature không đổi giữ quyết định; source mới mở lại; snooze đến hạn mở lại. CAT-15: ignore giữ publicationStatus; apply dấu đóng cửa rõ ràng có thể archive. CAT-15: explicit publish after validated approval; decision history separate.",
       "retention": "Không tự xóa receipt quyết định; một bản/loại/địa điểm, audit sự kiện riêng.",
       "brRefs": ["CAT-11", "CAT-12", "DATA-02", "AUTH-08"],
+      "implementationStatus": "implemented-local"
+    },
+    {
+      "name": "catalog_versions",
+      "phase": "CORE",
+      "base": "APPEND",
+      "purpose": "Server snapshot per place revision for draft restoration",
+      "fields": [
+        ["placeId; revision", "ObjectId; number", "required", "Unique pair."],
+        [
+          "snapshot; recordedAt",
+          "Mixed; Date",
+          "required; now",
+          "Raw server place snapshot; no client write."
+        ]
+      ],
+      "indexes": "Unique {placeId:1,revision:-1}",
+      "rules": "See ADMIN-OPERATIONS-V2.md and DB-BASELINE.md; no destructive migration.",
+      "retention": "No new TTL/purge; snapshots/decisions retained.",
+      "brRefs": ["CAT-15", "DATA-02"],
+      "implementationStatus": "implemented-local"
+    },
+    {
+      "name": "catalog_decisions",
+      "phase": "CORE",
+      "base": "APPEND",
+      "purpose": "Append review decision separate from audit metadata",
+      "fields": [
+        [
+          "operationId; reviewId; placeId; actorId",
+          "UUID; ObjectId; ObjectId; ObjectId",
+          "required",
+          "Authenticated actor, transactional."
+        ],
+        [
+          "decision; note; placeRevision; published; occurredAt",
+          "enum; string; number; boolean; Date",
+          "required; empty; required; false; now",
+          "keep/apply/ignore/later/distinct/reject/revise; note max500."
+        ]
+      ],
+      "indexes": "Unique {operationId:1}; {placeId:1,occurredAt:-1}",
+      "rules": "See ADMIN-OPERATIONS-V2.md and DB-BASELINE.md; no destructive migration.",
+      "retention": "No new TTL/purge; snapshots/decisions retained.",
+      "brRefs": ["CAT-15", "DATA-02"],
+      "implementationStatus": "implemented-local"
+    },
+    {
+      "name": "catalog_settings",
+      "phase": "CORE",
+      "base": "MUTABLE",
+      "purpose": "Persisted global operational settings",
+      "fields": [
+        [
+          "scope; revision",
+          "global; number",
+          "global; 0",
+          "CAS expectedRevision."
+        ],
+        [
+          "defaultDestinationId; freshnessDays; showQualityAlerts; autoApplyDraftHours",
+          "string|null; number; boolean; boolean",
+          "null; 90; true; false",
+          "7..365 days; auto apply only safe draft hours."
+        ],
+        [
+          "regions",
+          "object[]",
+          "[]",
+          "Max20 unique published destination IDs with latitude/longitude/radiusMeters500..10000/enabled; configured via admin."
+        ]
+      ],
+      "indexes": "Unique {scope:1}",
+      "rules": "See ADMIN-OPERATIONS-V2.md and DB-BASELINE.md; no destructive migration.",
+      "retention": "No new TTL/purge; snapshots/decisions retained.",
+      "brRefs": ["CAT-15", "DATA-02"],
       "implementationStatus": "implemented-local"
     }
   ],
@@ -2741,7 +2841,7 @@
   "catalogAutomation": {
     "status": "implemented-local",
     "brRefs": ["CAT-11", "CAT-12", "CAT-13"],
-    "scope": "Hoi An / Geoapify OSM; drafts only; schedule disabled by default",
+    "scope": "Configured destinations / Geoapify OSM; initial Hội An compatibility; schedules disabled by default",
     "collections": ["catalog_schedules", "catalog_runs", "catalog_reviews"],
     "sourceSnapshot": "places optional allowlist, separate from editorial fields",
     "contracts": "packages/contracts/src/catalog-operations.ts",
@@ -2765,5 +2865,13 @@
     "rankingPromptVersion": "hoian-rank-v1",
     "truncatedOutputError": "AI_OUTPUT_TRUNCATED; failed/consumed; never applied",
     "selectedFullDichVuModel": "fulldichvu/haiku-4.5"
+  },
+  "adminOperationsV2": {
+    "status": "implemented-local-with-documented-limitations",
+    "brRefs": ["CAT-15"],
+    "documentation": "ADMIN-OPERATIONS-V2.md",
+    "verification": "ADMIN-V2-VERIFICATION.md",
+    "liveProvider": "Geoapify read-only sample verified; full mutations tested with isolated fixtures",
+    "collections": ["catalog_settings", "catalog_versions", "catalog_decisions"]
   }
 }

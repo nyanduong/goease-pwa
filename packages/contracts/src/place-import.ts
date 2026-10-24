@@ -3,6 +3,10 @@ import { z } from 'zod';
 export const placeImportSearchSchema = z.strictObject({
   group: z.enum(['mixed', 'sights', 'restaurant', 'cafe']),
   limit: z.union([z.literal(30), z.literal(50)]),
+  destinationId: z
+    .string()
+    .regex(/^[a-f0-9]{24}$/)
+    .optional(),
 });
 export const placeImportCommitSchema = z.strictObject({
   previewId: z.uuid(),

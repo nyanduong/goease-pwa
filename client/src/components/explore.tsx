@@ -328,7 +328,7 @@ export function ExplorePage({
                     )
                   }
                 >
-                  <img src={p.imageUrl} alt={`${p.name} — ảnh minh họa AI`} />
+                  <img src={p.imageUrl} alt={`${p.name} — ${p.imageCredit}`} />
                   <span className="explore-category">
                     <Icon size={13} />
                     {labels[p.category]}
@@ -631,7 +631,10 @@ export function PlaceDetail({
   return (
     <article className="place-detail">
       <div className="place-hero">
-        <img src={place.imageUrl} alt={`${place.name} — ảnh minh họa AI`} />
+        <img
+          src={place.imageUrl}
+          alt={`${place.name} — ${place.imageCredit}`}
+        />
         <button
           className="place-back"
           aria-label={fromSaved ? 'Về Đã lưu' : 'Về Khám phá'}
@@ -653,6 +656,24 @@ export function PlaceDetail({
           {place.destinationName} · {labels[place.category]}
         </p>
         <h1>{place.name}</h1>
+        {!!place.images?.length && (
+          <div className="place-source-gallery">
+            {place.images.map((image, i) => (
+              <figure key={image.url + i}>
+                <img
+                  src={image.url}
+                  alt={`${place.name} · ảnh ${i + 1}`}
+                  loading="lazy"
+                />
+                <figcaption>
+                  <a href={image.sourceUrl} target="_blank" rel="noreferrer">
+                    {image.credit} · {image.license}
+                  </a>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
         <div className="place-meta">
           <span>
             <Footprints size={16} />

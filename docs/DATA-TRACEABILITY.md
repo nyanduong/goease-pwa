@@ -314,3 +314,11 @@ Compact planner 2026-10-24: hoian-v4/goe-v3 omit descriptions/price provenance f
 Admin nhập inclusions/exclusions và bundle metadata có nguồn; đi qua contract + service authorization + transaction/audit hiện có đến places.referencePrice. Goe lọc priceReady + giờ/địa chỉ trước provider, dùng catalogCost tạo snapshot, validateCatalogCosts xác thực snapshot lúc save. Bundle metadata đi cùng reference vào trips/trip_revisions/ai_runs; includedActivityIds chỉ là output tính toán, không collection mới. Không sửa hồi tố lịch cũ hay coi null là 0. Giá có cấu trúc vẫn cần admin xác minh ngoài thực tế.
 
 CAT-14 minTravelers: nguồn menu có điều kiện số khách tối thiểu được lưu thành field có cấu trúc, đi cùng snapshot. `server/test/budget.test.ts` kiểm tra 1 khách không được áp dụng giá set từ 2 khách; 3 khách tính đúng 3 suất, min > max bị từ chối.
+
+## CAT-15 — Admin Operations V2, 24/10/2026
+
+Admin session → contracts validation → admin guard trong transaction → places/catalog_settings → audit_logs + catalog_versions; review mutation thêm catalog_decisions riêng. Before/after nguồn từ snapshot allowlist, attribution theo trường là so sánh quan sát nguồn với nội dung hiện tại, không xác nhận đã kiểm chứng. Restore tạo revision mới ở draft, giữ provenance nguồn hiện tại. Internal notes và version snapshots không đưa lên public DTO/planner; gallery chỉ public URL/credit/license/source.
+
+Geoapify → scope server đã cấu hình → normalize/dedupe → draft/source review → quyết định hoặc auto-apply chỉ giờ draft đáp ứng điều kiện → publish validation CAT-14 → public catalog và planner hiện có. Trips đã lưu giữ snapshot. Source lỗi không làm mất record, không báo success; last attempt tách last successful. Dashboard/quality dùng query MongoDB, completeness6 tiêu chí công khai trong UI/docs; không suy ra độ tin cậy. Settings có revision và áp dụng sau restart; lịch theo scope dùng backend worker hiện có.
+
+Bằng chứng: admin-v2.test.ts, admin-v2.integration.ts, catalog-operations.integration.ts, tests/catalog-operations.spec.ts và ADMIN-V2-VERIFICATION.md. Live source probe chỉ đọc Geoapify và ghi sample allowlist trong .local; import/publish/review tự động dùng fixtures trong MongoDB test riêng, không phải dữ liệu demo production. Thực thi/giới hạn lưu trữ tại DB-BASELINE.md và collection-registry.json.

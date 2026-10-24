@@ -107,6 +107,25 @@ async function main() {
   phase = 1;
   await product.operations.enqueue(user._id, randomUUID());
   await product.operations.tick();
+  await product.explore.models.Place.updateOne(
+    { 'source.externalId': 'osm:node:8004' },
+    {
+      $set: {
+        referencePrice: {
+          label: 'Vé fixture',
+          amountMinor: 10000,
+          basis: 'per_person',
+          maxTravelers: 10,
+          conditions: 'Fixture kiểm thử',
+          inclusions: 'Vào cửa',
+          exclusions: 'Dịch vụ thêm',
+          sourceUrl: 'https://example.com/fixture',
+          checkedAt: '2026-01-01',
+          reviewAfter: '2099-01-01',
+        },
+      },
+    },
+  );
   phase = 2;
   product.operations.start();
   const stop = async () => {

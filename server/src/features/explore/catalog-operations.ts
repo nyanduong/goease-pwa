@@ -1,8 +1,15 @@
+import {
+  ingestionScope,
+  initialDestinationId,
+  scopeKey,
+  scopeDestination,
+} from './ingestion-scope.js';
 import mongoose, { Types, type ClientSession, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import {
   adminPlaceInputSchema,
   catalogToday,
+  catalogQuality,
   sourceSnapshotSchema,
   type CatalogBatchInput,
   type CatalogBatchItem,
@@ -29,9 +36,9 @@ import type { businessAudit } from '../audit/business-audit.js';
 import { requestId } from '../auth/auth.service.js';
 import { tokenHash } from '../auth/security.js';
 import { HttpError } from '../../http-error.js';
+import { adminOperationsModels } from './admin-operations.models.js';
 import type { Logger } from '../../observability/logger.js';
 
-const destinationId = '000000000000000000000004';
 const conflict = () =>
   new HttpError(
     409,
@@ -88,6 +95,7 @@ export function catalogOperations(
   const { Schedule, Run, Review } = models;
   const { Place } = explore.models;
   const { Key } = trips.models;
+  const { Settings, Decision } = adminOperationsModels(connection);
   async function transaction<T>(
     fn: (session: ClientSession) => Promise<T>,
   ): Promise<T> {
@@ -169,10 +177,10 @@ export function catalogOperations(
       session,
     );
   }
-  async function ensureSchedule() {
+  async function ensureSchedule(scope = 'hoi-an') {
     await Schedule.updateOne(
-      { scope: 'hoi-an' },
-      { $setOnInsert: { scope: 'hoi-an' } },
+      { scope },
+      { $setOnInsert: { scope } },
       { upsert: true },
     );
   }
@@ -254,19 +262,11 @@ export function catalogOperations(
       await new Review({ placeId, kind, signature, ...data }).save({ session });
   }
   async function reconcileReviews() {
-    // Only actionable gaps: drafts and an existing price whose review date passed.
-    // Missing price/photo/hours are deliberately not tasks.
+    const settings = await Settings.findOne({ scope: 'global' });
     await transaction(async (session) => {
       const places = await Place.find({
-        destinationId,
         deletedAt: null,
-        $or: [
-          { publicationStatus: 'draft' },
-          {
-            'referencePrice.reviewAfter': { $lt: catalogToday() },
-            publicationStatus: 'published',
-          },
-        ],
+        publicationStatus: { $ne: 'archived' },
       })
         .limit(5001)
         .session(session);
@@ -277,6 +277,23 @@ export function catalogOperations(
           'Danh mục vượt phạm vi vận hành hiện tại. Nhờ người thiết lập kiểm tra.',
         );
       for (const p of places) {
+        const quality = catalogQuality(
+          catalog.dto(p),
+          settings?.freshnessDays ?? 90,
+        );
+        if (quality.issues.length && p.publicationStatus === 'published')
+          await upsertReview(
+            p._id,
+            'quality',
+            fingerprint(quality.issues),
+            session,
+          );
+        else
+          await Review.updateMany(
+            { placeId: p._id, kind: 'quality', state: { $ne: 'resolved' } },
+            { $set: { state: 'resolved' }, $inc: { revision: 1 } },
+            { session },
+          );
         if (p.publicationStatus === 'draft')
           await upsertReview(p._id, 'draft', String(p.revision), session);
         if (p.sourceSnapshot?.closed) {
@@ -308,10 +325,19 @@ export function catalogOperations(
     duplicate: 'Có thể trùng một địa điểm khác',
     source: 'Thông tin nguồn mới cần đối chiếu',
     price: 'Giá tham khảo đã đến hạn kiểm tra',
+    quality: 'Thông tin đang hiển thị cần kiểm tra chất lượng',
   };
-  async function reviews(actor: Types.ObjectId, offset = 0) {
+  async function reviews(
+    actor: Types.ObjectId,
+    offset = 0,
+    destinationId?: string,
+    kind?: string,
+    query = '',
+  ) {
     await catalog.requireAdmin(actor);
     await reconcileReviews();
+    const freshnessDays =
+      (await Settings.findOne({ scope: 'global' }))?.freshnessDays ?? 90;
     const rows = await Review.find({ state: 'open' })
       .sort({ updatedAt: -1, _id: -1 })
       .limit(20001);
@@ -333,6 +359,16 @@ export function catalogOperations(
     for (const row of rows) {
       const p = await Place.findOne({ _id: row.placeId, deletedAt: null });
       if (
+        p &&
+        ((destinationId && String(p.destinationId) !== destinationId) ||
+          (kind && row.kind !== kind) ||
+          (query &&
+            !normalizeSearch(
+              `${p.name} ${p.planning?.locationQuery ?? ''}`,
+            ).includes(normalizeSearch(query))))
+      )
+        continue;
+      if (
         !p ||
         (row.kind === 'draft' && p.publicationStatus !== 'draft') ||
         (row.kind === 'price' &&
@@ -341,7 +377,11 @@ export function catalogOperations(
             p.publicationStatus === 'archived'))
       )
         continue;
-      if (row.kind === 'draft' && blocking.has(String(p._id))) continue;
+      if (
+        ['draft', 'quality'].includes(row.kind) &&
+        blocking.has(String(p._id))
+      )
+        continue;
       items.push({
         id: String(row._id),
         revision: row.revision,
@@ -353,7 +393,12 @@ export function catalogOperations(
               longitude: p.mapLocation.longitude,
             }
           : null,
-        reason: reason[row.kind as CatalogReviewDto['kind']],
+        reason:
+          row.kind === 'quality' || row.kind === 'draft'
+            ? catalogQuality(catalog.dto(p), freshnessDays)
+                .issues.map((i) => i.label)
+                .join(' · ') || reason[row.kind]
+            : reason[row.kind as CatalogReviewDto['kind']],
         updatedAt: row.updatedAt.toISOString(),
         incoming: row.incoming
           ? sourceSnapshotSchema.parse(row.toObject().incoming)
@@ -367,7 +412,7 @@ export function catalogOperations(
           ? (
               await Place.find({
                 _id: { $ne: p._id },
-                destinationId,
+                destinationId: p.destinationId,
                 deletedAt: null,
                 $or: [
                   { name: { $in: row.duplicates } },
@@ -386,7 +431,13 @@ export function catalogOperations(
       });
     }
     return {
-      items: items.slice(offset, offset + 20),
+      items: items
+        .sort(
+          (a, b) =>
+            Number(b.place.publicationStatus === 'published') -
+            Number(a.place.publicationStatus === 'published'),
+        )
+        .slice(offset, offset + 20),
       total: items.length,
       hasMore: items.length > offset + 20,
     };
@@ -418,6 +469,16 @@ export function catalogOperations(
         throw conflict();
       const { decision } = input;
       if (
+        ['reject', 'revise', 'ignore'].includes(decision) &&
+        !input.note?.trim()
+      )
+        throw new HttpError(
+          400,
+          'DECISION_REASON_REQUIRED',
+          'Nhập lý do quyết định để người vận hành có thể theo dõi.',
+        );
+      await audit.capturePlace(String(place._id), session);
+      if (
         (decision === 'apply' &&
           (review.kind !== 'source' || !review.incoming)) ||
         (decision === 'distinct' && review.kind !== 'duplicate') ||
@@ -443,7 +504,7 @@ export function catalogOperations(
         review.state = 'snoozed';
         review.revisitAt = date;
       } else {
-        review.state = 'resolved';
+        review.state = decision === 'revise' ? 'open' : 'resolved';
         review.revisitAt = null;
       }
       if (decision === 'apply') {
@@ -479,7 +540,47 @@ export function catalogOperations(
           `${place.name} ${place.description} ${place.planning?.locationQuery ?? ''}`,
         ).slice(0, 2500);
       }
-      if (decision === 'ignore') place.publicationStatus = 'archived';
+      if (input.publish) {
+        // Validate the writable projection rather than trusting UI eligibility.
+        const {
+          id: _id,
+          revision: _revision,
+          updatedAt: _updated,
+          source: _source,
+          imageUrl: _image,
+          imageCredit: _credit,
+          ...writable
+        } = catalog.dto(place);
+        void _id;
+        void _revision;
+        void _updated;
+        void _source;
+        void _image;
+        void _credit;
+        if (
+          !['keep', 'apply'].includes(decision) ||
+          !adminPlaceInputSchema.safeParse({
+            ...writable,
+            publicationStatus: 'published',
+          }).success ||
+          review.incoming?.closed
+        )
+          throw new HttpError(
+            400,
+            'PUBLICATION_NOT_READY',
+            'Hoàn thiện dữ liệu trước khi chấp thuận và xuất bản.',
+          );
+        if (
+          await Review.exists({
+            placeId: place._id,
+            _id: { $ne: review._id },
+            kind: { $in: ['source', 'duplicate'] },
+            state: { $ne: 'resolved' },
+          }).session(session)
+        )
+          throw conflict();
+        place.publicationStatus = 'published';
+      }
       // Write the place as well as the review, so an edit racing a keep/defer
       // decision conflicts and retries against the new editorial revision.
       place.revision++;
@@ -488,14 +589,29 @@ export function catalogOperations(
       await place.save({ session });
       if (review.kind === 'draft') review.signature = String(place.revision);
       review.decision = decision;
+      review.decisionNote = input.note ?? '';
+      review.decidedBy = actor;
+      review.decidedAt = new Date();
       review.revision++;
       await review.save({ session });
+      const decisionOperation = randomUUID();
+      await new Decision({
+        operationId: decisionOperation,
+        reviewId: review._id,
+        placeId: place._id,
+        actorId: actor,
+        decision,
+        note: input.note ?? '',
+        placeRevision: place.revision,
+        published: input.publish ?? false,
+      }).save({ session });
       await event(
         `catalog.review_${decision}`,
         String(place._id),
         session,
         actor,
         place.revision,
+        decisionOperation,
       );
       await complete(
         actor,
@@ -516,7 +632,6 @@ export function catalogOperations(
   ): Promise<CatalogBatchItem> {
     const p = await Place.findOne({
       _id: id,
-      destinationId,
       deletedAt: null,
     }).session(session ?? null);
     const blocked = (reason: string): CatalogBatchItem => ({
@@ -533,17 +648,29 @@ export function catalogOperations(
         status === 'published' ? 'Đã đăng địa điểm này.' : 'Đã ngừng hiển thị.',
       );
     if (status === 'published') {
+      if (
+        await Review.exists({
+          placeId: p._id,
+          kind: { $in: ['source', 'duplicate'] },
+          state: { $ne: 'resolved' },
+        }).session(session ?? null)
+      )
+        return blocked('Cần quyết định thông tin nguồn hoặc nghi trùng trước.');
       const {
         id: _id,
         revision: _revision,
         updatedAt: _date,
         source: _source,
+        imageUrl: _image,
+        imageCredit: _credit,
         ...form
       } = catalog.dto(p);
       void _id;
       void _revision;
       void _date;
       void _source;
+      void _image;
+      void _credit;
       if (
         !adminPlaceInputSchema.safeParse({ ...form, publicationStatus: status })
           .success
@@ -571,14 +698,6 @@ export function catalogOperations(
         return blocked(
           'Nguồn có dấu hiệu đóng cửa. Mở Việc cần làm để đối chiếu trước.',
         );
-      if (
-        await Review.exists({
-          placeId: p._id,
-          kind: { $in: ['source', 'duplicate'] },
-          state: { $ne: 'resolved' },
-        }).session(session ?? null)
-      )
-        return blocked('Cần quyết định thông tin nguồn hoặc nghi trùng trước.');
     }
     return {
       id,
@@ -620,6 +739,7 @@ export function catalogOperations(
           session,
         );
         if (result.eligible) {
+          await audit.capturePlace(p.id, session);
           const changed = await Place.updateOne(
             { _id: p.id, revision: p.expectedRevision },
             {
@@ -664,14 +784,19 @@ export function catalogOperations(
       return { items };
     });
   }
-  async function status(actor: Types.ObjectId): Promise<CatalogOperationsDto> {
+  async function status(
+    actor: Types.ObjectId,
+    destinationId = initialDestinationId,
+  ): Promise<CatalogOperationsDto> {
+    const scope = scopeKey(destinationId);
     await catalog.requireAdmin(actor);
-    await ensureSchedule();
-    const s = (await Schedule.findOne({ scope: 'hoi-an' }))!;
-    const runs = await Run.find().sort({ createdAt: -1 }).limit(30);
+    await ensureSchedule(scope);
+    const s = (await Schedule.findOne({ scope }))!;
+    const runs = await Run.find({ scope }).sort({ createdAt: -1 }).limit(30);
     return {
       connected,
       schedule: {
+        destinationId,
         enabled: s.enabled,
         frequency: s.frequency as 'daily' | 'weekly',
         hour: s.hour,
@@ -693,6 +818,7 @@ export function catalogOperations(
         counts: {
           created: r.counts?.created ?? 0,
           unchanged: r.counts?.unchanged ?? 0,
+          updated: r.counts?.updated ?? 0,
           review: r.counts?.review ?? 0,
           skipped: r.counts?.skipped ?? 0,
           errors: r.counts?.errors ?? 0,
@@ -705,13 +831,20 @@ export function catalogOperations(
     input: CatalogScheduleInput,
     key: string,
   ) {
-    await ensureSchedule();
+    const scope = scopeKey(input.destinationId);
+    if (input.enabled) await ingestionScope(connection, input.destinationId);
+    await ensureSchedule(scope);
     await transaction(async (session) => {
       await catalog.requireAdmin(actor, session);
       if (await receipt(actor, 'catalog.schedule', key, input, session)) return;
-      const { expectedRevision, ...settings } = input;
+      const {
+        expectedRevision,
+        destinationId: _destinationId,
+        ...settings
+      } = input;
+      void _destinationId;
       const saved = await Schedule.findOneAndUpdate(
-        { scope: 'hoi-an', revision: expectedRevision },
+        { scope, revision: expectedRevision },
         {
           $set: {
             ...settings,
@@ -738,13 +871,19 @@ export function catalogOperations(
         session,
       );
     });
-    return status(actor);
+    return status(actor, input.destinationId);
   }
-  async function enqueue(actor: Types.ObjectId, key: string) {
-    await ensureSchedule();
+  async function enqueue(
+    actor: Types.ObjectId,
+    key: string,
+    destinationId = initialDestinationId,
+  ) {
+    const scope = scopeKey(destinationId);
+    await ingestionScope(connection, destinationId);
+    await ensureSchedule(scope);
     return transaction(async (session) => {
       await catalog.requireAdmin(actor, session);
-      const old = await receipt(actor, 'catalog.run', key, {}, session);
+      const old = await receipt(actor, 'catalog.run', key, { scope }, session);
       if (old) return { runId: old.resourceId };
       if (!connected)
         throw new HttpError(
@@ -752,11 +891,15 @@ export function catalogOperations(
           'GEOAPIFY_NOT_CONFIGURED',
           'Chưa kết nối nguồn dữ liệu. Nhờ người thiết lập bổ sung khóa Geoapify và khởi động lại API.',
         );
-      const s = (await Schedule.findOne({ scope: 'hoi-an' }).session(session))!;
-      const active = await Run.findOne({ active: true }).session(session);
+      const s = (await Schedule.findOne({ scope }).session(session))!;
+      const active = await Run.findOne({ scope, active: true }).session(
+        session,
+      );
       const run =
         active ??
-        (await new Run({ group: s.group, actorId: actor }).save({ session }));
+        (await new Run({ scope, group: s.group, actorId: actor }).save({
+          session,
+        }));
       if (!active)
         await event(
           'catalog.run_requested',
@@ -766,7 +909,14 @@ export function catalogOperations(
           undefined,
           run.operationId,
         );
-      await complete(actor, 'catalog.run', key, {}, String(run._id), session);
+      await complete(
+        actor,
+        'catalog.run',
+        key,
+        { scope },
+        String(run._id),
+        session,
+      );
       return { runId: String(run._id) };
     });
   }
@@ -779,6 +929,7 @@ export function catalogOperations(
         {
           projection: {
             action: 1,
+            operationId: 1,
             actor: 1,
             entityId: 1,
             entityType: 1,
@@ -800,15 +951,33 @@ export function catalogOperations(
       items.push({
         id: String(e._id),
         action: String(e.action),
-        actor: e.actor.type === 'system' ? 'Hệ thống' : 'Người vận hành',
+        actor:
+          e.actor.type === 'system'
+            ? 'Hệ thống'
+            : String(
+                (
+                  await connection
+                    .collection('users')
+                    .findOne(
+                      { _id: new Types.ObjectId(e.actor.userId) },
+                      { projection: { displayName: 1 } },
+                    )
+                )?.displayName ?? 'Người vận hành',
+              ),
         placeId: p ? String(p._id) : null,
         name:
           p?.name ??
           (e.entityType === 'catalog_run'
-            ? 'Lượt cập nhật Hội An'
+            ? 'Lượt cập nhật dữ liệu'
             : 'Cấu hình cập nhật'),
         occurredAt: e.occurredAt,
         outcome: e.outcome,
+        note:
+          (
+            await Decision.findOne({ operationId: e.operationId }).select(
+              'note',
+            )
+          )?.note ?? '',
       });
     }
     return { items, hasMore: events.length > 30 };
@@ -818,13 +987,16 @@ export function catalogOperations(
     await ensureSchedule();
     await transaction(async (session) => {
       const s = await Schedule.findOne({
-        scope: 'hoi-an',
         enabled: true,
         nextRunAt: { $lte: new Date() },
       }).session(session);
       if (!s) return;
-      if (!(await Run.exists({ active: true }).session(session))) {
-        const run = await new Run({ group: s.group }).save({ session });
+      if (
+        !(await Run.exists({ scope: s.scope, active: true }).session(session))
+      ) {
+        const run = await new Run({ scope: s.scope, group: s.group }).save({
+          session,
+        });
         await event(
           'catalog.run_requested',
           String(run._id),
@@ -891,6 +1063,10 @@ export function catalogOperations(
       release = await reserveSearch(
         run.actorId ? String(run.actorId) : 'catalog-worker',
       );
+      const area = await ingestionScope(
+        connection,
+        scopeDestination(run.scope),
+      );
       const queries: { group: GeoapifyGroup; limit: number }[] =
         run.group === 'mixed'
           ? [
@@ -901,7 +1077,7 @@ export function catalogOperations(
           : [{ group: run.group as GeoapifyGroup, limit: 50 }];
       const batches: GeoapifyBatch[] = [];
       for (const query of queries)
-        batches.push(await provider(query.group, query.limit));
+        batches.push(await provider(query.group, query.limit, area));
       const all = batches.flatMap((b) => b.items);
       const unique = [...new Map(all.map((p) => [p.externalId, p])).values()];
       const fetchedAt = new Date();
@@ -918,14 +1094,19 @@ export function catalogOperations(
             'LEASE_LOST',
             'Lượt cập nhật đã được tiến trình khác tiếp tục.',
           );
-        const destination = await importer.requireDestination(session);
+        const destination = await importer.requireDestination(
+          session,
+          scopeDestination(run.scope),
+        );
         const candidates = await importer.markDuplicates(
           unique.map((p) => ({ ...p, possibleDuplicates: [] })),
           session,
+          scopeDestination(run.scope),
         );
         const counts = {
           created: 0,
           unchanged: 0,
+          updated: 0,
           review: 0,
           skipped:
             batches.reduce((n, b) => n + b.rejected, 0) +
@@ -933,6 +1114,9 @@ export function catalogOperations(
             unique.length,
           errors: 0,
         };
+        const settings = await Settings.findOne({ scope: 'global' }).session(
+          session,
+        );
         for (const candidate of candidates) {
           const incoming = snapshot(candidate);
           const p = await Place.findOne({
@@ -941,6 +1125,7 @@ export function catalogOperations(
           }).session(session);
           if (p) {
             if (
+              String(p.destinationId) !== String(destination._id) ||
               p.deletedAt ||
               (p.publicationStatus === 'archived' &&
                 !(await Review.exists({
@@ -956,7 +1141,43 @@ export function catalogOperations(
               : null;
             const same =
               previous && fingerprint(previous) === fingerprint(incoming);
-            if (same) counts.unchanged++;
+            const onlyHours =
+              previous &&
+              Object.keys(incoming).every(
+                (k) =>
+                  k === 'openingHoursNote' ||
+                  JSON.stringify(previous[k as keyof SourceSnapshot]) ===
+                    JSON.stringify(incoming[k as keyof SourceSnapshot]),
+              );
+            const safeHours =
+              !same &&
+              onlyHours &&
+              settings?.autoApplyDraftHours &&
+              p.publicationStatus === 'draft' &&
+              p.openingHoursNote === previous?.openingHoursNote &&
+              !candidate.possibleDuplicates.length &&
+              !(await Review.exists({
+                placeId: p._id,
+                kind: { $in: ['source', 'duplicate'] },
+                state: { $ne: 'resolved' },
+              }).session(session));
+            if (safeHours) {
+              await audit.capturePlace(String(p._id), session);
+              p.openingHoursNote = incoming.openingHoursNote;
+              p.revision++;
+              p.updatedByType = 'system';
+              p.updatedBy = null;
+              await p.save({ session });
+              await event(
+                'catalog.updated',
+                String(p._id),
+                session,
+                undefined,
+                p.revision,
+                run.operationId,
+              );
+              counts.updated++;
+            } else if (same) counts.unchanged++;
             else {
               await upsertReview(
                 p._id,
@@ -1035,7 +1256,8 @@ export function catalogOperations(
             planning: {
               durationMinutes: 60,
               locationQuery:
-                incoming.address || `${incoming.name}, Hội An`.slice(0, 200),
+                incoming.address ||
+                `${incoming.name}, ${destination.name}`.slice(0, 200),
               costNote: 'Chưa có giá tham khảo để tự tính.',
               priceOptions: [],
             },

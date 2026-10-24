@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ActivityInput } from './product.js';
 import type { PlaceDto } from './explore.js';
 import type { PlaceProvenance } from './place-import.js';
+import { mapLocationSchema } from './explore.js';
 
 export const publicSourceSchema = z
   .string()
@@ -46,6 +47,12 @@ export const referencePriceSchema = z
     message: 'Ngày kiểm tra lại phải từ ngày đối chiếu trở đi.',
   });
 export type ReferencePrice = z.infer<typeof referencePriceSchema>;
+export const catalogImageSchema = z.strictObject({
+  url: publicSourceSchema,
+  credit: z.string().trim().min(1).max(100),
+  license: z.enum(['owned', 'permission', 'CC0', 'CC-BY-4.0', 'CC-BY-SA-4.0']),
+  sourceUrl: publicSourceSchema,
+});
 export const priceSnapshotSchema = referencePriceSchema.safeExtend({
   placeRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 });
@@ -62,8 +69,22 @@ export const adminPlaceInputSchema = z
     sourceUrl: publicSourceSchema,
     referencePrice: referencePriceSchema.nullable(),
     publicationStatus: z.enum(['draft', 'published', 'archived']),
+    mapLocation: mapLocationSchema.nullable().optional(),
+    internalNote: z.string().trim().max(1000).optional(),
+    images: z.array(catalogImageSchema).max(8).optional(),
   })
   .superRefine((v, ctx) => {
+    if (
+      v.publicationStatus === 'published' &&
+      /cần đối chiếu|đang rà soát|cần xác minh/i.test(
+        `${v.name} ${v.description}`,
+      )
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'Chuyển ghi chú rà soát vào ghi chú nội bộ trước khi xuất bản.',
+      });
     if (
       v.publicationStatus === 'published' &&
       !priceReady(v.referencePrice, v.referencePrice?.minTravelers ?? 1)
@@ -95,6 +116,8 @@ export type AdminPlaceDto = AdminPlaceInput & {
   id: string;
   revision: number;
   updatedAt: string;
+  imageUrl?: string;
+  imageCredit?: string;
 };
 export const adminPlaceWriteSchema = z.strictObject({
   place: adminPlaceInputSchema,
@@ -109,6 +132,14 @@ export const adminPlaceQuerySchema = z.strictObject({
   q: z.string().trim().max(100).default(''),
   status: z.enum(['all', 'draft', 'published', 'archived']).default('all'),
   offset: z.coerce.number().int().min(0).max(1000000).default(0),
+  destinationId: z
+    .string()
+    .regex(/^[a-f0-9]{24}$/)
+    .optional(),
+  category: z.enum(['all', 'food', 'culture', 'nature']).default('all'),
+  source: z.enum(['all', 'manual', 'geoapify']).default('all'),
+  quality: z.enum(['all', 'price', 'hours', 'location']).default('all'),
+  sort: z.enum(['updated', 'oldest', 'name']).default('updated'),
 });
 export const catalogToday = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(

@@ -1309,7 +1309,7 @@ Một vấn đề/địa điểm; giữ signature quyết định để không n
 
 Indexes: Unique {placeId:1,kind:1}; {state:1,revisitAt:1,updatedAt:-1}.
 
-Signature không đổi giữ quyết định; source mới mở lại; snooze đến hạn mở lại. Không đổi publicationStatus trừ quyết định ignore/apply đóng cửa rõ ràng. Retention: Không tự xóa receipt quyết định; một bản/loại/địa điểm, audit sự kiện riêng.
+Signature không đổi giữ quyết định; source mới mở lại; snooze đến hạn mở lại. CAT-15: ignore giữ publicationStatus; apply dấu đóng cửa rõ ràng có thể archive. Retention: Không tự xóa receipt quyết định; một bản/loại/địa điểm, audit sự kiện riêng.
 
 `idempotency_keys`: resourceType adds catalog_operation; optional catalogResults array<=50 of strict {id:string,name:string<=120,eligible:boolean,reason:string<=400,applied?:boolean}. No Mixed/JSON payload store. Existing actor/operation/key unique index and24h TTL reused. Schedule/run/review receipts retain resourceId; batch retains exact per-item success/failure. Same-key replay reauthorizes and different payload conflicts.
 
@@ -1332,3 +1332,17 @@ CAT-14: referencePrice thêm `inclusions`/`exclusions` (optional để đọc d�
 BudgetSummary thêm optional `includedActivityIds: string[]`, server tính lại từ snapshot theo ngày, không nhận từ client làm căn cứ; đánh dấu các lượt đã tính trong vé trước đó. Giá mỗi người vẫn là tổng nhóm / totalCount, làm tròn VND. Conflicting bundle definitions fail 409 BUNDLE_PRICE_CONFLICT. Historical snapshots không tự cập nhật khi admin đổi giá.
 
 Runtime CAT-14: `referencePrice.minTravelers?: integer 1..1000`, phải <= maxTravelers; thiếu được hiểu là 1, không backfill. Lưu cùng field trong Mongoose referencePrice và các snapshot. Admin nhập giới hạn tối thiểu; planner và budget kiểm tra cả min/max. Không thêm collection/index.
+
+## Runtime Admin Operations V2 — 2026-10-24 (CAT-15)
+
+Ba collection mới thực thi qua Mongoose/initialize, registry vẫn chỉ tài liệu. Không destructive migration/backfill/drop/syncIndexes.
+
+| Collection        | Fields thực thi                                                                                                                                                                                                    | Index / vòng đời                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| catalog_versions  | placeId ObjectId, revision number, snapshot Mixed (bản ghi place do server đọc), recordedAt Date                                                                                                                   | unique placeId+revision desc; append/upsert cùng transaction, baseline trước mutation đầu tiên; chưa TTL, API metadata30 bản gần nhất |
+| catalog_decisions | operationId UUID, reviewId/placeId/actorId ObjectId, decision keep/apply/ignore/later/distinct/reject/revise, note<=500, placeRevision, published boolean, occurredAt                                              | unique operationId; placeId+occurredAt desc; append, không purge                                                                      |
+| catalog_settings  | scope=global, revision=0, defaultDestinationId nullable, freshnessDays7..365(default90), showQualityAlerts=true, autoApplyDraftHours=false, regions<=20 gồm destinationId/lat/lon/radiusMeters/enabled; timestamps | unique scope; CAS expectedRevision, transaction+audit; defaults không bật auto-apply                                                  |
+
+places thêm internalNote<=1000 (không public), images<=8 {url HTTPS, credit, license owned/permission/CC0/CC-BY-4.0/CC-BY-SA-4.0, sourceUrl HTTPS}; ảnh đầu projection imageUrl/imageCredit. mapLocation giữ schema hiện có và được ghi qua editor. Giữ sourceSnapshot riêng khỏi nội dung biên tập. Restore chỉ writable editorial fields, luôn draft; không sửa snapshot nguồn/trip history.
+
+catalog_reviews thêm kind quality, decision reject/revise, decisionNote/decidedBy/decidedAt. Signature chất lượng giữ issue ổn định; task nguồn/trùng ưu tiên trước task draft/quality. catalog_runs.counts thêm updated (0 cho dữ liệu cũ); catalog_runs/catalog_schedules.scope string max24 (hoi-an legacy hoặc destination ObjectId), một active mỗi scope. Quota lock vẫn global. Audit action thêm catalog.settings_saved/catalog.review_reject/catalog.review_revise/catalog.restored; không chứa snapshot/secret. Place filters/count/pagination dùng indexes hiện có; substring normalized search không có text/geo index mới. Dashboard giới hạn tổng hợp5000 record, map500 và hiển thị giới hạn, không tự nhận tổng toàn hệ thống khi bị cắt.

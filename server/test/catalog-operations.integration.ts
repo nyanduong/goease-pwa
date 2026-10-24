@@ -276,10 +276,14 @@ test(
             revision,
             updatedAt,
             source: provenance,
+            imageUrl,
+            imageCredit,
             ...input
           } = current;
           void updatedAt;
           void provenance;
+          void imageUrl;
+          void imageCredit;
           await read(
             await call(
               `/admin/places/${id}`,

@@ -3,6 +3,8 @@ import { adminCatalog } from './features/explore/admin-catalog.js';
 import { placeImportService } from './features/explore/place-import.js';
 import { geoapifyProvider } from './features/explore/geoapify.js';
 import { catalogOperations } from './features/explore/catalog-operations.js';
+import { adminInsights } from './features/explore/admin-insights.js';
+import { adminSettingsSchema } from '@goease/contracts';
 import {
   catalogScheduleSchema,
   catalogBatchSchema,
@@ -120,6 +122,7 @@ export function createProduct(
     dependencies.logger ?? createLogger(config.NODE_ENV),
   );
   placeImport.setQuotaGuard(operations.reserveSearch);
+  const insights = adminInsights(connection, catalog, explore, audit);
   const router = Router();
   let ready = false;
   router.use((req, res, next) => {
@@ -330,10 +333,77 @@ export function createProduct(
       ),
     }),
   );
-  router.get('/admin/catalog/operations', async (_req, res) =>
+  router.get('/admin/catalog/overview', async (req, res) =>
     res.json({
       ok: true,
-      data: await operations.status(res.locals.authUser._id),
+      data: await insights.overview(
+        res.locals.authUser._id,
+        parse(
+          z
+            .string()
+            .regex(/^[a-f0-9]{24}$/)
+            .optional(),
+          req.query.destinationId,
+        ),
+      ),
+    }),
+  );
+  router.get('/admin/catalog/settings', async (_req, res) =>
+    res.json({
+      ok: true,
+      data: await insights.settings(res.locals.authUser._id),
+    }),
+  );
+  router.put('/admin/catalog/settings', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await insights.saveSettings(
+        res.locals.authUser._id,
+        parse(adminSettingsSchema, req.body),
+      ),
+    }),
+  );
+  router.get('/admin/places/:id/versions', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await insights.versions(
+        res.locals.authUser._id,
+        String(req.params.id),
+      ),
+    }),
+  );
+  router.post('/admin/places/:id/restore', async (req, res) => {
+    const body = parse(
+      z.strictObject({
+        revision: z.number().int().nonnegative(),
+        expectedRevision: z.number().int().nonnegative(),
+      }),
+      req.body,
+    );
+    res.json({
+      ok: true,
+      data: await insights.restore(
+        res.locals.authUser._id,
+        String(req.params.id),
+        body.revision,
+        body.expectedRevision,
+        parse(z.string().regex(uuidPattern), req.get('Idempotency-Key')),
+      ),
+    });
+  });
+  router.get('/admin/catalog/operations', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await operations.status(
+        res.locals.authUser._id,
+        parse(
+          z
+            .string()
+            .regex(/^[a-f0-9]{24}$/)
+            .optional(),
+          req.query.destinationId,
+        ),
+      ),
     }),
   );
   router.put('/admin/catalog/schedule', async (req, res) =>
@@ -347,12 +417,21 @@ export function createProduct(
     }),
   );
   router.post('/admin/catalog/run', async (req, res) => {
-    parse(z.strictObject({}), req.body ?? {});
+    const body = parse(
+      z.strictObject({
+        destinationId: z
+          .string()
+          .regex(/^[a-f0-9]{24}$/)
+          .optional(),
+      }),
+      req.body ?? {},
+    );
     res.json({
       ok: true,
       data: await operations.enqueue(
         res.locals.authUser._id,
         parse(z.string().regex(uuidPattern), req.get('Idempotency-Key')),
+        body.destinationId,
       ),
     });
   });
@@ -365,6 +444,20 @@ export function createProduct(
           z.coerce.number().int().min(0).max(100000),
           req.query.offset ?? 0,
         ),
+        parse(
+          z
+            .string()
+            .regex(/^[a-f0-9]{24}$/)
+            .optional(),
+          req.query.destinationId,
+        ),
+        parse(
+          z
+            .enum(['draft', 'source', 'duplicate', 'price', 'quality'])
+            .optional(),
+          req.query.kind,
+        ),
+        parse(z.string().trim().max(100).default(''), req.query.q),
       ),
     }),
   );

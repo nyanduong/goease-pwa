@@ -2,12 +2,18 @@ import { z } from 'zod';
 import type { ClientSession, Connection } from 'mongoose';
 import { auditModel } from './audit.model.js';
 import { uuidPattern } from '../../observability/context.js';
+import { Types } from 'mongoose';
+import { adminOperationsModels } from '../explore/admin-operations.models.js';
 
 const id = z.string().regex(/^[a-f0-9]{24}$/);
 const input = z.strictObject({
   action: z.enum([
     'catalog.created',
+    'catalog.restored',
+    'catalog.settings_saved',
     'catalog.review_keep',
+    'catalog.review_reject',
+    'catalog.review_revise',
     'catalog.review_apply',
     'catalog.review_ignore',
     'catalog.review_later',
@@ -53,8 +59,25 @@ export function businessAudit(
   environment: 'development' | 'test' | 'production',
 ) {
   const model = auditModel(connection);
+  const { Version, Settings, Decision } = adminOperationsModels(connection);
+  async function capturePlace(id: string, session?: ClientSession) {
+    const place = await connection
+      .collection('places')
+      .findOne({ _id: new Types.ObjectId(id) }, session ? { session } : {});
+    if (place)
+      await Version.updateOne(
+        { placeId: place._id, revision: place.revision },
+        { $setOnInsert: { snapshot: place } },
+        { upsert: true, ...(session ? { session } : {}) },
+      );
+  }
   return {
+    capturePlace,
     async initialize() {
+      for (const m of [Version, Settings, Decision]) {
+        await m.createCollection();
+        await m.createIndexes();
+      }
       await model.createCollection();
       await model.createIndexes();
     },
@@ -93,7 +116,8 @@ export function businessAudit(
                   : 'auth',
             },
         entityType:
-          v.action === 'catalog.schedule_saved'
+          v.action === 'catalog.schedule_saved' ||
+          v.action === 'catalog.settings_saved'
             ? 'catalog_schedule'
             : v.action.startsWith('catalog.run_')
               ? 'catalog_run'
@@ -136,6 +160,13 @@ export function businessAudit(
         },
         retentionClass: trip || catalog ? 'business_audit' : 'security_audit',
       }).save({ session: session ?? null });
+      if (
+        catalog &&
+        v.entityRevision !== undefined &&
+        !v.action.includes('schedule') &&
+        !v.action.includes('settings')
+      )
+        await capturePlace(v.entityId, session);
     },
   };
 }

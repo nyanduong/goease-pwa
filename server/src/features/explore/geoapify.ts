@@ -1,3 +1,4 @@
+import type { IngestionArea } from './ingestion-scope.js';
 import { z } from 'zod';
 import { HttpError } from '../../http-error.js';
 
@@ -103,6 +104,7 @@ export function distanceMeters(
 export function normalizeGeoapify(
   data: unknown,
   group: GeoapifyGroup,
+  area: IngestionArea = hoiAnArea,
 ): GeoapifyBatch {
   const collection = responseSchema.parse(data);
   const items: GeoapifyCandidate[] = [];
@@ -118,7 +120,8 @@ export function normalizeGeoapify(
       longitude > 180 ||
       latitude < -90 ||
       latitude > 90 ||
-      distanceMeters(longitude, latitude) > hoiAnArea.radiusMeters ||
+      distanceMeters(longitude, latitude, area.longitude, area.latitude) >
+        area.radiusMeters ||
       (p.country_code && p.country_code.toLowerCase() !== 'vn')
     )
       continue;
@@ -197,6 +200,7 @@ export function geoapifyProvider(
   return async (
     group: GeoapifyGroup,
     limit: number,
+    area: IngestionArea = hoiAnArea,
   ): Promise<GeoapifyBatch> => {
     if (!apiKey?.trim())
       throw new HttpError(
@@ -218,8 +222,8 @@ export function geoapifyProvider(
     const url = new URL('https://api.geoapify.com/v2/places');
     url.search = new URLSearchParams({
       categories: geoapifyGroups[group],
-      filter: `circle:${hoiAnArea.longitude},${hoiAnArea.latitude},${hoiAnArea.radiusMeters}`,
-      bias: `proximity:${hoiAnArea.longitude},${hoiAnArea.latitude}`,
+      filter: `circle:${area.longitude},${area.latitude},${area.radiusMeters}`,
+      bias: `proximity:${area.longitude},${area.latitude}`,
       limit: String(limit),
       lang: 'vi',
       apiKey: apiKey.trim(),
@@ -277,7 +281,7 @@ export function geoapifyProvider(
       }
       text += decoder.decode();
       if (text.includes(apiKey.trim())) throw new Error('Unsafe response');
-      return normalizeGeoapify(JSON.parse(text), group);
+      return normalizeGeoapify(JSON.parse(text), group, area);
     } catch (error) {
       if (error instanceof HttpError) throw error;
       // Never propagate fetch URL/cause or provider payload: it can contain apiKey.

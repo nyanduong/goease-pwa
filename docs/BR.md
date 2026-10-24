@@ -377,8 +377,8 @@ Owner clarification: admin uses desktop administration only. Successful admin lo
 
 ## CAT-10 — Nhập địa điểm từ Geoapify (2026-10-23)
 
-| Mã | Quy tắc | Yêu cầu |
-| --- | --- | --- |
+| Mã     | Quy tắc                | Yêu cầu                                                                                            |
+| ------ | ---------------------- | -------------------------------------------------------------------------------------------------- |
 | CAT-10 | Nhập địa điểm có duyệt | Admin tìm và chọn nguồn OSM, nhập nháp với provenance; chống trùng, không ghi đè hoặc tự xuất bản. |
 
 Owner yêu cầu thử 30–50 địa điểm Hội An trước rồi bổ sung import admin. Đã triển khai local: admin tìm 30/50 kết quả trong phạm vi Hội An cố định tại server, xem trước và chọn nhập bản nháp. Chỉ dữ liệu OSM có tên/tọa độ/ID hợp lệ được nhận; mã nguồn duy nhất chống nhập trùng, nghi trùng cần admin kiểm tra/xác nhận. Không ghi đè dữ liệu đã biên tập, không tự xuất bản, không biến thiếu giá thành miễn phí, không cập nhật trip cũ. Key/quota/request/provider normalization và quyền đều ở server; nguồn/ngày lấy/ODbL được giữ. Batch place/audit/receipt nguyên tử, retry idempotent và không nhận provenance từ client. Baseline provider/refresh rộng hơn chưa triển khai. Kết quả live 50→45, nhập 41 draft bỏ 4 mục nghi trùng; contract/giới hạn/bằng chứng tại [GEOAPIFY-IMPORT](GEOAPIFY-IMPORT.md). CAT-01–06/08/09 và AUTH-08 tiếp tục áp dụng; đây không phải booking hoặc xác nhận thông tin tại cơ sở.
@@ -393,17 +393,13 @@ Giờ hoạt động: truyền ghi chú hiện có cho model và kiểm tra serv
 
 Bổ sung AI-02: sau khi AI chọn ứng viên, server bố trí lại giờ và bổ sung bữa ăn/điểm tham quan từ catalog đủ điều kiện trước khi kiểm tra. Không tự thành công khi provider lỗi. Chỉnh riêng một ngày cho phép ít nhất số điểm ngày đó đã có (tối đa 6), tránh buộc xóa điểm chỉ vì giới hạn cũ. AI-02/TRIP-08: đổi ngày ở workspace và chọn ngày khởi hành khi lưu preview tự kiểm tra giờ catalog trên server; giữ điểm hợp lệ, đổi giờ hoặc thay điểm đóng cửa cùng loại, không gọi thêm Gemini. Thiếu phương án thì giữ nguyên lịch cũ. Giữ activityId, ghi chú riêng và giá điểm giữ lại; điểm thay dùng giá catalog hoặc null.
 
-
 ### AI-01/AI-02: tùy chọn nhà cung cấp — 24/10/2026
 
 Theo yêu cầu owner, server hỗ trợ Google trực tiếp hoặc FULLDICHVU qua cấu hình riêng. Không tự chuyển nhà cung cấp hay retry có phí khi lỗi. Mọi đầu ra vẫn qua kiểm tra lịch/catalog/giá; không coi lỗi provider là tạo lịch thành công. API key chỉ lưu ở server. Chưa có xác nhận chất lượng hoặc chi phí thực tế của model qua FULLDICHVU khi chưa thử key thật.
 
-
 AI-02 vận hành (24/10/2026): theo yêu cầu owner, tăng thời gian chờ provider lên 120 giây; client 135 giây, đối soát lượt pending sau 180 giây. Vẫn không retry/fallback tự động có phí. Timeout vẫn là kết quả chưa xác định, không báo tạo lịch thành công.
 
-
 AI-02 payload gọn (24/10/2026): bỏ mô tả dài và provenance giá khỏi dữ liệu gửi model; giữ ID/địa chỉ/thời lượng/ghi chú giờ nguyên vẹn. Giá cuối lấy từ catalog đầy đủ ở server, model không được trả field giá. Schema đầu ra và kiểm tra ID/ngày/giờ không nới lỏng.
-
 
 AI-02 (24/10/2026): FULLDICHVU tạo chuyến mới chỉ xếp hạng ID có thật; server xếp ngày/giờ từ catalog rồi kiểm tra lịch và tính giá. Phản hồi bị cắt/rỗng không được dùng làm lịch thành công. Goe chỉnh riêng ngày vẫn giữ schema lịch hiện tại. Chất lượng live của model đang thử chưa được xác nhận.
 
@@ -422,3 +418,13 @@ CAT-14 / TRIP-07: Giá có thể quy định `minTravelers` (1..1000, mặc đ�
 TRIP-07 / EXP-01 — UI customer (24/10/2026): dùng nhãn “Chi phí dự kiến”; bỏ cặp tab Dự toán/Thực chi. “Ghi lại chi tiêu (tùy chọn)” chỉ có trong chuyến đã lưu, không bắt nhập để dùng hoặc hoàn thành chuyến. Bỏ khối Bản quyền dữ liệu ở TripWorkspace theo yêu cầu owner. Không thay phép tính, quyền sở hữu, API/schema hoặc dữ liệu chi tiêu đã lưu.
 
 AI-01 / TRIP-07 / EXP-01 — rà UX customer (24/10/2026): khi thiếu catalog, hướng dẫn nêu cần bổ sung dữ liệu, không khuyên tạo lại cùng đầu vào. Không hứa hỗ trợ mọi lịch 1–7 ngày khi catalog chưa đủ. Vào tab Chi phí luôn mở chi phí dự kiến trước; chi tiêu vẫn tùy chọn. Nhân bản hiện giữ điểm dừng, chưa kiểm tra lại giờ mở cửa cho ngày mới, và phải nói rõ trước thao tác. Đồng bộ ô ngày nhân bản/ngày chi trên cả input và change; không thay contract, schema hay phép tính.
+
+## CAT-15 — Admin Operations V2 (24/10/2026)
+
+Theo yêu cầu FULL ADMIN OPERATIONS V2 của owner: quản trị thống nhất bảy mục, dữ liệu thật, automation-first với can thiệp theo ngoại lệ. Giữ publication draft/published/archived; quality và review là trạng thái riêng. CAT-14 vẫn quyết định giá đủ điều kiện xuất bản/planner; không thêm policy hai người duyệt. Nhập mới luôn draft. Reject/ignore phải có lý do và giữ nguyên nội dung/trạng thái; yêu cầu chỉnh sửa giữ review mở. Chấp thuận kèm xuất bản phải qua cùng validation và blocker như catalog. Quyết định lưu actor/time/reason và revision trong transaction.
+
+Auto-apply mặc định tắt, chỉ áp dụng thay đổi duy nhất giờ mở cửa trên draft khi nội dung hiện tại bằng snapshot nguồn trước và không có nghi trùng/xung đột nguồn đang mở. Không tự áp dụng tên, tọa độ, loại hình hoặc đóng cửa. Restore lấy nội dung biên tập của revision được chọn, tạo draft/revision/audit mới, không quay lùi provenance nguồn hay lịch trình đã lưu. Không hard delete trong UI.
+
+Độ đầy đủ là tỷ lệ 6 tiêu chí có dữ liệu (tên không chứa ghi chú review, mô tả, địa chỉ, thời lượng, nguồn, giá đủ điều kiện), không phải điểm tin cậy. Cảnh báo bổ sung tọa độ/giờ/ghi công ảnh/tuổi biên tập. Cấu hình tuổi nhắc 7–365 ngày, mặc định90; chỉ là nhắc kiểm tra, không giả ngày xác minh. Ảnh người nhập cung cấp HTTPS, nguồn/tác giả/quyền sử dụng, tối đa8; không tự scrape/kiểm chứng quyền. Ghi chú nội bộ không trả public API.
+
+Scope quản trị theo destination hiện có; nhập/lịch ngoài Hội An chỉ bật khi admin lưu tâm/bán kính hợp lệ. Bán kính500–10000m, tối đa20 scope cấu hình; không tự kích hoạt thêm địa bàn. Scope Hội An cũ giữ tương thích; quota chung không nhân theo số vùng. Chi tiết implementation và phần chưa hỗ trợ tại ADMIN-OPERATIONS-V2.md. Các yêu cầu polygon, bulk review decisions và field-level verified attribution vẫn chưa triển khai.

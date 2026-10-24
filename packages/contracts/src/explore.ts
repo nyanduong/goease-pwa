@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ReferencePrice } from './catalog.js';
+import type { ReferencePrice, catalogImageSchema } from './catalog.js';
 import type { PlaceProvenance } from './place-import.js';
 export const placeCategorySchema = z.enum(['food', 'culture', 'nature']);
 export type PlaceCategory = z.infer<typeof placeCategorySchema>;
@@ -16,6 +16,7 @@ export const mapLocationSchema = z.strictObject({
 });
 export type MapLocation = z.infer<typeof mapLocationSchema>;
 export type PlaceDto = {
+  images?: z.infer<typeof catalogImageSchema>[] | undefined;
   source?: PlaceProvenance;
   revision?: number;
   venueType?: 'place' | 'restaurant' | 'food_idea';

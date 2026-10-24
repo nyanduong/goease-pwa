@@ -17,6 +17,15 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
     .fill('Browser-fixture-2026!');
   await page.getByRole('button', { name: /^Đăng nhập/ }).click();
   await expect(
+    page.getByRole('heading', { name: 'Xin chào, Admin!' }),
+  ).toBeVisible();
+  await expect(page.locator('.admin-kpi').first()).toContainText('4');
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/00-dashboard-1366.png',
+    fullPage: true,
+  });
+  await page.getByRole('link', { name: 'Việc cần làm', exact: true }).click();
+  await expect(
     page.getByRole('heading', { name: 'Việc cần làm', exact: true }),
   ).toBeVisible();
   await expect(
@@ -159,7 +168,7 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
         'Việc cần làm',
         'Địa điểm',
         'Tự động cập nhật',
-        'Lịch sử',
+        'Lịch sử & phê duyệt',
       ]) {
         await page
           .getByRole('navigation', { name: 'Quản trị danh mục' })
@@ -170,7 +179,7 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
           await expect(page.locator('.admin-overview')).toBeVisible();
         if (tab === 'Tự động cập nhật')
           await expect(page.getByLabel('Tần suất')).toBeVisible();
-        if (tab === 'Lịch sử')
+        if (tab === 'Lịch sử & phê duyệt')
           await expect(
             page.getByRole('heading', { name: 'Quyết định và thay đổi' }),
           ).toBeVisible();
@@ -180,7 +189,7 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
           ),
         ).toBe(true);
         await page.screenshot({
-          path: `test-results/catalog-evidence/${zoom === 1 ? 'normal' : 'zoom'}-${viewport.width}-${tab === 'Việc cần làm' ? 'work' : tab === 'Địa điểm' ? 'places' : tab === 'Lịch sử' ? 'history' : 'automatic'}.png`,
+          path: `test-results/catalog-evidence/${zoom === 1 ? 'normal' : 'zoom'}-${viewport.width}-${tab === 'Việc cần làm' ? 'work' : tab === 'Địa điểm' ? 'places' : tab === 'Lịch sử & phê duyệt' ? 'history' : 'automatic'}.png`,
           fullPage: true,
         });
       }
@@ -220,4 +229,119 @@ test('new operator uses real catalog API/MongoDB at desktop sizes and 125% zoom'
   ).toBeVisible();
   // The session and data are real; no browser route mocks or live-provider claims.
   expect((await context.cookies()).some((c) => c.httpOnly)).toBe(true);
+});
+
+test('V2 dashboard, filters, editor autosave, sources and persisted settings use real APIs', async ({
+  page,
+}) => {
+  test.setTimeout(90000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/login');
+  await page
+    .getByLabel('Email', { exact: true })
+    .fill('catalog-browser@example.invalid');
+  await page
+    .getByLabel('Mật khẩu', { exact: true })
+    .fill('Browser-fixture-2026!');
+  await page.getByRole('button', { name: /^Đăng nhập/ }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Xin chào, Admin!' }),
+  ).toBeVisible();
+  const response = await page.request.get('/api/v1/admin/catalog/overview');
+  const overview = (await response.json()).data;
+  await expect(page.locator('.admin-kpi').first().locator('strong')).toHaveText(
+    String(overview.total),
+  );
+  await expect(
+    page.locator('.admin-navigation [aria-current="page"]'),
+  ).toHaveCount(1);
+  await page
+    .getByLabel('Khu vực quản lý')
+    .selectOption('000000000000000000000003');
+  await expect(
+    page.getByRole('heading', { name: 'Bắt đầu xây dựng danh mục' }),
+  ).toBeVisible();
+  await page
+    .getByLabel('Khu vực quản lý')
+    .selectOption('000000000000000000000004');
+  await page
+    .getByRole('link', { name: 'Thêm địa điểm mới Tạo bản nháp có nguồn' })
+    .click();
+  await page
+    .getByLabel('Tên địa điểm / quán ăn', { exact: true })
+    .fill('Địa điểm V2 giao diện fixture');
+  await page
+    .getByLabel('Giới thiệu ngắn')
+    .fill('Nội dung dành riêng cho kiểm thử giao diện.');
+  await page
+    .getByLabel('Địa chỉ / vị trí tìm trên bản đồ')
+    .fill('Địa chỉ kiểm thử Hội An');
+  await page
+    .getByLabel('Link nguồn thông tin')
+    .fill('https://example.com/ui-fixture');
+  await page.getByLabel('Vĩ độ', { exact: true }).fill('15.88');
+  await page.getByLabel('Kinh độ', { exact: true }).fill('108.328');
+  await page
+    .getByLabel('Chỉ quản trị viên nhìn thấy')
+    .fill('Ghi chú kiểm thử riêng');
+  await page.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Đã lưu bản nháp' }),
+  ).toBeVisible();
+  await page.getByLabel('Tự lưu bản nháp hợp lệ sau 2 giây').check();
+  await page
+    .getByLabel('Tên địa điểm / quán ăn', { exact: true })
+    .fill('Địa điểm V2 đã tự lưu fixture');
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Đã lưu bản nháp' }),
+  ).toBeVisible({ timeout: 10000 });
+  const result = await page.request.get('/api/v1/admin/places?q=V2');
+  expect((await result.json()).data.items[0].name).toBe(
+    'Địa điểm V2 đã tự lưu fixture',
+  );
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/v2-editor.png',
+    fullPage: true,
+  });
+  await page
+    .getByRole('button', { name: '← Về danh sách', exact: true })
+    .click();
+  await page.getByLabel('Tìm trong danh mục').fill('V2');
+  await expect(page.locator('.admin-data-table tbody tr')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Xem bản đồ', exact: true }).click();
+  await expect(page.locator('.admin-map-marker')).toHaveCount(1);
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/v2-map.png',
+    fullPage: true,
+  });
+  await page.getByRole('link', { name: 'Nguồn dữ liệu', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Nguồn dữ liệu & chất lượng' }),
+  ).toBeVisible();
+  await expect(page.locator('.admin-source-card')).toContainText('Geoapify');
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/v2-sources.png',
+    fullPage: true,
+  });
+  await page.getByRole('link', { name: 'Cài đặt', exact: true }).click();
+  await page.getByLabel('Nhắc kiểm tra sau số ngày chưa biên tập').fill('45');
+  await page.getByRole('button', { name: 'Lưu cài đặt', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Đã lưu cấu hình');
+  await page.reload();
+  await expect(
+    page.getByLabel('Nhắc kiểm tra sau số ngày chưa biên tập'),
+  ).toHaveValue('45');
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/v2-settings.png',
+    fullPage: true,
+  });
+  await page
+    .getByRole('link', { name: 'Lịch sử & phê duyệt', exact: true })
+    .click();
+  await page.getByRole('button', { name: /^Chờ phê duyệt/ }).click();
+  await expect(page.getByLabel('Loại việc')).toBeVisible();
+  await page.screenshot({
+    path: 'test-results/catalog-evidence/v2-review-queue.png',
+    fullPage: true,
+  });
 });

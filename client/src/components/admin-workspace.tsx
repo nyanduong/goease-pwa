@@ -6,21 +6,44 @@ import type {
   DestinationDto,
   ReviewDecision,
   SourceSnapshot,
+  AdminSettings,
 } from '@goease/contracts';
 import { api } from '../api';
 import { AdminCatalog } from './admin-catalog';
 import { SourceCredit } from './source-credit';
+import { AdminDashboard, AdminTopbar } from './admin-dashboard';
+import {
+  LayoutDashboard,
+  ListTodo,
+  MapPin,
+  RefreshCw,
+  History as HistoryIcon,
+  Database,
+  Settings,
+} from 'lucide-react';
 
 const tabs = {
+  overview: 'Tổng quan',
   work: 'Việc cần làm',
   places: 'Địa điểm',
   automatic: 'Tự động cập nhật',
-  history: 'Lịch sử',
+  history: 'Lịch sử & phê duyệt',
+  sources: 'Nguồn dữ liệu',
+  settings: 'Cài đặt',
+};
+const navIcons = {
+  overview: LayoutDashboard,
+  work: ListTodo,
+  places: MapPin,
+  automatic: RefreshCw,
+  history: HistoryIcon,
+  sources: Database,
+  settings: Settings,
 };
 type Tab = keyof typeof tabs;
 const currentTab = (): Tab => {
-  const key = location.hash.slice(1);
-  return key in tabs ? (key as Tab) : 'work';
+  const key = location.hash.slice(1).split('?')[0]!;
+  return key in tabs ? (key as Tab) : 'overview';
 };
 export function AdminNavigation() {
   const [tab, setTab] = useState(currentTab);
@@ -37,6 +60,10 @@ export function AdminNavigation() {
           href={`#${key}`}
           aria-current={tab === key ? 'page' : undefined}
         >
+          {(() => {
+            const Icon = navIcons[key as Tab];
+            return <Icon size={20} />;
+          })()}
           {label}
         </a>
       ))}
@@ -63,16 +90,21 @@ const groups = {
   duplicate: 'Có thể trùng',
   source: 'Thông tin nguồn thay đổi / mâu thuẫn',
   price: 'Giá cần kiểm tra',
+  quality: 'Chất lượng thông tin đang hiển thị',
 };
 const actionLabels: Record<string, string> = {
   'catalog.created': 'Thêm địa điểm',
+  'catalog.restored': 'Khôi phục phiên bản thành bản nháp',
   'catalog.imported': 'Nhập bản nháp từ nguồn',
   'catalog.source_changed': 'Nguồn có thông tin mới, chờ đối chiếu',
   'catalog.updated': 'Lưu nội dung',
   'catalog.publication_changed': 'Đổi trạng thái hiển thị',
   'catalog.review_keep': 'Giữ thông tin hiện tại',
+  'catalog.review_revise': 'Yêu cầu chỉnh sửa',
+  'catalog.review_reject': 'Từ chối đề xuất, giữ nguyên nội dung',
+  'catalog.settings_saved': 'Lưu cài đặt vận hành',
   'catalog.review_apply': 'Áp dụng thay đổi nguồn',
-  'catalog.review_ignore': 'Bỏ qua và ngừng hiển thị',
+  'catalog.review_ignore': 'Bỏ qua việc có lý do',
   'catalog.review_later': 'Hẹn xem lại',
   'catalog.review_distinct': 'Xác nhận hai địa điểm riêng',
   'catalog.schedule_saved': 'Lưu cấu hình cập nhật',
@@ -88,14 +120,35 @@ type History = {
   name: string;
   occurredAt: string;
   outcome: string;
+  note?: string;
 };
 
 export function AdminWorkspace({
   destinations,
+  name = 'Admin',
 }: {
   destinations: DestinationDto[];
+  name?: string;
 }) {
+  const [scope, setScope] = useState('');
+  const [workQuery, setWorkQuery] = useState(''),
+    [workKind, setWorkKind] = useState('');
+  const [locationKey, setLocationKey] = useState(location.hash);
+  useEffect(() => {
+    let active = true;
+    void api<AdminSettings>('/admin/catalog/settings')
+      .then((s) => {
+        if (active) setScope(s.defaultDestinationId ?? '');
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const [tab, setTab] = useState<Tab>(currentTab);
+  const [historyView, setHistoryView] = useState<'events' | 'reviews'>(
+    'events',
+  );
   const [data, setData] = useState<CatalogOperationsDto | null>(null);
   const [items, setItems] = useState<CatalogReviewDto[]>([]);
   const [total, setTotal] = useState(0);
@@ -115,6 +168,7 @@ export function AdminWorkspace({
   useEffect(() => {
     const changed = () => {
       setTab(currentTab());
+      setLocationKey(location.hash);
       setNotice('');
       setError('');
       window.scrollTo(0, 0);
@@ -130,15 +184,17 @@ export function AdminWorkspace({
       }
       try {
         const state = await api<CatalogOperationsDto>(
-          '/admin/catalog/operations',
+          `/admin/catalog/operations${scope ? `?destinationId=${scope}` : ''}`,
         );
         setData(state);
-        if (tab === 'work') {
+        if (tab === 'work' || tab === 'history') {
           const work = await api<{
             items: CatalogReviewDto[];
             total: number;
             hasMore: boolean;
-          }>(`/admin/catalog/reviews?offset=${offset}`);
+          }>(
+            `/admin/catalog/reviews?${new URLSearchParams({ offset: String(offset), q: workQuery, ...(scope ? { destinationId: scope } : {}), ...(workKind ? { kind: workKind } : {}) })}`,
+          );
           setItems(work.items);
           setTotal(work.total);
           setMore(work.hasMore);
@@ -160,7 +216,7 @@ export function AdminWorkspace({
         setLoading(false);
       }
     },
-    [tab, offset, historyOffset],
+    [tab, offset, historyOffset, scope, workQuery, workKind],
   );
   useEffect(() => {
     void refresh();
@@ -178,13 +234,33 @@ export function AdminWorkspace({
   }
   return (
     <>
+      <AdminTopbar
+        destinations={destinations}
+        scope={scope}
+        onScope={setScope}
+        name={name}
+      />
       <div hidden={tab !== 'places'}>
-        <AdminCatalog destinations={destinations} openPlace={openPlace} />
+        <AdminCatalog
+          destinations={destinations}
+          openPlace={openPlace}
+          scope={scope}
+          locationKey={locationKey}
+        />
       </div>
-      {tab !== 'places' && (
+      {['overview', 'sources', 'settings'].includes(tab) && (
+        <AdminDashboard
+          screen={tab as 'overview' | 'sources' | 'settings'}
+          scope={scope}
+          operations={data}
+          onOpen={edit}
+          destinations={destinations}
+        />
+      )}
+      {!['places', 'overview', 'sources', 'settings'].includes(tab) && (
         <section className="admin-catalog admin-operations">
           <header className="admin-heading">
-            <span className="admin-eyebrow">GOEASE · HỘI AN</span>
+            <span className="admin-eyebrow">GOEASE · VẬN HÀNH</span>
             <h1>{tabs[tab]}</h1>
             <p>
               {tab === 'work'
@@ -210,32 +286,103 @@ export function AdminWorkspace({
           ) : (
             data && (
               <>
-                {tab === 'work' &&
+                {tab === 'history' && (
+                  <div className="admin-history-tabs">
+                    <button
+                      aria-pressed={historyView === 'events'}
+                      onClick={() => setHistoryView('events')}
+                    >
+                      Nhật ký thay đổi
+                    </button>
+                    <button
+                      aria-pressed={historyView === 'reviews'}
+                      onClick={() => setHistoryView('reviews')}
+                    >
+                      Chờ phê duyệt ({total})
+                    </button>
+                  </div>
+                )}
+                {(tab === 'work' ||
+                  (tab === 'history' && historyView === 'reviews')) &&
                   (detail ? (
-                    <ReviewDetail
-                      review={detail}
-                      onBack={() => setDetail(null)}
-                      onEdit={() => edit(detail.place.id)}
-                      onInspectDuplicate={edit}
-                      onDone={async (message) => {
-                        setNotice(message);
-                        setDetail(null);
-                        await refresh();
-                      }}
-                      onReload={async () => {
-                        const v = await api<{ items: CatalogReviewDto[] }>(
-                          `/admin/catalog/reviews?offset=${offset}`,
-                        );
-                        const fresh = v.items.find((p) => p.id === detail.id);
-                        if (fresh) setDetail(fresh);
-                        else {
+                    <div className="admin-review-layout">
+                      <aside className="admin-panel admin-review-queue">
+                        <h2>Hàng đợi đang xem</h2>
+                        {items.map((item) => (
+                          <button
+                            key={item.id}
+                            aria-pressed={item.id === detail.id}
+                            onClick={() => setDetail(item)}
+                          >
+                            <img
+                              src={
+                                item.place.imageUrl ??
+                                '/images/explore-hoian.png'
+                              }
+                              alt=""
+                            />
+                            <span>
+                              <strong>{item.place.name}</strong>
+                              <small>{groups[item.kind]}</small>
+                            </span>
+                          </button>
+                        ))}
+                      </aside>
+                      <ReviewDetail
+                        review={detail}
+                        onBack={() => setDetail(null)}
+                        onEdit={() => edit(detail.place.id)}
+                        onInspectDuplicate={edit}
+                        onDone={async (message) => {
+                          setNotice(message);
                           setDetail(null);
                           await refresh();
-                        }
-                      }}
-                    />
+                        }}
+                        onReload={async () => {
+                          const v = await api<{ items: CatalogReviewDto[] }>(
+                            `/admin/catalog/reviews?${new URLSearchParams({ offset: String(offset), q: workQuery, ...(scope ? { destinationId: scope } : {}), ...(workKind ? { kind: workKind } : {}) })}`,
+                          );
+                          const fresh = v.items.find((p) => p.id === detail.id);
+                          if (fresh) setDetail(fresh);
+                          else {
+                            setDetail(null);
+                            await refresh();
+                          }
+                        }}
+                      />
+                    </div>
                   ) : (
                     <>
+                      <div className="admin-filters">
+                        <label>
+                          Tìm việc theo địa điểm
+                          <input
+                            value={workQuery}
+                            maxLength={100}
+                            onChange={(e) => {
+                              setWorkQuery(e.target.value);
+                              setOffset(0);
+                            }}
+                          />
+                        </label>
+                        <label>
+                          Loại việc
+                          <select
+                            value={workKind}
+                            onChange={(e) => {
+                              setWorkKind(e.target.value);
+                              setOffset(0);
+                            }}
+                          >
+                            <option value="">Tất cả</option>
+                            {Object.entries(groups).map(([key, label]) => (
+                              <option key={key} value={key}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
                       <div className="admin-overview">
                         <div>
                           <strong>{total}</strong>
@@ -350,13 +497,18 @@ export function AdminWorkspace({
                   ))}
                 {tab === 'automatic' && (
                   <Automatic
+                    key={scope}
                     data={data}
                     onChange={setData}
                     onRefresh={() => refresh(true)}
                   />
                 )}
-                {tab === 'history' && (
+                {tab === 'history' && historyView === 'events' && (
                   <>
+                    <div className="admin-soft-notice">
+                      Quyết định đang chờ được quản lý riêng với nhật ký.{' '}
+                      <a href="#work">Mở hàng đợi phê duyệt →</a>
+                    </div>
                     <h2>Kết quả các lượt cập nhật</h2>
                     <RunList data={data} />
                     <h2>Quyết định và thay đổi</h2>
@@ -373,6 +525,7 @@ export function AdminWorkspace({
                             {h.actor} · {catalogTime(h.occurredAt)}
                           </p>
                           <p>{h.name}</p>
+                          {h.note && <p>Ghi chú: {h.note}</p>}
                           <small>
                             {h.action === 'catalog.run_failed'
                               ? 'Cần xử lý'
@@ -432,6 +585,7 @@ function ReviewDetail({
   const [error, setError] = useState('');
   const [days, setDays] = useState(1);
   const [confirmIgnore, setConfirmIgnore] = useState(false);
+  const [note, setNote] = useState('');
   const key = useRef({ payload: '', value: '' });
   const fields: {
     name: string;
@@ -492,12 +646,14 @@ function ReviewDetail({
         },
       ]
     : [];
-  async function decide(decision: ReviewDecision['decision']) {
+  async function decide(decision: ReviewDecision['decision'], publish = false) {
     if (busy) return;
     const body = {
       expectedRevision: r.revision,
       expectedPlaceRevision: r.place.revision,
       decision,
+      note,
+      publish,
       ...(decision === 'later'
         ? { revisitAt: new Date(Date.now() + days * 86400000).toISOString() }
         : {}),
@@ -509,6 +665,8 @@ function ReviewDetail({
       place: r.place.revision,
       decision,
       days,
+      note,
+      publish,
     });
     if (key.current.value !== identity)
       key.current = {
@@ -530,13 +688,19 @@ function ReviewDetail({
       await onDone(
         decision === 'later'
           ? `Đã hẹn xem lại lúc ${catalogTime(pending.body.revisitAt!)}.`
-          : decision === 'apply'
-            ? 'Đã áp dụng thay đổi được đề nghị từ nguồn. Các chuyến đã lưu giữ nguyên.'
-            : decision === 'ignore'
-              ? 'Đã bỏ qua địa điểm và ngừng hiển thị cho khách.'
-              : decision === 'distinct'
-                ? 'Đã xác nhận là hai địa điểm riêng. Có thể xem bản nháp và đăng.'
-                : 'Đã giữ thông tin hiện tại. Nguồn không đổi sẽ không nhắc lại.',
+          : publish
+            ? 'Đã chấp thuận và xuất bản địa điểm.'
+            : decision === 'revise'
+              ? 'Đã ghi yêu cầu chỉnh sửa. Việc vẫn được giữ để tiếp tục xử lý.'
+              : decision === 'reject'
+                ? 'Đã từ chối đề xuất. Nội dung địa điểm được giữ nguyên.'
+                : decision === 'apply'
+                  ? 'Đã áp dụng thay đổi được đề nghị từ nguồn. Các chuyến đã lưu giữ nguyên.'
+                  : decision === 'ignore'
+                    ? 'Đã bỏ qua việc. Nội dung và trạng thái địa điểm được giữ nguyên.'
+                    : decision === 'distinct'
+                      ? 'Đã xác nhận là hai địa điểm riêng. Có thể xem bản nháp và đăng.'
+                      : 'Đã giữ thông tin hiện tại. Nguồn không đổi sẽ không nhắc lại.',
       );
     } catch (e) {
       setError(
@@ -687,6 +851,15 @@ function ReviewDetail({
           đã lưu không thay đổi.
         </p>
       )}
+      <label>
+        Ghi chú quyết định
+        <textarea
+          maxLength={500}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Lý do quyết định hoặc thông tin cần bổ sung"
+        />
+      </label>
       <div className="admin-actions">
         <button disabled={busy} className="journey-primary" onClick={onEdit}>
           Mở địa điểm để biên tập
@@ -694,6 +867,35 @@ function ReviewDetail({
         {r.kind === 'source' && (
           <button disabled={busy} onClick={() => void decide('apply')}>
             Áp dụng thay đổi
+          </button>
+        )}
+        {['source', 'draft'].includes(r.kind) && (
+          <button
+            disabled={busy}
+            onClick={() => {
+              if (
+                confirm(
+                  'Chấp thuận nội dung và xuất bản cho khách? Server sẽ kiểm tra lại các điều kiện bắt buộc.',
+                )
+              )
+                void decide(r.kind === 'source' ? 'apply' : 'keep', true);
+            }}
+          >
+            Chấp thuận và xuất bản
+          </button>
+        )}
+        <button
+          disabled={busy || !note.trim()}
+          onClick={() => void decide('revise')}
+        >
+          Yêu cầu chỉnh sửa
+        </button>
+        {r.kind === 'source' && (
+          <button
+            disabled={busy || !note.trim()}
+            onClick={() => void decide('reject')}
+          >
+            Từ chối đề xuất
           </button>
         )}
         {r.kind === 'duplicate' && (
@@ -707,17 +909,17 @@ function ReviewDetail({
           </button>
         )}
         <button disabled={busy} onClick={() => setConfirmIgnore(true)}>
-          Bỏ qua địa điểm này
+          Bỏ qua việc này
         </button>
       </div>
       {confirmIgnore && (
         <div className="admin-preview">
           <p>
-            Địa điểm sẽ ngừng hiển thị cho khách và không được tự đăng lại. Lịch
-            khách đã lưu giữ nguyên.
+            Việc sẽ được đóng với lý do đã nhập. Địa điểm vẫn giữ nội dung và
+            trạng thái hiển thị hiện tại.
           </p>
           <button disabled={busy} onClick={() => void decide('ignore')}>
-            Xác nhận bỏ qua địa điểm
+            Xác nhận bỏ qua việc
           </button>
           <button disabled={busy} onClick={() => setConfirmIgnore(false)}>
             Quay lại
@@ -768,9 +970,18 @@ function Automatic({
   const [notice, setNotice] = useState('');
   const key = useRef({ payload: '', key: '' });
   async function save(enabled: boolean) {
-    const { frequency, hour, minute, weekday, group, expectedRevision } = form;
+    const {
+      frequency,
+      hour,
+      minute,
+      weekday,
+      group,
+      expectedRevision,
+      destinationId,
+    } = form;
     const body = JSON.stringify({
       enabled,
+      destinationId,
       frequency,
       hour,
       minute,
@@ -812,7 +1023,7 @@ function Automatic({
       await api('/admin/catalog/run', {
         method: 'POST',
         headers: { 'Idempotency-Key': runKey.current },
-        body: '{}',
+        body: JSON.stringify({ destinationId: data.schedule.destinationId }),
       });
       runKey.current = '';
       setNotice(
@@ -841,7 +1052,8 @@ function Automatic({
               : 'Chưa kết nối nguồn dữ liệu'}
           </p>
           <p>
-            Hội An · bán kính 5 km từ trung tâm · tối đa 50 kết quả mỗi lượt
+            Theo khu vực đang chọn · phạm vi đã lưu trong Cài đặt · tối đa 50
+            kết quả/lượt
           </p>
         </div>
         <button
@@ -998,6 +1210,9 @@ function Automatic({
         trang quản trị. Tạm dừng ngăn lượt tự động mới; lượt đã nhận vẫn hoàn
         tất hoặc thử lại.
       </p>
+      <a href="#places?import=1" className="journey-outline">
+        Chạy thử & xem trước dữ liệu
+      </a>
       <h2>Kết quả cập nhật gần đây</h2>
       <RunList data={data} />
     </>
@@ -1021,9 +1236,9 @@ function RunList({ data }: { data: CatalogOperationsDto }) {
           )}
           {r.state === 'succeeded' && (
             <p>
-              {r.counts.created} mới · {r.counts.unchanged} không đổi ·{' '}
-              {r.counts.review} cần kiểm tra · {r.counts.skipped} bỏ qua ·{' '}
-              {r.counts.errors} lỗi
+              {r.counts.created} mới · {r.counts.updated ?? 0} cập nhật an toàn
+              · {r.counts.unchanged} không đổi · {r.counts.review} cần kiểm tra
+              · {r.counts.skipped} bỏ qua · {r.counts.errors} lỗi
             </p>
           )}
           {r.state === 'failed' && (

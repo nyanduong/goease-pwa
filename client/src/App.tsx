@@ -462,7 +462,11 @@ export function App() {
         </aside>
         <main className="admin-desktop-main">
           {message && <Notice>{message}</Notice>}
-          <AdminCatalog key={user.id} destinations={destinations} />
+          <AdminCatalog
+            key={user.id}
+            destinations={destinations}
+            name={user.displayName}
+          />
         </main>
       </div>
     );

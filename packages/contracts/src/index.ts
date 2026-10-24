@@ -26,3 +26,4 @@ export * from './expenses.js';
 export * from './catalog.js';
 export * from './place-import.js';
 export * from './catalog-operations.js';
+export * from './admin-operations.js';

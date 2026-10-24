@@ -31,7 +31,7 @@ export const sourceSnapshotModel = new Schema(
 export function catalogOperationsModels(connection: Connection) {
   const schedule = new Schema(
     {
-      scope: { type: String, enum: ['hoi-an'], default: 'hoi-an' },
+      scope: { type: String, maxlength: 24, default: 'hoi-an' },
       revision: { type: Number, default: 0 },
       enabled: { type: Boolean, default: false },
       frequency: { type: String, enum: ['daily', 'weekly'], default: 'weekly' },
@@ -61,7 +61,7 @@ export function catalogOperationsModels(connection: Connection) {
   const run = new Schema(
     {
       operationId: { type: String, default: randomUUID, required: true },
-      scope: { type: String, default: 'hoi-an', enum: ['hoi-an'] },
+      scope: { type: String, maxlength: 24, default: 'hoi-an' },
       active: { type: Boolean, default: true },
       state: {
         type: String,
@@ -83,6 +83,7 @@ export function catalogOperationsModels(connection: Connection) {
       counts: {
         created: { type: Number, default: 0 },
         unchanged: { type: Number, default: 0 },
+        updated: { type: Number, default: 0 },
         review: { type: Number, default: 0 },
         skipped: { type: Number, default: 0 },
         errors: { type: Number, default: 0 },
@@ -101,7 +102,7 @@ export function catalogOperationsModels(connection: Connection) {
       placeId: { type: Schema.Types.ObjectId, required: true },
       kind: {
         type: String,
-        enum: ['draft', 'duplicate', 'source', 'price'],
+        enum: ['draft', 'duplicate', 'source', 'price', 'quality'],
         required: true,
       },
       signature: { type: String, required: true },
@@ -113,10 +114,21 @@ export function catalogOperationsModels(connection: Connection) {
       },
       decision: {
         type: String,
-        enum: ['keep', 'apply', 'ignore', 'later', 'distinct'],
+        enum: [
+          'keep',
+          'apply',
+          'ignore',
+          'later',
+          'distinct',
+          'reject',
+          'revise',
+        ],
         default: null,
       },
       revisitAt: { type: Date, default: null },
+      decisionNote: { type: String, maxlength: 500, default: '' },
+      decidedBy: { type: Schema.Types.ObjectId, default: null },
+      decidedAt: { type: Date, default: null },
       incoming: { type: sourceSnapshotModel, default: null },
       previous: { type: sourceSnapshotModel, default: null },
       fetchedAt: { type: Date, default: null },

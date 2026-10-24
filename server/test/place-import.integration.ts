@@ -287,12 +287,34 @@ test(
               admin,
             ),
           );
-          const { id, revision, updatedAt, source, ...input } = saved.place;
+          const {
+            id,
+            revision,
+            updatedAt,
+            source,
+            imageUrl,
+            imageCredit,
+            ...input
+          } = saved.place;
           void updatedAt;
           void source;
+          void imageUrl;
+          void imageCredit;
           const edited: AdminPlaceInput = {
             ...input,
             name: 'Tên do admin biên tập',
+            referencePrice: {
+              label: 'Vé kiểm thử',
+              amountMinor: 10000,
+              basis: 'per_person',
+              maxTravelers: 10,
+              conditions: 'Fixture kiểm thử',
+              inclusions: 'Vào cửa',
+              exclusions: 'Dịch vụ thêm',
+              sourceUrl: 'https://example.com/fixture',
+              checkedAt: '2026-01-01',
+              reviewAfter: '2099-01-01',
+            },
             publicationStatus: 'published',
           };
           const changed = await read<{ place: AdminPlaceDto }>(

@@ -17,7 +17,9 @@ const flags: Record<string, string> = {
 export function AdminPlaceImport({
   onBack,
   onOpen,
+  destinationId,
 }: {
+  destinationId?: string;
   onBack: () => void;
   onOpen: (id: string) => void;
 }) {
@@ -48,7 +50,14 @@ export function AdminPlaceImport({
     try {
       const value = await api<PlaceImportPreview>(
         '/admin/place-import/preview',
-        { method: 'POST', body: JSON.stringify({ group, limit }) },
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            group,
+            limit,
+            ...(destinationId ? { destinationId } : {}),
+          }),
+        },
       );
       setPreview(value);
       setSelected(
@@ -102,8 +111,9 @@ export function AdminPlaceImport({
       </div>
       <h2>Tìm và nhập địa điểm Hội An</h2>
       <p>
-        Tìm trong bán kính 5 km quanh phố cổ. Kết quả ưu tiên gần tâm tìm kiếm,
-        không phải danh sách đầy đủ hay xếp hạng chất lượng.
+        Tìm trong phạm vi đã cấu hình của khu vực đang chọn (mặc định Hội An).
+        Kết quả ưu tiên gần tâm tìm kiếm, không phải danh sách đầy đủ hay xếp
+        hạng chất lượng.
       </p>
       <p>
         Chọn địa điểm để lưu bản nháp, sau đó mở từng mục để biên tập và xuất

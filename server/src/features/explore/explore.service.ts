@@ -13,7 +13,7 @@ import {
   placeStateInputSchema,
 } from '@goease/contracts';
 import { HttpError } from '../../http-error.js';
-import { referencePriceSchema } from '@goease/contracts';
+import { referencePriceSchema, catalogImageSchema } from '@goease/contracts';
 import { referencePriceModelSchema } from './reference-price.js';
 import { mutableFields } from '../auth/auth.models.js';
 import { sourceSnapshotModel } from './catalog-operations.models.js';
@@ -32,6 +32,23 @@ export function exploreService(connection: Connection) {
     {
       ...mutableFields,
       sourceSnapshot: { type: sourceSnapshotModel, default: null },
+      internalNote: { type: String, maxlength: 1000, default: '' },
+      images: {
+        type: [
+          {
+            _id: false,
+            url: { type: String, maxlength: 2048 },
+            credit: { type: String, maxlength: 100 },
+            license: {
+              type: String,
+              enum: ['owned', 'permission', 'CC0', 'CC-BY-4.0', 'CC-BY-SA-4.0'],
+            },
+            sourceUrl: { type: String, maxlength: 2048 },
+          },
+        ],
+        default: [],
+        validate: (v: unknown[]) => v.length <= 8,
+      },
       sourceCheckedAt: { type: Date, default: null },
       venueType: { type: String, enum: ['place', 'restaurant', 'food_idea'] },
       openingHoursNote: { type: String, maxlength: 400, default: '' },
@@ -246,6 +263,11 @@ export function exploreService(connection: Connection) {
     })),
     sourceUrl: doc.sourceUrl,
     imageCredit: doc.imageCredit,
+    images: doc.images.map((i) =>
+      catalogImageSchema.parse(
+        i instanceof mongoose.Document ? i.toObject() : i,
+      ),
+    ),
     ...(parseMapLocation(doc.mapLocation).success
       ? { mapLocation: parseMapLocation(doc.mapLocation).data! }
       : {}),

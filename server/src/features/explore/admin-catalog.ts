@@ -8,6 +8,9 @@ import {
   adminPlaceInputSchema,
   referencePriceSchema,
   catalogToday,
+  mapLocationSchema,
+  catalogImageSchema,
+  sourceSnapshotSchema,
   type AdminPlaceDto,
   type AdminPlaceInput,
   type adminPlaceQuerySchema,
@@ -47,6 +50,12 @@ export function adminCatalog(
     id: String(doc._id),
     revision: doc.revision,
     updatedAt: doc.updatedAt.toISOString(),
+    imageUrl: doc.imageUrl,
+    imageCredit: doc.imageCredit,
+    internalNote: doc.internalNote ?? '',
+    images: doc.images.map((i) => catalogImageSchema.parse(i.toObject())),
+    mapLocation:
+      mapLocationSchema.safeParse(doc.toObject().mapLocation).data ?? null,
     destinationId: String(doc.destinationId),
     name: doc.name,
     category: doc.category as AdminPlaceInput['category'],
@@ -92,15 +101,52 @@ export function adminCatalog(
     ) {
       await requireAdmin(actor);
       const q = normalizeSearch(query.q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const docs = await Place.find({
+      const filter = {
         deletedAt: null,
-        ...(query.status === 'all' ? {} : { publicationStatus: query.status }),
+        ...(query.destinationId ? { destinationId: query.destinationId } : {}),
+        ...(query.category !== 'all' ? { category: query.category } : {}),
+        ...(query.source === 'geoapify'
+          ? { 'source.provider': 'geoapify' as const }
+          : query.source === 'manual'
+            ? { source: { $exists: false } }
+            : {}),
+        ...(query.quality === 'hours'
+          ? { openingHoursNote: { $in: ['', null] } }
+          : query.quality === 'location'
+            ? { mapLocation: null }
+            : query.quality === 'price'
+              ? {
+                  $or: [
+                    { referencePrice: null },
+                    { 'referencePrice.reviewAfter': { $lt: catalogToday() } },
+                    { 'referencePrice.checkedAt': { $gt: catalogToday() } },
+                    { 'referencePrice.inclusions': { $in: ['', null] } },
+                    { 'referencePrice.exclusions': { $in: ['', null] } },
+                  ],
+                }
+              : {}),
+        ...(query.status === 'all'
+          ? query.quality === 'all'
+            ? {}
+            : { publicationStatus: { $ne: 'archived' as const } }
+          : { publicationStatus: query.status }),
         ...(q ? { searchText: { $regex: q } } : {}),
-      })
-        .sort({ updatedAt: -1, _id: -1 })
+      };
+      const docs = await Place.find(filter)
+        .sort(
+          query.sort === 'name'
+            ? { name: 1, _id: 1 }
+            : query.sort === 'oldest'
+              ? { updatedAt: 1, _id: 1 }
+              : { updatedAt: -1, _id: -1 },
+        )
         .skip(query.offset)
         .limit(21);
-      return { items: docs.slice(0, 20).map(dto), hasMore: docs.length > 20 };
+      return {
+        items: docs.slice(0, 20).map(dto),
+        hasMore: docs.length > 20,
+        total: await Place.countDocuments(filter),
+      };
     },
     async read(actor: Types.ObjectId, id: string) {
       await requireAdmin(actor);
@@ -119,7 +165,21 @@ export function adminCatalog(
         .sort({ occurredAt: -1 })
         .limit(20)
         .toArray();
-      return { place: dto(doc), history };
+      return {
+        place: dto(doc),
+        history,
+        sourceEvidence: doc.sourceSnapshot
+          ? {
+              snapshot: sourceSnapshotSchema.parse(
+                doc.toObject().sourceSnapshot,
+              ),
+              fetchedAt:
+                doc.sourceCheckedAt?.toISOString() ??
+                doc.source?.fetchedAt.toISOString() ??
+                null,
+            }
+          : null,
+      };
     },
     async write(
       actor: Types.ObjectId,
@@ -127,6 +187,7 @@ export function adminCatalog(
       key: string,
       id?: string,
       expectedRevision?: number,
+      restoredFromRevision?: number,
     ) {
       await requireAdmin(actor);
       if (id) checkId(id);
@@ -154,9 +215,14 @@ export function adminCatalog(
           'INVALID_INPUT',
           'Thiếu phiên bản địa điểm đang sửa.',
         );
-      const operation = id ? 'catalog.update' : 'catalog.create';
+      const operation =
+        restoredFromRevision !== undefined
+          ? 'catalog.restore'
+          : id
+            ? 'catalog.update'
+            : 'catalog.create';
       const requestHash = tokenHash(
-        JSON.stringify({ id, input, expectedRevision }),
+        JSON.stringify({ id, input, expectedRevision, restoredFromRevision }),
       );
       const operationId = randomUUID(),
         reqId = requestId();
@@ -262,6 +328,26 @@ export function adminCatalog(
                 'Địa điểm đã tạo giữ nguyên điểm đến để bảo vệ các lịch đang dùng. Hãy tạo mục mới cho điểm đến khác.',
               );
             const fields = {
+              ...(input.images !== undefined
+                ? {
+                    images: input.images,
+                    ...(input.images[0]
+                      ? {
+                          imageUrl: input.images[0].url,
+                          imageCredit: input.images[0].credit,
+                        }
+                      : current?.images.length
+                        ? {
+                            imageUrl: '/images/explore-hoian.png',
+                            imageCredit:
+                              'Ảnh minh họa AI, không phải ảnh cơ sở',
+                          }
+                        : {}),
+                  }
+                : {}),
+              ...(input.internalNote !== undefined
+                ? { internalNote: input.internalNote }
+                : {}),
               destinationId: destination._id,
               destinationName: destination.name,
               name: input.name,
@@ -278,6 +364,19 @@ export function adminCatalog(
               current.planning?.locationQuery !== input.locationQuery
                 ? { mapLocation: null }
                 : {}),
+              ...(input.mapLocation !== undefined
+                ? {
+                    mapLocation:
+                      current &&
+                      current.planning?.locationQuery !== input.locationQuery &&
+                      current.mapLocation?.latitude ===
+                        input.mapLocation?.latitude &&
+                      current.mapLocation?.longitude ===
+                        input.mapLocation?.longitude
+                        ? null
+                        : input.mapLocation,
+                  }
+                : {}),
               referencePrice: input.referencePrice,
               publicationStatus: input.publicationStatus,
               durationLabel: `${input.durationMinutes} phút`,
@@ -293,6 +392,7 @@ export function adminCatalog(
               updatedBy: actor,
               updatedByType: 'user',
             };
+            if (current) await audit.capturePlace(String(current._id), session);
             const saved = current
               ? await Place.findOneAndUpdate(
                   { _id: current._id, revision: current.revision },
@@ -304,8 +404,11 @@ export function adminCatalog(
                   revision: 1,
                   createdBy: actor,
                   createdByType: 'user',
-                  imageUrl: '/images/explore-hoian.png',
-                  imageCredit: 'Ảnh minh họa AI, không phải ảnh cơ sở',
+                  imageUrl:
+                    input.images?.[0]?.url ?? '/images/explore-hoian.png',
+                  imageCredit:
+                    input.images?.[0]?.credit ??
+                    'Ảnh minh họa AI, không phải ảnh cơ sở',
                   travelLabel: 'Kiểm tra đường đi',
                   bestTimeLabel: 'Kiểm tra giờ mở cửa',
                   tip: 'Thông tin tham khảo; liên hệ cơ sở để xác nhận.',
@@ -319,11 +422,14 @@ export function adminCatalog(
               );
             await audit.append(
               {
-                action: !current
-                  ? 'catalog.created'
-                  : current.publicationStatus !== input.publicationStatus
-                    ? 'catalog.publication_changed'
-                    : 'catalog.updated',
+                action:
+                  restoredFromRevision !== undefined
+                    ? 'catalog.restored'
+                    : !current
+                      ? 'catalog.created'
+                      : current.publicationStatus !== input.publicationStatus
+                        ? 'catalog.publication_changed'
+                        : 'catalog.updated',
                 actorUserId: String(actor),
                 entityId: String(saved._id),
                 entityRevision: saved.revision,
