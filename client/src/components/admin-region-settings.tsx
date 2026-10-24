@@ -32,9 +32,8 @@ export function AdminRegionSettings({
     <details>
       <summary>Phạm vi nhập theo khu vực</summary>
       <p>
-        Hội An đang có cấu hình mặc định 5 km. Các khu vực khác chỉ chạy sau khi
-        bạn xác định tâm tìm kiếm và bật rõ ràng. Bán kính là vùng tìm kiếm,
-        không phải ranh giới hành chính.
+        Mỗi điểm đến chỉ chạy sau khi bạn lưu tâm tìm kiếm và bật phạm vi rõ
+        ràng. Bán kính là vùng tìm kiếm, không phải ranh giới hành chính.
       </p>
       {regions.map((r) => (
         <div key={r.destinationId} className="admin-region-config">

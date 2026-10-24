@@ -1,3 +1,7 @@
+import {
+  configureFixtureScope,
+  fixtureDestinationId,
+} from '../server/test/support/catalog-scope.js';
 // Test-only server: real API + owned MongoDB, allowlisted provider fixture.
 import { once } from 'node:events';
 import { randomUUID } from 'node:crypto';
@@ -60,6 +64,7 @@ async function main() {
   });
   await product.initialize();
   await seedDestinations(product.trips.models.Destination);
+  await configureFixtureScope(harness.connection);
   const app = createApp(
     config,
     async () => {},
@@ -92,12 +97,29 @@ async function main() {
     { _id: user._id },
     { $set: { roles: ['traveler', 'admin'] } },
   );
-  await product.operations.status(user._id);
+  await product.operations.saveSchedule(
+    user._id,
+    {
+      destinationId: fixtureDestinationId,
+      enabled: false,
+      frequency: 'daily',
+      hour: 8,
+      minute: 0,
+      weekday: 1,
+      group: 'restaurant',
+      expectedRevision: 0,
+    },
+    randomUUID(),
+  );
   await product.operations.models.Schedule.updateOne(
     {},
     { $set: { group: 'restaurant' } },
   );
-  await product.operations.enqueue(user._id, randomUUID());
+  await product.operations.enqueue(
+    user._id,
+    randomUUID(),
+    fixtureDestinationId,
+  );
   await product.operations.tick();
   await product.explore.models.Place.updateOne(
     { 'source.externalId': 'osm:node:8001' },
@@ -110,7 +132,11 @@ async function main() {
     },
   );
   phase = 1;
-  await product.operations.enqueue(user._id, randomUUID());
+  await product.operations.enqueue(
+    user._id,
+    randomUUID(),
+    fixtureDestinationId,
+  );
   await product.operations.tick();
   await product.explore.models.Place.updateOne(
     { 'source.externalId': 'osm:node:8004' },

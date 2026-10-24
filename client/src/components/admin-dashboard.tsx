@@ -1,4 +1,5 @@
 import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
+import { AdminSourceConnection } from './admin-campaigns';
 import { catalogQuality } from '@goease/contracts';
 import { AdminRegionSettings } from './admin-region-settings';
 import { AdminDestinations } from './admin-destinations';
@@ -71,7 +72,7 @@ export function AdminTopbar({
           value={scope}
           onChange={(e) => onScope(e.target.value)}
         >
-          <option value="">Tất cả khu vực</option>
+          <option value="">Tất cả điểm đến · chỉ xem</option>
           {destinations
             .filter(
               (d) => d.id === scope || matchesRegion(d, region, subregion),
@@ -141,6 +142,7 @@ export function AdminDashboard({
   useEffect(() => {
     let active = true;
     setError('');
+    setNotice('');
     setData(null);
     void Promise.all([
       api<AdminOverview>(
@@ -185,7 +187,7 @@ export function AdminDashboard({
     }
   }
   const title = {
-    overview: 'Xin chào, Admin!',
+    overview: 'Tổng quan dữ liệu',
     sources: 'Nguồn dữ liệu & chất lượng',
     settings: 'Cài đặt vận hành',
   }[screen];
@@ -223,6 +225,7 @@ export function AdminDashboard({
           {notice}
         </p>
       )}
+      {screen === 'sources' && <AdminSourceConnection />}
       {screen === 'settings' && <AdminDestinations />}
       {!data && !error && (
         <p role="status">Đang tổng hợp dữ liệu từ danh mục…</p>
@@ -251,7 +254,7 @@ export function AdminDashboard({
                         })
                       }
                     >
-                      <option value="">Tất cả khu vực</option>
+                      <option value="">Tất cả điểm đến · chỉ xem</option>
                       {destinations.map((d) => (
                         <option key={d.id} value={d.id}>
                           {d.name}
@@ -287,24 +290,11 @@ export function AdminDashboard({
                     />
                     Hiển thị cảnh báo chất lượng trên tổng quan
                   </label>
-                  <label className="admin-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={settings.autoApplyDraftHours}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          autoApplyDraftHours: e.target.checked,
-                        })
-                      }
-                    />
-                    Tự cập nhật giờ nguồn cho bản nháp chưa biên tập
-                  </label>
-                  <p>
-                    Chỉ khi thay đổi duy nhất là giờ mở cửa và nội dung hiện tại
-                    vẫn trùng nguồn trước. Địa điểm đã xuất bản luôn qua đối
-                    chiếu.
-                  </p>
+                  <div className="admin-soft-notice">
+                    Tự động áp dụng dùng quy tắc có phiên bản.{' '}
+                    <a href="#rules">Tạo và mô phỏng quy tắc →</a>. Quy tắc đã
+                    chốt trong một đợt không đổi khi sửa cài đặt.
+                  </div>
                   <AdminRegionSettings
                     settings={settings}
                     onChange={setSettings}
@@ -626,7 +616,7 @@ export function AdminDashboard({
                           đã bật.
                         </li>
                       </ol>
-                      <a href="#settings">Cấu hình quy tắc →</a>
+                      <a href="#rules">Cấu hình quy tắc →</a>
                     </section>
                   </div>
                   <section className="admin-panel">
@@ -646,9 +636,8 @@ export function AdminDashboard({
                       <summary>Hướng dẫn kết nối cho người thiết lập</summary>
                       <p>
                         Đặt GEOAPIFY_API_KEY trong server/.env và khởi động lại
-                        API. Không đưa khóa vào VITE_* hoặc trình duyệt. Hội An
-                        có cấu hình mặc định 5 km. Khu vực khác cần bật phạm vi
-                        trong Cài đặt.
+                        API. Không đưa khóa vào VITE_* hoặc trình duyệt. Mỗi
+                        điểm đến cần lưu và bật phạm vi trong Cài đặt.
                       </p>
                     </details>
                   </section>
@@ -690,8 +679,9 @@ function Quality({ data }: { data: AdminOverview }) {
         </div>
       </div>
       <small>
-        6 tiêu chí: tên công khai, giới thiệu, địa chỉ, thời lượng, nguồn và giá
-        đủ điều kiện. Đây là độ đầy đủ, không phải xác suất thông tin chính xác.
+        6 nhóm trường: tên, giới thiệu, địa chỉ, thời lượng, nguồn và giá. Độ
+        đầy đủ không đồng nghĩa dữ liệu hợp lệ, còn hiệu lực hoặc đã xác minh;
+        khả năng khám phá, Goe và ngân sách được kiểm tra riêng.
       </small>
     </section>
   );

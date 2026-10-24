@@ -24,17 +24,9 @@ export function AdminScopeSummary({
       active = false;
     };
   }, [destinationId, retry]);
-  const id = destinationId || '000000000000000000000004';
-  const area =
-    settings?.regions?.find((r) => r.destinationId === id) ??
-    (id === '000000000000000000000004'
-      ? {
-          latitude: 15.88,
-          longitude: 108.328,
-          radiusMeters: 5000,
-          enabled: true,
-        }
-      : null);
+  const area = settings?.regions?.find(
+    (r) => r.destinationId === destinationId,
+  );
   return (
     <section className="admin-panel admin-scope-summary">
       <div className="admin-panel-title">
@@ -48,6 +40,8 @@ export function AdminScopeSummary({
         </p>
       ) : !settings ? (
         <p role="status">Đang tải phạm vi…</p>
+      ) : !destinationId ? (
+        <p>Chọn một điểm đến cụ thể. “Tất cả khu vực” chỉ là phạm vi xem.</p>
       ) : area ? (
         <>
           <AdminMap places={[]} area={area} />

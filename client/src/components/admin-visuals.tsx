@@ -1,6 +1,5 @@
 import { images } from '@goease/media';
-import { useEffect, useState, type ReactNode } from 'react';
-import { MapPin, Sun } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 
 // Cloudinary illustrations are presentation assets, never catalog evidence.
 export const adminAssets = {
@@ -81,58 +80,16 @@ export function AdminPageHeader({
   greeting?: boolean;
   actions?: ReactNode;
 }) {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(timer);
-  }, []);
+  void illustrated;
+  void greeting;
   return (
-    <header
-      className={`admin-page-heading admin-reference-heading${illustrated ? ' has-art' : ''}`}
-    >
+    <header className="admin-page-heading admin-reference-heading">
       <div className="admin-heading-copy">
-        <h1>
-          {title}
-          {greeting && <Sun className="admin-greeting-sun" size={30} />}
-        </h1>
+        <span className="admin-eyebrow">VẬN HÀNH DỮ LIỆU · {region}</span>
+        <h1>{title}</h1>
         <p>{description}</p>
       </div>
-      {illustrated && (
-        <img
-          className="admin-heading-art"
-          src={adminAssets.hero}
-          alt=""
-          aria-hidden="true"
-        />
-      )}
-      {actions ?? (
-        <div className="admin-live-clock">
-          <span>
-            {now.toLocaleDateString('vi-VN', {
-              timeZone: 'Asia/Ho_Chi_Minh',
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </span>
-          <div>
-            <time>
-              {now.toLocaleTimeString('vi-VN', {
-                timeZone: 'Asia/Ho_Chi_Minh',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </time>
-            <small>
-              <MapPin size={16} />
-              {region}
-              <br />
-              Giờ Việt Nam
-            </small>
-          </div>
-        </div>
-      )}
+      {actions}
     </header>
   );
 }

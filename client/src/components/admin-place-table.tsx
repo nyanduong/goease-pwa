@@ -1,5 +1,9 @@
 import { AdminPlaceImage } from './admin-visuals';
-import { catalogQuality, type AdminPlaceDto } from '@goease/contracts';
+import {
+  catalogQuality,
+  catalogCapabilities,
+  type AdminPlaceDto,
+} from '@goease/contracts';
 import { Pencil } from 'lucide-react';
 export function AdminPlaceTable({
   items,
@@ -23,6 +27,7 @@ export function AdminPlaceTable({
             <th>Địa điểm</th>
             <th>Loại hình</th>
             <th>Độ đầy đủ</th>
+            <th>Khả năng sử dụng</th>
             <th>Nguồn</th>
             <th>Cập nhật</th>
             <th>Trạng thái</th>
@@ -74,6 +79,25 @@ export function AdminPlaceTable({
                       ? `${quality.issues.length} điểm cần kiểm tra`
                       : 'Đủ thông tin'}
                   </small>
+                </td>
+                <td>
+                  <div className="admin-capabilities">
+                    {Object.entries(
+                      p.capabilities ?? catalogCapabilities(p),
+                    ).map(([key, ready]) => (
+                      <span
+                        className={`admin-pill ${ready ? 'is-good' : ''}`}
+                        key={key}
+                      >
+                        {key === 'discovery'
+                          ? 'Khám phá'
+                          : key === 'scheduling'
+                            ? 'Goe'
+                            : 'Ngân sách'}
+                        : {ready ? 'đủ' : 'thiếu'}
+                      </span>
+                    ))}
+                  </div>
                 </td>
                 <td>{p.source ? 'Geoapify / OSM' : 'Biên tập'}</td>
                 <td>{new Date(p.updatedAt).toLocaleDateString('vi-VN')}</td>

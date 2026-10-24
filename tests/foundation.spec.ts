@@ -339,7 +339,7 @@ test('real browser account, manual trip, failed save preservation, reload and re
     .getByText('Sở thích, nhịp đi & ngân sách', { exact: false })
     .click();
   await page
-    .getByLabel('Ngân sách cả nhóm (VND)', { exact: true })
+    .getByLabel('Ngân sách cả nhóm (VND, không bắt buộc)', { exact: true })
     .fill('10000000');
   await page.getByRole('button', { name: 'Ẩm thực', exact: true }).click();
   await page.getByRole('button', { name: 'Văn hóa', exact: true }).click();
@@ -610,7 +610,7 @@ test('Hoi An catalog journey and server budget stay connected across save and re
     .getByText('Sở thích, nhịp đi & ngân sách', { exact: false })
     .click();
   await page
-    .getByLabel('Ngân sách cả nhóm (VND)', { exact: true })
+    .getByLabel('Ngân sách cả nhóm (VND, không bắt buộc)', { exact: true })
     .fill('1000000');
   await page
     .getByRole('button', { name: 'Tự chọn điểm dừng', exact: true })
@@ -2517,7 +2517,7 @@ test('mobile newcomer resumes setup, sees unknown costs and recovers from failed
     .getByText('Sở thích, nhịp đi & ngân sách', { exact: false })
     .click();
   await page
-    .getByLabel('Ngân sách cả nhóm (VND)', { exact: true })
+    .getByLabel('Ngân sách cả nhóm (VND, không bắt buộc)', { exact: true })
     .fill('6000000');
   // Explicit fault injection: failed output must not offer same-run recovery or mutate the draft.
   await page.route('**/api/v1/trips/ai-proposal', (r) =>

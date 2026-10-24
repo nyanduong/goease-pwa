@@ -15,7 +15,7 @@ export default defineConfig({
     {
       cwd: process.cwd(),
       command: 'npm exec -- tsx tests/catalog-browser-server.mts',
-      url: `${e2eApiOrigin}/api/v1/admin/catalog/operations`,
+      url: `${e2eApiOrigin}/api/v1/health/db`,
       timeout: 60000,
       reuseExistingServer: false,
     },
