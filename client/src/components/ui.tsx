@@ -56,7 +56,6 @@ export function Brand() {
         height={36}
       />
       <span className="brand-name">GoEase</span>
-      <span className="brand-dot">.</span>
     </span>
   );
 }

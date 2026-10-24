@@ -6,7 +6,9 @@ import {
   ChevronRight,
   Map,
   Search,
-  Sparkles,
+  Compass,
+  Plus,
+  Wallet,
 } from 'lucide-react';
 import type { DestinationDto, TripDto, UserDto } from '@goease/contracts';
 import { DestinationRegions, matchesRegion } from './destination-regions';
@@ -133,20 +135,154 @@ export function HomeDiscovery({
     );
 
   return (
-    <div className="discovery-page">
+    <div
+      className={`discovery-page ${mode === 'home' ? 'discovery-home' : ''}`}
+    >
+      {mode === 'home' && (
+        <section className="discovery-banner" aria-label="Tạo chuyến đi">
+          <img
+            className="discovery-landscape"
+            src={images.welcomeHalongBay}
+            alt=""
+          />
+          <div className="discovery-banner-copy">
+            <p className="discovery-greeting">
+              Xin chào{user ? `, ${user.displayName}` : ''},
+            </p>
+            <h2>
+              Sẵn sàng cho
+              <br />
+              hành trình mới?
+            </h2>
+            <p>Những chuyến đi tuyệt vời luôn bắt đầu bằng một kế hoạch tốt.</p>
+          </div>
+          <span className="discovery-slogan">
+            Just go.
+            <br />
+            We’ll plan.
+          </span>
+          <div className="discovery-start">
+            <button
+              data-start-trip
+              className="button button-primary"
+              onClick={() => onStart()}
+            >
+              <Plus size={20} aria-hidden="true" /> Tạo chuyến đi{' '}
+              <ArrowRight size={18} aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+      )}
+      {mode === 'home' && (
+        <section className="discovery-trips" aria-label="Chuyến đi của bạn">
+          <div className="discovery-section-heading">
+            <h2>Chuyến đi của bạn</h2>
+            <button onClick={() => onNavigate(user ? '/trips' : '/login')}>
+              Xem tất cả <ArrowRight size={14} />
+            </button>
+          </div>
+          {!user ? (
+            <button
+              className="discovery-trip-empty"
+              onClick={() => onNavigate('/login')}
+            >
+              <span className="trip-empty-icon">
+                <Map size={22} />
+              </span>
+              <span>
+                <strong>Hành trình của bạn bắt đầu từ đây</strong>
+                <small>Đăng nhập để lưu chuyến đi</small>
+              </span>
+              <ChevronRight size={18} />
+            </button>
+          ) : tripsStatus === 'loading' ? (
+            <p className="discovery-empty" role="status">
+              Đang tải chuyến đi…
+            </p>
+          ) : tripsStatus === 'error' ? (
+            <div className="discovery-empty" role="alert">
+              Chưa tải được chuyến đi.{' '}
+              <button className="text-button" onClick={onRetry}>
+                Thử lại
+              </button>
+            </div>
+          ) : !trips.length ? (
+            <button className="discovery-trip-empty" onClick={() => onStart()}>
+              <span className="trip-empty-icon">
+                <Map size={22} />
+              </span>
+              <span>
+                <strong>Chưa có chuyến đi nào</strong>
+                <small>Tạo lịch trình đầu tiên cùng GoEase</small>
+              </span>
+              <ChevronRight size={18} />
+            </button>
+          ) : (
+            <div className="discovery-trip-list">
+              {trips.slice(0, 3).map((trip) => (
+                <button
+                  className="discovery-trip-row"
+                  key={trip.id}
+                  onClick={() => onNavigate(`/trips/${trip.id}`)}
+                >
+                  <span className="trip-empty-icon">
+                    <Map size={22} />
+                  </span>
+                  <span>
+                    <strong>{trip.title}</strong>
+                    <small>
+                      {trip.destinationName} · {trip.travelers.totalCount} người
+                    </small>
+                  </span>
+                  <ChevronRight size={18} />
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+      {mode === 'home' && (
+        <section
+          className="discovery-shortcuts"
+          aria-labelledby="discovery-shortcuts-title"
+        >
+          <h2 id="discovery-shortcuts-title">Khám phá cùng GoEase</h2>
+          <div>
+            <button onClick={() => onNavigate(user ? '/trips' : '/login')}>
+              <Wallet aria-hidden="true" size={25} />
+              <span>
+                Quản lý
+                <br />
+                chuyến đi
+              </span>
+            </button>
+            <button onClick={() => onNavigate('/explore')}>
+              <Compass aria-hidden="true" size={25} />
+              <span>
+                Gợi ý<br />
+                địa phương
+              </span>
+            </button>
+            <button onClick={() => onNavigate(user ? '/goe' : '/login')}>
+              <Map aria-hidden="true" size={25} />
+              <span>
+                Lên lịch
+                <br />
+                cùng Goe
+              </span>
+            </button>
+          </div>
+        </section>
+      )}
       <section className="discovery-intro">
-        <p className="discovery-eyebrow">CHÀO BẠN, MÌNH LÀ GOE</p>
+        <p className="discovery-eyebrow">KHÁM PHÁ VIỆT NAM CÙNG GOEASE</p>
         <h1>
           {mode === 'saved' ? (
             'Những nơi bạn muốn đến.'
           ) : mode === 'explore' ? (
             'Một nơi mới, một niềm vui.'
           ) : (
-            <>
-              Hôm nay, mình
-              <br />
-              đi đâu?
-            </>
+            <>Tìm một nơi bạn muốn đến</>
           )}
         </h1>
         <label className="discovery-search">
@@ -160,48 +296,6 @@ export function HomeDiscovery({
           />
         </label>
       </section>
-      {mode === 'home' && (
-        <section className="discovery-banner" aria-label="Tạo chuyến đi">
-          <div className="discovery-banner-copy">
-            <h2>
-              Một ý tưởng.
-              <br />
-              Cả một hành trình.
-            </h2>
-            <p>Chọn điểm đến, số ngày và số người. Goe lo phần lịch trình.</p>
-            <button
-              data-start-trip
-              className="button button-primary"
-              onClick={() => onStart()}
-            >
-              Tạo chuyến đi <ArrowRight size={15} />
-            </button>
-          </div>
-          <svg
-            className="banner-mountains"
-            viewBox="0 0 400 90"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="m0 90 80-32 26 7 42-43 25 28 20-12 45 40 51-45 30 28 25-15 56 34"
-              stroke="#a9c5a4"
-              strokeWidth="1"
-            />
-            <path
-              d="m120 90 31-49 15 20 17-8 41 37M280 90l39-44 34 44"
-              stroke="#c9d1aa"
-              opacity=".5"
-            />
-          </svg>
-          <Sparkles className="banner-sparkles" size={27} aria-hidden="true" />
-          <img
-            className="discovery-banner-goe"
-            src={images.goeMascot}
-            alt="Goe, linh thú du lịch GoEase"
-          />
-        </section>
-      )}
       <section
         className="discovery-destinations"
         aria-labelledby="discovery-destinations-title"
@@ -293,74 +387,6 @@ export function HomeDiscovery({
           </p>
         )}
       </section>
-      {mode === 'home' && (
-        <section className="discovery-trips" aria-label="Chuyến đi của bạn">
-          <div className="discovery-section-heading">
-            <h2>Chuyến đi của bạn</h2>
-            <button onClick={() => onNavigate(user ? '/trips' : '/login')}>
-              Xem tất cả <ArrowRight size={14} />
-            </button>
-          </div>
-          {!user ? (
-            <button
-              className="discovery-trip-empty"
-              onClick={() => onNavigate('/login')}
-            >
-              <span className="trip-empty-icon">
-                <Map size={22} />
-              </span>
-              <span>
-                <strong>Hành trình của bạn bắt đầu từ đây</strong>
-                <small>Đăng nhập để lưu chuyến đi</small>
-              </span>
-              <ChevronRight size={18} />
-            </button>
-          ) : tripsStatus === 'loading' ? (
-            <p className="discovery-empty" role="status">
-              Đang tải chuyến đi…
-            </p>
-          ) : tripsStatus === 'error' ? (
-            <div className="discovery-empty" role="alert">
-              Chưa tải được chuyến đi.{' '}
-              <button className="text-button" onClick={onRetry}>
-                Thử lại
-              </button>
-            </div>
-          ) : !trips.length ? (
-            <button className="discovery-trip-empty" onClick={() => onStart()}>
-              <span className="trip-empty-icon">
-                <Map size={22} />
-              </span>
-              <span>
-                <strong>Chưa có chuyến đi nào</strong>
-                <small>Tạo lịch trình đầu tiên cùng GoEase</small>
-              </span>
-              <ChevronRight size={18} />
-            </button>
-          ) : (
-            <div className="discovery-trip-list">
-              {trips.slice(0, 3).map((trip) => (
-                <button
-                  className="discovery-trip-row"
-                  key={trip.id}
-                  onClick={() => onNavigate(`/trips/${trip.id}`)}
-                >
-                  <span className="trip-empty-icon">
-                    <Map size={22} />
-                  </span>
-                  <span>
-                    <strong>{trip.title}</strong>
-                    <small>
-                      {trip.destinationName} · {trip.travelers.totalCount} người
-                    </small>
-                  </span>
-                  <ChevronRight size={18} />
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
     </div>
   );
 }

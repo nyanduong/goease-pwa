@@ -9,29 +9,29 @@
 
 :root {
   /* GoEase Signature Palette */
-  --paper: #fbf7ee;
-  --paper-card: #ffffff;
-  --paper-subtle: #f8f4ea;
-  --paper-card-warm: #fcfaf4;
-  --ink: #184c43;
-  --ink-light: #245e53;
-  --ink-dark: #0f332c;
-  --soft: #e7ede2;
-  --soft-hover: #dbe3d4;
-  --soft-card: #eef3ea;
-  --honey: #e7ba70;
-  --honey-hover: #deaf61;
-  --honey-subtle: #faf2e3;
-  --accent: #c78163;
-  --accent-hover: #b57053;
-  --accent-soft: #faefe9;
-  --muted: #56675e;
-  --muted-light: #7b8c83;
-  --line: #dce2d6;
-  --line-strong: #c2cdbf;
+  --paper: #fff8ef;
+  --paper-card: #fffcf7;
+  --paper-subtle: #fff0d9;
+  --paper-card-warm: #fffcf7;
+  --ink: #123e4b;
+  --ink-light: #006f78;
+  --ink-dark: #10353f;
+  --soft: #e8f3f1;
+  --soft-hover: #d9edeb;
+  --soft-card: #edf6f4;
+  --honey: #f58220;
+  --honey-hover: #e36d11;
+  --honey-subtle: #fff0d9;
+  --accent: #00858c;
+  --accent-hover: #006f78;
+  --accent-soft: #e8f3f1;
+  --muted: #60757b;
+  --muted-light: #71848a;
+  --line: #e9e1d5;
+  --line-strong: #d4cbbd;
 
   /* Typography */
-  --font-serif: Lora, Georgia, 'Playfair Display', serif;
+  --font-serif: var(--font-sans);
   --font-sans:
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
@@ -4914,9 +4914,7 @@ body:has(.journey-shell) {
   min-width: 0;
 }
 .trip-map-section h2 {
-  font:
-    600 25px Georgia,
-    serif;
+  font: 600 25px var(--font-sans);
   margin: 0 0 6px;
 }
 .trip-map-section p {
@@ -4967,7 +4965,7 @@ body:has(.journey-shell) {
 }
 .trip-map-selected h3 {
   margin: 0;
-  font-family: Georgia, serif;
+  font-family: var(--font-sans);
 }
 .trip-map-selected a {
   display: inline-block;
@@ -5040,9 +5038,7 @@ body:has(.journey-shell) {
   color: white;
 }
 .trip-expenses h1 {
-  font:
-    600 34px/1.1 Georgia,
-    serif;
+  font: 600 34px/1.1 var(--font-sans);
   margin: 12px 0;
 }
 .trip-expenses p {
@@ -5062,9 +5058,7 @@ body:has(.journey-shell) {
 }
 .expense-total {
   display: block;
-  font:
-    600 clamp(24px, 7vw, 38px) Georgia,
-    serif;
+  font: 600 clamp(24px, 7vw, 38px) var(--font-sans);
   margin-top: 12px;
   overflow-wrap: anywhere;
 }
@@ -5114,9 +5108,7 @@ body:has(.journey-shell) {
   margin: 24px 0 14px;
 }
 .expense-list-heading h2 {
-  font:
-    600 24px Georgia,
-    serif;
+  font: 600 24px var(--font-sans);
   margin: 0;
 }
 .expense-list-heading h2 small {
@@ -5242,9 +5234,7 @@ body:has(.journey-shell) {
   border-radius: 18px;
 }
 .trip-management h2 {
-  font:
-    600 24px Georgia,
-    serif;
+  font: 600 24px var(--font-sans);
 }
 .trip-management p {
   font-size: 13px;
@@ -5327,7 +5317,7 @@ body:has(.journey-shell) {
   overflow-wrap: anywhere;
 }
 .shared-trip-page h1 {
-  font-family: Georgia, serif;
+  font-family: var(--font-sans);
   font-size: clamp(2rem, 7vw, 3rem);
   line-height: 1.1;
   margin: 24px 0 14px;
