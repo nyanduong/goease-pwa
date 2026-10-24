@@ -2019,6 +2019,10 @@ textarea::placeholder {
 body:has(.welcome-shell) {
   min-width: 0;
 }
+/* ENVI injects sample text outside the React root on every page. */
+body > #envidictionary {
+  display: none;
+}
 .welcome-shell {
   min-height: 100svh;
   padding: 0;
