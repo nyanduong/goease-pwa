@@ -65,3 +65,11 @@ Startup tạo collection/index mới bằng initialize hiện có. Không drop/s
 Chưa có connector ngoài Geoapify/OSM, import file, polygon địa giới, ảnh upload, xác minh độc lập nguồn cho từng trường, dashboard thống kê xu hướng theo ngày, hoàn tác hàng loạt, bulk review decisions, địa chỉ tự geocode hoặc chuẩn hóa giờ từ văn bản tùy ý. Lịch sử sự kiện vẫn toàn hệ thống; topbar khu vực áp dụng dashboard, danh mục, review và lịch chạy. Không triển khai các nút giả cho những phần này. Chưa có kiểm thử Google OAuth/booking/payment hoặc production deployment trong task này.
 
 Bằng chứng lệnh, thử nguồn thật và ảnh nghiệm thu: [ADMIN-V2-VERIFICATION.md](ADMIN-V2-VERIFICATION.md).
+
+## Bộ ảnh và bố cục tham chiếu
+
+Theo yêu cầu owner, ảnh minh họa được tạo bằng built-in image_gen và lưu trong `client/public/images/admin/`: panorama Hội An, món ăn, món chay, cà phê, di sản và đèn lồng. PNG là bản gốc; WebP là bản tối ưu đang phục vụ giao diện. Prompt lưu trong `generation-manifest.json`. URL tập trung tại `client/src/components/admin-visuals.tsx`; sau khi upload Cloudinary, đổi các URL trong `adminAssets`.
+
+Ảnh AI chỉ bổ sung cho các mục chưa có ảnh thực tế hoặc ảnh lỗi, có nhãn AI và mô tả minh họa. Không ghi ảnh này vào bằng chứng nguồn, không làm tăng điểm chất lượng và không tự xuất bản. Ảnh có quyền đã nhập vẫn được ưu tiên.
+
+Các màn hình dùng chung header, màu ivory/teal/sage, ảnh nhận diện, bảng có bản đồ bên cạnh, mục lục editor và bản đồ bán kính nhập. Đồng hồ lấy giờ Việt Nam thực tế. Nền OSM gửi referrer ở mức origin riêng trên tile; chính sách no-referrer chung vẫn giữ nguyên. Đây là yêu cầu của [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/), không gửi đường dẫn quản trị hay query.

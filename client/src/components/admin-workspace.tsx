@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { AdminScopeSummary } from './admin-scope-summary';
+import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type {
   CatalogOperationsDto,
   CatalogReviewDto,
@@ -55,17 +57,18 @@ export function AdminNavigation() {
   return (
     <nav className="admin-navigation" aria-label="Quản trị danh mục">
       {Object.entries(tabs).map(([key, label]) => (
-        <a
-          key={key}
-          href={`#${key}`}
-          aria-current={tab === key ? 'page' : undefined}
-        >
-          {(() => {
-            const Icon = navIcons[key as Tab];
-            return <Icon size={20} />;
-          })()}
-          {label}
-        </a>
+        <Fragment key={key}>
+          {key === 'sources' && (
+            <small className="admin-nav-section">DỮ LIỆU & HỆ THỐNG</small>
+          )}
+          <a href={`#${key}`} aria-current={tab === key ? 'page' : undefined}>
+            {(() => {
+              const Icon = navIcons[key as Tab];
+              return <Icon size={20} />;
+            })()}
+            {label}
+          </a>
+        </Fragment>
       ))}
     </nav>
   );
@@ -259,17 +262,20 @@ export function AdminWorkspace({
       )}
       {!['places', 'overview', 'sources', 'settings'].includes(tab) && (
         <section className="admin-catalog admin-operations">
-          <header className="admin-heading">
-            <span className="admin-eyebrow">GOEASE · VẬN HÀNH</span>
-            <h1>{tabs[tab]}</h1>
-            <p>
-              {tab === 'work'
-                ? 'Hệ thống lo việc cập nhật. Bạn quyết định thông tin nào khách nên thấy.'
+          <AdminPageHeader
+            title={tabs[tab]}
+            region={
+              destinations.find((d) => d.id === scope)?.name ?? 'Tất cả khu vực'
+            }
+            description={
+              tab === 'work'
+                ? 'Ưu tiên những vấn đề cần quyết định để dữ liệu sẵn sàng cho khách hàng.'
                 : tab === 'automatic'
-                  ? 'Thiết lập một lần. Dữ liệu được kiểm tra khi máy chủ đang chạy.'
-                  : 'Theo dõi quyết định của người vận hành và kết quả cập nhật tự động.'}
-            </p>
-          </header>
+                  ? 'Thiết lập và chạy tự động thu thập, cập nhật địa điểm từ các nguồn dữ liệu bên ngoài.'
+                  : 'Theo dõi và quyết định các thay đổi đang chờ phê duyệt.'
+            }
+          />
+
           {error && (
             <div className="admin-alert" role="alert">
               {error}{' '}
@@ -314,13 +320,7 @@ export function AdminWorkspace({
                             aria-pressed={item.id === detail.id}
                             onClick={() => setDetail(item)}
                           >
-                            <img
-                              src={
-                                item.place.imageUrl ??
-                                '/images/explore-hoian.png'
-                              }
-                              alt=""
-                            />
+                            <AdminPlaceImage place={item.place} />
                             <span>
                               <strong>{item.place.name}</strong>
                               <small>{groups[item.kind]}</small>
@@ -447,6 +447,7 @@ export function AdminWorkspace({
                                     className="admin-work-row"
                                     key={p.id}
                                   >
+                                    <AdminPlaceImage place={p.place} />
                                     <div>
                                       <h3>{p.place.name}</h3>
                                       <p>{p.reason}</p>
@@ -717,7 +718,13 @@ function ReviewDetail({
       <button disabled={busy} onClick={onBack}>
         ← Về việc cần làm
       </button>
-      <h2>{r.place.name}</h2>
+      <div className="admin-review-identity">
+        <AdminPlaceImage place={r.place} />
+        <div>
+          <h2>{r.place.name}</h2>
+          <p>{r.place.locationQuery}</p>
+        </div>
+      </div>
       <p>
         {r.reason}.{' '}
         {r.place.publicationStatus === 'published'
@@ -773,180 +780,194 @@ function ReviewDetail({
           ))}
         </section>
       )}
-      {r.incoming ? (
-        <>
-          <p>
-            Lấy từ nguồn lúc {catalogTime(r.fetchedAt)}. Đây không phải ngày con
-            người xác minh.{' '}
-            <a href={r.incoming.sourceUrl} target="_blank" rel="noreferrer">
-              Mở nguồn đối chiếu ↗
-            </a>
-          </p>
-          <div className="admin-comparison">
-            <table>
-              <thead>
-                <tr>
-                  <th>Thông tin</th>
-                  <th>Nội dung hiện tại / nguồn trước</th>
-                  <th>Nguồn mới</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fields.map((f) => {
-                  const changed = f.current !== f.incoming;
-                  const proposed =
-                    !r.previous ||
-                    JSON.stringify(r.previous[f.sourceField]) !==
-                      JSON.stringify(r.incoming![f.sourceField]) ||
-                    (f.sourceField === 'latitude' &&
-                      r.previous.longitude !== r.incoming!.longitude);
-                  return (
-                    <tr
-                      key={f.name}
-                      className={changed ? 'has-difference' : ''}
-                    >
-                      <th>
-                        {f.name}
-                        {changed && <small>Khác nhau</small>}
-                      </th>
-                      <td>{f.current}</td>
-                      <td>
-                        {f.incoming}
-                        {r.kind === 'source' && changed && (
-                          <small>
-                            {proposed
-                              ? 'Đề nghị áp dụng'
-                              : 'Giữ phần đã biên tập'}
-                          </small>
-                        )}
-                      </td>
+      <div className="admin-review-detail-grid">
+        <div className="admin-review-evidence">
+          {r.incoming ? (
+            <>
+              <p>
+                Lấy từ nguồn lúc {catalogTime(r.fetchedAt)}. Đây không phải ngày
+                con người xác minh.{' '}
+                <a href={r.incoming.sourceUrl} target="_blank" rel="noreferrer">
+                  Mở nguồn đối chiếu ↗
+                </a>
+              </p>
+              <div className="admin-comparison">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Thông tin</th>
+                      <th>Nội dung hiện tại / nguồn trước</th>
+                      <th>Nguồn mới</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <SourceCredit expanded />
-        </>
-      ) : (
-        <div className="admin-preview">
-          <h3>Thông tin hiện tại</h3>
-          <p>{r.place.description}</p>
-          <p>{r.place.locationQuery}</p>
-          <a href={r.place.sourceUrl} target="_blank" rel="noreferrer">
-            Mở nguồn thông tin ↗
-          </a>
-          {r.kind === 'price' && (
-            <p>
-              Giá kiểm tra lần cuối ngày {r.place.referencePrice?.checkedAt};
-              đến hạn ngày {r.place.referencePrice?.reviewAfter}. Giá này không
-              dùng cho dự toán mới. Mở địa điểm để cập nhật hoặc bỏ giá chưa rõ.
+                  </thead>
+                  <tbody>
+                    {fields.map((f) => {
+                      const changed = f.current !== f.incoming;
+                      const proposed =
+                        !r.previous ||
+                        JSON.stringify(r.previous[f.sourceField]) !==
+                          JSON.stringify(r.incoming![f.sourceField]) ||
+                        (f.sourceField === 'latitude' &&
+                          r.previous.longitude !== r.incoming!.longitude);
+                      return (
+                        <tr
+                          key={f.name}
+                          className={changed ? 'has-difference' : ''}
+                        >
+                          <th>
+                            {f.name}
+                            {changed && <small>Khác nhau</small>}
+                          </th>
+                          <td>{f.current}</td>
+                          <td>
+                            {f.incoming}
+                            {r.kind === 'source' && changed && (
+                              <small>
+                                {proposed
+                                  ? 'Đề nghị áp dụng'
+                                  : 'Giữ phần đã biên tập'}
+                              </small>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <SourceCredit expanded />
+            </>
+          ) : (
+            <div className="admin-preview">
+              <h3>Thông tin hiện tại</h3>
+              <p>{r.place.description}</p>
+              <p>{r.place.locationQuery}</p>
+              <a href={r.place.sourceUrl} target="_blank" rel="noreferrer">
+                Mở nguồn thông tin ↗
+              </a>
+              {r.kind === 'price' && (
+                <p>
+                  Giá kiểm tra lần cuối ngày {r.place.referencePrice?.checkedAt}
+                  ; đến hạn ngày {r.place.referencePrice?.reviewAfter}. Giá này
+                  không dùng cho dự toán mới. Mở địa điểm để cập nhật hoặc bỏ
+                  giá chưa rõ.
+                </p>
+              )}
+            </div>
+          )}
+          {r.incoming?.closed && (
+            <p className="admin-alert">
+              Áp dụng dấu hiệu đóng cửa sẽ ngừng hiển thị địa điểm cho khách.
+              Lịch đã lưu không thay đổi.
             </p>
           )}
         </div>
-      )}
-      {r.incoming?.closed && (
-        <p className="admin-alert">
-          Áp dụng dấu hiệu đóng cửa sẽ ngừng hiển thị địa điểm cho khách. Lịch
-          đã lưu không thay đổi.
-        </p>
-      )}
-      <label>
-        Ghi chú quyết định
-        <textarea
-          maxLength={500}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Lý do quyết định hoặc thông tin cần bổ sung"
-        />
-      </label>
-      <div className="admin-actions">
-        <button disabled={busy} className="journey-primary" onClick={onEdit}>
-          Mở địa điểm để biên tập
-        </button>
-        {r.kind === 'source' && (
-          <button disabled={busy} onClick={() => void decide('apply')}>
-            Áp dụng thay đổi
-          </button>
-        )}
-        {['source', 'draft'].includes(r.kind) && (
-          <button
-            disabled={busy}
-            onClick={() => {
-              if (
-                confirm(
-                  'Chấp thuận nội dung và xuất bản cho khách? Server sẽ kiểm tra lại các điều kiện bắt buộc.',
-                )
-              )
-                void decide(r.kind === 'source' ? 'apply' : 'keep', true);
-            }}
-          >
-            Chấp thuận và xuất bản
-          </button>
-        )}
-        <button
-          disabled={busy || !note.trim()}
-          onClick={() => void decide('revise')}
-        >
-          Yêu cầu chỉnh sửa
-        </button>
-        {r.kind === 'source' && (
-          <button
-            disabled={busy || !note.trim()}
-            onClick={() => void decide('reject')}
-          >
-            Từ chối đề xuất
-          </button>
-        )}
-        {r.kind === 'duplicate' && (
-          <button disabled={busy} onClick={() => void decide('distinct')}>
-            Đây là hai địa điểm riêng
-          </button>
-        )}
-        {r.kind !== 'duplicate' && (
-          <button disabled={busy} onClick={() => void decide('keep')}>
-            Giữ thông tin hiện tại
-          </button>
-        )}
-        <button disabled={busy} onClick={() => setConfirmIgnore(true)}>
-          Bỏ qua việc này
-        </button>
-      </div>
-      {confirmIgnore && (
-        <div className="admin-preview">
-          <p>
-            Việc sẽ được đóng với lý do đã nhập. Địa điểm vẫn giữ nội dung và
-            trạng thái hiển thị hiện tại.
-          </p>
-          <button disabled={busy} onClick={() => void decide('ignore')}>
-            Xác nhận bỏ qua việc
-          </button>
-          <button disabled={busy} onClick={() => setConfirmIgnore(false)}>
-            Quay lại
-          </button>
-        </div>
-      )}
-      <div className="admin-defer">
-        <label>
-          Xem lại sau
-          <select
-            disabled={busy}
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-          >
-            <option value={1}>1 ngày</option>
-            <option value={7}>1 tuần</option>
-            <option value={30}>30 ngày</option>
-          </select>
-        </label>
-        <button disabled={busy} onClick={() => void decide('later')}>
-          Để sau
-        </button>
-        <small>
-          Hẹn vào{' '}
-          {catalogTime(new Date(Date.now() + days * 86400000).toISOString())}{' '}
-          (giờ Việt Nam)
-        </small>
+        <aside className="admin-review-decisions">
+          <h3>Quyết định xử lý</h3>
+          <label>
+            Ghi chú quyết định
+            <textarea
+              maxLength={500}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Lý do quyết định hoặc thông tin cần bổ sung"
+            />
+          </label>
+          <div className="admin-actions">
+            <button
+              disabled={busy}
+              className="journey-primary"
+              onClick={onEdit}
+            >
+              Mở địa điểm để biên tập
+            </button>
+            {r.kind === 'source' && (
+              <button disabled={busy} onClick={() => void decide('apply')}>
+                Áp dụng thay đổi
+              </button>
+            )}
+            {['source', 'draft'].includes(r.kind) && (
+              <button
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    confirm(
+                      'Chấp thuận nội dung và xuất bản cho khách? Server sẽ kiểm tra lại các điều kiện bắt buộc.',
+                    )
+                  )
+                    void decide(r.kind === 'source' ? 'apply' : 'keep', true);
+                }}
+              >
+                Chấp thuận và xuất bản
+              </button>
+            )}
+            <button
+              disabled={busy || !note.trim()}
+              onClick={() => void decide('revise')}
+            >
+              Yêu cầu chỉnh sửa
+            </button>
+            {r.kind === 'source' && (
+              <button
+                disabled={busy || !note.trim()}
+                onClick={() => void decide('reject')}
+              >
+                Từ chối đề xuất
+              </button>
+            )}
+            {r.kind === 'duplicate' && (
+              <button disabled={busy} onClick={() => void decide('distinct')}>
+                Đây là hai địa điểm riêng
+              </button>
+            )}
+            {r.kind !== 'duplicate' && (
+              <button disabled={busy} onClick={() => void decide('keep')}>
+                Giữ thông tin hiện tại
+              </button>
+            )}
+            <button disabled={busy} onClick={() => setConfirmIgnore(true)}>
+              Bỏ qua việc này
+            </button>
+          </div>
+          {confirmIgnore && (
+            <div className="admin-preview">
+              <p>
+                Việc sẽ được đóng với lý do đã nhập. Địa điểm vẫn giữ nội dung
+                và trạng thái hiển thị hiện tại.
+              </p>
+              <button disabled={busy} onClick={() => void decide('ignore')}>
+                Xác nhận bỏ qua việc
+              </button>
+              <button disabled={busy} onClick={() => setConfirmIgnore(false)}>
+                Quay lại
+              </button>
+            </div>
+          )}
+          <div className="admin-defer">
+            <label>
+              Xem lại sau
+              <select
+                disabled={busy}
+                value={days}
+                onChange={(e) => setDays(Number(e.target.value))}
+              >
+                <option value={1}>1 ngày</option>
+                <option value={7}>1 tuần</option>
+                <option value={30}>30 ngày</option>
+              </select>
+            </label>
+            <button disabled={busy} onClick={() => void decide('later')}>
+              Để sau
+            </button>
+            <small>
+              Hẹn vào{' '}
+              {catalogTime(
+                new Date(Date.now() + days * 86400000).toISOString(),
+              )}{' '}
+              (giờ Việt Nam)
+            </small>
+          </div>
+        </aside>
       </div>
     </section>
   );
@@ -1043,176 +1064,187 @@ function Automatic({
   );
   return (
     <>
-      <div className="admin-source-status">
+      <div className="admin-automation-grid">
         <div>
-          <h2>Geoapify · OpenStreetMap</h2>
-          <p>
-            {data.connected
-              ? 'Đã cấu hình kết nối nguồn'
-              : 'Chưa kết nối nguồn dữ liệu'}
-          </p>
-          <p>
-            Theo khu vực đang chọn · phạm vi đã lưu trong Cài đặt · tối đa 50
-            kết quả/lượt
-          </p>
-        </div>
-        <button
-          className="journey-outline"
-          disabled={busy || active || !data.connected}
-          onClick={() => void run()}
-        >
-          {active
-            ? 'Đang cập nhật / chờ thử lại'
-            : data.runs[0]?.state === 'failed'
-              ? 'Thử lại'
-              : 'Chạy ngay'}
-        </button>
-      </div>
-      {!data.connected && (
-        <div className="admin-alert">
-          Nhờ người thiết lập kết nối Geoapify trước khi cập nhật.
-          <details>
-            <summary>Hướng dẫn cho người thiết lập</summary>Điền
-            GEOAPIFY_API_KEY trong server/.env, rồi khởi động lại API. Khóa chỉ
-            được lưu ở máy chủ.
-          </details>
-        </div>
-      )}
-      {error && (
-        <div role="alert" className="admin-alert">
-          {error}
-          <button
-            disabled={busy}
-            onClick={() =>
-              setForm({
-                ...data.schedule,
-                expectedRevision: data.schedule.revision,
-              })
-            }
-          >
-            Nạp cấu hình đã lưu để sửa lại
-          </button>
-        </div>
-      )}
-      {notice && (
-        <p role="status" className="admin-success">
-          {notice}
-        </p>
-      )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void save(true);
-        }}
-      >
-        <fieldset disabled={busy} className="admin-form-fields">
-          <legend>Lịch cập nhật</legend>
-          <div className="admin-two">
-            <label>
-              Tần suất
-              <select
-                value={form.frequency}
-                onChange={(e) =>
-                  setForm((v) => ({
-                    ...v,
-                    frequency: e.target.value as 'daily' | 'weekly',
-                  }))
+          <div className="admin-source-status">
+            <div>
+              <h2>Geoapify · OpenStreetMap</h2>
+              <p>
+                {data.connected
+                  ? 'Đã cấu hình kết nối nguồn'
+                  : 'Chưa kết nối nguồn dữ liệu'}
+              </p>
+              <p>
+                Theo khu vực đang chọn · phạm vi đã lưu trong Cài đặt · tối đa
+                50 kết quả/lượt
+              </p>
+            </div>
+            <button
+              className="journey-outline"
+              disabled={busy || active || !data.connected}
+              onClick={() => void run()}
+            >
+              {active
+                ? 'Đang cập nhật / chờ thử lại'
+                : data.runs[0]?.state === 'failed'
+                  ? 'Thử lại'
+                  : 'Chạy ngay'}
+            </button>
+          </div>
+          {!data.connected && (
+            <div className="admin-alert">
+              Nhờ người thiết lập kết nối Geoapify trước khi cập nhật.
+              <details>
+                <summary>Hướng dẫn cho người thiết lập</summary>Điền
+                GEOAPIFY_API_KEY trong server/.env, rồi khởi động lại API. Khóa
+                chỉ được lưu ở máy chủ.
+              </details>
+            </div>
+          )}
+          {error && (
+            <div role="alert" className="admin-alert">
+              {error}
+              <button
+                disabled={busy}
+                onClick={() =>
+                  setForm({
+                    ...data.schedule,
+                    expectedRevision: data.schedule.revision,
+                  })
                 }
               >
-                <option value="daily">Hằng ngày</option>
-                <option value="weekly">Hằng tuần</option>
-              </select>
-            </label>
-            <label>
-              Giờ chạy · Việt Nam
-              <input
-                type="time"
-                required
-                value={`${String(form.hour).padStart(2, '0')}:${String(form.minute).padStart(2, '0')}`}
-                onChange={(e) => {
-                  const [hour, minute] = e.target.value.split(':').map(Number);
-                  setForm((v) => ({ ...v, hour: hour!, minute: minute! }));
-                }}
-              />
-            </label>
-            {form.frequency === 'weekly' && (
+                Nạp cấu hình đã lưu để sửa lại
+              </button>
+            </div>
+          )}
+          {notice && (
+            <p role="status" className="admin-success">
+              {notice}
+            </p>
+          )}
+          <AdminScopeSummary destinationId={data.schedule.destinationId} />
+          <a href="#places?import=1" className="admin-dry-run journey-outline">
+            Chạy thử & xem trước dữ liệu
+          </a>
+        </div>
+        <form
+          className="admin-schedule-card"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save(true);
+          }}
+        >
+          <fieldset disabled={busy} className="admin-form-fields">
+            <legend>Lịch cập nhật</legend>
+            <div className="admin-two">
               <label>
-                Ngày trong tuần
+                Tần suất
                 <select
-                  value={form.weekday}
+                  value={form.frequency}
                   onChange={(e) =>
-                    setForm((v) => ({ ...v, weekday: Number(e.target.value) }))
+                    setForm((v) => ({
+                      ...v,
+                      frequency: e.target.value as 'daily' | 'weekly',
+                    }))
                   }
                 >
-                  {[
-                    'Chủ nhật',
-                    'Thứ hai',
-                    'Thứ ba',
-                    'Thứ tư',
-                    'Thứ năm',
-                    'Thứ sáu',
-                    'Thứ bảy',
-                  ].map((d, i) => (
-                    <option value={i} key={d}>
-                      {d}
-                    </option>
-                  ))}
+                  <option value="daily">Hằng ngày</option>
+                  <option value="weekly">Hằng tuần</option>
                 </select>
               </label>
-            )}
-            <label>
-              Nhóm địa điểm
-              <select
-                value={form.group}
-                onChange={(e) =>
-                  setForm((v) => ({
-                    ...v,
-                    group: e.target.value as CatalogScheduleInput['group'],
-                  }))
-                }
-              >
-                <option value="mixed">Tham quan, nhà hàng và cà phê</option>
-                <option value="sights">Tham quan</option>
-                <option value="restaurant">Nhà hàng</option>
-                <option value="cafe">Cà phê</option>
-              </select>
-            </label>
-          </div>
-          <p className="admin-soft-notice">
-            Hệ thống tự nhập bản nháp và phát hiện thay đổi; người vận hành vẫn
-            quyết định xuất bản.
-          </p>
-          <p>
-            Lần chạy tiếp theo:{' '}
-            <strong>
-              {data.schedule.enabled
-                ? catalogTime(data.schedule.nextRunAt)
-                : 'Chưa bật lịch'}
-            </strong>{' '}
-            · Asia/Ho_Chi_Minh
-          </p>
-          <div className="admin-actions">
-            <button className="journey-primary" type="submit">
-              {data.schedule.enabled
-                ? 'Lưu lịch cập nhật'
-                : 'Lưu và bật tự động'}
-            </button>
-            {data.schedule.enabled && (
-              <button type="button" onClick={() => void save(false)}>
-                Tạm dừng tự động
+              <label>
+                Giờ chạy · Việt Nam
+                <input
+                  type="time"
+                  required
+                  value={`${String(form.hour).padStart(2, '0')}:${String(form.minute).padStart(2, '0')}`}
+                  onChange={(e) => {
+                    const [hour, minute] = e.target.value
+                      .split(':')
+                      .map(Number);
+                    setForm((v) => ({ ...v, hour: hour!, minute: minute! }));
+                  }}
+                />
+              </label>
+              {form.frequency === 'weekly' && (
+                <label>
+                  Ngày trong tuần
+                  <select
+                    value={form.weekday}
+                    onChange={(e) =>
+                      setForm((v) => ({
+                        ...v,
+                        weekday: Number(e.target.value),
+                      }))
+                    }
+                  >
+                    {[
+                      'Chủ nhật',
+                      'Thứ hai',
+                      'Thứ ba',
+                      'Thứ tư',
+                      'Thứ năm',
+                      'Thứ sáu',
+                      'Thứ bảy',
+                    ].map((d, i) => (
+                      <option value={i} key={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label>
+                Nhóm địa điểm
+                <select
+                  value={form.group}
+                  onChange={(e) =>
+                    setForm((v) => ({
+                      ...v,
+                      group: e.target.value as CatalogScheduleInput['group'],
+                    }))
+                  }
+                >
+                  <option value="mixed">Tham quan, nhà hàng và cà phê</option>
+                  <option value="sights">Tham quan</option>
+                  <option value="restaurant">Nhà hàng</option>
+                  <option value="cafe">Cà phê</option>
+                </select>
+              </label>
+            </div>
+            <p className="admin-soft-notice">
+              Hệ thống tự nhập bản nháp và phát hiện thay đổi; người vận hành
+              vẫn quyết định xuất bản.
+            </p>
+            <p>
+              Lần chạy tiếp theo:{' '}
+              <strong>
+                {data.schedule.enabled
+                  ? catalogTime(data.schedule.nextRunAt)
+                  : 'Chưa bật lịch'}
+              </strong>{' '}
+              · Asia/Ho_Chi_Minh
+            </p>
+            <div className="admin-actions">
+              <button className="journey-primary" type="submit">
+                {data.schedule.enabled
+                  ? 'Lưu lịch cập nhật'
+                  : 'Lưu và bật tự động'}
               </button>
-            )}
-          </div>
-        </fieldset>
-      </form>
+              {data.schedule.enabled && (
+                <button type="button" onClick={() => void save(false)}>
+                  Tạm dừng tự động
+                </button>
+              )}
+            </div>
+          </fieldset>
+        </form>
+      </div>
       <p>
         Máy chủ GoEase phải đang chạy để cập nhật theo lịch, kể cả khi bạn đóng
         trang quản trị. Tạm dừng ngăn lượt tự động mới; lượt đã nhận vẫn hoàn
         tất hoặc thử lại.
       </p>
-      <a href="#places?import=1" className="journey-outline">
-        Chạy thử & xem trước dữ liệu
-      </a>
       <h2>Kết quả cập nhật gần đây</h2>
       <RunList data={data} />
     </>

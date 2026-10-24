@@ -1,3 +1,4 @@
+import { AdminPlaceImage } from './admin-visuals';
 import { AdminImageGallery } from './admin-image-gallery';
 import { useEffect, useState } from 'react';
 import {
@@ -173,12 +174,20 @@ export function AdminPlaceTools({
         </p>
       </section>
       <section className="admin-panel">
-        <h2>Ảnh & nguồn</h2>
-        <img
-          className="admin-editor-image"
-          src={saved?.imageUrl ?? '/images/explore-hoian.png'}
-          alt="Ảnh minh họa địa điểm"
+        <h2>Xem trước thẻ địa điểm</h2>
+        <AdminPlaceImage
+          place={{
+            ...form,
+            imageUrl: form.images?.[0]?.url ?? saved?.imageUrl,
+            imageCredit: form.images?.[0]?.credit ?? saved?.imageCredit,
+          }}
+          large
         />
+        <div className="admin-customer-card-copy">
+          <strong>{form.name || 'Tên địa điểm'}</strong>
+          <p>{form.locationQuery || 'Địa chỉ đang bổ sung'}</p>
+          <p>{form.openingHoursNote || 'Chưa có giờ mở cửa'}</p>
+        </div>
         <small>
           {saved?.imageCredit ?? 'Ảnh minh họa AI, không phải ảnh cơ sở'}
         </small>
@@ -193,10 +202,10 @@ export function AdminPlaceTools({
           </a>
         )}
       </section>
-      <section className="admin-panel">
+      <section className="admin-panel" id="admin-section-images">
         <AdminImageGallery form={form} update={update} />
       </section>
-      <section className="admin-panel">
+      <section className="admin-panel" id="admin-section-notes">
         <h2>Ghi chú nội bộ</h2>
         <label>
           Chỉ quản trị viên nhìn thấy

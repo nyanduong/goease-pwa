@@ -8,8 +8,11 @@ export function AdminMap({
   places,
   onOpen,
   onPick,
+  area,
 }: {
   places: AdminPlaceDto[];
+  area?:
+    { latitude: number; longitude: number; radiusMeters: number } | undefined;
   onOpen?: (id: string) => void;
   onPick?: (point: Pick<MapLocation, 'latitude' | 'longitude'>) => void;
 }) {
@@ -31,6 +34,7 @@ export function AdminMap({
       point: p.mapLocation,
     })),
   );
+  const circle = JSON.stringify(area ?? null);
   useEffect(() => {
     if (!element.current) return;
     const rows = JSON.parse(positions) as {
@@ -49,6 +53,8 @@ export function AdminMap({
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       {
         maxZoom: 19,
+        // OSM requires an origin Referer; never send admin paths or query data.
+        referrerPolicy: 'origin',
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       },
@@ -88,6 +94,29 @@ export function AdminMap({
         ),
         { padding: [30, 30], maxZoom: 15 },
       );
+    if (circle !== 'null') {
+      const region = JSON.parse(circle) as {
+        latitude: number;
+        longitude: number;
+        radiusMeters: number;
+      };
+      const boundary = L.circle([region.latitude, region.longitude], {
+        radius: region.radiusMeters,
+        color: '#0b8f78',
+        weight: 1.5,
+        dashArray: '6 6',
+        fillColor: '#61b9a3',
+        fillOpacity: 0.12,
+      }).addTo(map);
+      map.fitBounds(boundary.getBounds(), { padding: [14, 14] });
+      L.circleMarker([region.latitude, region.longitude], {
+        radius: 6,
+        color: '#fff',
+        weight: 2,
+        fillColor: '#006357',
+        fillOpacity: 1,
+      }).addTo(map);
+    }
     map.on('click', (event: L.LeafletMouseEvent) =>
       pickRef.current?.({
         latitude: Number(event.latlng.lat.toFixed(6)),
@@ -102,7 +131,7 @@ export function AdminMap({
       map.remove();
     };
     // The serialized marker projection keeps input handlers and editorial fields from rebuilding the map.
-  }, [positions, retry]);
+  }, [positions, retry, circle]);
   return (
     <section className="admin-map-panel" aria-label="Bản đồ địa điểm">
       <div ref={element} className="admin-live-map" />
@@ -113,16 +142,20 @@ export function AdminMap({
           <button onClick={() => setRetry((v) => v + 1)}>Thử lại bản đồ</button>
         </p>
       )}
-      <p className="admin-map-legend">
+      <p className="admin-map-legend" hidden={!!area}>
         <span>● Ăn uống</span>
         <span>● Văn hóa</span>
         <span>● Thiên nhiên</span>
       </p>
       <small>
-        {located.length}/{places.length} địa điểm có tọa độ tham khảo.{' '}
-        {onPick
-          ? 'Nhấn bản đồ để chọn vị trí, kiểm tra nguồn trước khi lưu.'
-          : 'Chọn ghim để mở địa điểm.'}
+        {area
+          ? 'Vùng nhập theo tâm và bán kính đã cấu hình.'
+          : `${located.length}/${places.length} địa điểm có tọa độ tham khảo.`}{' '}
+        {area
+          ? ''
+          : onPick
+            ? 'Nhấn bản đồ để chọn vị trí, kiểm tra nguồn trước khi lưu.'
+            : 'Chọn ghim để mở địa điểm.'}
       </small>
       {selected && (
         <div className="admin-map-selection">

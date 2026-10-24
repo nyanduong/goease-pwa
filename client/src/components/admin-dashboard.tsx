@@ -1,3 +1,4 @@
+import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
 import { catalogQuality } from '@goease/contracts';
 import { AdminRegionSettings } from './admin-region-settings';
 import { useEffect, useState } from 'react';
@@ -181,29 +182,20 @@ export function AdminDashboard({
       : '#work';
   return (
     <section className="admin-v2-content">
-      <header className="admin-page-heading">
-        <div>
-          <span className="admin-eyebrow">GOEASE · VẬN HÀNH</span>
-          <h1>{title}</h1>
-          <p>
-            {screen === 'overview'
-              ? `Tổng quan hoạt động và những việc cần quan tâm tại ${region}.`
-              : screen === 'sources'
-                ? 'Nguồn rõ ràng, dữ liệu có căn cứ, thay đổi được kiểm soát.'
-                : 'Cấu hình được lưu ở máy chủ và giữ lại sau khi khởi động lại.'}
-          </p>
-        </div>
-        <div className="admin-date">
-          <Clock size={18} />
-          {new Date().toLocaleDateString('vi-VN', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            timeZone: 'Asia/Ho_Chi_Minh',
-          })}
-        </div>
-      </header>
+      <AdminPageHeader
+        title={title}
+        region={region}
+        illustrated={screen === 'overview'}
+        greeting={screen === 'overview'}
+        description={
+          screen === 'overview'
+            ? `Đây là tổng quan hoạt động của GoEase tại ${region} hôm nay.`
+            : screen === 'sources'
+              ? 'Quản lý nguồn dữ liệu, theo dõi chất lượng và xử lý thông tin cần kiểm tra.'
+              : 'Quy tắc vận hành được lưu trên máy chủ và áp dụng cho những lần cập nhật tiếp theo.'
+        }
+      />
+
       {error && (
         <div className="admin-alert" role="alert">
           {error}{' '}
@@ -395,7 +387,7 @@ export function AdminDashboard({
                   <div className="admin-dashboard-grid">
                     <section className="admin-panel">
                       <div className="admin-panel-title">
-                        <h2>Việc cần quan tâm</h2>
+                        <h2>Việc cần quan tâm ({data.needsAttention})</h2>
                         <a href="#work">Xem việc cần làm →</a>
                       </div>
                       {settings.showQualityAlerts ? (
@@ -419,12 +411,7 @@ export function AdminDashboard({
                                 key={p.id}
                                 onClick={() => onOpen(p.id)}
                               >
-                                <img
-                                  src={
-                                    p.imageUrl ?? '/images/explore-hoian.png'
-                                  }
-                                  alt=""
-                                />
+                                <AdminPlaceImage place={p} />
                                 <span>
                                   <strong>{p.name}</strong>
                                   <small>
@@ -508,7 +495,7 @@ export function AdminDashboard({
                   </div>
                   <div className="admin-bottom-grid">
                     <section className="admin-panel">
-                      <h2>Hoạt động tự động</h2>
+                      <h2>Lần chạy tự động gần nhất</h2>
                       <p>
                         {data.jobs.active} lượt đang xử lý ·{' '}
                         {data.jobs.succeeded} thành công · {data.jobs.failed}{' '}

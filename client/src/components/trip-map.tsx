@@ -93,6 +93,7 @@ export function TripMap<A extends SharedActivity>({
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       {
         maxZoom: 19,
+        referrerPolicy: 'origin',
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       },

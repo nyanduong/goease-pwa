@@ -1,0 +1,137 @@
+import { useEffect, useState, type ReactNode } from 'react';
+import { MapPin, Sun } from 'lucide-react';
+
+// Replace these URLs with Cloudinary URLs after upload; presentation never changes catalog evidence.
+export const adminAssets = {
+  hero: '/images/admin/hoian-watercolor-v1.webp',
+  food: '/images/admin/food-v1.webp',
+  vegetarian: '/images/admin/vegetarian-v1.webp',
+  coffee: '/images/admin/coffee-v1.webp',
+  heritage: '/images/admin/heritage-v1.webp',
+  lanterns: '/images/admin/lanterns-v1.webp',
+  nature: '/images/explore-rice.png',
+};
+type PlaceImage = {
+  name: string;
+  category: string;
+  imageUrl?: string | undefined;
+  imageCredit?: string | undefined;
+};
+export function adminIllustration(
+  place: Pick<PlaceImage, 'name' | 'category'>,
+) {
+  if (/coffee|café|cafe|cà phê/i.test(place.name)) return adminAssets.coffee;
+  if (/chay|vegetarian|vegan/i.test(place.name)) return adminAssets.vegetarian;
+  if (place.category === 'food') return adminAssets.food;
+  if (/chợ|đêm|phố cổ|sông hoài/i.test(place.name)) return adminAssets.lanterns;
+  return place.category === 'nature'
+    ? adminAssets.nature
+    : adminAssets.heritage;
+}
+export function AdminPlaceImage({
+  place,
+  large = false,
+}: {
+  place: PlaceImage;
+  large?: boolean;
+}) {
+  const [failed, setFailed] = useState<string | null>(null);
+  const illustrated =
+    !place.imageUrl ||
+    /minh họa|\bAI\b/i.test(place.imageCredit ?? '') ||
+    place.imageUrl === '/images/explore-hoian.png' ||
+    failed === place.imageUrl;
+  const src = illustrated ? adminIllustration(place) : place.imageUrl;
+  return (
+    <span
+      className={`admin-place-photo${large ? ' is-large' : ''}`}
+      title={
+        illustrated
+          ? 'Ảnh minh họa AI — không phải ảnh xác minh của cơ sở'
+          : place.imageCredit
+      }
+    >
+      <img
+        src={src}
+        alt={
+          illustrated
+            ? `Minh họa AI cho nhóm ${place.category === 'food' ? 'ăn uống' : place.category === 'nature' ? 'thiên nhiên' : 'văn hóa'}`
+            : place.name
+        }
+        loading="lazy"
+        onError={() => setFailed(src ?? '')}
+      />
+      {illustrated && <small className="admin-ai-label">AI</small>}
+    </span>
+  );
+}
+export function AdminPageHeader({
+  title,
+  description,
+  region = 'Việt Nam',
+  illustrated = true,
+  greeting = false,
+  actions,
+}: {
+  title: string;
+  description: string;
+  region?: string;
+  illustrated?: boolean;
+  greeting?: boolean;
+  actions?: ReactNode;
+}) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <header
+      className={`admin-page-heading admin-reference-heading${illustrated ? ' has-art' : ''}`}
+    >
+      <div className="admin-heading-copy">
+        <h1>
+          {title}
+          {greeting && <Sun className="admin-greeting-sun" size={30} />}
+        </h1>
+        <p>{description}</p>
+      </div>
+      {illustrated && (
+        <img
+          className="admin-heading-art"
+          src={adminAssets.hero}
+          alt=""
+          aria-hidden="true"
+        />
+      )}
+      {actions ?? (
+        <div className="admin-live-clock">
+          <span>
+            {now.toLocaleDateString('vi-VN', {
+              timeZone: 'Asia/Ho_Chi_Minh',
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </span>
+          <div>
+            <time>
+              {now.toLocaleTimeString('vi-VN', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </time>
+            <small>
+              <MapPin size={16} />
+              {region}
+              <br />
+              Giờ Việt Nam
+            </small>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}

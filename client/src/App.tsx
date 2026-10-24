@@ -433,7 +433,7 @@ export function App() {
           <a href="/admin">
             <Brand />
           </a>
-          <p>KHÔNG GIAN QUẢN TRỊ</p>
+          <p>QUẢN TRỊ</p>
           <AdminNavigation />
           <span>{user.displayName}</span>
           <button

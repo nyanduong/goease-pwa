@@ -310,6 +310,11 @@ test('V2 dashboard, filters, editor autosave, sources and persisted settings use
   await expect(page.locator('.admin-data-table tbody tr')).toHaveCount(1);
   await page.getByRole('button', { name: 'Xem bản đồ', exact: true }).click();
   await expect(page.locator('.admin-map-marker')).toHaveCount(1);
+  // Global no-referrer stays in place; map tiles identify only the app origin.
+  await expect(page.locator('.leaflet-tile').first()).toHaveAttribute(
+    'referrerpolicy',
+    'origin',
+  );
   await page.screenshot({
     path: 'test-results/catalog-evidence/v2-map.png',
     fullPage: true,

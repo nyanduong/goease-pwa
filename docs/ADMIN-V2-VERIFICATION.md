@@ -28,7 +28,7 @@ Lần mở rộng test đã phát hiện fixture approval vô tình dùng cùng 
 
 ## Ảnh giao diện thực tế
 
-Ảnh chụp từ Playwright, số liệu là fixture test thật trong MongoDB, không phải số production. Màu ivory/deep teal/sage, sidebar/topbar, cards, table và editor dựa ảnh tham chiếu. Bỏ thời tiết/banner và connector không có dữ liệu thật; bố cục co lại ở1366 và zoom125%. Bản đồ OSM đã tải được trong ảnh editor; lúc mạng lỗi có retry, vị trí vẫn giữ.
+Ảnh chụp từ Playwright, số liệu là fixture test thật trong MongoDB, không phải số production. Màu ivory/deep teal/sage, sidebar/topbar, cards, table và editor dựa ảnh tham chiếu. Có banner Hội An và bộ ảnh AI theo yêu cầu bổ sung của owner; không hiển thị thời tiết hoặc connector chưa có dữ liệu thật. Bố cục co lại ở1366 và zoom125%. Đã sửa tile referrer để OSM tải được; lúc mạng lỗi có retry, vị trí vẫn giữ.
 
 | Tham chiếu           | Ảnh triển khai                                                                                                                                                                                      |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -55,5 +55,7 @@ npm run test:catalog-browser
 Chạy integration và browser tuần tự vì cùng harness port27021. Port3001/5181 dùng riêng để tránh dev server đang mở. Khởi chạy ứng dụng thường: `npm run dev`, mở http://localhost:5180/admin và dùng tài khoản có role admin. `GEOAPIFY_API_KEY` chỉ ở server/.env; session/MongoDB/CLIENT_ORIGIN giữ cấu hình hiện có. Không thêm credential mới bắt buộc. Backend phải chạy để lịch thực thi.
 
 ## Giới hạn nghiệm thu
+
+Lượt bổ sung hình ảnh: 2/2 browser tests PASS sau lượt chỉnh cuối (38.0s), gồm 1366/1440 và zoom125%; lint, typecheck và build PASS; build vẫn có cảnh báo main chunk >500kB. Bộ PNG/WebP và prompt được lưu local, chưa upload Cloudinary. Dashboard thật đã được quan sát với bản đồ tải thành công và ảnh AI có nhãn; ảnh tại `test-results/admin-visual-live/overview.png`. Chỉ kiểm tra đọc trên database ứng dụng trong lượt này; các thao tác ghi chạy trên test database riêng.
 
 Đã có các màn hình và luồng P0/P1 chính; chưa tuyên bố hoàn tất mọi dòng yêu cầu. Chưa hỗ trợ bulk review decisions, polygon địa giới, upload/file import, connector thứ hai, kiểm chứng quyền/URL ảnh tự động, field-level verified attribution, analytics xu hướng. Preview commit tối đa50 còn đồng bộ trong transaction hữu hạn, còn scheduled/manual run chạy nền. Map danh mục chỉ trang hiện tại; dashboard cap5000 record/map500. Lịch sử sự kiện toàn hệ thống, không lọc theo khu vực. Chi tiết và quy trình đầy đủ tại [ADMIN-OPERATIONS-V2.md](ADMIN-OPERATIONS-V2.md).

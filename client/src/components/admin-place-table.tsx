@@ -1,3 +1,4 @@
+import { AdminPlaceImage } from './admin-visuals';
 import { catalogQuality, type AdminPlaceDto } from '@goease/contracts';
 import { Pencil } from 'lucide-react';
 export function AdminPlaceTable({
@@ -47,17 +48,10 @@ export function AdminPlaceTable({
                 </td>
                 <td>
                   <div className="admin-place-identity">
-                    <img
-                      src={p.imageUrl ?? '/images/explore-hoian.png'}
-                      alt=""
-                      onError={(e) => {
-                        e.currentTarget.hidden = true;
-                      }}
-                    />
+                    <AdminPlaceImage place={p} />
                     <div>
                       <h2>{p.name}</h2>
                       <small>{p.locationQuery}</small>
-                      <small>{p.imageCredit}</small>
                     </div>
                   </div>
                 </td>
@@ -100,7 +94,7 @@ export function AdminPlaceTable({
                     aria-label={`Chỉnh sửa ${p.name}`}
                     onClick={() => onOpen(p.id)}
                   >
-                    <Pencil size={16} /> Chỉnh sửa
+                    <Pencil size={16} />
                   </button>
                 </td>
               </tr>
