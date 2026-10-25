@@ -518,9 +518,9 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
   await page.unroute('https://tile.openstreetmap.org/**');
   await page.getByRole('link', { name: 'Nguồn dữ liệu', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Nguồn dữ liệu & chất lượng' }),
+    page.getByRole('heading', { name: 'Nguồn dữ liệu', exact: true }),
   ).toBeVisible();
-  await expect(page.locator('.admin-source-connection')).toContainText(
+  await expect(page.locator('.sources-provider-card')).toContainText(
     'Geoapify',
   );
   await page.screenshot({
@@ -528,10 +528,12 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
     fullPage: true,
   });
   await page.getByRole('link', { name: 'Cài đặt', exact: true }).click();
+  await page.getByRole('tab', { name: 'Nhắc kiểm tra dữ liệu' }).click();
   await page.getByLabel('Nhắc kiểm tra sau số ngày chưa biên tập').fill('45');
   await page.getByRole('button', { name: 'Lưu cài đặt', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Đã lưu cấu hình');
+  await expect(page.getByRole('status')).toContainText('Đã lưu cài đặt');
   await page.reload();
+  await page.getByRole('tab', { name: 'Nhắc kiểm tra dữ liệu' }).click();
   await expect(
     page.getByLabel('Nhắc kiểm tra sau số ngày chưa biên tập'),
   ).toHaveValue('45');

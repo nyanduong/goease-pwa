@@ -61,7 +61,33 @@ Archive destination yêu cầu tắt lịch và tạm dừng/hoàn tất đợt 
 
 `GET /admin/v3/map` nhận filter+bounds+zoom, aggregate cụm trên toàn tập lọc trong viewport; tổng thiếu tọa độ tách riêng. Không chỉ lấy trang bảng. Thumbnail bản đồ tổng quan vẫn có sample500 và nhãn giới hạn; nó không dùng làm tổng số toàn catalog. Tổng quan dùng aggregation đầy đủ; hàng đợi phân biệt số địa điểm và số vấn đề.
 
+## Cài đặt theo tác vụ — 25/10/2026
+
+`/admin#settings` có ba tab: **Tỉnh/thành hiển thị**, **Nhắc kiểm tra dữ liệu**, **Thiết lập nâng cao**. Thanh trên chỉ hiển thị đường dẫn Cài đặt; không có bộ lọc khu vực/tìm địa điểm toàn cục không áp dụng cho danh mục này. Tỉnh/thành dùng công tắc Đang hiển thị/Đang ẩn, giải thích tác dụng bật/tắt tại đầu trang. Không có nút lưu chung cho danh mục; mỗi công tắc lưu riêng với revision/idempotency và xác nhận khi tắt như trước.
+
+Danh mục được đọc đầy đủ qua các trang GET hiện có, rồi lọc tên/mã/khu vực du lịch không dấu, miền và trạng thái ở client. Counts bật/tắt là toàn danh mục đã tải; phân trang 5 tỉnh/thành tính trên tập đã lọc, đổi bộ lọc về trang đầu. Không dựng số 34 hoặc 3 bật từ ảnh. Tải lỗi có thử lại, rỗng có xóa bộ lọc; mobile xếp mỗi dòng thành khối dọc, không dùng khung cuộn bảng lồng nhau.
+
+**Lấy địa điểm** mở luồng CAT-19 hiện có (bao gồm khôi phục request trong phiên). **Xem tiến trình** đi đến `#automatic?destinationId=...`, khởi tạo bộ lọc đợt theo tỉnh và chỉ đọc danh sách; không gọi POST lấy nguồn. Bật tỉnh vẫn tự mở đợt nhập nháp, lỗi nguồn không rollback trạng thái hiển thị. Nhắc kiểm tra và phạm vi nâng cao dùng settings API/CAS hiện có, giữ nháp khi chuyển tab; có nút Lưu cài đặt riêng. Không đổi BR, persistence, quyền, schema hoặc registry.
+
+Kiểm tra tập trung: `tests/admin-settings.spec.ts`, dùng tài khoản/provider fixture và MongoDB riêng. Bao gồm lọc/phân trang, tìm Sa Pa không dấu, mobile320/390, bật Cao Bằng→nháp, reload, xem tiến trình không POST, hủy/xác nhận tắt, lưu nhắc kiểm tra qua reload, lỗi đọc danh mục/thử lại. Ảnh tại `test-results/settings-evidence/`, không commit. Kết quả lệnh được ghi tại bàn giao.
+
+Kiểm chứng: typecheck, lint, build, format các file đổi và diff check đạt. Browser test cài đặt lượt cuối đạt 1/1, test màn nguồn trong lượt trước cũng đạt sau khi chuyển cài đặt sang tab. Đã xem ảnh desktop1600 và mobile320; test kiểm cả390. Không chạy toàn bộ E2E/integration, không bật tỉnh hay nhập dữ liệu vào goease thật. Vite còn cảnh báo bundle >500KB hiện hữu.
+
 ## Nguồn, hạn mức và quyền
+
+### Giao diện thẻ nguồn — 25/10/2026
+
+Bổ sung chi tiết nguồn: giải thích Geoapify dùng để tìm địa điểm/tra vùng, dữ liệu mới vào nháp; tình trạng chỉ phản ánh lần gọi gần nhất. Mỗi chỉ số 24 giờ có đơn vị và giải thích, áp dụng toàn hệ thống chứ không phải lượt khách tìm kiếm. `usage24h.received` gồm cả kết quả geocode, không phải số địa điểm mới/lưu/xuất bản. Có đường dẫn đến Đợt thu thập và kho đúng phạm vi. Hạn mức, lưu ý sử dụng và thông tin hỗ trợ đóng mặc định; mã lỗi kỹ thuật nằm trong thông tin hỗ trợ. Không đổi dữ liệu hoặc cách đếm server.
+
+`/admin#sources` dùng bố cục đã duyệt: tab **Các nguồn** / **Chất lượng địa điểm**, thẻ Geoapify với trạng thái thực và lần nhận gần nhất; **Xem chi tiết** mở hoạt động 24 giờ, hạn mức nội bộ, bản quyền và thông tin cấu hình. **Kết nối nguồn** mở hướng dẫn thiết lập server; chưa có API thêm nhà cung cấp tùy ý. Không đưa Nguồn B/C minh họa vào ứng dụng. Các nguồn làm giàu ảnh/giới thiệu/giờ và giá vẫn được theo dõi qua luồng địa điểm và Tiến trình lấy dữ liệu hiện hành.
+
+Nguồn và usage là toàn hệ thống. Kho địa điểm, số cần kiểm tra và vấn đề chất lượng theo khu vực đang chọn. Số kết quả nguồn không phải số địa điểm đã lưu; chất lượng độc lập với publication. Kho hiển thị thêm số lưu trữ khi có để giải thích tổng. Thẻ chưa cấu hình, chưa kiểm chứng, đang gọi, thành công, thiếu quyền và lỗi dùng đúng trạng thái server. Tải nguồn và kho có lỗi/thử lại riêng; không thay lỗi đọc API bằng số 0 hoặc trạng thái thành công cũ.
+
+Chi tiết dùng dialog có giữ focus, Escape đóng và trả focus; tabs hỗ trợ phím mũi tên/Home/End. Mobile xếp thẻ dọc. Làm mới chỉ đọc API, không tự gọi nhà cung cấp hoặc nhập dữ liệu. Không đổi contracts, schema, registry, quota hay quy tắc nghiệp vụ.
+
+Kiểm tra giao diện tập trung: `tests/admin-sources.spec.ts` (response nguồn/kho fixture có nhãn, auth và test server riêng). Ảnh kiểm tra ở `test-results/sources-evidence/`, không commit và không dùng làm bằng chứng provider thật. Kết quả lệnh cuối được ghi tại bàn giao.
+
+Kết quả quan sát: typecheck, lint, build, format các file thay đổi và diff check đạt. Lượt cuối `npm run test:catalog-browser -- --grep 'sources distinguish'` đạt 1/1, bao gồm các trạng thái nguồn, dialog/focus/Escape, tabs, lỗi và retry độc lập, kho rỗng, desktop1600/mobile390/320 không tràn ngang; bỏ mock rồi đối chiếu API test thật và mở Tổng quan/Cài đặt cũng đạt. Test dùng Edge và MongoDB riêng, cổng API3001/web5181, không sửa database ứng dụng. Build giữ cảnh báo bundle >500KB hiện hữu. Hai kiểm tra E2E cũ mở rộng chưa đạt: `V3 operator` dừng ở chờ tổng quan sau đăng nhập; `V3 dashboard` timeout ở ô “Tìm trong danh mục” sau đóng editor, trước khi tới màn nguồn. Không nhận toàn suite đạt và chưa kiểm chứng provider live cho task UI này.
 
 Geoapify duy nhất. `/admin/v3/sources` hiển thị đã cấu hình/chưa kiểm tra/đã lấy/lỗi quyền hoặc lỗi khác và usage request nội bộ. Counter nội bộ không phải số credits hay số dư provider; hai giá trị provider hiện trả null. Không tạo kết nối mới chỉ để có dashboard đẹp.
 

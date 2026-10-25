@@ -1,4 +1,6 @@
 import { AdminVisitProgress } from './admin-visit-progress';
+import { AdminSources } from './admin-sources';
+import { AdminSettingsPage } from './admin-settings';
 import { AdminScopeSummary } from './admin-scope-summary';
 import { AdminCampaigns } from './admin-campaigns';
 import { AdminHistory, type HistoryEntry } from './admin-history';
@@ -287,8 +289,11 @@ export function AdminWorkspace({
         scope={scope}
         onScope={setScope}
         name={name}
+        compact={tab === 'sources' || tab === 'settings'}
+        pageLabel={tab === 'settings' ? 'Cài đặt' : 'Nguồn dữ liệu'}
         showScope={
           tab !== 'automatic' &&
+          tab !== 'settings' &&
           !(tab === 'history' && historyView === 'events')
         }
       />
@@ -310,9 +315,17 @@ export function AdminWorkspace({
           refreshKey={catalogRevision}
         />
       </div>
-      {['overview', 'sources', 'settings'].includes(tab) && (
+      {tab === 'sources' && (
+        <AdminSources
+          scope={scope}
+          region={
+            destinations.find((d) => d.id === scope)?.name ?? 'tất cả khu vực'
+          }
+        />
+      )}
+      {tab === 'settings' && <AdminSettingsPage destinations={destinations} />}
+      {tab === 'overview' && (
         <AdminDashboard
-          screen={tab as 'overview' | 'sources' | 'settings'}
           scope={scope}
           operations={data}
           onOpen={edit}

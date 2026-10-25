@@ -9,6 +9,8 @@ export default defineConfig({
     'province-import.spec.ts',
     'admin-campaigns.spec.ts',
     'admin-history.spec.ts',
+    'admin-sources.spec.ts',
+    'admin-settings.spec.ts',
   ],
   workers: 1,
   outputDir: '../test-results/catalog-browser',
