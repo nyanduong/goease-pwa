@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { useEffect, useRef, useState } from 'react';
 import {
   profileUpdateSchema,
@@ -283,8 +284,18 @@ export function AccountPage({ onSaved }: { onSaved: (user: UserDto) => void }) {
             {profileError}{' '}
             <button
               type="button"
-              onClick={() => {
-                if (confirm('Tải hồ sơ mới và bỏ thay đổi đang nhập?'))
+              onClick={async () => {
+                if (
+                  await confirmAction(
+                    'Tải hồ sơ mới và bỏ thay đổi đang nhập?',
+                    {
+                      title: 'Tải lại dữ liệu đã lưu?',
+                      confirmLabel: 'Tải lại dữ liệu',
+                      cancelLabel: 'Giữ nội dung đang nhập',
+                      tone: 'warning',
+                    },
+                  )
+                )
                   setReload((v) => v + 1);
               }}
             >

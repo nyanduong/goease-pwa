@@ -5,10 +5,10 @@ Owner chốt ngày 25/10/2026: điểm đến là tỉnh/thành, Hội An và Sa
 ## Sử dụng
 
 1. Chạy `npm run dev`. API đồng bộ danh mục trước ready và worker. Có thể chạy lại `npm run db:seed` trên goease local 27017/rs0; lệnh này không còn thêm POI mẫu.
-2. Admin → Cài đặt → Danh mục tỉnh/thành Việt Nam: có 34 dòng, mục mới đang tắt. Tìm `Hà Nội`, `hoi an` hoặc `Sa Pa`; tìm tên khu vực trả tỉnh chứa khu vực đó.
+2. Admin → Cài đặt → Tỉnh/thành hiển thị: danh mục 34 tỉnh/thành, mỗi trang 5 dòng, mục mới đang ẩn. Tìm `Hà Nội`, `hoi an` hoặc `Sa Pa`; tìm tên khu vực trả tỉnh chứa khu vực đó. Lọc theo miền hoặc trạng thái hiển thị; công tắc lưu riêng, không cần nút lưu chung.
 3. Bật một tỉnh. Reload vẫn bật. Customer chỉ thấy tỉnh đã bật; nếu chưa có POI đủ dữ liệu, Goe báo thiếu dữ liệu trước khi gọi provider.
 4. Tắt có xác nhận: ẩn tỉnh và POI bên trong khỏi customer. Bản đã lưu, đề xuất, giá, ảnh và lịch thu thập giữ nguyên. Bật lại hiện POI vẫn published; không tự publish draft.
-5. CAT-19 nối UI bật tỉnh với đợt lấy địa điểm tham quan vào nháp. Nguồn lỗi không tắt lại tỉnh; bấm thử lại hoặc “Lấy địa điểm / xem tiến trình”. Không tự xuất bản/xác minh giá/giờ. Xem [luồng lấy nguồn và duyệt lô](PROVINCE-IMPORT.md).
+5. CAT-19 nối UI bật tỉnh với đợt lấy địa điểm tham quan vào nháp. Nguồn lỗi không tắt lại tỉnh; bấm thử lại hoặc “Lấy địa điểm”. “Xem tiến trình” chỉ mở danh sách đợt lọc theo tỉnh, không tạo đợt mới. Không tự xuất bản/xác minh giá/giờ. Xem [luồng lấy nguồn và duyệt lô](PROVINCE-IMPORT.md).
 
 ## Nguồn và phiên bản
 

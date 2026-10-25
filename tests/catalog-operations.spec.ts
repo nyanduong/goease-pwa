@@ -1,3 +1,4 @@
+import { respondToConfirmation } from './support/confirmation';
 import { fixturePhoto } from '../server/test/support/photo.js';
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
@@ -210,29 +211,41 @@ test('V3 operator preserves public content through proposals, publishes a frozen
     publicItems.find((p) => p.name.includes('Quán An'))?.referencePrice ?? null,
   ).toBeNull();
   expect(publicItems.some((p) => p.name.includes('Quán An'))).toBe(true);
-  await page.getByRole('link', { name: 'Quy tắc & lịch', exact: true }).click();
   await page
-    .getByLabel('Khu vực quản lý')
-    .selectOption('000000000000000000000004');
-  await page.getByLabel('Tần suất').selectOption('weekly');
-  await page.getByLabel('Ngày trong tuần').selectOption('1');
-  await page.getByLabel('Giờ chạy · Việt Nam').fill('08:30');
-  await page
-    .getByRole('button', { name: 'Lưu và bật tự động', exact: true })
+    .getByRole('link', { name: 'Tự động cập nhật', exact: true })
     .click();
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Đã lưu và bật' }),
-  ).toBeVisible();
-  await expect(
-    page.getByText('Lần chạy tiếp theo:', { exact: false }),
-  ).not.toContainText('Chưa bật lịch');
+  const scheduleRow = page.getByRole('article', {
+    name: 'Lịch Đà Nẵng',
+    exact: true,
+  });
+  await scheduleRow
+    .getByRole('button', { name: 'Chỉnh sửa', exact: true })
+    .click();
+  const scheduleEditor = page.getByRole('dialog', {
+    name: 'Chỉnh sửa lịch cập nhật',
+  });
+  await scheduleEditor
+    .getByRole('button', { name: 'Hằng tuần', exact: true })
+    .click();
+  await scheduleEditor.getByLabel('Ngày', { exact: true }).selectOption('1');
+  await scheduleEditor.getByLabel('Giờ', { exact: true }).fill('08:30');
+  await scheduleEditor.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  await expect(scheduleEditor).not.toBeVisible();
+  await scheduleRow.getByRole('switch').click();
+  await expect(scheduleRow.getByRole('switch')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.screenshot({
     path: 'test-results/catalog-evidence/04-schedule-1440.png',
     fullPage: true,
   });
   await page.reload();
-  await expect(page.getByLabel('Giờ chạy · Việt Nam')).toHaveValue('08:30');
+  await expect(scheduleRow).toContainText('08:30');
+  await scheduleRow
+    .getByRole('button', { name: 'Lần chạy', exact: true })
+    .click();
   await page.getByRole('button', { name: 'Chạy ngay', exact: true }).click();
   await expect(
     page.getByText('Sẽ tự thử lại', { exact: true }).first(),
@@ -246,9 +259,8 @@ test('V3 operator preserves public content through proposals, publishes a frozen
     path: 'test-results/catalog-evidence/05-source-retry.png',
     fullPage: true,
   });
-  await page
-    .getByRole('button', { name: 'Tạm dừng tự động', exact: true })
-    .click();
+  await page.keyboard.press('Escape');
+  await scheduleRow.getByRole('switch').click();
   await expect(
     page.getByRole('status').filter({ hasText: 'Đã tạm dừng' }),
   ).toBeVisible();
@@ -276,7 +288,7 @@ test('V3 operator preserves public content through proposals, publishes a frozen
       for (const tab of [
         'Cần kiểm tra',
         'Địa điểm',
-        'Quy tắc & lịch',
+        'Tự động cập nhật',
         'Lịch sử & phê duyệt',
       ]) {
         await page
@@ -286,8 +298,10 @@ test('V3 operator preserves public content through proposals, publishes a frozen
         await expect(page.locator('main')).toBeVisible();
         if (tab === 'Cần kiểm tra')
           await expect(page.locator('.admin-overview')).toBeVisible();
-        if (tab === 'Quy tắc & lịch')
-          await expect(page.getByLabel('Tần suất')).toBeVisible();
+        if (tab === 'Tự động cập nhật')
+          await expect(
+            page.getByRole('button', { name: 'Tạo lịch', exact: true }),
+          ).toBeVisible();
         if (tab === 'Lịch sử & phê duyệt')
           await expect(
             page.getByRole('heading', { name: 'Nhật ký hoạt động' }),
@@ -310,7 +324,7 @@ test('V3 operator preserves public content through proposals, publishes a frozen
     for (const tab of [
       'Cần kiểm tra',
       'Địa điểm',
-      'Quy tắc & lịch',
+      'Tự động cập nhật',
       'Lịch sử & phê duyệt',
     ]) {
       await page
@@ -324,7 +338,7 @@ test('V3 operator preserves public content through proposals, publishes a frozen
         ),
       ).toBe(true);
       await page.screenshot({
-        path: `test-results/catalog-evidence/narrow-${width}-${tab === 'Địa điểm' ? 'places' : tab === 'Cần kiểm tra' ? 'work' : tab === 'Quy tắc & lịch' ? 'rules' : 'history'}.png`,
+        path: `test-results/catalog-evidence/narrow-${width}-${tab === 'Địa điểm' ? 'places' : tab === 'Cần kiểm tra' ? 'work' : tab === 'Tự động cập nhật' ? 'rules' : 'history'}.png`,
         fullPage: false,
       });
     }
@@ -518,9 +532,9 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
   await page.unroute('https://tile.openstreetmap.org/**');
   await page.getByRole('link', { name: 'Nguồn dữ liệu', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Nguồn dữ liệu & chất lượng' }),
+    page.getByRole('heading', { name: 'Nguồn dữ liệu', exact: true }),
   ).toBeVisible();
-  await expect(page.locator('.admin-source-connection')).toContainText(
+  await expect(page.locator('.sources-provider-card')).toContainText(
     'Geoapify',
   );
   await page.screenshot({
@@ -528,10 +542,12 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
     fullPage: true,
   });
   await page.getByRole('link', { name: 'Cài đặt', exact: true }).click();
+  await page.getByRole('tab', { name: 'Nhắc kiểm tra dữ liệu' }).click();
   await page.getByLabel('Nhắc kiểm tra sau số ngày chưa biên tập').fill('45');
   await page.getByRole('button', { name: 'Lưu cài đặt', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Đã lưu cấu hình');
+  await expect(page.getByRole('status')).toContainText('Đã lưu cài đặt');
   await page.reload();
+  await page.getByRole('tab', { name: 'Nhắc kiểm tra dữ liệu' }).click();
   await expect(
     page.getByLabel('Nhắc kiểm tra sau số ngày chưa biên tập'),
   ).toHaveValue('45');
@@ -613,7 +629,15 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
     await (await page.request.get(`/api/v1/admin/places/${initial.id}`)).json()
   ).data;
 
-  await page.getByRole('link', { name: 'Quy tắc & lịch', exact: true }).click();
+  await page
+    .getByRole('link', { name: 'Tự động cập nhật', exact: true })
+    .click();
+  await page
+    .getByRole('button', { name: 'Quy tắc nâng cao', exact: true })
+    .click();
+  await page
+    .getByLabel('Khu vực xem trước')
+    .selectOption('000000000000000000000004');
   await page
     .getByRole('button', { name: 'Tạo phiên bản quy tắc', exact: true })
     .click();
@@ -740,11 +764,6 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
     path: 'test-results/catalog-evidence/v3-history-restore-preview.png',
     fullPage: false,
   });
-  page.once('dialog', async (dialog) => {
-    expect(dialog.type()).toBe('confirm');
-    expect(dialog.message()).toContain('Bản công khai được giữ nguyên');
-    await dialog.accept();
-  });
   const restorePromise = page.waitForResponse(
     (response) =>
       response.url().endsWith(`/api/v1/admin/places/${initial.id}/restore`) &&
@@ -753,6 +772,10 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
   await page
     .getByRole('button', { name: 'Chuẩn bị đề xuất phục hồi', exact: true })
     .click();
+  await expect(page.getByRole('alertdialog')).toContainText(
+    'Bản công khai được giữ nguyên',
+  );
+  await respondToConfirmation(page);
   const restoreResponse = await restorePromise;
   expect(restoreResponse.ok()).toBe(true);
   await expect(page.getByLabel('Giới thiệu ngắn')).toHaveValue(

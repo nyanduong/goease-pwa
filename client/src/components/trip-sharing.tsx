@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { useEffect, useRef, useState } from 'react';
 import type { ShareLinkDto } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
@@ -82,7 +83,14 @@ export function TripSharing({
   async function revoke(id: string) {
     if (
       busy ||
-      !confirm('Thu hồi link này? Người nhận sẽ không mở được lịch trình nữa.')
+      !(await confirmAction(
+        'Thu hồi link này? Người nhận sẽ không mở được lịch trình nữa.',
+        {
+          title: 'Thu hồi link chia sẻ?',
+          confirmLabel: 'Thu hồi link',
+          tone: 'danger',
+        },
+      ))
     )
       return;
     setBusy(true);

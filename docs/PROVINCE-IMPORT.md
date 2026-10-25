@@ -3,7 +3,7 @@
 ## Demo admin
 
 1. Mở Admin → Cài đặt → tìm tỉnh → Bật. Khung “Lấy địa điểm tham quan” mở và tự tạo đợt lấy nháp.
-2. Nếu tỉnh đã bật, bấm “Lấy địa điểm / xem tiến trình”. Trong cùng phiên browser, hệ thống khôi phục request cũ để không nhập lại do reload.
+2. Nếu tỉnh đã bật, bấm “Lấy địa điểm”. Trong cùng phiên browser, hệ thống khôi phục request cũ để không nhập lại do reload. “Xem tiến trình” mở danh sách đợt thu thập lọc theo tỉnh, chỉ đọc và không tự tạo lượt lấy mới.
 3. Chờ tiến trình kết thúc. Xem số nháp mới, không đổi, cần kiểm tra và bỏ qua. “Hoàn tất” có thể có 0 nháp mới; không suy ra đã lấy hết tỉnh.
 4. Bấm “Kiểm tra bản nháp và xuất bản theo lô”. Danh sách chỉ tỉnh được chọn, trạng thái nháp; bộ lọc loại/nguồn cũ được xóa.
 5. Kiểm tra tên, địa chỉ, vị trí, nguồn và ngoại lệ; chọn các mục đạt → Xem trước xuất bản → Áp dụng các mục đủ điều kiện. Giá chưa rõ vẫn có thể khám phá nhưng chưa chắc đủ cho Goe/dự toán.

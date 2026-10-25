@@ -44,7 +44,7 @@ test('enable province automatically imports drafts, restores progress and leads 
   await page.reload();
   await manager.getByLabel('Tìm tỉnh/thành hoặc khu vực').fill('Cao Bằng');
   await manager
-    .getByRole('button', { name: 'Lấy địa điểm / xem tiến trình' })
+    .getByRole('button', { name: 'Lấy địa điểm', exact: true })
     .click();
   await expect(flow.getByText(/Nháp mới: 1/)).toBeVisible();
   await flow

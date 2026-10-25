@@ -1,0 +1,241 @@
+/* One header for every admin section. The editor keeps its dedicated masthead. */
+.admin-topbar.admin-unified-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 24px;
+  height: 80px;
+  min-height: 80px;
+  padding: 12px 28px;
+  background: #fffefb;
+  border-bottom: 1px solid #e8e9e3;
+}
+.admin-header-identity {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+  flex: 1;
+}
+.admin-header-page-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  background: #eaf5f2;
+  border: 1px solid #dbeee8;
+  border-radius: 12px;
+  color: #087e83;
+}
+.admin-header-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  font-size: 13px;
+}
+.admin-header-breadcrumb a {
+  color: #71848a;
+  white-space: nowrap;
+}
+.admin-header-breadcrumb svg {
+  color: #9bacb0;
+  flex-shrink: 0;
+}
+.admin-header-breadcrumb [aria-current] {
+  color: #214a55;
+  font-weight: 700;
+}
+.admin-header-identity > div > small {
+  display: block;
+  margin-top: 5px;
+  color: #8a999c;
+  font-size: 11px;
+}
+.admin-header-context {
+  flex-shrink: 0;
+}
+.admin-header-scope {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid #dce8e5;
+  background: #f8fbf9;
+  border-radius: 9px;
+  color: #27818a;
+}
+.admin-header-scope > span {
+  display: block;
+  min-width: 0;
+}
+.admin-header-scope small {
+  display: block;
+  color: #778b91;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.admin-unified-header .admin-header-scope select {
+  display: block;
+  min-width: 190px;
+  max-width: 230px;
+  border: 0;
+  border-radius: 0;
+  padding: 2px 24px 0 0;
+  background-color: transparent;
+  color: #204e58;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  height: auto;
+}
+.admin-header-context-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  color: #72858a;
+  background: #f5f7f5;
+  border: 1px solid #e8ece8;
+  border-radius: 20px;
+  font-size: 12px;
+}
+.admin-header-account {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-left: 20px;
+  border-left: 1px solid #e6ebe6;
+  flex-shrink: 0;
+}
+.admin-header-inbox {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: #38636b;
+}
+.admin-header-inbox:hover {
+  background: #eaf5f2;
+  color: #007f87;
+}
+.admin-header-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.admin-header-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #f0e2ca;
+  color: #876637;
+  font-size: 12px;
+}
+.admin-header-profile strong {
+  display: block;
+  max-width: 150px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #294f58;
+  font-size: 12px;
+}
+.admin-header-profile small {
+  display: block;
+  color: #8a999c;
+  font-size: 10px;
+  margin-top: 3px;
+}
+.admin-unified-header :is(a, select):focus-visible {
+  outline: 3px solid #008c95;
+  outline-offset: 3px;
+}
+@media (max-width: 1100px) {
+  .admin-topbar.admin-unified-header {
+    gap: 15px;
+    padding-inline: 20px;
+  }
+  .admin-header-profile > div {
+    display: none;
+  }
+  .admin-header-account {
+    gap: 8px;
+    padding-left: 12px;
+  }
+}
+@media (max-width: 700px) {
+  .admin-topbar.admin-unified-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    height: auto;
+    min-height: 76px;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .admin-header-identity {
+    gap: 9px;
+  }
+  .admin-header-page-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+  .admin-header-breadcrumb {
+    font-size: 12px;
+    gap: 5px;
+  }
+  .admin-header-breadcrumb > a,
+  .admin-header-breadcrumb > svg {
+    display: none;
+  }
+  .admin-header-identity > div > small {
+    font-size: 10px;
+    margin-top: 3px;
+  }
+  .admin-header-account {
+    grid-column: 2;
+    grid-row: 1;
+    border: 0;
+    padding: 0;
+    gap: 5px;
+  }
+  .admin-header-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 10px;
+  }
+  .admin-header-inbox {
+    width: 30px;
+    height: 30px;
+  }
+  .admin-header-context {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  .admin-header-context:has(.admin-header-context-label) {
+    display: none;
+  }
+  .admin-header-scope {
+    padding: 8px 12px;
+  }
+  .admin-header-scope > span {
+    flex: 1;
+  }
+  .admin-unified-header .admin-header-scope select {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+}
+.admin-desktop-shell:has(div:not([hidden]) > .admin-catalog.is-editing)
+  .admin-unified-header {
+  display: none;
+}

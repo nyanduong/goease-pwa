@@ -1,3 +1,4 @@
+import { respondToConfirmation } from './support/confirmation';
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
@@ -18,9 +19,14 @@ test('operator enables a province; customer filters it and gets a truthful empty
   await page.getByRole('link', { name: 'Cài đặt', exact: true }).click();
   const manager = page.getByRole('region', { name: 'Danh mục tỉnh thành' });
   await expect(
-    manager.getByRole('heading', { name: 'Danh mục tỉnh/thành Việt Nam' }),
+    manager.getByRole('heading', {
+      name: 'Khách có thể chọn những tỉnh/thành nào?',
+    }),
   ).toBeVisible();
-  await expect(manager.locator('tbody tr')).toHaveCount(34);
+  await expect(manager.locator('tbody tr')).toHaveCount(5);
+  await expect(manager.locator('.settings-count')).toContainText(
+    '/ 34 tỉnh, thành',
+  );
   await expect(
     manager.getByRole('switch', { name: 'Hiển thị Hội An', exact: true }),
   ).toHaveCount(0);
@@ -42,6 +48,7 @@ test('operator enables a province; customer filters it and gets a truthful empty
     manager.getByRole('switch', { name: `Hiển thị ${name}`, exact: true }),
   ).toHaveAttribute('aria-checked', 'true');
   await page.reload();
+  await manager.getByLabel('Tìm tỉnh/thành hoặc khu vực').fill('Sa Pa');
   await expect(
     manager.getByRole('switch', { name: `Hiển thị ${name}`, exact: true }),
   ).toHaveAttribute('aria-checked', 'true');
@@ -118,10 +125,10 @@ test('operator enables a province; customer filters it and gets a truthful empty
       path: '.local/national-planner/customer-empty-catalog.png',
       fullPage: true,
     });
-    page.once('dialog', (dialog) => dialog.accept());
     await manager
       .getByRole('switch', { name: `Hiển thị ${name}`, exact: true })
       .click();
+    await respondToConfirmation(page);
     await expect(manager.getByRole('status')).toContainText('Đã tắt Lào Cai');
     await mobile.reload();
     await expect(mobile.getByRole('button', { name: /Lào Cai/ })).toHaveCount(

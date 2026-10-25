@@ -248,6 +248,7 @@ export function createProduct(
       '/admin/place-import/commit',
       '/admin/catalog/operations',
       '/admin/catalog/schedule',
+      '/admin/catalog/schedules',
       '/admin/catalog/run',
       '/admin/catalog/reviews',
       '/admin/catalog/batch-preview',
@@ -673,6 +674,18 @@ export function createProduct(
             .regex(/^[a-f0-9]{24}$/)
             .optional(),
           req.query.destinationId,
+        ),
+      ),
+    }),
+  );
+  router.get('/admin/catalog/schedules', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await operations.schedules(
+        res.locals.authUser._id,
+        parse(
+          z.coerce.number().int().min(0).max(100000).default(0),
+          req.query.offset,
         ),
       ),
     }),

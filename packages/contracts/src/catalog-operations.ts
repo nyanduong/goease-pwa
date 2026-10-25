@@ -121,6 +121,12 @@ export type CatalogOperationsDto = {
   };
   runs: CatalogRunDto[];
 };
+export type CatalogScheduleListDto = {
+  connected: boolean;
+  items: CatalogOperationsDto['schedule'][];
+  total: number;
+  hasMore: boolean;
+};
 export type CatalogHistoryDto = {
   id: string;
   action: string;

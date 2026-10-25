@@ -216,7 +216,12 @@ export function AdminCampaigns({
   const [listSearch, setListSearch] = useState('');
   const [listQuery, setListQuery] = useState('');
   const [stateFilter, setStateFilter] = useState('');
-  const [destinationFilter, setDestinationFilter] = useState('');
+  const [destinationFilter, setDestinationFilter] = useState(
+    () =>
+      new URLSearchParams(location.hash.split('?')[1] ?? '').get(
+        'destinationId',
+      ) ?? '',
+  );
   const loadGeneration = useRef(0);
   const [detail, setDetail] = useState<CampaignDetail | null>(null),
     [creating, setCreating] = useState(false),

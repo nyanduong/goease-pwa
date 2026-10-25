@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import {
   synchronizeSharedPrice,
   visitInfoForEditor,
@@ -181,52 +182,66 @@ export function AdminCatalog({
   const key = useRef({ payload: '', key: '' });
   const previewPanel = useRef<HTMLElement>(null);
   useEffect(() => {
-    const params = new URLSearchParams(locationKey.split('?')[1] ?? '');
-    if (!locationKey.startsWith('#places')) return;
-    if (
-      form &&
-      (!saved || JSON.stringify(form) !== JSON.stringify(formFromDto(saved))) &&
-      !confirm('Đổi trang danh mục? Thay đổi chưa lưu sẽ bị bỏ.')
-    )
-      return;
-    setForm(null);
-    setImporting(false);
-    setQ(params.get('q') ?? '');
-    if (params.has('destinationId')) {
-      setCategory('all');
-      setSourceFilter('all');
-      setSelected([]);
-      setAllMatching(false);
-    }
-    setStatus(
-      ['all', 'draft', 'published', 'archived'].includes(
-        params.get('status') ?? '',
+    const controller = new AbortController();
+    void (async () => {
+      const params = new URLSearchParams(locationKey.split('?')[1] ?? '');
+      if (!locationKey.startsWith('#places')) return;
+      if (
+        form &&
+        (!saved ||
+          JSON.stringify(form) !== JSON.stringify(formFromDto(saved))) &&
+        !(await confirmAction(
+          'Đổi trang danh mục? Thay đổi chưa lưu sẽ bị bỏ.',
+          {
+            title: 'Bỏ thay đổi chưa lưu?',
+            confirmLabel: 'Bỏ thay đổi',
+            cancelLabel: 'Ở lại',
+            tone: 'warning',
+            signal: controller.signal,
+          },
+        ))
       )
-        ? params.get('status')!
-        : 'all',
-    );
-    setQualityFilter(
-      ['all', 'price', 'hours', 'location'].includes(
-        params.get('quality') ?? '',
-      )
-        ? params.get('quality')!
-        : 'all',
-    );
-    setMapView(params.get('view') === 'map');
-    setOffset(0);
-    if (params.get('import')) {
+        return;
       setForm(null);
-      setImporting(true);
-    }
-    if (params.get('create') && destinations.length) {
-      setSaved(null);
-      setPublicPlace(null);
-      setSourceEvidence(null);
-      setHistory([]);
       setImporting(false);
-      setEditorTab('overview');
-      setForm(newPlace(scope));
-    }
+      setQ(params.get('q') ?? '');
+      if (params.has('destinationId')) {
+        setCategory('all');
+        setSourceFilter('all');
+        setSelected([]);
+        setAllMatching(false);
+      }
+      setStatus(
+        ['all', 'draft', 'published', 'archived'].includes(
+          params.get('status') ?? '',
+        )
+          ? params.get('status')!
+          : 'all',
+      );
+      setQualityFilter(
+        ['all', 'price', 'hours', 'location'].includes(
+          params.get('quality') ?? '',
+        )
+          ? params.get('quality')!
+          : 'all',
+      );
+      setMapView(params.get('view') === 'map');
+      setOffset(0);
+      if (params.get('import')) {
+        setForm(null);
+        setImporting(true);
+      }
+      if (params.get('create') && destinations.length) {
+        setSaved(null);
+        setPublicPlace(null);
+        setSourceEvidence(null);
+        setHistory([]);
+        setImporting(false);
+        setEditorTab('overview');
+        setForm(newPlace(scope));
+      }
+    })();
+    return () => controller.abort();
   }, [locationKey]);
   useEffect(() => {
     setOffset(0);
@@ -986,13 +1001,21 @@ export function AdminCatalog({
             type="button"
             className="admin-back"
             disabled={busy}
-            onClick={() => {
+            onClick={async () => {
               if (
                 success ||
                 (saved &&
                   JSON.stringify(form) ===
                     JSON.stringify(formFromDto(saved))) ||
-                confirm('Về danh sách? Thay đổi chưa lưu sẽ bị bỏ.')
+                (await confirmAction(
+                  'Về danh sách? Thay đổi chưa lưu sẽ bị bỏ.',
+                  {
+                    title: 'Bỏ thay đổi chưa lưu?',
+                    confirmLabel: 'Bỏ thay đổi',
+                    cancelLabel: 'Ở lại',
+                    tone: 'warning',
+                  },
+                ))
               ) {
                 setForm(null);
                 setSuccess('');
@@ -1190,10 +1213,16 @@ export function AdminCatalog({
                         <button
                           type="button"
                           key={p.id}
-                          onClick={() => {
+                          onClick={async () => {
                             if (
-                              confirm(
+                              await confirmAction(
                                 'Mở địa điểm có sẵn? Nội dung mới chưa lưu sẽ bị bỏ.',
+                                {
+                                  title: 'Mở địa điểm có sẵn?',
+                                  confirmLabel: 'Bỏ thay đổi và mở',
+                                  cancelLabel: 'Tiếp tục chỉnh sửa',
+                                  tone: 'warning',
+                                },
                               )
                             )
                               void open(p.id);
@@ -1598,10 +1627,15 @@ export function AdminCatalog({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => {
+                onClick={async () => {
                   if (
-                    confirm(
+                    await confirmAction(
                       'Ngừng hiển thị địa điểm này cho khách mới? Lịch đã lưu vẫn giữ nguyên.',
+                      {
+                        title: 'Ngừng hiển thị địa điểm?',
+                        confirmLabel: 'Ngừng hiển thị',
+                        tone: 'warning',
+                      },
                     )
                   )
                     void save('archived', 'publish');

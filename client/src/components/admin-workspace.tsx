@@ -1,12 +1,12 @@
 import { AdminVisitProgress } from './admin-visit-progress';
-import { AdminScopeSummary } from './admin-scope-summary';
+import { AdminSources } from './admin-sources';
+import { AdminSettingsPage } from './admin-settings';
 import { AdminCampaigns } from './admin-campaigns';
 import { AdminHistory, type HistoryEntry } from './admin-history';
-import { AdminPolicies } from './admin-policies';
+import { AdminSchedules } from './admin-schedules';
 import { AdminPageHeader } from './admin-visuals';
 import { AdminReviewQueue } from './admin-review-queue';
 import { ReviewDetail } from './admin-review-detail';
-import { catalogTime } from './admin-review-utils';
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type {
   CatalogOperationsDto,
@@ -14,12 +14,12 @@ import type {
   CatalogHistoryQuery,
   CatalogReviewDto,
   CatalogReviewListDto,
-  CatalogScheduleInput,
   DestinationDto,
 } from '@goease/contracts';
 import { api } from '../api';
 import { AdminCatalog } from './admin-catalog';
-import { AdminDashboard, AdminTopbar } from './admin-dashboard';
+import { AdminDashboard } from './admin-dashboard';
+import { AdminTopbar } from './admin-topbar';
 import {
   LayoutDashboard,
   ListTodo,
@@ -29,6 +29,7 @@ import {
   Activity,
   Database,
   Settings,
+  CalendarClock,
 } from 'lucide-react';
 
 const tabs = {
@@ -40,7 +41,7 @@ const tabs = {
   history: 'Lịch sử & phê duyệt',
   sources: 'Nguồn dữ liệu',
   settings: 'Cài đặt',
-  rules: 'Quy tắc & lịch',
+  rules: 'Tự động cập nhật',
 };
 const navIcons = {
   overview: LayoutDashboard,
@@ -51,7 +52,7 @@ const navIcons = {
   history: HistoryIcon,
   sources: Database,
   settings: Settings,
-  rules: Settings,
+  rules: CalendarClock,
 };
 type Tab = keyof typeof tabs;
 const currentTab = (): Tab => {
@@ -84,14 +85,6 @@ export function AdminNavigation() {
     </nav>
   );
 }
-const runLabels = {
-  paused: 'Đã tạm dừng',
-  queued: 'Đang chờ',
-  running: 'Đang lấy và kiểm tra',
-  retry: 'Sẽ tự thử lại',
-  succeeded: 'Đã hoàn tất',
-  failed: 'Cần kiểm tra lỗi',
-};
 export function AdminWorkspace({
   destinations: initialDestinations,
   name = 'Admin',
@@ -216,6 +209,7 @@ export function AdminWorkspace({
         setError('');
       }
       try {
+        if (tab === 'rules') return;
         if (tab === 'history' && historyView === 'events') {
           const value = await api<CatalogHistoryListDto>(
             `/admin/catalog/history?${new URLSearchParams({ offset: String(historyOffset), ...historyFilters })}`,
@@ -287,10 +281,28 @@ export function AdminWorkspace({
         scope={scope}
         onScope={setScope}
         name={name}
-        showScope={
-          tab !== 'automatic' &&
-          !(tab === 'history' && historyView === 'events')
-        }
+        pageLabel={tabs[tab]}
+        icon={navIcons[tab]}
+        {...(tab === 'rules' ||
+        tab === 'automatic' ||
+        tab === 'settings' ||
+        (tab === 'history' && historyView === 'events')
+          ? {
+              contextLabel:
+                tab === 'rules'
+                  ? 'Lịch theo khu vực'
+                  : tab === 'automatic'
+                    ? 'Các đợt thu thập'
+                    : tab === 'settings'
+                      ? 'Thiết lập hệ thống'
+                      : 'Nhật ký toàn hệ thống',
+            }
+          : {
+              scopeHint:
+                tab === 'sources'
+                  ? 'Khu vực của kho địa điểm'
+                  : 'Phạm vi dữ liệu',
+            })}
       />
       {destinationError && (
         <div className="admin-alert" role="alert">
@@ -310,9 +322,17 @@ export function AdminWorkspace({
           refreshKey={catalogRevision}
         />
       </div>
-      {['overview', 'sources', 'settings'].includes(tab) && (
+      {tab === 'sources' && (
+        <AdminSources
+          scope={scope}
+          region={
+            destinations.find((d) => d.id === scope)?.name ?? 'tất cả khu vực'
+          }
+        />
+      )}
+      {tab === 'settings' && <AdminSettingsPage destinations={destinations} />}
+      {tab === 'overview' && (
         <AdminDashboard
-          screen={tab as 'overview' | 'sources' | 'settings'}
           scope={scope}
           operations={data}
           onOpen={edit}
@@ -338,27 +358,7 @@ export function AdminWorkspace({
           />
         </section>
       )}
-      {tab === 'rules' && (
-        <section className="admin-v2-content">
-          <AdminPageHeader
-            title="Quy tắc & lịch"
-            description="Chọn cách cập nhật và đặt lịch chạy."
-          />
-          <AdminPolicies scope={scope} />
-          {scope && data ? (
-            <Automatic
-              key={scope}
-              data={data}
-              onChange={setData}
-              onRefresh={() => refresh(true)}
-            />
-          ) : (
-            <div className="admin-empty">
-              Chọn một điểm đến cụ thể trên thanh phạm vi để cấu hình lịch.
-            </div>
-          )}
-        </section>
-      )}
+      {tab === 'rules' && <AdminSchedules destinations={destinations} />}
       {![
         'places',
         'overview',
@@ -531,14 +531,6 @@ export function AdminWorkspace({
                     onOpen={edit}
                   />
                 )}
-                {tab === 'automatic' && data && (
-                  <Automatic
-                    key={scope}
-                    data={data}
-                    onChange={setData}
-                    onRefresh={() => refresh(true)}
-                  />
-                )}
                 {tab === 'history' && historyView === 'events' && (
                   <AdminHistory
                     items={history}
@@ -569,324 +561,5 @@ export function AdminWorkspace({
         </section>
       )}
     </>
-  );
-}
-
-function Automatic({
-  data,
-  onChange,
-  onRefresh,
-}: {
-  data: CatalogOperationsDto;
-  onChange: (v: CatalogOperationsDto) => void;
-  onRefresh: () => Promise<void>;
-}) {
-  const [form, setForm] = useState<CatalogScheduleInput>({
-    ...data.schedule,
-    expectedRevision: data.schedule.revision,
-  });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const key = useRef({ payload: '', key: '' });
-  async function save(enabled: boolean) {
-    const {
-      frequency,
-      hour,
-      minute,
-      weekday,
-      group,
-      expectedRevision,
-      destinationId,
-    } = form;
-    const body = JSON.stringify({
-      enabled,
-      destinationId,
-      frequency,
-      hour,
-      minute,
-      weekday,
-      group,
-      expectedRevision,
-    });
-    if (key.current.payload !== body)
-      key.current = { payload: body, key: crypto.randomUUID() };
-    setBusy(true);
-    setError('');
-    setNotice('');
-    try {
-      const v = await api<CatalogOperationsDto>('/admin/catalog/schedule', {
-        method: 'PUT',
-        headers: { 'Idempotency-Key': key.current.key },
-        body,
-      });
-      onChange(v);
-      setForm({ ...v.schedule, expectedRevision: v.schedule.revision });
-      setNotice(
-        enabled
-          ? 'Đã lưu và bật tự động cập nhật.'
-          : 'Đã tạm dừng tự động. Lượt đã nhận trước đó vẫn tiếp tục đến khi hoàn tất.',
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Chưa lưu được cấu hình.');
-    } finally {
-      setBusy(false);
-    }
-  }
-  const runKey = useRef('');
-  async function run() {
-    setBusy(true);
-    setError('');
-    setNotice('');
-    runKey.current ||= crypto.randomUUID();
-    try {
-      await api('/admin/catalog/run', {
-        method: 'POST',
-        headers: { 'Idempotency-Key': runKey.current },
-        body: JSON.stringify({ destinationId: data.schedule.destinationId }),
-      });
-      runKey.current = '';
-      setNotice(
-        'Đã nhận yêu cầu cập nhật. Kết quả sẽ xuất hiện bên dưới khi xử lý xong.',
-      );
-      await onRefresh();
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : 'Chưa bắt đầu được lượt cập nhật.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  const active = data.runs.some((r) =>
-    ['queued', 'running', 'retry'].includes(r.state),
-  );
-  return (
-    <>
-      <div className="admin-automation-grid">
-        <div>
-          <div className="admin-source-status">
-            <div>
-              <h2>Geoapify · OpenStreetMap</h2>
-              <p>
-                {data.connected
-                  ? 'Đã cấu hình kết nối nguồn'
-                  : 'Chưa kết nối nguồn dữ liệu'}
-              </p>
-              <p>
-                Theo khu vực đang chọn · phạm vi đã lưu trong Cài đặt · tối đa
-                50 kết quả/lượt
-              </p>
-            </div>
-            <button
-              className="journey-outline"
-              disabled={busy || active || !data.connected}
-              onClick={() => void run()}
-            >
-              {active
-                ? 'Đang cập nhật / chờ thử lại'
-                : data.runs[0]?.state === 'failed'
-                  ? 'Thử lại'
-                  : 'Chạy ngay'}
-            </button>
-          </div>
-          {!data.connected && (
-            <div className="admin-alert">
-              Nhờ người thiết lập kết nối Geoapify trước khi cập nhật.
-              <details>
-                <summary>Hướng dẫn cho người thiết lập</summary>Điền
-                GEOAPIFY_API_KEY trong server/.env, rồi khởi động lại API. Khóa
-                chỉ được lưu ở máy chủ.
-              </details>
-            </div>
-          )}
-          {error && (
-            <div role="alert" className="admin-alert">
-              {error}
-              <button
-                disabled={busy}
-                onClick={() =>
-                  setForm({
-                    ...data.schedule,
-                    expectedRevision: data.schedule.revision,
-                  })
-                }
-              >
-                Nạp cấu hình đã lưu để sửa lại
-              </button>
-            </div>
-          )}
-          {notice && (
-            <p role="status" className="admin-success">
-              {notice}
-            </p>
-          )}
-          <AdminScopeSummary destinationId={data.schedule.destinationId} />
-          <a href="#places?import=1" className="admin-dry-run journey-outline">
-            Chạy thử & xem trước dữ liệu
-          </a>
-        </div>
-        <form
-          className="admin-schedule-card"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void save(true);
-          }}
-        >
-          <fieldset disabled={busy} className="admin-form-fields">
-            <legend>Lịch cập nhật</legend>
-            <div className="admin-two">
-              <label>
-                Tần suất
-                <select
-                  value={form.frequency}
-                  onChange={(e) =>
-                    setForm((v) => ({
-                      ...v,
-                      frequency: e.target.value as 'daily' | 'weekly',
-                    }))
-                  }
-                >
-                  <option value="daily">Hằng ngày</option>
-                  <option value="weekly">Hằng tuần</option>
-                </select>
-              </label>
-              <label>
-                Giờ chạy · Việt Nam
-                <input
-                  type="time"
-                  required
-                  value={`${String(form.hour).padStart(2, '0')}:${String(form.minute).padStart(2, '0')}`}
-                  onChange={(e) => {
-                    const [hour, minute] = e.target.value
-                      .split(':')
-                      .map(Number);
-                    setForm((v) => ({ ...v, hour: hour!, minute: minute! }));
-                  }}
-                />
-              </label>
-              {form.frequency === 'weekly' && (
-                <label>
-                  Ngày trong tuần
-                  <select
-                    value={form.weekday}
-                    onChange={(e) =>
-                      setForm((v) => ({
-                        ...v,
-                        weekday: Number(e.target.value),
-                      }))
-                    }
-                  >
-                    {[
-                      'Chủ nhật',
-                      'Thứ hai',
-                      'Thứ ba',
-                      'Thứ tư',
-                      'Thứ năm',
-                      'Thứ sáu',
-                      'Thứ bảy',
-                    ].map((d, i) => (
-                      <option value={i} key={d}>
-                        {d}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <label>
-                Nhóm địa điểm
-                <select
-                  value={form.group}
-                  onChange={(e) =>
-                    setForm((v) => ({
-                      ...v,
-                      group: e.target.value as CatalogScheduleInput['group'],
-                    }))
-                  }
-                >
-                  <option value="mixed">Tham quan, nhà hàng và cà phê</option>
-                  <option value="sights">Tham quan</option>
-                  <option value="restaurant">Nhà hàng</option>
-                  <option value="cafe">Cà phê</option>
-                </select>
-              </label>
-            </div>
-            <p className="admin-soft-notice">
-              Hệ thống tự nhập bản nháp và phát hiện thay đổi; người vận hành
-              vẫn quyết định xuất bản.
-            </p>
-            <p>
-              Lần chạy tiếp theo:{' '}
-              <strong>
-                {data.schedule.enabled
-                  ? catalogTime(data.schedule.nextRunAt)
-                  : 'Chưa bật lịch'}
-              </strong>{' '}
-              · Asia/Ho_Chi_Minh
-            </p>
-            <div className="admin-actions">
-              <button className="journey-primary" type="submit">
-                {data.schedule.enabled
-                  ? 'Lưu lịch cập nhật'
-                  : 'Lưu và bật tự động'}
-              </button>
-              {data.schedule.enabled && (
-                <button type="button" onClick={() => void save(false)}>
-                  Tạm dừng tự động
-                </button>
-              )}
-            </div>
-          </fieldset>
-        </form>
-      </div>
-      <p>
-        Máy chủ GoEase phải đang chạy để cập nhật theo lịch, kể cả khi bạn đóng
-        trang quản trị. Tạm dừng ngăn lượt tự động mới; lượt đã nhận vẫn hoàn
-        tất hoặc thử lại.
-      </p>
-      <h2>Kết quả cập nhật gần đây</h2>
-      <RunList data={data} />
-    </>
-  );
-}
-function RunList({ data }: { data: CatalogOperationsDto }) {
-  return (
-    <div className="admin-run-list">
-      {!data.runs.length && (
-        <p>Chưa có lượt cập nhật. Chọn Chạy ngay để kiểm tra nguồn.</p>
-      )}
-      {data.runs.map((r) => (
-        <details key={r.id} className="admin-run">
-          <summary>
-            <strong>{runLabels[r.state]}</strong> · {catalogTime(r.createdAt)} ·{' '}
-            {r.actor === 'system' ? 'Theo lịch' : 'Người vận hành yêu cầu'}
-          </summary>
-          <p>{r.message || 'Đã nhận yêu cầu; đang chờ xử lý.'}</p>
-          {r.state === 'retry' && (
-            <p>Tự thử lại lúc {catalogTime(r.nextAttemptAt)}.</p>
-          )}
-          {r.state === 'succeeded' && (
-            <p>
-              {r.counts.created} mới · {r.counts.updated ?? 0} cập nhật an toàn
-              · {r.counts.unchanged} không đổi · {r.counts.review} cần kiểm tra
-              · {r.counts.skipped} bỏ qua · {r.counts.errors} lỗi
-            </p>
-          )}
-          {r.state === 'failed' && (
-            <p>
-              Chưa ghi thay đổi danh mục từ lượt này. {r.counts.errors} lỗi cần
-              kiểm tra.
-            </p>
-          )}
-          <details>
-            <summary>Chi tiết cho người thiết lập</summary>
-            <p>
-              Mã lượt: {r.id} · Đã thử {r.attempts} lần · Kết thúc:{' '}
-              {catalogTime(r.finishedAt)}
-            </p>
-          </details>
-        </details>
-      ))}
-    </div>
   );
 }

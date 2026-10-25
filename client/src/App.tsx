@@ -1,3 +1,4 @@
+import { confirmAction } from './confirmation';
 import { images } from '@goease/media';
 import { loadDestinations } from './destinations';
 import { useAutomaticRetry } from './use-automatic-retry';
@@ -108,15 +109,21 @@ export function App() {
 
   const saveKey = useRef({ payload: '', key: '' });
 
-  const go = (next: string) => {
+  const go = async (next: string) => {
     if (
       (path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path)) &&
       next.split('?')[0] !== path &&
       saveState !== 'saved' &&
       (draft.title || draft.days.some((d) => d.activities.length)) &&
-      !confirm(
+      !(await confirmAction(
         'Chuyến đi có thay đổi chưa lưu. Rời trang mà chưa lưu thay đổi?',
-      )
+        {
+          title: 'Bỏ thay đổi chưa lưu?',
+          confirmLabel: 'Bỏ thay đổi',
+          cancelLabel: 'Ở lại',
+          tone: 'warning',
+        },
+      ))
     )
       return;
     history.pushState({}, '', next);
@@ -359,7 +366,7 @@ export function App() {
     };
   }, [path, detailRetry, user?.id, sessionStatus]);
 
-  const start = () => {
+  const start = async () => {
     if (!user) {
       go('/login?next=/trips/new');
       return;
@@ -372,9 +379,15 @@ export function App() {
         draft.destinations.length)
     ) {
       if (
-        !window.confirm(
+        !(await confirmAction(
           'Bạn đang có một bản nháp. Bỏ bản nháp và tạo chuyến mới?',
-        )
+          {
+            title: 'Tạo bản nháp mới?',
+            confirmLabel: 'Bỏ nháp và tạo mới',
+            cancelLabel: 'Giữ bản nháp',
+            tone: 'warning',
+          },
+        ))
       )
         return;
       setDraft(initialDraft());
@@ -387,7 +400,7 @@ export function App() {
     go('/trips/new');
   };
 
-  const startWithDestination = (destId: string) => {
+  const startWithDestination = async (destId: string) => {
     if (!user) {
       go(`/login?next=/trips/new&destination=${destId}`);
       return;
@@ -395,7 +408,12 @@ export function App() {
     if (
       saveState !== 'saved' &&
       (draft.title || draft.days.some((d) => d.activities.length)) &&
-      !confirm('Bỏ bản nháp chưa lưu và tạo chuyến đi mới?')
+      !(await confirmAction('Bỏ bản nháp chưa lưu và tạo chuyến đi mới?', {
+        title: 'Tạo bản nháp mới?',
+        confirmLabel: 'Bỏ nháp và tạo mới',
+        cancelLabel: 'Giữ bản nháp',
+        tone: 'warning',
+      }))
     )
       return;
     const updated: TripInput = withDays({
@@ -840,7 +858,7 @@ export function App() {
             id={path.split('/')[2] ?? ''}
             signedIn={Boolean(user)}
             onNavigate={go}
-            onNewTrip={(place, note) => {
+            onNewTrip={async (place, note) => {
               if (!user) {
                 go('/login');
                 return;
@@ -850,9 +868,15 @@ export function App() {
                   draft.notes ||
                   draft.destinations.length ||
                   draft.days.some((d) => d.activities.length)) &&
-                !confirm(
+                !(await confirmAction(
                   'Bạn đang có bản nháp. Tạo bản nháp mới cho địa điểm này?',
-                )
+                  {
+                    title: 'Tạo bản nháp mới?',
+                    confirmLabel: 'Bỏ nháp và tạo mới',
+                    cancelLabel: 'Giữ bản nháp',
+                    tone: 'warning',
+                  },
+                ))
               )
                 return;
               const next = withDays({

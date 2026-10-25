@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { PlacePhoto } from './place-photo';
 import { images } from '@goease/media';
 import { TripManagement } from './trip-management';
@@ -514,9 +515,15 @@ export function TripWorkspace({
         ))
     ) {
       if (
-        !confirm(
+        !(await confirmAction(
           'Thay đổi này sẽ bỏ điểm dừng của địa điểm hoặc ngày không còn trong chuyến. Tiếp tục?',
-        )
+          {
+            title: 'Thay đổi lịch trình?',
+            confirmLabel: 'Áp dụng thay đổi',
+            cancelLabel: 'Giữ lịch hiện tại',
+            tone: 'warning',
+          },
+        ))
       )
         return;
       if (changedDestination)
@@ -1821,8 +1828,14 @@ export function TripWorkspace({
               <button
                 type="button"
                 className="journey-delete"
-                onClick={() => {
-                  if (confirm('Bỏ điểm dừng này khỏi lịch trình?')) {
+                onClick={async () => {
+                  if (
+                    await confirmAction('Bỏ điểm dừng này khỏi lịch trình?', {
+                      title: 'Xóa điểm dừng?',
+                      confirmLabel: 'Xóa điểm dừng',
+                      tone: 'danger',
+                    })
+                  ) {
                     changeActivities(
                       day!.activities.filter(
                         (a) => a.activityId !== editing.activityId,

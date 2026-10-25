@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   expenseInputSchema,
@@ -113,15 +114,21 @@ export function TripExpenses({
     pending.current = null;
     initial.current = JSON.stringify({ ...next, amount: text });
   }
-  function close() {
+  async function close() {
     if (busy) return;
     if (
       (dirty || uncertain) &&
-      !confirm(
+      !(await confirmAction(
         uncertain
           ? 'Kết quả lưu chưa rõ. Đóng và tải lại danh sách để kiểm tra trước khi tạo khoản mới?'
           : 'Khoản chi chưa lưu. Bạn muốn bỏ nội dung đang nhập?',
-      )
+        {
+          title: uncertain ? 'Kết quả lưu chưa rõ' : 'Bỏ khoản chi chưa lưu?',
+          confirmLabel: uncertain ? 'Đóng và tải lại' : 'Bỏ nội dung',
+          cancelLabel: 'Tiếp tục nhập',
+          tone: 'warning',
+        },
+      ))
     )
       return;
     setEditing(undefined);
@@ -326,8 +333,17 @@ export function TripExpenses({
                         <button
                           disabled={locked}
                           aria-label={`Xóa ${item.description}`}
-                          onClick={() => {
-                            if (confirm(`Xóa khoản chi “${item.description}”?`))
+                          onClick={async () => {
+                            if (
+                              await confirmAction(
+                                `Xóa khoản chi “${item.description}”?`,
+                                {
+                                  title: 'Xóa khoản chi?',
+                                  confirmLabel: 'Xóa khoản chi',
+                                  tone: 'danger',
+                                },
+                              )
+                            )
                               void execute({
                                 url: `${base}/${item.id}`,
                                 method: 'DELETE',
