@@ -5,12 +5,19 @@ import type { exploreService } from './explore.service.js';
 import type { adminCatalog } from './admin-catalog.js';
 import { visitContext, type FindVisitInfo } from './visit-info-provider.js';
 import { HttpError } from '../../http-error.js';
+import { sourceWorkerPool } from './source-worker-pool.js';
+import {
+  SourceRateLimit,
+  sourceRateLimitMessage,
+} from './source-rate-limit.js';
 export function placeVisitInfo(
   explore: ReturnType<typeof exploreService>,
   catalog: ReturnType<typeof adminCatalog>,
   find: FindVisitInfo,
+  concurrency = 4,
 ) {
   const { Place } = explore.models;
+  let pausedUntil = 0;
   async function read(
     actor: Types.ObjectId,
     id: string,
@@ -72,6 +79,7 @@ export function placeVisitInfo(
     return read(actor, id);
   }
   async function tick() {
+    if (Date.now() < pausedUntil) return;
     const token = randomUUID();
     const doc = await Place.findOneAndUpdate(
       {
@@ -110,7 +118,19 @@ export function placeVisitInfo(
       const effective = await catalog.proposal(doc, undefined, false),
         query = effective;
       const editable = !effective.fieldLocks?.includes('visitInfo');
-      const result = editable ? await find(query) : null;
+      const incoming = editable ? await find(query) : null;
+      const previous =
+        doc.visitSearch?.context === visitContext(query)
+          ? visitInfoSchema.safeParse(doc.toObject().visitSearch?.result).data
+          : null;
+      const combined = {
+        hours: previous?.hours ?? incoming?.hours ?? null,
+        price: previous?.price ?? incoming?.price ?? null,
+      };
+      const result =
+        combined.hours || combined.price
+          ? visitInfoSchema.parse(combined)
+          : null;
       const state = result ? 'ready' : 'empty';
       const saved = await Place.updateOne(
         { ...fence(), revision: doc.revision },
@@ -148,26 +168,42 @@ export function placeVisitInfo(
           },
           { timestamps: false },
         );
-    } catch {
-      const retry = (doc.visitSearch?.attempts ?? 3) < 3;
+    } catch (error) {
+      const cooldown =
+        error instanceof SourceRateLimit ? error.retryAfterMs : 0;
+      if (cooldown) pausedUntil = Math.max(pausedUntil, Date.now() + cooldown);
+      const retry = !!cooldown || (doc.visitSearch?.attempts ?? 3) < 3;
       await Place.updateOne(
         fence(),
         {
           $set: {
             'visitSearch.state': retry ? 'pending' : 'failed',
-            'visitSearch.nextAttemptAt': new Date(Date.now() + 60000),
+            'visitSearch.nextAttemptAt': new Date(
+              Date.now() + Math.max(60000, cooldown),
+            ),
             'visitSearch.checkedAt': new Date(),
             'visitSearch.leaseToken': null,
             'visitSearch.leaseUntil': null,
-            'visitSearch.message':
-              'Chưa lấy được giờ mở cửa và giá từ nguồn. Nội dung đã nhập được giữ nguyên.',
+            'visitSearch.message': cooldown
+              ? sourceRateLimitMessage
+              : 'Chưa lấy được giờ mở cửa và giá từ nguồn. Nội dung đã nhập được giữ nguyên.',
           },
+          ...(cooldown ? { $inc: { 'visitSearch.attempts': -1 } } : {}),
         },
         { timestamps: false },
       );
     }
   }
   async function prepare() {
+    const limited = await Place.findOne({
+      'visitSearch.state': 'pending',
+      'visitSearch.message': sourceRateLimitMessage,
+      'visitSearch.nextAttemptAt': { $gt: new Date() },
+    }).sort({ 'visitSearch.nextAttemptAt': -1 });
+    pausedUntil = Math.max(
+      pausedUntil,
+      limited?.visitSearch?.nextAttemptAt?.getTime() ?? 0,
+    );
     await Place.updateMany(
       {
         deletedAt: null,
@@ -192,26 +228,6 @@ export function placeVisitInfo(
       { timestamps: false },
     );
   }
-  let timer: ReturnType<typeof setInterval> | undefined,
-    running: Promise<void> | undefined;
-  function start() {
-    if (timer) return;
-    const poll = () => {
-      if (!running)
-        running = tick()
-          .catch(() => {})
-          .finally(() => {
-            running = undefined;
-          });
-    };
-    timer = setInterval(poll, 5000);
-    timer.unref();
-    poll();
-  }
-  async function stop() {
-    clearInterval(timer);
-    timer = undefined;
-    await running;
-  }
+  const { start, stop } = sourceWorkerPool(tick, concurrency);
   return { read, enqueue, tick, prepare, start, stop };
 }

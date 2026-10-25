@@ -63,6 +63,8 @@ export function auditModel(connection: Connection) {
         enum: [
           'catalog.created',
           'catalog.proposal_saved',
+          'catalog.enrichment_started',
+          'catalog.enrichment_controlled',
           'catalog.restore_prepared',
           'catalog.published',
           'catalog.campaign_paused',
@@ -131,6 +133,7 @@ export function auditModel(connection: Connection) {
           'catalog_schedule',
           'catalog_run',
           'catalog_campaign',
+          'catalog_enrichment_job',
           'catalog_policy',
         ],
         required: true,

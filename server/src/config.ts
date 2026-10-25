@@ -62,6 +62,18 @@ const schema = z.object({
     .optional(),
   CLOUDINARY_API_KEY: z.string().max(512).optional(),
   CLOUDINARY_API_SECRET: z.string().max(4096).optional(),
+  PHOTO_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(4).default(3),
+  DESCRIPTION_WORKER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(8)
+    .default(3),
+  VISIT_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(4),
+  PHOTO_PRIORITY_PROVINCE_CODE: z
+    .string()
+    .regex(/^\d{2}$/)
+    .optional(),
   GEMINI_MODEL: z
     .string()
     .regex(/^gemini-[a-z0-9.-]+$/)

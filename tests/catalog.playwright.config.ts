@@ -15,6 +15,7 @@ export default defineConfig({
     'admin-schedules.spec.ts',
     'confirmation.spec.ts',
     'media-policy.spec.ts',
+    'admin-enrichment.spec.ts',
   ],
   workers: 1,
   outputDir: '../test-results/catalog-browser',

@@ -26,6 +26,9 @@ const apiPort = 3002,
 const markerId = 'goease-admin-v3-review-20261024-fixture-v1';
 const accessPath = '.local/admin-v3-review-access.json';
 const config: Config = {
+  PHOTO_WORKER_CONCURRENCY: 3,
+  DESCRIPTION_WORKER_CONCURRENCY: 3,
+  VISIT_WORKER_CONCURRENCY: 4,
   REGISTRATION_OTP_REQUIRED: false,
   NODE_ENV: 'test',
   HOST: 'localhost',

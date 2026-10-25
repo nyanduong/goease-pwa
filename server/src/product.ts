@@ -1,4 +1,9 @@
 import { visitProgress } from './features/explore/visit-progress.js';
+import { catalogEnrichment } from './features/explore/catalog-enrichment.js';
+import {
+  enrichmentControlSchema,
+  enrichmentQuerySchema,
+} from '@goease/contracts';
 import { visitProgressQuerySchema } from '@goease/contracts';
 import { placeVisitInfo } from './features/explore/place-visit-info.js';
 import {
@@ -171,21 +176,36 @@ export function createProduct(
     dependencies.generate,
   );
   const progress = visitProgress(explore, catalog);
+  const enrichment = catalogEnrichment(connection, explore, catalog, audit);
   const visitSearch = placeVisitInfo(
     explore,
     catalog,
     dependencies.findVisitInfo ?? visitInfoProvider(),
+    config.VISIT_WORKER_CONCURRENCY,
   );
   const descriptionSearch = placeDescriptions(
     explore,
     catalog,
     dependencies.findDescription ??
       wikipediaDescriptions(fetch, descriptionTranslator(connection, config)),
+    config.DESCRIPTION_WORKER_CONCURRENCY,
   );
   const imageSearch = placeImages(
     explore,
     catalog,
     dependencies.findImages ?? storedWikimediaImages(config, wikimediaImages()),
+    {
+      concurrency: config.PHOTO_WORKER_CONCURRENCY,
+      priorityDestination: async () =>
+        config.PHOTO_PRIORITY_PROVINCE_CODE
+          ? ((
+              await trips.models.Destination.findOne({
+                provinceCode: config.PHOTO_PRIORITY_PROVINCE_CODE,
+                deletedAt: null,
+              }).select('_id')
+            )?._id ?? null)
+          : null,
+    },
   );
   const destinations = destinationCatalog(
     connection,
@@ -499,6 +519,32 @@ export function createProduct(
     next();
   });
   router.use('/admin/v3', adminV3Router(v3));
+  router.get('/admin/catalog/enrichment', async (req, res) => {
+    res.json({
+      ok: true,
+      data: await enrichment.read(
+        res.locals.authUser._id,
+        parse(enrichmentQuerySchema, req.query),
+      ),
+    });
+  });
+  router.post('/admin/catalog/enrichment', async (req, res) => {
+    parse(z.strictObject({}), req.body);
+    const key = parse(z.string().uuid(), req.get('Idempotency-Key'));
+    res.status(201).json({
+      ok: true,
+      data: { id: await enrichment.start(res.locals.authUser._id, key) },
+    });
+  });
+  router.patch('/admin/catalog/enrichment/:id', async (req, res) => {
+    const id = parse(z.string().regex(/^[a-f0-9]{24}$/), req.params.id);
+    await enrichment.control(
+      res.locals.authUser._id,
+      id,
+      parse(enrichmentControlSchema, req.body),
+    );
+    res.json({ ok: true, data: { id } });
+  });
   router.get('/admin/places', async (req, res) =>
     res.json({
       ok: true,
@@ -1153,9 +1199,11 @@ export function createProduct(
     v3,
     catalog,
     imageSearch,
+    destinations,
     descriptionSearch,
     visitSearch,
     visitProgress: progress,
+    enrichment,
     async initialize(withProvinceCatalog = false) {
       ready = false;
       const all = [
@@ -1167,6 +1215,7 @@ export function createProduct(
         ...Object.values(planner.models),
         ...Object.values(operations.models),
         ...Object.values(v3.models),
+        ...Object.values(enrichment.models),
       ];
       for (const model of all) {
         await model.createCollection();

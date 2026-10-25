@@ -10,6 +10,14 @@ import type { Config } from '../../config.js';
 import { HttpError } from '../../http-error.js';
 import type { FindImages } from './wikimedia.js';
 
+export const photoSourceCooldownMessage =
+  'Nguồn ảnh đang giới hạn tốc độ. Hệ thống sẽ chờ rồi tự thử lại; ảnh đã lưu được giữ nguyên.';
+export class PhotoSourceCooldown extends HttpError {
+  constructor(public retryAfterMs: number) {
+    super(503, 'PLACE_PHOTO_STORAGE_FAILED', photoSourceCooldownMessage);
+  }
+}
+
 async function limitedBody(response: Response, max: number) {
   if (!response.ok) {
     await response.body?.cancel();
@@ -52,6 +60,11 @@ export function catalogCoverStorage(
   config: StorageConfig,
   request: typeof fetch = fetch,
 ) {
+  let sourceCooldownUntil = 0;
+  function requireSourceReady() {
+    if (Date.now() < sourceCooldownUntil)
+      throw new PhotoSourceCooldown(sourceCooldownUntil - Date.now());
+  }
   function requireConfig() {
     if (
       !config.CLOUDINARY_CLOUD_NAME ||
@@ -69,20 +82,32 @@ export function catalogCoverStorage(
     budget?: AbortSignal,
   ): Promise<ImageCandidate> {
     requireConfig();
+    requireSourceReady();
     const source = sourceUrl(candidate.image);
-    const bytes = await limitedBody(
-      await request(source, {
-        redirect: 'error',
-        signal: AbortSignal.any([
-          AbortSignal.timeout(15000),
-          ...(budget ? [budget] : []),
-        ]),
-        headers: {
-          'User-Agent': 'GoEase/1.0 (Wikimedia catalog photo caching)',
-        },
-      }),
-      8 * 1024 * 1024,
-    );
+    const sourceResponse = await request(source, {
+      redirect: 'error',
+      signal: AbortSignal.any([
+        AbortSignal.timeout(15000),
+        ...(budget ? [budget] : []),
+      ]),
+      headers: {
+        'User-Agent': 'GoEase/1.0 (Wikimedia catalog photo caching)',
+      },
+    });
+    if ([429, 503].includes(sourceResponse.status)) {
+      const header = sourceResponse.headers.get('retry-after') ?? '';
+      const delay = /^\d+$/.test(header)
+        ? Number(header) * 1000
+        : Date.parse(header) - Date.now();
+      const retryAfterMs = Math.max(
+        60000,
+        Number.isFinite(delay) ? delay : 60000,
+      );
+      sourceCooldownUntil = Date.now() + retryAfterMs;
+      await sourceResponse.body?.cancel();
+      throw new PhotoSourceCooldown(retryAfterMs);
+    }
+    const bytes = await limitedBody(sourceResponse, 8 * 1024 * 1024);
     const raster = sharp(bytes, {
       limitInputPixels: 36_000_000,
       failOn: 'warning',
@@ -167,6 +192,7 @@ export function catalogCoverStorage(
   return {
     store,
     requireConfig,
+    requireSourceReady,
     async prepareCover(image: CatalogImage): Promise<CatalogImage> {
       // Untagged legacy images keep their previous behavior. New external covers must be backed up.
       if (image.storage !== 'source') return image;
@@ -202,6 +228,7 @@ export function storedWikimediaImages(
   const storage = catalogCoverStorage(config, request);
   return async (query) => {
     storage.requireConfig();
+    storage.requireSourceReady();
     const received = (await find(query)).slice(0, 5);
     const candidates = received.flatMap((candidate) => {
       try {
@@ -232,7 +259,8 @@ export function storedWikimediaImages(
           cover,
           ...candidates.filter((c) => c.image.url !== candidate.image.url),
         ].slice(0, 5);
-      } catch {
+      } catch (error) {
+        if (error instanceof PhotoSourceCooldown) throw error;
         /* Try another candidate as cover; never report an uncached cover as ready. */
       }
     }

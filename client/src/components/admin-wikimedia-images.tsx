@@ -166,14 +166,44 @@ export function AdminWikimediaImages({
             <p role="status">Đang tìm và chuẩn bị ảnh gợi ý…</p>
           )}
           {data && !waiting && !data.candidates.length && (
-            <div className="place-photos-empty">
-              <ImageIcon size={32} />
+            <div className={cover ? 'place-photo-help' : 'place-photos-empty'}>
+              {!cover && <ImageIcon size={32} />}
               <p role="status">
-                {data.message || 'Chưa tìm thấy ảnh phù hợp.'}
+                {cover
+                  ? data.state === 'failed'
+                    ? 'Ảnh bìa đã chọn vẫn được giữ. Lượt tìm ảnh bổ sung chưa thành công; bạn có thể thử lại.'
+                    : 'Đã có ảnh bìa. Chưa tìm thấy ảnh bổ sung phù hợp.'
+                  : data.message || 'Chưa tìm thấy ảnh phù hợp.'}
               </p>
             </div>
           )}
           <div className="place-photo-candidates">
+            {cover &&
+              !data?.candidates.some(
+                (candidate) => candidate.image.url === cover.url,
+              ) && (
+                <figure className="is-cover">
+                  <div className="place-candidate-image">
+                    <img
+                      src={cover.url}
+                      alt={`Ảnh bìa đã chọn: ${form.name}`}
+                      referrerPolicy="no-referrer"
+                    />
+                    <span className="place-cover-label">
+                      <Check size={14} />
+                      Ảnh bìa đã chọn
+                    </span>
+                  </div>
+                  <figcaption>
+                    {cover.kind === 'ai_illustration' && (
+                      <strong>Ảnh minh họa AI · </strong>
+                    )}
+                    <a href={cover.sourceUrl} target="_blank" rel="noreferrer">
+                      {cover.credit} · {cover.license}
+                    </a>
+                  </figcaption>
+                </figure>
+              )}
             {data?.candidates.map((candidate) => (
               <figure
                 key={candidate.id}
@@ -252,10 +282,6 @@ export function AdminWikimediaImages({
               </figure>
             ))}
           </div>
-          {cover &&
-            !data?.candidates.some((c) => c.image.url === cover.url) && (
-              <p>Ảnh bìa đã chọn trong mục quản lý ảnh bên dưới.</p>
-            )}
           <footer className="place-photo-help">
             <span>
               Giữ 1 ảnh bìa trên Cloudinary, tối đa 4 ảnh khác dùng link nguồn.

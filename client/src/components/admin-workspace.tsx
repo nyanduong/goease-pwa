@@ -192,12 +192,18 @@ export function AdminWorkspace({
         'destinationId',
       );
       if (target && /^[a-f0-9]{24}$/.test(target)) setScope(target);
+      const place = new URLSearchParams(location.hash.split('?')[1] ?? '').get(
+        'place',
+      );
+      if (place && /^[a-f0-9]{24}$/.test(place))
+        setOpenPlace({ id: place, request: Date.now() });
       setLocationKey(location.hash);
       setNotice('');
       setError('');
       window.scrollTo(0, 0);
     };
     window.addEventListener('hashchange', changed);
+    changed();
     return () => window.removeEventListener('hashchange', changed);
   }, []);
   const refreshGeneration = useRef(0);

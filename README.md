@@ -263,3 +263,6 @@ Admin đã có tìm/xem trước/nhập bản nháp từ Geoapify cho Hội An. 
 Địa điểm mới tự nhận ứng viên Wikimedia vào nháp. Admin chọn ảnh thật, lưu đề xuất rồi xuất bản; thiếu cover đã duyệt bị chặn ở server, không có AI fallback. Hướng dẫn: [WIKIMEDIA-PHOTOS](docs/WIKIMEDIA-PHOTOS.md).
 
 Admin có trang **Tiến trình lấy dữ liệu** để theo dõi hàng đợi giờ/giá, lọc tỉnh/trạng thái/dữ liệu thiếu và mở editor; tự cập nhật mỗi 5 giây. Xem [hướng dẫn](docs/ADMIN-VISIT-PROGRESS.md).
+# Bổ sung dữ liệu toàn quốc
+
+Admin → Đợt thu thập → **Bổ sung dữ liệu toàn quốc**: tiến độ từng mục, lọc kết quả, tạm dừng/tiếp tục, chạy tiếp sau khi API khởi động lại. Kết quả nguồn vẫn chờ duyệt, không tự xuất bản. Nguồn hiện hỗ trợ và giới hạn: [BULK-ENRICHMENT](docs/BULK-ENRICHMENT.md).

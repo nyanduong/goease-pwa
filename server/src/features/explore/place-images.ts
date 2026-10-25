@@ -8,14 +8,27 @@ import {
 import type { exploreService } from './explore.service.js';
 import type { adminCatalog } from './admin-catalog.js';
 import type { FindImages } from './wikimedia.js';
+import { matchesPlaceImage } from './wikimedia.js';
+import {
+  PhotoSourceCooldown,
+  photoSourceCooldownMessage,
+} from './place-photo-storage.js';
 import { HttpError } from '../../http-error.js';
 
 export function placeImages(
   explore: ReturnType<typeof exploreService>,
   catalog: ReturnType<typeof adminCatalog>,
   find: FindImages,
+  options: {
+    concurrency?: number;
+    priorityDestination?: () => Promise<Types.ObjectId | null>;
+  } = {},
 ) {
+  const concurrency = options.concurrency ?? 3;
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 4)
+    throw new Error('Photo concurrency must be between 1 and 4');
   const { Place } = explore.models;
+  let providerPausedUntil = 0;
   async function read(
     actor: Types.ObjectId,
     id: string,
@@ -66,6 +79,7 @@ export function placeImages(
         $set: {
           'imageSearch.state': 'pending',
           'imageSearch.attempts': 0,
+          'imageSearch.priority': 100,
           'imageSearch.nextAttemptAt': now,
           'imageSearch.message': '',
         },
@@ -75,35 +89,49 @@ export function placeImages(
     return read(actor, id);
   }
   async function tick() {
+    if (Date.now() < providerPausedUntil) return;
     const token = randomUUID(),
       now = new Date();
-    const place = await Place.findOneAndUpdate(
-      {
-        deletedAt: null,
-        publicationStatus: { $ne: 'archived' },
-        $or: [
-          {
-            'imageSearch.state': 'pending',
-            'imageSearch.nextAttemptAt': { $lte: now },
-          },
-          {
-            'imageSearch.state': 'searching',
-            'imageSearch.leaseUntil': { $lte: now },
-          },
-          { imageSearch: { $exists: false }, 'images.0': { $exists: false } },
-        ],
-      },
-      {
-        $set: {
-          'imageSearch.state': 'searching',
-          'imageSearch.storageVersion': 3,
-          'imageSearch.leaseToken': token,
-          'imageSearch.leaseUntil': new Date(Date.now() + 120000),
+    const priorityId = await options.priorityDestination?.();
+    const claim = (priorityOnly: boolean) =>
+      Place.findOneAndUpdate(
+        {
+          ...(priorityOnly && priorityId ? { destinationId: priorityId } : {}),
+          deletedAt: null,
+          publicationStatus: { $ne: 'archived' },
+          $or: [
+            {
+              'imageSearch.state': 'pending',
+              'imageSearch.nextAttemptAt': { $lte: now },
+            },
+            {
+              'imageSearch.state': 'searching',
+              'imageSearch.leaseUntil': { $lte: now },
+            },
+            { imageSearch: { $exists: false }, 'images.0': { $exists: false } },
+          ],
         },
-        $inc: { 'imageSearch.attempts': 1 },
-      },
-      { returnDocument: 'after', timestamps: false },
-    );
+        {
+          $set: {
+            'imageSearch.state': 'searching',
+            'imageSearch.storageVersion': 3,
+            'imageSearch.leaseToken': token,
+            'imageSearch.leaseUntil': new Date(Date.now() + 300000),
+          },
+          $inc: { 'imageSearch.attempts': 1 },
+        },
+        {
+          returnDocument: 'after',
+          timestamps: false,
+          sort: {
+            'imageSearch.priority': -1,
+            'imageSearch.nextAttemptAt': 1,
+            _id: 1,
+          },
+        },
+      );
+    const place =
+      (priorityId ? await claim(true) : null) ?? (await claim(false));
     if (!place) return;
     const fence = () => ({
       _id: place._id,
@@ -192,13 +220,22 @@ export function placeImages(
           { timestamps: false },
         );
     } catch (error) {
-      const retry = (place.imageSearch?.attempts ?? 3) < 3;
+      const cooldown =
+        error instanceof PhotoSourceCooldown ? error.retryAfterMs : 0;
+      if (cooldown)
+        providerPausedUntil = Math.max(
+          providerPausedUntil,
+          Date.now() + cooldown,
+        );
+      const retry = !!cooldown || (place.imageSearch?.attempts ?? 3) < 3;
       await Place.updateOne(
         fence(),
         {
           $set: {
             'imageSearch.state': retry ? 'pending' : 'failed',
-            'imageSearch.nextAttemptAt': new Date(Date.now() + 60000),
+            'imageSearch.nextAttemptAt': new Date(
+              Date.now() + Math.max(60000, cooldown),
+            ),
             'imageSearch.checkedAt': new Date(),
             'imageSearch.leaseToken': null,
             'imageSearch.leaseUntil': null,
@@ -208,40 +245,64 @@ export function placeImages(
                 ? error.message
                 : 'Chưa lấy được ảnh Wikimedia. Địa điểm được giữ nguyên; có thể thử lại.',
           },
+          ...(cooldown ? { $inc: { 'imageSearch.attempts': -1 } } : {}),
         },
         { timestamps: false },
       );
     }
   }
-  let timer: ReturnType<typeof setInterval> | undefined,
-    running: Promise<void> | undefined;
+  let timer: ReturnType<typeof setInterval> | undefined;
+  const running = new Set<Promise<void>>();
   function start() {
     if (timer) return;
     const poll = () => {
-      if (!running)
-        running = tick()
+      while (running.size < concurrency) {
+        const task = tick()
           .catch(() => {})
           .finally(() => {
-            running = undefined;
+            running.delete(task);
           });
+        running.add(task);
+      }
     };
-    timer = setInterval(poll, 5000);
+    timer = setInterval(poll, 1000);
     timer.unref();
     poll();
   }
   async function stop() {
     clearInterval(timer);
     timer = undefined;
-    await running;
+    await Promise.allSettled([...running]);
   }
   async function prepareStorage() {
-    // Persist a stable default for existing ready observations; retries never replace it.
+    const deferred = await Place.findOne({
+      deletedAt: null,
+      'imageSearch.state': 'pending',
+      'imageSearch.message': photoSourceCooldownMessage,
+      'imageSearch.nextAttemptAt': { $gt: new Date() },
+    })
+      .sort({ 'imageSearch.nextAttemptAt': -1 })
+      .select('imageSearch.nextAttemptAt');
+    providerPausedUntil = Math.max(
+      providerPausedUntil,
+      deferred?.imageSearch?.nextAttemptAt?.getTime() ?? 0,
+    );
+    // Adopt old cached candidates first, so every new automatic default is checked below.
     await Place.updateMany(
       {
         deletedAt: null,
+        publicationStatus: 'draft',
+        'images.0': { $exists: false },
+        fieldLocks: { $ne: 'images' },
+        'imageSearch.state': { $in: ['ready', 'failed', 'empty'] },
         'imageSearch.storageVersion': { $in: [1, 2, 3] },
         'imageSearch.defaultCover': null,
         'imageSearch.candidates.0': { $exists: true },
+        'imageSearch.candidates.0.image.storage': { $ne: 'source' },
+        $or: [
+          { 'imageSearch.leaseUntil': null },
+          { 'imageSearch.leaseUntil': { $lte: new Date() } },
+        ],
       },
       [
         {
@@ -257,6 +318,88 @@ export function placeImages(
       ],
       { timestamps: false, updatePipeline: true },
     );
+    // Withdraw automatic observations in every idle state, never selected/public/locked images.
+    const automatic = Place.find({
+      deletedAt: null,
+      publicationStatus: 'draft',
+      'images.0': { $exists: false },
+      fieldLocks: { $ne: 'images' },
+      $and: [
+        {
+          $or: [
+            { 'imageSearch.leaseUntil': null },
+            { 'imageSearch.leaseUntil': { $lte: new Date() } },
+          ],
+        },
+      ],
+      'imageSearch.defaultCover.selection': 'automatic',
+    });
+    for await (const doc of automatic) {
+      const candidates = doc.imageSearch!.candidates.map((candidate) =>
+        imageCandidateSchema.parse(candidate.toObject()),
+      );
+      const safe = candidates.filter((candidate) =>
+        matchesPlaceImage(doc.name, candidate),
+      );
+      const defaultImage = catalogImageSchema.safeParse(
+        doc.toObject().imageSearch!.defaultCover,
+      );
+      let storedTitle = '';
+      try {
+        storedTitle = decodeURIComponent(
+          new URL(doc.imageSearch!.defaultCover!.sourceUrl).pathname
+            .split('/')
+            .at(-1) ?? '',
+        );
+      } catch {
+        /* Invalid provenance cannot confirm a default. */
+      }
+      const keepsCover =
+        (defaultImage.success &&
+          matchesPlaceImage(doc.name, {
+            id: 'cached-cover',
+            title: storedTitle,
+            match: 'name',
+            image: defaultImage.data,
+          })) ||
+        safe.some(
+          (candidate) =>
+            candidate.image.sourceUrl ===
+            doc.imageSearch!.defaultCover!.sourceUrl,
+        );
+      if (safe.length === candidates.length && keepsCover) continue;
+      await Place.updateOne(
+        {
+          _id: doc._id,
+          revision: doc.revision,
+          publicationStatus: 'draft',
+          'images.0': { $exists: false },
+          fieldLocks: { $ne: 'images' },
+          'imageSearch.state': doc.imageSearch!.state,
+          'imageSearch.checkedAt': doc.imageSearch!.checkedAt ?? null,
+          $or: [
+            { 'imageSearch.leaseUntil': null },
+            { 'imageSearch.leaseUntil': { $lte: new Date() } },
+          ],
+        },
+        {
+          $set: {
+            'imageSearch.candidates': safe,
+            ...(!keepsCover
+              ? {
+                  'imageSearch.defaultCover': null,
+                  'imageSearch.state': safe.length ? 'pending' : 'empty',
+                  'imageSearch.nextAttemptAt': new Date(),
+                  'imageSearch.attempts': 0,
+                  'imageSearch.message':
+                    'Đã bỏ gợi ý ảnh không khớp tên địa điểm; chưa xác minh được ảnh phù hợp.',
+                }
+              : {}),
+          },
+        },
+        { timestamps: false },
+      );
+    }
     // Requeue legacy observations once; never modify selected images or publication state.
     await Place.updateMany(
       {

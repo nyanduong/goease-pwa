@@ -6633,3 +6633,85 @@
     flex-direction: column;
   }
 }
+
+.admin-enrichment {
+  margin-bottom: 24px;
+}
+.admin-enrichment .admin-panel-title {
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.admin-enrichment h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-enrichment-progress {
+  width: 100%;
+  height: 12px;
+  accent-color: #008b8b;
+}
+.admin-enrichment-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.admin-enrichment-counts button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.admin-enrichment-counts button[aria-pressed='true'] {
+  background: #e3f3f0;
+  border-color: #008b8b;
+}
+.admin-enrichment details {
+  margin-top: 16px;
+}
+.admin-enrichment summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.admin-enrichment .admin-table-wrap {
+  overflow-x: auto;
+}
+.admin-enrichment table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+.admin-enrichment th,
+.admin-enrichment td {
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #e2e8e8;
+}
+@media (max-width: 650px) {
+  .admin-enrichment table,
+  .admin-enrichment tbody,
+  .admin-enrichment tr,
+  .admin-enrichment td {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+  .admin-enrichment thead {
+    display: none;
+  }
+  .admin-enrichment tr {
+    padding: 12px 0;
+    border-bottom: 1px solid #e2e8e8;
+  }
+  .admin-enrichment td {
+    padding: 6px 0;
+    border: 0;
+  }
+  .admin-enrichment td:nth-child(3)::before {
+    content: 'Còn thiếu: ';
+    font-weight: 600;
+  }
+}

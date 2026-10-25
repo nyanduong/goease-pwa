@@ -36,3 +36,4 @@ export * from './visit-info.js';
 export * from './visit-progress.js';
 
 export * from './unified-price.js';
+export * from './catalog-enrichment.js';

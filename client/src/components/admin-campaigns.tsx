@@ -25,6 +25,7 @@ import type {
 } from '@goease/contracts';
 import { api } from '../api';
 import { AdminPageHeader } from './admin-visuals';
+import { AdminEnrichment } from './admin-enrichment';
 
 const time = (value: string | null) =>
   value
@@ -468,6 +469,7 @@ export function AdminCampaigns({
           {notice}
         </p>
       )}
+      <AdminEnrichment />
       {creating ? (
         <>
           <ol className="admin-steps">

@@ -47,12 +47,14 @@ test(
             match: 'linked',
           };
         },
-        findImages: async () => {
+        findImages: async (query) => {
           imageCalls++;
           await imageHook?.();
           if (imageMode === 'failed')
             throw new Error('Fixture provider failure');
-          return imageMode === 'empty' ? [] : [fixtureCandidate];
+          return imageMode === 'empty'
+            ? []
+            : [{ ...fixtureCandidate, title: `File:${query.name}.jpg` }];
         },
         resolveProvinceArea: async () => {
           lookups++;

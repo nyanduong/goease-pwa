@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import sharp from 'sharp';
 import {
   catalogCoverStorage,
+  PhotoSourceCooldown,
   storedWikimediaImages,
 } from '../src/features/explore/place-photo-storage.js';
 import { fixtureCandidate } from './support/photo.js';
@@ -13,6 +14,37 @@ const config = {
   CLOUDINARY_API_SECRET: 'fixture-secret',
 };
 const query = { name: 'Fixture', destinationName: 'Fixture' };
+
+test('source CDN Retry-After pauses further downloads and lookups rather than trying every candidate', async () => {
+  let downloads = 0,
+    lookups = 0;
+  const find = storedWikimediaImages(
+    config,
+    async () => {
+      lookups++;
+      return [fixtureCandidate, { ...fixtureCandidate, id: 'second' }];
+    },
+    async () => {
+      downloads++;
+      return new Response('limited', {
+        status: 429,
+        headers: { 'retry-after': '600' },
+      });
+    },
+  );
+  await assert.rejects(
+    find(query),
+    (error) =>
+      error instanceof PhotoSourceCooldown && error.retryAfterMs === 600000,
+  );
+  await assert.rejects(
+    find(query),
+    (error) =>
+      error instanceof PhotoSourceCooldown && error.retryAfterMs > 590000,
+  );
+  assert.equal(downloads, 1);
+  assert.equal(lookups, 1);
+});
 test('stores bounded re-encoded photos with deterministic IDs, preserves rights, never auto-approves', async () => {
   const source = await sharp({
     create: { width: 1600, height: 900, channels: 3, background: '#008080' },

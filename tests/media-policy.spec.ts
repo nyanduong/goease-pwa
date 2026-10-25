@@ -102,6 +102,50 @@ test('a broken source gallery image is hidden while the cached cover remains vis
   await expect(
     page.getByText('Ảnh minh họa AI ·', { exact: true }),
   ).toHaveCount(0);
+  await page.request.post('/api/v1/auth/login', {
+    headers,
+    data: {
+      email: 'catalog-browser@example.invalid',
+      password: 'Browser-fixture-2026!',
+    },
+  });
+  const oldError =
+    'Chưa lưu được ảnh bìa Wikimedia vào Cloudinary. Hãy thử lại.';
+  await page.route(`**/api/v1/admin/places/${created.id}/images`, (route) =>
+    route.fulfill({
+      json: {
+        ok: true,
+        data: {
+          state: 'failed',
+          candidates: [],
+          defaultCover: null,
+          message: oldError,
+          checkedAt: new Date().toISOString(),
+        },
+      },
+    }),
+  );
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/admin#places?q=${encodeURIComponent(place.name)}`);
+  await page
+    .getByRole('button', { name: `Chỉnh sửa ${place.name}`, exact: true })
+    .click();
+  await page.getByRole('tab', { name: /Ảnh địa điểm/ }).click();
+  const photos = page.getByRole('region', { name: 'Ảnh gợi ý Wikimedia' });
+  await expect(
+    photos.getByRole('img', { name: `Ảnh bìa đã chọn: ${place.name}` }),
+  ).toBeVisible();
+  await expect(
+    photos.getByText(
+      'Ảnh bìa đã chọn vẫn được giữ. Lượt tìm ảnh bổ sung chưa thành công; bạn có thể thử lại.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(photos.getByText(oldError, { exact: true })).toHaveCount(0);
+  await mkdir('test-results/media-policy', { recursive: true });
+  await photos.screenshot({
+    path: 'test-results/media-policy/selected-cover-search-failed.png',
+  });
 });
 test('AI cover metadata persists and customer sees explicit illustration label at desktop/mobile', async ({
   page,

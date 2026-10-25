@@ -44,6 +44,7 @@ export const imageSearchSchema = new Schema(
       validate: (v: unknown[]) => v.length <= 6,
     },
     attempts: { type: Number, default: 0 },
+    priority: { type: Number, min: 0, max: 100, default: 0 },
     nextAttemptAt: { type: Date, default: Date.now },
     leaseToken: { type: String, default: null },
     leaseUntil: { type: Date, default: null },

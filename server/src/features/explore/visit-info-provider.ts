@@ -1,3 +1,4 @@
+import { SourceRateLimit } from './source-rate-limit.js';
 import {
   websiteTextInfo,
   visitPageLinks,
@@ -112,7 +113,8 @@ export function websiteVisitInfo(
   )) {
     try {
       collect(JSON.parse(match[1]!));
-    } catch {
+    } catch (error) {
+      if (error instanceof SourceRateLimit) throw error;
       /* malformed JSON is not evidence */
     }
   }
@@ -301,7 +303,8 @@ export function visitInfoProvider(
             break;
           }
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof SourceRateLimit) throw error;
         failed = true;
       }
     }
@@ -329,7 +332,8 @@ export function visitInfoProvider(
           );
           if (url && !websites.includes(url)) websites.push(url);
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof SourceRateLimit) throw error;
         failed = true;
       }
     }
@@ -357,12 +361,14 @@ export function visitInfoProvider(
             const visible = websiteTextInfo(page, query.name, link, true);
             info.hours ??= structured.hours ?? visible.hours;
             info.price ??= structured.price ?? visible.price;
-          } catch {
+          } catch (error) {
+            if (error instanceof SourceRateLimit) throw error;
             pages++;
             failed = true;
           }
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof SourceRateLimit) throw error;
         failed = true;
       }
     }

@@ -9,6 +9,34 @@ export type ImageQuery = {
   longitude?: number;
 };
 export type FindImages = (query: ImageQuery) => Promise<ImageCandidate[]>;
+const normalizedName = (value: string) =>
+  value
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+const genericNameWords = new Set(
+  'cafe coffee caphe ca phe restaurant nha hang quan the and bar beach bai chua temple hotel khach san'.split(
+    ' ',
+  ),
+);
+export function matchesPlaceImage(
+  name: string,
+  candidate: ImageCandidate,
+): boolean {
+  const title = ` ${normalizedName(candidate.title)} `;
+  const normalized = normalizedName(name);
+  if (normalized && title.includes(` ${normalized} `)) return true;
+  const terms = normalized
+    .split(' ')
+    .filter((word) => word.length >= 2 && !genericNameWords.has(word));
+  return (
+    terms.length >= 2 && terms.every((word) => title.includes(` ${word} `))
+  );
+}
 const plain = (s: string) =>
   s
     .replace(/<[^>]*>/g, '')
@@ -119,7 +147,17 @@ export function parseCommons(
   return result.slice(0, 5);
 }
 export function wikimediaImages(request: typeof fetch = fetch): FindImages {
-  async function query(
+  let pending: Promise<unknown> = Promise.resolve();
+  let cooldownUntil = 0;
+  function query(params: Record<string, string>, match: 'name' | 'nearby') {
+    const result = pending.then(() => queryNow(params, match));
+    pending = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  }
+  async function queryNow(
     params: Record<string, string>,
     match: 'name' | 'nearby',
   ) {
@@ -134,6 +172,7 @@ export function wikimediaImages(request: typeof fetch = fetch): FindImages {
       ...params,
     }).toString();
     try {
+      if (Date.now() < cooldownUntil) throw new Error('Provider cooldown');
       const response = await request(url, {
         headers: {
           'User-Agent':
@@ -143,6 +182,18 @@ export function wikimediaImages(request: typeof fetch = fetch): FindImages {
         redirect: 'error',
       });
       if (!response.ok) {
+        if ([429, 503].includes(response.status)) {
+          const retry = response.headers.get('retry-after') ?? '';
+          const delay = /^\d+$/.test(retry)
+            ? Number(retry) * 1000
+            : Date.parse(retry) - Date.now();
+          cooldownUntil =
+            Date.now() +
+            Math.min(
+              300000,
+              Math.max(30000, Number.isFinite(delay) ? delay : 30000),
+            );
+        }
         await response.body?.cancel();
         throw new Error('Unavailable');
       }
@@ -161,7 +212,16 @@ export function wikimediaImages(request: typeof fetch = fetch): FindImages {
         }
         body += decoder.decode(value, { stream: true });
       }
-      return parseCommons(JSON.parse(body + decoder.decode()), match);
+      const data: unknown = JSON.parse(body + decoder.decode());
+      const providerError = z
+        .object({ error: z.object({ code: z.string() }) })
+        .safeParse(data);
+      if (
+        providerError.success &&
+        ['maxlag', 'ratelimited'].includes(providerError.data.error.code)
+      )
+        cooldownUntil = Date.now() + 30000;
+      return parseCommons(data, match);
     } catch {
       throw new HttpError(
         502,
@@ -173,26 +233,43 @@ export function wikimediaImages(request: typeof fetch = fetch): FindImages {
   return async (input) => {
     // Strip search operators; the external text is search data, never an instruction.
     const name = input.name.replace(/["|:{}<>]/g, ' ').slice(0, 120);
-    const named = await query(
-      {
-        generator: 'search',
-        gsrsearch: `"${name}" ${input.destinationName.replace(/["|:{}<>]/g, ' ')}`,
-        gsrnamespace: '6',
-        gsrlimit: '6',
-      },
-      'name',
-    );
-    if (named.length || input.latitude == null || input.longitude == null)
-      return named;
-    return query(
-      {
-        generator: 'geosearch',
-        ggscoord: `${input.latitude}|${input.longitude}`,
-        ggsradius: '500',
-        ggsnamespace: '6',
-        ggslimit: '6',
-      },
-      'nearby',
-    );
+    const named = (
+      await query(
+        {
+          generator: 'search',
+          gsrsearch: `"${name}" ${input.destinationName.replace(/["|:{}<>]/g, ' ')}`,
+          gsrnamespace: '6',
+          gsrlimit: '6',
+        },
+        'name',
+      )
+    ).filter((candidate) => matchesPlaceImage(input.name, candidate));
+    if (named.length) return named;
+    // Historical Commons descriptions may still use a province name from before a merger.
+    const byName = (
+      await query(
+        {
+          generator: 'search',
+          gsrsearch: `"${name}"`,
+          gsrnamespace: '6',
+          gsrlimit: '6',
+        },
+        'name',
+      )
+    ).filter((candidate) => matchesPlaceImage(input.name, candidate));
+    if (byName.length || input.latitude == null || input.longitude == null)
+      return byName;
+    return (
+      await query(
+        {
+          generator: 'geosearch',
+          ggscoord: `${input.latitude}|${input.longitude}`,
+          ggsradius: '500',
+          ggsnamespace: '6',
+          ggslimit: '6',
+        },
+        'nearby',
+      )
+    ).filter((candidate) => matchesPlaceImage(input.name, candidate));
   };
 }

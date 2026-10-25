@@ -12,6 +12,11 @@ import type {
   FindDescription,
 } from './wikipedia-descriptions.js';
 import { HttpError } from '../../http-error.js';
+import { sourceWorkerPool } from './source-worker-pool.js';
+import {
+  SourceRateLimit,
+  sourceRateLimitMessage,
+} from './source-rate-limit.js';
 export const descriptionContext = (query: DescriptionQuery) =>
   JSON.stringify([
     query.name,
@@ -52,8 +57,10 @@ export function placeDescriptions(
   explore: ReturnType<typeof exploreService>,
   catalog: ReturnType<typeof adminCatalog>,
   find: FindDescription,
+  concurrency = 3,
 ) {
   const { Place } = explore.models;
+  let pausedUntil = 0;
   async function read(
     actor: Types.ObjectId,
     id: string,
@@ -119,6 +126,7 @@ export function placeDescriptions(
     return read(actor, id);
   }
   async function tick() {
+    if (Date.now() < pausedUntil) return;
     const token = randomUUID();
     const doc = await Place.findOneAndUpdate(
       {
@@ -205,26 +213,42 @@ export function placeDescriptions(
           },
           { timestamps: false },
         );
-    } catch {
-      const retry = (doc.descriptionSearch?.attempts ?? 3) < 3;
+    } catch (error) {
+      const cooldown =
+        error instanceof SourceRateLimit ? error.retryAfterMs : 0;
+      if (cooldown) pausedUntil = Math.max(pausedUntil, Date.now() + cooldown);
+      const retry = !!cooldown || (doc.descriptionSearch?.attempts ?? 3) < 3;
       await Place.updateOne(
         fence(),
         {
           $set: {
             'descriptionSearch.state': retry ? 'pending' : 'failed',
-            'descriptionSearch.nextAttemptAt': new Date(Date.now() + 60000),
+            'descriptionSearch.nextAttemptAt': new Date(
+              Date.now() + Math.max(60000, cooldown),
+            ),
             'descriptionSearch.checkedAt': new Date(),
             'descriptionSearch.leaseToken': null,
             'descriptionSearch.leaseUntil': null,
-            'descriptionSearch.message':
-              'Chưa lấy được giới thiệu từ nguồn. Nội dung đã nhập được giữ nguyên.',
+            'descriptionSearch.message': cooldown
+              ? sourceRateLimitMessage
+              : 'Chưa lấy được giới thiệu từ nguồn. Nội dung đã nhập được giữ nguyên.',
           },
+          ...(cooldown ? { $inc: { 'descriptionSearch.attempts': -1 } } : {}),
         },
         { timestamps: false },
       );
     }
   }
   async function prepare() {
+    const limited = await Place.findOne({
+      'descriptionSearch.state': 'pending',
+      'descriptionSearch.message': sourceRateLimitMessage,
+      'descriptionSearch.nextAttemptAt': { $gt: new Date() },
+    }).sort({ 'descriptionSearch.nextAttemptAt': -1 });
+    pausedUntil = Math.max(
+      pausedUntil,
+      limited?.descriptionSearch?.nextAttemptAt?.getTime() ?? 0,
+    );
     await Place.updateMany(
       {
         deletedAt: null,
@@ -244,26 +268,6 @@ export function placeDescriptions(
       { timestamps: false },
     );
   }
-  let timer: ReturnType<typeof setInterval> | undefined,
-    running: Promise<void> | undefined;
-  function start() {
-    if (timer) return;
-    const poll = () => {
-      if (!running)
-        running = tick()
-          .catch(() => {})
-          .finally(() => {
-            running = undefined;
-          });
-    };
-    timer = setInterval(poll, 5000);
-    timer.unref();
-    poll();
-  }
-  async function stop() {
-    clearInterval(timer);
-    timer = undefined;
-    await running;
-  }
+  const { start, stop } = sourceWorkerPool(tick, concurrency);
   return { read, enqueue, tick, prepare, start, stop };
 }
