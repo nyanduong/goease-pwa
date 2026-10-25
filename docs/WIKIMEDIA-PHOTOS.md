@@ -54,3 +54,9 @@ Owner cập nhật CAT-20: tự chọn ảnh đầu tiên cho draft chưa có �
 Schema đã triển khai: photo.selection optional enum automatic/admin; reviewed vẫn là boolean, không tự gán true cho ảnh tự chọn. imageSearch.defaultCover photo|null giữ ảnh đầu tiên ổn định qua retry. Backfill ứng viên Cloudinary cũ khi thiếu defaultCover, không đổi editorial revision/publication. DTO draft và bulk áp dụng defaultCover khi images rỗng, không khóa; save/publish lưu vào snapshot. Ảnh đã chọn và public không bị thay. GET images bổ sung defaultCover để form đang mở cập nhật khi worker hoàn tất. Gate chấp nhận selection automatic/admin hoặc reviewed=true, metadata hợp lệ và không phải AI. Không tự xuất bản.
 
 Cập nhật tương tác ảnh: nút **Chọn làm bìa** trên thumbnail chọn ngay trong form; **Lưu đề xuất** giữ thay đổi. Bấm trực tiếp thumbnail chỉ mở ảnh lớn trên nền tối, không có khung/thông tin/nút chọn ảnh trong viewer. Bấm ngoài, × hoặc Escape để đóng và giữ bìa hiện tại. Thay các hướng dẫn chọn ảnh qua hộp thoại ở trên. Đã kiểm tra component thật trên trình duyệt desktop/mobile với API ảnh fixture, không khởi tạo DB test do giới hạn dung lượng ổ đĩa.
+
+### Sửa ảnh thumbnail tổng quan — 25/10/2026
+
+`admin/catalog/overview` áp dụng cùng `withSourceDefaults` như danh sách/editor trước khi tạo DTO. Vì vậy draft chưa lưu images thủ công vẫn hiển thị imageSearch.defaultCover tại Việc cần quan tâm/Việc cần làm; ảnh đã chọn, trạng thái public và khóa images tuân theo projection hiện có. Dòng số ảnh gợi ý hiển thị đã có bìa khi DTO có imageUrl. Không đổi schema hoặc BR.
+
+Kiểm chứng: gọi overview service với dữ liệu local (chỉ đọc), 63 draft có bìa tự động trả đúng Cloudinary URL; ảnh mẫu HEAD 200 image/*. Trình duyệt render component thumbnail thật với DTO đó, ảnh tải thành công và trạng thái có bìa. Typecheck client/server và lint đạt. Không chạy lại MongoDB integration suite trong đợt sửa hiển thị này.

@@ -8,7 +8,7 @@ export function PhotoSearchStatus({ place }: { place: AdminPlaceDto }) {
   return (
     <small>
       {status.count > 0
-        ? `${status.count}/6 ảnh gợi ý · Mở địa điểm để chọn ảnh bìa`
+        ? `${status.count}/6 ảnh gợi ý · ${place.imageUrl ? 'Đã có ảnh bìa · Có thể đổi trong chi tiết' : 'Mở địa điểm để chọn ảnh bìa'}`
         : status.state === 'empty'
           ? 'Chưa tìm thấy ảnh phù hợp'
           : status.state === 'failed'

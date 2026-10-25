@@ -159,7 +159,9 @@ export function adminInsights(
         located: stats.located,
         categories: stats.categories,
         issues: stats.issues,
-        places: places.map(catalog.dto),
+        places: places.map((place) =>
+          catalog.dto(catalog.withSourceDefaults(place)),
+        ),
         mapTruncated: stats.total > places.length,
         sources: {
           manual: stats.manual,
