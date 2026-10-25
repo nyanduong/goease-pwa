@@ -1,20 +1,20 @@
 /* Working UI for GoEase admin. Flat surfaces, restrained colour, clear hierarchy.
    Scoped here so customer pages keep their own visual language. */
 .admin-desktop-shell {
-  --admin-teal: #007b83;
-  --admin-teal-dark: #00636b;
-  --admin-orange: #b86a0b;
-  --admin-ink: #20252b;
-  --admin-muted: #656e79;
+  --admin-teal: #008f9b;
+  --admin-teal-dark: #007580;
+  --admin-orange: #f79828;
+  --admin-ink: #163b46;
+  --admin-muted: #5f7380;
   --admin-line: #e3e6ea;
   --admin-soft: #f5f6f7;
-  --primary-fill: var(--admin-teal);
+  --primary-fill: var(--admin-orange);
   --teal-fill: var(--admin-teal);
   background: #fff;
   color: var(--admin-ink);
   font-family: 'Segoe UI', Inter, Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.65;
   min-width: 0;
   color-scheme: light;
 }
@@ -33,7 +33,7 @@
 }
 .admin-desktop-shell .admin-navigation a {
   color: #555e69;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   padding: 11px 12px;
   border-radius: 4px;
@@ -50,7 +50,7 @@
 }
 .admin-desktop-shell :is(.admin-nav-section, .admin-sidebar > p) {
   color: #737b85;
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.05em;
 }
 .admin-desktop-shell .admin-topbar {
@@ -104,7 +104,7 @@
 .admin-desktop-shell .admin-region-filters {
   position: relative;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 14px;
 }
 .admin-desktop-shell .admin-region-filters > summary {
   display: flex;
@@ -160,7 +160,7 @@
   :is(.admin-page-heading, .admin-heading, .place-editor-heading)
   h1 {
   color: #20252b;
-  font-size: 27px;
+  font-size: 32px;
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.25;
@@ -174,38 +174,38 @@
 }
 .admin-desktop-shell .admin-title-meta {
   color: var(--admin-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
 }
 .admin-desktop-shell .admin-heading-copy > p {
   margin: 8px 0 0;
   color: var(--admin-muted);
-  font-size: 13px;
+  font-size: 15px;
   max-width: 70ch;
 }
 .admin-desktop-shell .admin-scope-caption {
   display: block;
   margin-bottom: 8px;
   color: var(--admin-muted);
-  font-size: 12px;
+  font-size: 14px;
 }
 .admin-desktop-shell :is(h2, .admin-panel h2, .admin-operations h2) {
   color: #262c33;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 1.45;
   letter-spacing: -0.01em;
 }
 .admin-desktop-shell h3 {
   color: #303740;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.4;
 }
 .admin-desktop-shell
   :is(.admin-panel p, .place-editor-card > p, .admin-soft-notice) {
   color: var(--admin-muted);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.65;
 }
 .admin-desktop-shell small {
@@ -213,9 +213,9 @@
 }
 .admin-desktop-shell button,
 .admin-desktop-shell :is(.journey-primary, .journey-outline) {
-  min-height: 36px;
+  min-height: 44px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   letter-spacing: 0;
   line-height: 1.4;
@@ -232,16 +232,17 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-.admin-desktop-shell .journey-primary {
-  padding: 8px 15px;
-  background: var(--admin-teal);
-  color: #fff;
-  border: 1px solid var(--admin-teal);
+.admin-desktop-shell .admin-desktop-main .journey-primary {
+  padding: 11px 20px;
+  background: var(--admin-orange);
+  color: var(--admin-ink);
+  border: 1px solid var(--admin-orange);
+  font-weight: 600;
   white-space: normal;
 }
-.admin-desktop-shell .journey-primary:not(:disabled):hover {
-  background: var(--admin-teal-dark);
-  border-color: var(--admin-teal-dark);
+.admin-desktop-shell .admin-desktop-main .journey-primary:not(:disabled):hover {
+  background: #ffb248;
+  border-color: #ffb248;
 }
 .admin-desktop-shell .journey-outline {
   padding: 8px 14px;
@@ -298,8 +299,8 @@
   margin: 0;
 }
 .admin-desktop-shell .admin-panel-title a {
-  color: var(--admin-teal);
-  font-size: 12px;
+  color: var(--admin-teal-dark);
+  font-size: 14px;
   font-weight: 500;
 }
 .admin-desktop-shell
@@ -382,7 +383,7 @@
 }
 .admin-desktop-shell .admin-overview-map > summary {
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #44525c;
 }
@@ -403,12 +404,12 @@
   border-radius: 3px;
 }
 .admin-desktop-shell .admin-task-preview strong {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
 }
 .admin-desktop-shell .admin-task-preview small {
   color: var(--admin-muted);
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 3px;
 }
 .admin-desktop-shell .admin-quick a {
@@ -420,12 +421,12 @@
   background: none;
 }
 .admin-desktop-shell .admin-quick strong {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
-  color: var(--admin-teal);
+  color: var(--admin-teal-dark);
 }
 .admin-desktop-shell .admin-quick small {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--admin-muted);
 }
 .admin-desktop-shell .admin-bottom-grid {
@@ -466,14 +467,14 @@
   border-color: #cdd3da;
   border-radius: 4px;
   color: #252d36;
-  font-size: 13px;
+  font-size: 15px;
   box-shadow: none;
 }
 .admin-desktop-shell :is(input, textarea)::placeholder {
   color: #7b838d;
 }
 .admin-desktop-shell :is(input[type='checkbox'], input[type='radio']) {
-  accent-color: var(--admin-teal);
+  accent-color: var(--admin-teal-dark);
 }
 .admin-desktop-shell
   :is(button, a, input, select, textarea, summary):focus-visible {
@@ -487,7 +488,7 @@
   border-color: var(--admin-line);
 }
 .admin-desktop-shell .catalog-status-tabs :is(button, a) {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   padding: 11px 3px;
   border-radius: 0;
@@ -497,14 +498,14 @@
 .admin-desktop-shell .catalog-status-tabs button[aria-pressed='true'] {
   font-weight: 600;
   color: #252d36;
-  border-bottom-color: var(--admin-teal);
+  border-bottom-color: var(--admin-teal-dark);
 }
 .admin-desktop-shell .catalog-status-tabs span {
   background: none;
   color: #76808b;
   border-radius: 0;
   padding: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 400;
 }
 .admin-desktop-shell .catalog-status-tabs [aria-pressed='true'] span {
@@ -522,7 +523,7 @@
 }
 .admin-desktop-shell .catalog-library-toolbar :is(input, select) {
   min-height: 36px;
-  font-size: 13px;
+  font-size: 15px;
   border-radius: 4px;
 }
 .admin-desktop-shell .catalog-library-filters > summary {
@@ -550,7 +551,7 @@
   box-shadow: none;
 }
 .admin-desktop-shell .catalog-library-summary {
-  font-size: 12px;
+  font-size: 14px;
   padding: 0 0 12px;
   color: #6d7580;
 }
@@ -559,7 +560,7 @@
   th {
   background: #f6f7f8;
   color: #59636f;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   text-transform: none;
   letter-spacing: 0;
@@ -571,9 +572,9 @@
   :is(.admin-data-table, .history-browser-table, .admin-campaign-table)
   td {
   border-color: #e9ecef;
-  padding-top: 11px;
-  padding-bottom: 11px;
-  font-size: 13px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+  font-size: 15px;
 }
 .admin-desktop-shell .admin-data-table tbody tr:hover {
   background: #f8f9fa;
@@ -597,22 +598,22 @@
   border-radius: 3px;
 }
 .admin-desktop-shell .catalog-place-open h2 {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: #232d35;
   margin: 0 0 4px;
 }
 .admin-desktop-shell .catalog-place-open .catalog-place-address {
   color: #727b85;
-  font-size: 12px;
+  font-size: 14px;
 }
 .admin-desktop-shell .catalog-edit-button {
   min-height: 32px;
   padding: 5px 8px;
   background: transparent;
-  color: var(--admin-teal);
+  color: var(--admin-teal-dark);
   border: 0;
-  font-size: 13px;
+  font-size: 15px;
 }
 .admin-desktop-shell .catalog-edit-button:hover {
   background: #eef4f4;
@@ -621,7 +622,7 @@
   border-radius: 0;
   background: none;
   color: #626c77;
-  font-size: 12px;
+  font-size: 14px;
   padding: 0;
 }
 .admin-desktop-shell .catalog-readiness > span {
@@ -636,7 +637,7 @@
 .admin-desktop-shell
   :is(.admin-status, .admin-pill, .admin-check-tag, .admin-campaign-status) {
   border-radius: 3px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   box-shadow: none;
 }
@@ -660,7 +661,7 @@
   border: 1px solid #e9d3b7;
   border-radius: 4px;
   padding: 12px 14px;
-  font-size: 13px;
+  font-size: 15px;
 }
 .admin-desktop-shell .admin-success {
   background: #f4f8f5;
@@ -668,17 +669,17 @@
   border: 1px solid #dbe6df;
   border-radius: 4px;
   padding: 12px 14px;
-  font-size: 13px;
+  font-size: 15px;
 }
 .admin-desktop-shell .admin-detail-note {
   color: var(--admin-muted);
-  font-size: 12px;
+  font-size: 14px;
   margin: 10px 0;
 }
 .admin-desktop-shell .admin-detail-note > summary {
   padding: 7px 0;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
 }
 /* Editor is a work surface with a persistent, explicit save action. */
@@ -688,7 +689,7 @@
 .admin-desktop-shell .place-editor-masthead {
   padding: 14px 0;
   margin-bottom: 12px;
-  font-size: 12px;
+  font-size: 14px;
 }
 .admin-desktop-shell .place-editor-masthead > strong {
   font-size: 20px;
@@ -698,11 +699,11 @@
   margin: 14px 0 24px;
 }
 .admin-desktop-shell .place-editor-heading p {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--admin-muted);
 }
 .admin-desktop-shell .place-editor-save-state {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--admin-muted);
 }
 .admin-desktop-shell .place-editor-save-state svg {
@@ -716,7 +717,7 @@
   box-shadow: none;
 }
 .admin-desktop-shell .admin-catalog.is-editing .admin-form-fields legend {
-  font-size: 15px;
+  font-size: 18px;
   color: #303740;
   font-weight: 600;
   padding: 0 0 20px;
@@ -734,7 +735,7 @@
 }
 .admin-desktop-shell .place-editor-tabs button {
   padding: 11px 0;
-  font-size: 13px;
+  font-size: 15px;
   border-radius: 0;
   border-bottom-width: 2px;
   font-weight: 400;
@@ -742,7 +743,7 @@
 .admin-desktop-shell .place-editor-tabs button[aria-selected='true'] {
   font-weight: 600;
   color: #263e42;
-  border-bottom-color: var(--admin-teal);
+  border-bottom-color: var(--admin-teal-dark);
 }
 .admin-desktop-shell .place-editor-card {
   border: 0;
@@ -775,7 +776,7 @@
 }
 .admin-desktop-shell .place-save-caption {
   color: #68727d;
-  font-size: 12px;
+  font-size: 14px;
   margin-right: auto;
 }
 .admin-desktop-shell .place-save-caption > svg {
@@ -805,7 +806,7 @@
   border: 0;
   border-radius: 4px;
   background: transparent;
-  font-size: 12px;
+  font-size: 14px;
 }
 .admin-desktop-shell .admin-check-tabs button[aria-pressed='true'] {
   background: #ecf0f1;
@@ -898,6 +899,281 @@
 }
 .admin-desktop-shell .history-browser-avatar.is-system {
   display: none;
+}
+/* Readability: four clear levels, generous rhythm, one primary action. */
+.admin-desktop-shell p {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+.admin-desktop-shell label {
+  font-size: 15px;
+  font-weight: 500;
+}
+.admin-desktop-shell small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--admin-muted);
+}
+.admin-desktop-shell
+  :is(.schedule-page-heading, .sources-heading, .settings-heading)
+  h1 {
+  font-size: 32px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--admin-ink);
+}
+.admin-desktop-shell
+  :is(
+    .admin-page-heading,
+    .schedule-page-heading,
+    .sources-heading,
+    .settings-heading
+  ) {
+  margin-bottom: 32px;
+}
+.admin-desktop-shell
+  :is(
+    .admin-page-heading,
+    .schedule-page-heading,
+    .sources-heading,
+    .settings-heading
+  )
+  p {
+  margin-top: 10px;
+  font-size: 16px;
+  color: var(--admin-muted);
+}
+.admin-desktop-shell
+  :is(
+    .admin-panel h2,
+    .admin-work-panel h2,
+    .settings-section-heading h2,
+    .sources-section-heading h2
+  ) {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+.admin-desktop-shell .admin-header-page-icon {
+  display: none;
+}
+.admin-desktop-shell .admin-header-breadcrumb {
+  font-size: 14px;
+}
+.admin-desktop-shell .admin-header-breadcrumb [aria-current] {
+  font-weight: 500;
+}
+.admin-desktop-shell .admin-header-context-label {
+  background: #f4fafb;
+  font-size: 14px;
+  color: #56707a;
+}
+.admin-desktop-shell .admin-header-avatar {
+  background: #e7f6f8;
+  color: #087788;
+  font-size: 14px;
+}
+.admin-desktop-shell .admin-header-profile strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.admin-desktop-shell .admin-header-profile small {
+  font-size: 13px;
+}
+.admin-desktop-shell .admin-navigation a[aria-current='page'] {
+  color: #007c89;
+  background: #e6f7fa;
+}
+.admin-desktop-shell :is(.schedule-tabs, .sources-tabs, .settings-tabs) {
+  gap: 28px;
+  margin-bottom: 30px;
+}
+.admin-desktop-shell :is(.schedule-tabs, .sources-tabs, .settings-tabs) button {
+  font-size: 16px;
+  font-weight: 400;
+  padding: 14px 0;
+}
+.admin-desktop-shell
+  :is(
+    .schedule-tabs button[aria-pressed='true'],
+    .sources-tabs button[aria-pressed='true'],
+    .settings-tabs button[aria-selected='true']
+  ) {
+  font-weight: 500;
+  color: #007e8b;
+  border-bottom-color: #009eae;
+}
+.admin-desktop-shell .schedule-explainer {
+  padding: 0;
+  margin: 0 0 24px;
+  border: 0;
+  background: none;
+  color: var(--admin-muted);
+  font-size: 15px;
+}
+.admin-desktop-shell .schedule-toolbar {
+  margin-bottom: 24px;
+}
+.admin-desktop-shell .schedule-row {
+  padding: 24px;
+  gap: 24px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border-color: #dce8ed;
+}
+.admin-desktop-shell .schedule-location h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.admin-desktop-shell .schedule-timing strong {
+  font-size: 16px;
+  font-weight: 400;
+}
+.admin-desktop-shell
+  :is(
+    .schedule-location p,
+    .schedule-timing small,
+    .schedule-status,
+    .schedule-footnote
+  ) {
+  font-size: 14px;
+}
+.admin-desktop-shell .schedule-row .schedule-icon {
+  display: none;
+}
+.admin-desktop-shell .schedule-empty-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  padding: 48px 28px;
+  margin-top: 6px;
+  text-align: center;
+  background: #f5fbfd;
+  border: 1px solid #d7edf2;
+  border-radius: 6px;
+}
+.admin-desktop-shell .schedule-empty-start h2 {
+  font-size: 26px;
+  font-weight: 600;
+  color: #17434f;
+  margin: 0 0 14px;
+}
+.admin-desktop-shell .schedule-empty-start p {
+  max-width: 46ch;
+  margin: 0 0 28px;
+  font-size: 16px;
+  color: #57717c;
+}
+.admin-desktop-shell .schedule-empty-start .journey-primary {
+  min-height: 48px;
+  padding-inline: 26px;
+  font-size: 16px;
+}
+.admin-desktop-shell
+  .admin-schedules:has(.schedule-empty-start)
+  .schedule-list-footer {
+  justify-content: center;
+  border: 0;
+  padding-top: 20px;
+  font-size: 14px;
+}
+.admin-desktop-shell .schedule-footnote {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #677d87;
+}
+.admin-desktop-shell .schedule-sheet {
+  width: 520px;
+}
+.admin-desktop-shell .schedule-sheet header h2 {
+  font-size: 26px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--admin-ink);
+}
+.admin-desktop-shell .schedule-sheet :is(header p, .schedule-preview p) {
+  font-size: 16px;
+  color: var(--admin-muted);
+}
+.admin-desktop-shell .schedule-sheet h3 {
+  font-size: 18px;
+  font-weight: 500;
+}
+.admin-desktop-shell .schedule-sheet label {
+  font-size: 15px;
+  font-weight: 500;
+}
+.admin-desktop-shell .schedule-sheet :is(input, select, button) {
+  font-size: 16px;
+}
+.admin-desktop-shell .schedule-sheet :is(small, footer p, .schedule-safety) {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--admin-muted);
+}
+.admin-desktop-shell .schedule-sheet .schedule-preview {
+  background: #f3fafc;
+  border-color: #d7eaf0;
+}
+.admin-desktop-shell .catalog-place-open h2 {
+  font-size: 16px;
+  font-weight: 500;
+}
+.admin-desktop-shell
+  :is(.admin-data-table, .history-browser-table, .admin-campaign-table)
+  td {
+  font-size: 15px;
+  line-height: 1.65;
+}
+.admin-desktop-shell .catalog-place-cover {
+  width: 50px;
+  flex-basis: 50px;
+}
+.admin-desktop-shell .catalog-place-open .admin-place-photo {
+  width: 50px;
+  height: 50px;
+}
+.admin-desktop-shell .admin-task-preview {
+  min-height: 88px;
+  padding-block: 18px;
+}
+.admin-desktop-shell .admin-task-preview strong {
+  font-size: 17px;
+  font-weight: 500;
+}
+@media (min-width: 1100px) {
+  .admin-desktop-shell {
+    grid-template-columns: 248px minmax(0, 1fr);
+  }
+}
+@media (max-width: 650px) {
+  .admin-desktop-shell
+    :is(
+      .admin-page-heading,
+      .schedule-page-heading,
+      .sources-heading,
+      .settings-heading
+    )
+    h1 {
+    font-size: 28px;
+  }
+  .admin-desktop-shell .schedule-empty-start {
+    min-height: 300px;
+    padding: 32px 20px;
+  }
+  .admin-desktop-shell .schedule-empty-start h2 {
+    font-size: 23px;
+  }
+  .admin-desktop-shell .schedule-row {
+    gap: 16px;
+    padding: 20px;
+  }
 }
 @media (max-width: 1200px) {
   .admin-desktop-shell .admin-topbar {
