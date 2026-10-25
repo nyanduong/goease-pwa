@@ -11,6 +11,8 @@ export default defineConfig({
     'admin-history.spec.ts',
     'admin-sources.spec.ts',
     'admin-settings.spec.ts',
+    'admin-topbar.spec.ts',
+    'admin-schedules.spec.ts',
   ],
   workers: 1,
   outputDir: '../test-results/catalog-browser',

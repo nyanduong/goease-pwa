@@ -3,21 +3,6 @@
   flex-direction: column;
   gap: 24px;
 }
-.sources-topbar .sources-breadcrumb {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  margin-right: auto;
-  color: #6b818a;
-  font-size: 13px;
-}
-.sources-breadcrumb strong {
-  color: #234b56;
-  font-weight: 600;
-}
-.sources-topbar .admin-region {
-  margin-left: auto;
-}
 .sources-heading,
 .sources-section-heading {
   display: flex;
@@ -479,26 +464,6 @@
   }
 }
 @media (max-width: 700px) {
-  .sources-topbar .sources-breadcrumb {
-    display: none;
-  }
-  .admin-topbar.sources-topbar {
-    height: auto;
-    min-height: 68px;
-    padding: 12px 16px;
-    gap: 8px;
-    flex-wrap: nowrap;
-  }
-  .sources-topbar .admin-region {
-    margin-left: 0;
-    flex: 1;
-    min-width: 0;
-  }
-  .sources-topbar .admin-region select {
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-  }
   .admin-sources-page {
     gap: 20px;
   }

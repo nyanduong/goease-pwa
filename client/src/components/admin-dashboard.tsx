@@ -4,7 +4,6 @@ import {
   PhotoSearchStatus,
 } from './admin-visuals';
 import { catalogQuality } from '@goease/contracts';
-import { DestinationRegions, matchesRegion } from './destination-regions';
 import { useEffect, useState } from 'react';
 import {
   ArrowUpRight,
@@ -16,8 +15,6 @@ import {
   RefreshCw,
   Plus,
   Clock,
-  Search,
-  Bell,
 } from 'lucide-react';
 import type {
   AdminOverview,
@@ -32,118 +29,6 @@ const date = (s: string | null) =>
   s
     ? new Date(s).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
     : 'Chưa có';
-export function AdminTopbar({
-  destinations,
-  scope,
-  onScope,
-  name,
-  showScope = true,
-  compact = false,
-  pageLabel = 'Nguồn dữ liệu',
-}: {
-  destinations: DestinationDto[];
-  scope: string;
-  onScope: (s: string) => void;
-  name: string;
-  showScope?: boolean;
-  compact?: boolean;
-  pageLabel?: string;
-}) {
-  const [q, setQ] = useState('');
-  const [region, setRegion] = useState(''),
-    [subregion, setSubregion] = useState('');
-  useEffect(() => {
-    if (compact) return;
-    const key = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        document.getElementById('admin-search')?.focus();
-      }
-    };
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
-  }, [compact]);
-  return (
-    <header className={`admin-topbar${compact ? ' sources-topbar' : ''}`}>
-      {compact && (
-        <div className="sources-breadcrumb">
-          Quản trị <span>/</span> <strong>{pageLabel}</strong>
-        </div>
-      )}
-      {showScope && (
-        <>
-          {!compact && (
-            <DestinationRegions
-              region={region}
-              subregion={subregion}
-              onChange={(r, s) => {
-                setRegion(r);
-                setSubregion(s);
-              }}
-            />
-          )}
-          <label className="admin-region">
-            <MapPin size={19} />
-            <select
-              aria-label="Khu vực quản lý"
-              value={scope}
-              onChange={(e) => onScope(e.target.value)}
-            >
-              <option value="">Tất cả điểm đến · chỉ xem</option>
-              {destinations
-                .filter(
-                  (d) =>
-                    compact ||
-                    d.id === scope ||
-                    matchesRegion(d, region, subregion),
-                )
-                .map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-        </>
-      )}
-      {!compact && (
-        <form
-          className="admin-global-search"
-          onSubmit={(e) => {
-            e.preventDefault();
-            location.hash = `places?q=${encodeURIComponent(q)}`;
-          }}
-        >
-          <Search size={19} />
-          <input
-            id="admin-search"
-            aria-label="Tìm kiếm toàn danh mục"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Tìm địa điểm, quán ăn, địa chỉ…"
-            maxLength={100}
-          />
-          <kbd>Ctrl K</kbd>
-        </form>
-      )}
-      <a
-        className="admin-bell"
-        href="#work"
-        aria-label="Thông báo và việc cần làm"
-      >
-        <Bell size={21} />
-      </a>
-      <div className="admin-profile">
-        <span>{name.slice(0, 2).toUpperCase()}</span>
-        <div>
-          <strong>{name}</strong>
-          <small>Quản trị viên</small>
-        </div>
-      </div>
-    </header>
-  );
-}
-
 export function AdminDashboard({
   scope,
   operations,

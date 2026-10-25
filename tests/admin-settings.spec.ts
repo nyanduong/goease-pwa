@@ -1,3 +1,4 @@
+import { e2eWebOrigin } from './ports.js';
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
@@ -6,14 +7,16 @@ test('settings provinces filter and paginate, persist toggles, import drafts and
 }) => {
   test.setTimeout(60000);
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await page.goto('/login');
-  await page
-    .getByLabel('Email', { exact: true })
-    .fill('catalog-browser@example.invalid');
-  await page
-    .getByLabel('Mật khẩu', { exact: true })
-    .fill('Browser-fixture-2026!');
-  await page.getByRole('button', { name: /^Đăng nhập/ }).click();
+  // These tests exercise admin UI; establish the fixture session before mounting it.
+  const login = await page.request.post('/api/v1/auth/login', {
+    headers: { Origin: e2eWebOrigin, 'X-GoEase-Client': 'web' },
+    data: {
+      email: 'catalog-browser@example.invalid',
+      password: 'Browser-fixture-2026!',
+    },
+  });
+  expect(login.ok()).toBe(true);
+  await page.goto('/admin');
   await expect(page).toHaveURL(/\/admin/);
   await page.getByRole('link', { name: 'Cài đặt', exact: true }).click();
   const manager = page.getByRole('region', { name: 'Danh mục tỉnh thành' });

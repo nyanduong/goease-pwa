@@ -20,6 +20,7 @@ import {
   type CatalogOperationsDto,
   type CatalogReviewDto,
   type CatalogScheduleInput,
+  type CatalogScheduleListDto,
   type ReviewDecision,
   type SourceSnapshot,
 } from '@goease/contracts';
@@ -983,6 +984,34 @@ export function catalogOperations(
       })),
     };
   }
+  async function schedules(
+    actor: Types.ObjectId,
+    offset: number,
+  ): Promise<CatalogScheduleListDto> {
+    await catalog.requireAdmin(actor);
+    // Only deliberately saved schedules, never quota records or defaults created by a run.
+    const filter = { scope: /^(hoi-an|[a-f0-9]{24})$/, revision: { $gt: 0 } };
+    const [rows, total] = await Promise.all([
+      Schedule.find(filter).sort({ scope: 1 }).skip(offset).limit(50),
+      Schedule.countDocuments(filter),
+    ]);
+    return {
+      connected,
+      total,
+      hasMore: offset + rows.length < total,
+      items: rows.map((s) => ({
+        destinationId: scopeDestination(s.scope),
+        enabled: s.enabled,
+        frequency: s.frequency as 'daily' | 'weekly',
+        hour: s.hour,
+        minute: s.minute,
+        weekday: s.weekday,
+        group: s.group as CatalogScheduleInput['group'],
+        revision: s.revision,
+        nextRunAt: s.nextRunAt?.toISOString() ?? null,
+      })),
+    };
+  }
   async function saveSchedule(
     actor: Types.ObjectId,
     input: CatalogScheduleInput,
@@ -1777,6 +1806,7 @@ export function catalogOperations(
     decide,
     batch,
     status,
+    schedules,
     saveSchedule,
     enqueue,
     history,

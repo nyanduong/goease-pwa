@@ -61,6 +61,28 @@ Archive destination yêu cầu tắt lịch và tạm dừng/hoàn tất đợt 
 
 `GET /admin/v3/map` nhận filter+bounds+zoom, aggregate cụm trên toàn tập lọc trong viewport; tổng thiếu tọa độ tách riêng. Không chỉ lấy trang bảng. Thumbnail bản đồ tổng quan vẫn có sample500 và nhãn giới hạn; nó không dùng làm tổng số toàn catalog. Tổng quan dùng aggregation đầy đủ; hàng đợi phân biệt số địa điểm và số vấn đề.
 
+## Tự động cập nhật — bố cục danh sách lịch
+
+`/admin#rules` đổi tên từ Quy tắc & lịch thành **Tự động cập nhật**. Tab Lịch cập nhật hiển thị lịch đã lưu theo từng khu vực, tìm tên không dấu, lọc Đang bật/Tạm dừng và phân trang 10 dòng. Tạo lịch/Chỉnh sửa mở bảng bên phải, Escape đóng và trả focus; mobile dùng hết chiều rộng. Mỗi khu vực vẫn chỉ có một lịch; form tạo loại khu vực đã có lịch và kiểm tra lại revision trước lưu. Chỉnh sửa lịch đang tạm dừng không tự bật lại. Công tắc chỉ đổi trạng thái sau khi API xác nhận; lỗi giữ dữ liệu và có tải lại. Xung đột revision giữ nháp, người dùng có thể nạp bản mới rõ ràng.
+
+Tab Quy tắc nâng cao giữ tạo phiên bản/mô phỏng hiện có, chọn khu vực ngay trong tab. Lịch định kỳ giữ policy mặc định không auto-apply/auto-publish; chọn policy trong tab không đổi lịch. Nút **Lần chạy** mở 30 lượt gần nhất và Chạy ngay theo khu vực, dùng API operations/run hiện có. Đợt thu thập dành cho campaign; lịch định kỳ có thể sinh run không có campaign, nên không dùng danh sách campaign làm bằng chứng duy nhất của lịch.
+
+Bổ sung GET `/api/v1/admin/catalog/schedules?offset=0` với quyền admin, offset nguyên 0–100000, 50 dòng/trang, response `CatalogScheduleListDto` gồm connected/items/total/hasMore. Chỉ chiếu trường lịch công khai trong DTO; không trả quota/counters. Chỉ đọc scope khu vực có revision > 0 (đã lưu chủ động), bỏ provider-quota và bản mặc định do chạy thủ công. Chuẩn hóa scope legacy hoi-an về destinationId tương thích. GET không tạo/sửa dữ liệu. PUT schedule giữ CAS/idempotency, một lịch/khu vực, giới hạn nguồn và guard vùng tìm hiện có. Không đổi BR, schema/index MongoDB hay registry.
+
+Kiểm tra tập trung: `tests/admin-schedules.spec.ts` dùng API/MongoDB fixture riêng để kiểm persistence, bật/tạm dừng, tạo lịch, xung đột, lỗi đọc/thử lại, mobile và quyền đọc. Ảnh ở `test-results/schedule-evidence/`, không dùng ảnh minh họa hoặc dữ liệu ứng dụng thật làm kết quả kiểm chứng.
+
+Kiểm chứng triển khai: typecheck, lint, build web/API, format và diff check đạt. Lượt browser cuối đạt 2/2 (lịch cập nhật + header), gồm 401/403, offset sai, lưu/tải lại, tạo lịch mới, bật/tạm dừng, xung đột revision, phân trang 12 lịch, lỗi tải/thử lại, desktop 1600px và mobile 390/320px. Đã xem ảnh thực tế. Chưa chạy toàn bộ E2E/integration hoặc gọi provider thật; không sửa database goease. Vite giữ cảnh báo bundle >500KB hiện hữu.
+
+## Header quản trị thống nhất — 25/10/2026
+
+Tất cả trang danh sách/vận hành dùng `AdminTopbar`: biểu tượng theo trang, breadcrumb Quản trị / tên trang, vùng ngữ cảnh, nút mở hàng chờ và tài khoản. Desktop cao80px; mobile giữ hàng tên trang/tài khoản và đưa bộ chọn khu vực xuống hàng riêng khi cần. Editor địa điểm tiếp tục dùng masthead riêng để giữ không gian biên tập.
+
+Tổng quan, Cần kiểm tra, Địa điểm và Tiến trình lấy dữ liệu có **Phạm vi dữ liệu**; Tự động cập nhật dùng nhãn **Lịch theo khu vực**, chọn khu vực trong form hoặc phần mô phỏng; Nguồn dữ liệu ghi rõ **Khu vực của kho địa điểm**, không ngụ ý lọc trạng thái provider toàn hệ thống. Cài đặt, Đợt thu thập và Nhật ký hoạt động dùng nhãn ngữ cảnh, không có bộ chọn không tác dụng. Chuyển Nhật ký sang Việc chờ duyệt hiển thị lại bộ chọn vì hàng chờ theo scope. Scope được giữ khi đổi trang; giao diện không tự ghi settings hoặc chạy nguồn.
+
+Bỏ bộ lọc miền/vùng phụ và ô tìm kiếm toàn danh mục trên header; tìm kiếm/lọc chuyên biệt nằm trong từng trang. Header dùng chung CSS/component, không còn biến thể riêng cho Nguồn/Cài đặt. Test `admin-topbar.spec.ts` duyệt 9 trang trên desktop 1600px và mobile 390/320px, kiểm breadcrumb, phạm vi, kích thước và API tổng quan theo khu vực; ảnh ở `test-results/header-evidence/`. Không thay API/schema/quyền nghiệp vụ.
+
+Kiểm chứng header: typecheck, lint, build client, format và diff check đạt. Lượt browser tập trung cuối đạt 2/2 (header và cài đặt); đã xem ảnh desktop và mobile 320px. Dùng tài khoản fixture và MongoDB test riêng; chưa chạy toàn bộ E2E. Build còn cảnh báo bundle lớn hiện hữu.
+
 ## Cài đặt theo tác vụ — 25/10/2026
 
 `/admin#settings` có ba tab: **Tỉnh/thành hiển thị**, **Nhắc kiểm tra dữ liệu**, **Thiết lập nâng cao**. Thanh trên chỉ hiển thị đường dẫn Cài đặt; không có bộ lọc khu vực/tìm địa điểm toàn cục không áp dụng cho danh mục này. Tỉnh/thành dùng công tắc Đang hiển thị/Đang ẩn, giải thích tác dụng bật/tắt tại đầu trang. Không có nút lưu chung cho danh mục; mỗi công tắc lưu riêng với revision/idempotency và xác nhận khi tắt như trước.
