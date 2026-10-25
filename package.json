@@ -21,7 +21,8 @@
     "test:integration": "npm run build --workspace @goease/media && npm run build --workspace @goease/contracts && npm run test:integration --workspace @goease/server",
     "db:seed": "npm run build --workspace @goease/media && npm run build --workspace @goease/contracts && npm run db:seed --workspace @goease/server",
     "media:upload": "npm run media:upload --workspace @goease/server",
-    "media:verify": "npm run media:verify --workspace @goease/server"
+    "media:verify": "npm run media:verify --workspace @goease/server",
+    "test:price-editor": "npm run build --workspace @goease/media && npm run build --workspace @goease/contracts && playwright test --config tests/visit-editor.playwright.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

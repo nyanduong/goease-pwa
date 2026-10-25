@@ -3,7 +3,11 @@ import { e2eApiOrigin, e2eApiPort, e2eWebOrigin } from './tests/ports.js';
 
 export default defineConfig({
   testDir: './tests',
-  testIgnore: ['catalog-operations.spec.ts', 'geography.spec.ts'],
+  testIgnore: [
+    'catalog-operations.spec.ts',
+    'geography.spec.ts',
+    'admin-visit-editor.spec.ts',
+  ],
   workers: 1,
   use: { baseURL: e2eWebOrigin, channel: 'msedge' },
   webServer: [

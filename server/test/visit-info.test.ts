@@ -168,7 +168,7 @@ test('source fetch blocks literal IPs, credentials, private and reserved address
   ])
     await assert.rejects(visitSourceText(url));
 });
-test('unreviewed observations can be saved as draft but cannot publish; reviewed starting prices do not become budget prices', () => {
+test('unreviewed observations can be saved as draft but cannot publish; reviewed starting prices without applicability terms remain display-only', () => {
   const info = osmVisitInfo({ charge: '30000 VND/person' }, source);
   const input = {
     destinationId: '000000000000000000000004',
@@ -206,4 +206,23 @@ test('unreviewed observations can be saved as draft but cannot publish; reviewed
     }).success,
     false,
   );
+});
+
+test('partially entered source URLs report validation errors without throwing during editor rendering', () => {
+  const info = osmVisitInfo({ charge: '30000 VND' }, source);
+  for (const sourceUrl of ['', 'h', 'https:', 'not a URL']) {
+    assert.doesNotThrow(() =>
+      visitInfoSchema.safeParse({
+        ...info,
+        price: { ...info.price!, sourceUrl },
+      }),
+    );
+    assert.equal(
+      visitInfoSchema.safeParse({
+        ...info,
+        price: { ...info.price!, sourceUrl },
+      }).success,
+      false,
+    );
+  }
 });

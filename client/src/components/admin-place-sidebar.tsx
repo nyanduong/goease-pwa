@@ -106,7 +106,7 @@ export function AdminPlaceSidebar({
         <div className="place-extra-checks">
           <h3>Bổ sung khi có thông tin</h3>
           {!form.visitInfo?.price?.reviewed && !form.referencePrice && (
-            <button type="button" onClick={() => onField('visitInfo')}>
+            <button type="button" onClick={() => onField('displayPrice')}>
               Bổ sung giá tham khảo →
             </button>
           )}

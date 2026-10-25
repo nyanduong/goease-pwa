@@ -1,3 +1,8 @@
+import {
+  visitInfoForEditor,
+  type VisitInfo,
+  type ReferencePrice,
+} from '@goease/contracts';
 import { Schema } from 'mongoose';
 import {
   catalogEditableFields,
@@ -79,6 +84,22 @@ export function preserveCatalogLocks(
       result.imageUrl = current.imageUrl;
       result.imageCredit = current.imageCredit;
     }
+  }
+  if (locks.includes('visitInfo'))
+    result.referencePrice = current.referencePrice;
+  if (locks.includes('referencePrice')) {
+    const previous = visitInfoForEditor(
+      current.visitInfo as VisitInfo | null | undefined,
+      current.referencePrice as ReferencePrice | null | undefined,
+    );
+    const incoming = result.visitInfo as VisitInfo | null | undefined;
+    result.visitInfo = {
+      ...incoming,
+      hours: incoming?.hours ?? null,
+      pricingVersion: 1,
+      price: previous.price,
+    };
+    result.referencePrice = current.referencePrice;
   }
   result.fieldLocks = locks;
   return result;

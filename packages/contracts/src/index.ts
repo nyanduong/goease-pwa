@@ -34,3 +34,5 @@ export * from './place-description.js';
 export * from './visit-info.js';
 
 export * from './visit-progress.js';
+
+export * from './unified-price.js';

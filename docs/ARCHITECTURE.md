@@ -185,3 +185,6 @@ Schema đã triển khai: photo.selection optional enum automatic/admin; reviewe
 ## CAT-22 visit information
 
 Worker place-visit-info chạy cùng API: Mongo claim/lease + revision fence, retry bounded; adapter OSM/linked website có DNS pinning và giới hạn HTTPS/response. Observation visitSearch tách editorial visitInfo và giá ngân sách referencePrice. Xem [VISIT-INFORMATION](VISIT-INFORMATION.md).
+
+
+CAT-23: one canonical visitInfo.price with pricingVersion=1; server derives referencePrice during save/stage/publish/restore. Public planner and trip provenance use the existing projection/snapshot contract. See [SHARED-PLACE-PRICE](SHARED-PLACE-PRICE.md).

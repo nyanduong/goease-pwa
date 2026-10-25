@@ -1412,3 +1412,6 @@ Hàng chờ #work đổi nhãn Cần kiểm tra, dùng hai cột và count theo 
 
 
 CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa độ), HTML giờ/giá có nhãn và liên kết cùng origin; visitSearch.providerVersion=3 xếp tìm lại observation cũ, context bổ sung tọa độ. Giữ nội dung đã duyệt/public, không thay giá ngân sách. Phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
+
+
+CAT-23 IMPLEMENTED: places.visitInfo.pricingVersion optional 1; price.terms optional embedded audience/label/minTravelers/maxTravelers/inclusions/exclusions/checkedAt/reviewAfter/bundle. Canonical amount max widened to 1e12 VND for legacy compatibility. referencePrice keeps existing shape as derived projection; no duplicate admin input. No collection/index/background public-price migration. Detailed dictionary/legacy handling: [SHARED-PLACE-PRICE](SHARED-PLACE-PRICE.md).

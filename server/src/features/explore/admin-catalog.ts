@@ -1,3 +1,8 @@
+import {
+  synchronizeSharedPrice,
+  sharedPriceBudget,
+  visitInfoForEditor,
+} from '@goease/contracts';
 import { visitContext } from './visit-info-provider.js';
 import { visitInfoSchema } from '@goease/contracts';
 import {
@@ -152,13 +157,27 @@ export function adminCatalog(
   function withSourceDefaults(doc: Doc): Doc {
     if (doc.publicationStatus !== 'draft') return doc;
     const value = doc.toObject();
+    if (!value.visitInfo && value.referencePrice)
+      value.visitInfo =
+        Place.hydrate({
+          ...value,
+          visitInfo: visitInfoForEditor(
+            null,
+            referencePriceSchema.parse(value.referencePrice),
+          ),
+        }).toObject().visitInfo ?? null;
     if (
       !value.visitInfo &&
       !doc.fieldLocks?.includes('visitInfo') &&
       value.visitSearch?.context === visitContext(doc) &&
       value.visitSearch.result
     )
-      value.visitInfo = value.visitSearch.result;
+      value.visitInfo = {
+        ...value.visitSearch.result,
+        price: doc.fieldLocks?.includes('referencePrice')
+          ? null
+          : (value.visitSearch.result.price ?? null),
+      };
     let defaultImages;
     if (
       !doc.images.length &&
@@ -258,6 +277,12 @@ export function adminCatalog(
       options.reason === 'restore' || options.origin === 'geoapify'
         ? preserveCatalogLocks(before, merged)
         : merged;
+    const unifiedPrice = visitInfoSchema.safeParse(snapshot.visitInfo);
+    if (unifiedPrice.success && unifiedPrice.data.pricingVersion === 1)
+      snapshot.referencePrice = sharedPriceBudget(
+        unifiedPrice.data.price,
+        String(snapshot.venueType ?? 'place'),
+      ).referencePrice;
     snapshot.fieldLocks =
       options.reason === 'restore' || options.origin === 'geoapify'
         ? (before.fieldLocks ?? [])
@@ -454,6 +479,13 @@ export function adminCatalog(
     }
     await audit.capturePlace(id, session);
     const snapshot = effective.toObject() as Record<string, unknown>;
+    const unifiedPrice = visitInfoSchema.safeParse(snapshot.visitInfo);
+    if (unifiedPrice.success && unifiedPrice.data.pricingVersion === 1)
+      snapshot.referencePrice = sharedPriceBudget(
+        unifiedPrice.data.price,
+        String(snapshot.venueType ?? 'place'),
+      ).referencePrice;
+
     const fields = Object.fromEntries(
       Object.entries(snapshot).filter(
         ([key]) =>
@@ -680,7 +712,7 @@ export function adminCatalog(
           'INVALID_INPUT',
           parsed.error.issues[0]?.message ?? 'Thông tin chưa hợp lệ.',
         );
-      input = parsed.data;
+      input = synchronizeSharedPrice(parsed.data);
       if (
         input.referencePrice &&
         input.referencePrice.checkedAt > catalogToday()
@@ -707,7 +739,7 @@ export function adminCatalog(
       const requestHash = tokenHash(
         JSON.stringify({
           id,
-          input,
+          input: parsed.data,
           expectedRevision,
           restoredFromRevision,
           intent,
@@ -838,7 +870,20 @@ export function adminCatalog(
               referencePrice: input.referencePrice,
               ...(input.visitInfo !== undefined
                 ? { visitInfo: input.visitInfo }
-                : {}),
+                : editable?.visitInfo?.pricingVersion === 1
+                  ? {
+                      visitInfo: visitInfoForEditor(
+                        {
+                          hours: visitInfoSchema.parse(
+                            editable.toObject().visitInfo,
+                          ).hours,
+                          price: null,
+                        },
+                        input.referencePrice,
+                      ),
+                    }
+                  : {}),
+
               publicationStatus: input.publicationStatus,
               fieldLocks: input.fieldLocks ?? editable?.fieldLocks ?? [],
               durationLabel: `${input.durationMinutes} phút`,

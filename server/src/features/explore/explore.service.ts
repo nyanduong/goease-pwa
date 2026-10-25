@@ -260,6 +260,7 @@ export function exploreService(connection: Connection) {
     openingHoursNote: doc.openingHoursNote,
     visitInfo: doc.visitInfo
       ? visitInfoSchema.parse({
+          ...(doc.visitInfo.pricingVersion === 1 ? { pricingVersion: 1 } : {}),
           hours: doc.visitInfo.hours?.reviewed
             ? JSON.parse(JSON.stringify(doc.visitInfo.hours))
             : null,
@@ -328,7 +329,10 @@ export function exploreService(connection: Connection) {
             durationMinutes: doc.planning.durationMinutes,
             locationQuery: doc.planning.locationQuery,
             costNote: doc.planning.costNote,
-            priceOptions: doc.planning.priceOptions.map((p) => ({
+            priceOptions: (doc.visitInfo?.pricingVersion === 1
+              ? []
+              : doc.planning.priceOptions
+            ).map((p) => ({
               label: p.label,
               amountMinor: p.amountMinor,
               basis: p.basis as 'per_person' | 'group_total',

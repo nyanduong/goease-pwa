@@ -1,8 +1,12 @@
-import { visitPriceLabel } from '@goease/contracts';
+import {
+  visitPriceLabel,
+  visitInfoForEditor,
+  sharedPriceBudget,
+  priceReady,
+} from '@goease/contracts';
 import { useEffect, useState } from 'react';
 import {
   catalogCost,
-  catalogToday,
   type ActivityInput,
   type PlaceDto,
 } from '@goease/contracts';
@@ -21,7 +25,17 @@ export function PlacePlanning({
   onAutomatic?: (cost: ActivityInput['estimatedCost']) => void;
 }) {
   const planning = place.planning;
+  const priceInfo =
+    place.visitInfo?.pricingVersion === 1
+      ? place.visitInfo
+      : place.referencePrice
+        ? visitInfoForEditor(null, place.referencePrice)
+        : place.visitInfo;
+  const displayedPrice = priceInfo?.price;
+
   if (!planning) return null;
+  const alternativePrices =
+    place.visitInfo?.pricingVersion === 1 ? [] : planning.priceOptions;
   return (
     <section className="place-planning">
       <strong>Thông tin để xếp lịch</strong>
@@ -52,53 +66,37 @@ export function PlacePlanning({
       {place.openingHoursNote && (
         <p>Giờ mở cửa tham khảo: {place.openingHoursNote}</p>
       )}
-      {place.visitInfo?.price?.reviewed && (
+      {displayedPrice?.reviewed && (
         <section className="place-price-reference">
-          <strong>{visitPriceLabel(place.visitInfo.price)}</strong>
-          <p>{place.visitInfo.price.conditions}</p>
+          <strong>{visitPriceLabel(displayedPrice!)}</strong>
+          <p>{displayedPrice!.conditions}</p>
           <small>
             Giá tham khảo · kiểm tra lại với cơ sở trước khi đi.{' '}
             <a
-              href={place.visitInfo.price.sourceUrl}
+              href={displayedPrice!.sourceUrl}
               target="_blank"
               rel="noreferrer"
             >
               Nguồn giá ↗
             </a>
           </small>
-        </section>
-      )}
-      {place.referencePrice && (
-        <div className="place-reference-price">
-          <strong>
-            {place.referencePrice.label} ·{' '}
-            {moneyText(place.referencePrice.amountMinor)} /{' '}
-            {place.referencePrice.basis === 'per_person' ? 'người' : 'nhóm'}
-          </strong>
-          <p>{place.referencePrice.conditions}</p>
-          <small>
-            Nhóm {place.referencePrice.minTravelers ?? 1}–
-            {place.referencePrice.maxTravelers} người · Đối chiếu{' '}
-            {place.referencePrice.checkedAt}
-          </small>
-          <a
-            href={place.referencePrice.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Xem chi tiết giá ↗
-          </a>
-          {place.referencePrice.reviewAfter < catalogToday() ? (
+          {place.referencePrice &&
+          priceReady(
+            place.referencePrice,
+            place.referencePrice.minTravelers ?? 1,
+          ) ? (
             <small>
-              Giá đến hạn kiểm tra, chưa dùng cho chi phí dự kiến mới.
+              Dùng giá này tính chi phí dự kiến cho{' '}
+              {place.referencePrice.minTravelers ?? 1}–
+              {place.referencePrice.maxTravelers} người.
             </small>
           ) : (
             <small>
-              Tự tính vào chi phí dự kiến khi thêm điểm này. Chưa phải giá đặt
-              dịch vụ.
+              {sharedPriceBudget(displayedPrice, place.venueType ?? 'place')
+                .reasons[0] ?? 'Chưa đủ điều kiện tính chi phí tự động.'}
             </small>
           )}
-        </div>
+        </section>
       )}
       {onAutomatic && (
         <button
@@ -109,7 +107,7 @@ export function PlacePlanning({
           Cập nhật giá tham khảo
         </button>
       )}
-      {planning.priceOptions.map((price) => (
+      {alternativePrices.map((price) => (
         <div className="place-reference-price" key={price.label}>
           <b>
             {price.label} · {moneyText(price.amountMinor)} /{' '}
@@ -133,9 +131,9 @@ export function PlacePlanning({
           )}
         </div>
       ))}
-      {!planning.priceOptions.length &&
+      {!alternativePrices.length &&
         !place.referencePrice &&
-        !place.visitInfo?.price?.reviewed && (
+        !displayedPrice?.reviewed && (
           <small>Chi phí: Chưa rõ. Bạn có thể nhập dự kiến bên dưới.</small>
         )}
       {place.source && <SourceCredit />}

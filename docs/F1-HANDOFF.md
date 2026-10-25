@@ -164,3 +164,13 @@ CAT-22 expanded-source verification: 93 unit tests pass; focused visit-info Mong
 Đã thêm trang admin #progress / Tiến trình lấy dữ liệu và GET admin/catalog/visit-progress. Aggregate toàn scope, lọc/pagination, trạng thái lỗi/quá hạn, polling 5s và mở editor. Không thêm persistence/index. Kiểm chứng và ý nghĩa counts tại [ADMIN-VISIT-PROGRESS](ADMIN-VISIT-PROGRESS.md).
 
 Verification trang tiến trình: typecheck/lint/build đạt; integration MongoDB riêng đạt (counts/filter/role/pagination/read-only); service chỉ đọc local thật và browser fixture desktop/mobile đạt. Vite vẫn có cảnh báo bundle >500KB hiện hữu. Không chạy lại toàn bộ integration suite cho thay đổi trang này.
+
+
+## Refine thao tác Giá & giờ mở cửa (25/10/2026)
+
+Đã gom thành giờ + giá tham khảo, bỏ giờ lặp, nút xác nhận rõ ràng, ba loại giá và preview; referencePrice thu gọn tùy chọn, sidebar/focus lỗi đúng khối. Fix validator URL để empty/partial URL không làm crash khi admin nhập. Hướng dẫn và bằng chứng tại [ADMIN-EDITOR](ADMIN-EDITOR.md).
+
+
+CAT-23: implemented single price editor, eligibility reasons, shared server projection, public/legacy handling and paired price locks. No public bulk price migration; trip snapshots preserved. See [SHARED-PLACE-PRICE](SHARED-PLACE-PRICE.md) for rules/contracts/tests. Dedicated repeatable browser command: npm run test:price-editor (test server uses owned MongoDB; set E2E_API_PORT/E2E_WEB_PORT to free ports if the app is running).
+
+CAT-23 verification observed: 98 unit tests passed; 15 targeted MongoDB integration checks passed across catalog/publication/visit/shared-price suites; locked-source shared-price check rerun passed; 2 isolated price-editor browser tests passed (legacy projection and one-price flow). Typecheck/lint/build passed. Existing Vite >500KB chunk warning remains. Full unrelated integration/e2e suites not rerun. No migration of local published prices or saved trip snapshots executed.

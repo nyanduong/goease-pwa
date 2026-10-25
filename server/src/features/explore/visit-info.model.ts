@@ -1,3 +1,4 @@
+import { referencePriceFields } from './reference-price.js';
 import { Schema } from 'mongoose';
 const evidence = {
   sourceUrl: { type: String, required: true, maxlength: 2048 },
@@ -9,8 +10,27 @@ const options = {
   strict: 'throw' as const,
   versionKey: false as const,
 };
+const priceTermsModel = new Schema(
+  {
+    audience: {
+      type: String,
+      enum: ['standard', 'restricted', 'unknown'],
+      required: false,
+    },
+    label: { type: String, maxlength: 120, required: false },
+    minTravelers: { type: Number, min: 1, max: 1000, required: false },
+    maxTravelers: { type: Number, min: 1, max: 1000, required: false },
+    inclusions: { type: String, maxlength: 500, required: false },
+    exclusions: { type: String, maxlength: 500, required: false },
+    checkedAt: { type: String, required: false },
+    reviewAfter: { type: String, required: false },
+    bundle: referencePriceFields.bundle,
+  },
+  options,
+);
 export const visitInfoModel = new Schema(
   {
+    pricingVersion: { type: Number, enum: [1], required: false },
     hours: {
       type: new Schema(
         { ...evidence, text: { type: String, required: true, maxlength: 400 } },
@@ -22,7 +42,7 @@ export const visitInfoModel = new Schema(
       type: new Schema(
         {
           ...evidence,
-          amount: { type: Number, required: true, min: 0, max: 1e9 },
+          amount: { type: Number, required: true, min: 0, max: 1e12 },
           currency: { type: String, enum: ['VND'], required: true },
           unit: {
             type: String,
@@ -30,6 +50,7 @@ export const visitInfoModel = new Schema(
             required: true,
           },
           conditions: { type: String, required: true, maxlength: 500 },
+          terms: { type: priceTermsModel, required: false, default: undefined },
         },
         options,
       ),

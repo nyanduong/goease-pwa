@@ -528,3 +528,8 @@ CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa đ
 
 
 CAT-22 bổ sung trang admin chỉ đọc Tiến trình lấy dữ liệu: counts hàng đợi và kết quả lưu có giải thích phân biệt dữ liệu đã duyệt, không đổi gate hoặc tự thực thi provider. Hợp đồng/ý nghĩa số liệu tại [ADMIN-VISIT-PROGRESS](ADMIN-VISIT-PROGRESS.md).
+
+
+## CAT-23 — Một giá cho hiển thị và tính ngân sách (25/10/2026)
+
+Owner chốt bỏ nhập hai giá: admin nhập số tiền/đơn vị/điều kiện một lần, dùng chung để hiển thị và tính ngân sách khi đủ điều kiện. Giá canonical ở visitInfo.price (pricingVersion=1); referencePrice là projection server tạo từ cùng giá, không có form riêng. Giá phải được admin xác nhận, theo người/nhóm, áp dụng thông thường (người lớn/suất tiêu chuẩn), đủ nguồn và dịch vụ gồm/chưa gồm, còn hạn đối chiếu. Giữ CAT-14 về phạm vi nhóm/vé gói và CAT-17 về bản nháp/công khai. Giá món/ưu đãi/chưa rõ/quá hạn vẫn được hiển thị khi đã kiểm tra, nhưng không tự dùng tính ngân sách; UI nêu lý do. Xóa/sửa/chưa xác nhận giá làm projection trong draft thành null, không tự thay public hoặc snapshot chuyến cũ. API legacy được chuyển tiếp, không để giá thứ hai khác số tiền canonical. Quy tắc này thay mô hình nhập giá ngân sách riêng của CAT-22. Dictionary, giới hạn và bằng chứng: [SHARED-PLACE-PRICE](SHARED-PLACE-PRICE.md).

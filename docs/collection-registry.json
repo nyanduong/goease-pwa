@@ -685,7 +685,7 @@
           "visitInfo",
           "embedded object|null",
           "null",
-          "IMPLEMENTED CAT-22: hours(text,evidence,reviewed); price(amount VND,unit,conditions,evidence,reviewed). Evidence sourceUrl/observedAt. Editorial version/proposal, field lock/provenance visitInfo; unreviewed blocks publication; separate referencePrice budget."
+          "IMPLEMENTED CAT-23: optional pricingVersion=1; canonical price(amount integer VND 0..1e12,unit,conditions,evidence,reviewed,terms?). terms audience/label/minTravelers/maxTravelers/inclusions/exclusions/checkedAt/reviewAfter/bundle. referencePrice server-derived from same confirmed eligible price, not separate admin input. Hours/evidence remain CAT-22. Field locks paired. See SHARED-PLACE-PRICE.md."
         ],
         [
           "descriptionSearch",
@@ -3025,7 +3025,7 @@
     ],
     "newCollections": false,
     "migrationRequired": false,
-    "note": "Optional place venueType/openingHoursNote/referencePrice; admin role server-controlled. CAT-14: optional minTravelers (integer 1..1000, absent=1, <=maxTravelers) is preserved in snapshots and enforced by planner/budget; price inclusions/exclusions required for publication and Goe; optional bundle {code,validDays,maxEntries} is preserved in reference snapshots; BudgetSummary.includedActivityIds is derived only, not persisted. No migration/backfill. Reference snapshots in estimatedCost and AI proposals, validated on save and preserved in existing trips. Audit catalog and local role changes; resourceType place receipts. See DB-BASELINE.md runtime section."
+    "note": "Optional place venueType/openingHoursNote/referencePrice; admin role server-controlled. CAT-23 derives referencePrice from canonical visitInfo.price when eligible; no extra price input. CAT-14: optional minTravelers (integer 1..1000, absent=1, <=maxTravelers) is preserved in snapshots and enforced by planner/budget; price inclusions/exclusions required for publication and Goe; optional bundle {code,validDays,maxEntries} is preserved in reference snapshots; BudgetSummary.includedActivityIds is derived only, not persisted. No migration/backfill. Reference snapshots in estimatedCost and AI proposals, validated on save and preserved in existing trips. Audit catalog and local role changes; resourceType place receipts. See DB-BASELINE.md runtime section."
   },
   "browserStorage": {
     "implementationStatus": "local read-only offline itinerary, 2026-10-23",

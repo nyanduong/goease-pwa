@@ -1,3 +1,4 @@
+import { AdminPriceTerms } from './admin-price-terms';
 import {
   Clock3,
   Banknote,
@@ -9,6 +10,8 @@ import { useEffect, useRef, useState } from 'react';
 import {
   visitPriceLabel,
   visitInfoSchema,
+  catalogToday,
+  sharedPriceBudget,
   type AdminPlaceDto,
   type AdminPlaceInput,
   type VisitInfo,
@@ -33,6 +36,7 @@ export function AdminVisitInfo({
     [busy, setBusy] = useState(false);
   const applied = useRef(false);
   const locked = !!form.fieldLocks?.includes('visitInfo');
+  const priceLocked = locked || !!form.fieldLocks?.includes('referencePrice');
   useEffect(() => {
     applied.current = false;
   }, [place?.id]);
@@ -77,9 +81,19 @@ export function AdminVisitInfo({
         JSON.stringify(place.mapLocation ?? null)
     ) {
       applied.current = true;
-      if (form.visitInfo == null) update({ visitInfo: data.result });
+      if (
+        form.visitInfo == null ||
+        (!form.visitInfo.hours && !form.visitInfo.price)
+      )
+        update({
+          visitInfo: {
+            ...data.result,
+            price: priceLocked ? null : data.result.price,
+            hours: form.openingHoursNote ? null : data.result.hours,
+          },
+        });
     }
-  }, [data, form, place, disabled, locked, update]);
+  }, [data, form, place, disabled, locked, priceLocked, update]);
   async function retry() {
     if (!place) return;
     setBusy(true);
@@ -100,6 +114,8 @@ export function AdminVisitInfo({
   const patch = (change: Partial<VisitInfo>) =>
     update({
       visitInfo: {
+        ...info,
+        pricingVersion: 1,
         hours: info?.hours ?? null,
         price: info?.price ?? null,
         ...change,
@@ -111,8 +127,10 @@ export function AdminVisitInfo({
   const pending = busy || ['pending', 'searching'].includes(data?.state ?? '');
   const validPrice =
     !!price && visitInfoSchema.shape.price.safeParse(price).success;
+  const budget = sharedPriceBudget(price, form.venueType);
   const priceMode = !price ? 'unknown' : price.amount === 0 ? 'free' : 'paid';
   function selectPrice(mode: 'unknown' | 'free' | 'paid') {
+    applied.current = true;
     if (mode === priceMode) return;
     if (mode === 'unknown') {
       patch({ price: null });
@@ -122,7 +140,7 @@ export function AdminVisitInfo({
       price: {
         amount: mode === 'free' ? 0 : Number.NaN,
         currency: 'VND',
-        unit: 'unspecified',
+        unit: mode === 'free' ? 'person' : 'unspecified',
         conditions:
           mode === 'free'
             ? 'Miễn phí vé vào cửa; dịch vụ riêng có thể thu phí.'
@@ -134,7 +152,7 @@ export function AdminVisitInfo({
     });
   }
   return (
-    <div className="visit-editor">
+    <div className="visit-editor" data-editor-field="visitInfo">
       <div className="visit-editor-intro">
         <h2>Thông tin khách sẽ thấy</h2>
         <p>
@@ -254,6 +272,8 @@ export function AdminVisitInfo({
                   onClick={() =>
                     update({
                       visitInfo: {
+                        ...info,
+                        pricingVersion: 1,
                         hours: { ...hours, reviewed: true },
                         price: price ?? null,
                       },
@@ -272,7 +292,12 @@ export function AdminVisitInfo({
                   patch({ hours: null });
                   if (form.openingHoursNote === hours.text)
                     update({
-                      visitInfo: { hours: null, price: price ?? null },
+                      visitInfo: {
+                        ...info,
+                        pricingVersion: 1,
+                        hours: null,
+                        price: price ?? null,
+                      },
                       openingHoursNote: '',
                     });
                 }}
@@ -294,8 +319,8 @@ export function AdminVisitInfo({
       </fieldset>
       <fieldset
         className="visit-editor-card"
-        disabled={disabled || locked}
-        data-editor-field="visitInfo"
+        disabled={disabled || priceLocked}
+        data-editor-field="displayPrice"
       >
         <legend>
           <Banknote size={20} />
@@ -359,15 +384,15 @@ export function AdminVisitInfo({
           </div>
         ) : (
           <>
-            {priceMode === 'paid' && (
+            {
               <div className="visit-editor-fields">
                 <label>
                   Giá từ (VND)
                   <input
                     aria-label="Giá từ (VND)"
                     type="number"
-                    min={1}
-                    max={1e9}
+                    min={0}
+                    max={1e12}
                     step={1}
                     value={Number.isFinite(price.amount) ? price.amount : ''}
                     placeholder="Ví dụ: 40000"
@@ -385,6 +410,7 @@ export function AdminVisitInfo({
                 <label>
                   Đơn vị áp dụng
                   <select
+                    aria-label="Đơn vị áp dụng"
                     value={price.unit}
                     onChange={(e) =>
                       patch({
@@ -405,9 +431,9 @@ export function AdminVisitInfo({
                   </select>
                 </label>
               </div>
-            )}
+            }
             <label>
-              Giá này áp dụng cho ai, gồm những gì?
+              Đối tượng và điều kiện áp dụng
               <textarea
                 rows={2}
                 maxLength={500}
@@ -442,6 +468,19 @@ export function AdminVisitInfo({
                 }
               />
             </label>
+            <AdminPriceTerms
+              price={price}
+              venueType={form.venueType}
+              onChange={(change) =>
+                patch({
+                  price: {
+                    ...price,
+                    terms: { ...price.terms, ...change },
+                    reviewed: false,
+                  },
+                })
+              }
+            />
             {!!price.sourceUrl && (
               <a
                 className="visit-evidence-link"
@@ -466,6 +505,34 @@ export function AdminVisitInfo({
                 </p>
               </div>
             )}
+            <div
+              className={
+                'visit-price-eligibility ' +
+                (budget.referencePrice ? 'is-ready' : '')
+              }
+              role="status"
+            >
+              <strong>
+                {budget.referencePrice
+                  ? 'Dùng để hiển thị và tính ngân sách'
+                  : 'Hiển thị tham khảo; chưa tự tính ngân sách'}
+              </strong>
+              {budget.referencePrice ? (
+                <p>
+                  {budget.referencePrice.basis === 'per_person'
+                    ? 'Chi phí = giá này × số người.'
+                    : 'Chi phí dùng giá trọn nhóm trong giới hạn đã nhập.'}{' '}
+                  Áp dụng cho {budget.referencePrice.minTravelers ?? 1}–
+                  {budget.referencePrice.maxTravelers} người.
+                </p>
+              ) : (
+                <ul>
+                  {budget.reasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className="visit-card-actions">
               {price.reviewed ? (
                 <span className="visit-confirmed">
@@ -477,7 +544,20 @@ export function AdminVisitInfo({
                   type="button"
                   className="visit-use-button"
                   disabled={!validPrice}
-                  onClick={() => patch({ price: { ...price, reviewed: true } })}
+                  onClick={() =>
+                    patch({
+                      price: {
+                        ...price,
+                        reviewed: true,
+                        terms: {
+                          ...price.terms,
+                          checkedAt: catalogToday(),
+                          reviewAfter:
+                            price.terms?.reviewAfter ?? catalogToday(),
+                        },
+                      },
+                    })
+                  }
                 >
                   Xác nhận giá này
                   <CheckCircle2 size={16} />
@@ -496,7 +576,7 @@ export function AdminVisitInfo({
           </>
         )}
       </fieldset>
-      {locked && (
+      {priceLocked && (
         <p className="admin-alert">
           Thông tin giá và gợi ý giờ đang khóa. Bạn có thể mở khóa trong tab
           Nguồn & lịch sử.

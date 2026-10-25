@@ -5613,34 +5613,6 @@
   line-height: 1.8;
   margin: 0;
 }
-.visit-budget-advanced {
-  margin-top: 22px;
-  border: 1px dashed #cddbd4;
-  border-radius: 11px;
-  background: #fffcf7;
-}
-.visit-budget-advanced > summary {
-  padding: 17px 20px;
-  color: #5b7881;
-  cursor: pointer;
-  font-size: 13px;
-}
-.visit-budget-advanced > summary span {
-  font-weight: 600;
-  margin-right: 12px;
-}
-.visit-budget-advanced > summary small {
-  font-size: 11px;
-  color: #8b9ba0;
-}
-.visit-budget-advanced[open] > summary {
-  border-bottom: 1px solid #e8ece5;
-}
-.admin-catalog .visit-budget-advanced > fieldset {
-  border: 0;
-  margin: 0;
-  padding: 22px;
-}
 @media (max-width: 650px) {
   .admin-catalog fieldset.visit-editor-card {
     padding: 18px 16px;
@@ -5667,8 +5639,91 @@
   .visit-source-strip > span {
     min-width: 160px;
   }
-  .visit-budget-advanced > summary small {
-    display: block;
-    margin: 7px 0 0 18px;
+}
+
+.visit-price-terms {
+  margin: 20px 0;
+  padding: 18px;
+  background: #f8faf7;
+  border: 1px solid #e3ebe2;
+  border-radius: 10px;
+}
+.admin-catalog .visit-price-terms h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.visit-price-terms > p {
+  font-size: 12px;
+  color: #6d858d;
+  line-height: 1.7;
+  margin: 0 0 16px;
+}
+.admin-catalog .visit-price-terms label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  margin: 0 0 14px;
+}
+.visit-price-terms small {
+  display: block;
+  font-size: 11px;
+  color: #82959a;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.visit-price-special {
+  margin-top: 12px;
+}
+.visit-price-special summary {
+  font-size: 12px;
+  color: #60818a;
+  margin: 0 0 14px;
+  cursor: pointer;
+}
+.admin-catalog .visit-price-terms label.visit-inline-check {
+  flex-direction: row;
+  align-items: center;
+}
+.visit-inline-check input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+}
+.visit-bundle-fields {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+}
+.visit-price-eligibility {
+  background: #fff8e9;
+  border: 1px solid #efdfb9;
+  border-radius: 10px;
+  padding: 15px 18px;
+  margin: 16px 0;
+  color: #8d7139;
+}
+.visit-price-eligibility strong {
+  font-size: 13px;
+}
+.visit-price-eligibility p,
+.visit-price-eligibility li {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.visit-price-eligibility ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+.visit-price-eligibility.is-ready {
+  background: #ecf7f0;
+  border-color: #cee7d7;
+  color: #28785c;
+}
+@media (max-width: 650px) {
+  .visit-price-terms {
+    padding: 14px;
+  }
+  .visit-bundle-fields {
+    grid-template-columns: 1fr;
   }
 }

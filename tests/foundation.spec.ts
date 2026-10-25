@@ -3104,36 +3104,46 @@ test('admin publishes reference prices and mobile customer gets automatic estima
       .getByLabel('Địa chỉ / vị trí tìm trên bản đồ', { exact: true })
       .fill('Địa chỉ minh họa Hội An');
     await page
-      .getByLabel('Giờ mở cửa (nếu đã kiểm tra)', { exact: true })
+      .getByRole('tab', { name: 'Giá & giờ mở cửa', exact: true })
+      .click();
+    await page
+      .getByLabel('Giờ mở cửa hiển thị cho khách', { exact: true })
       .fill('07:00–22:00');
+    await page
+      .getByRole('tab', { name: 'Nguồn & lịch sử', exact: true })
+      .click();
     await page
       .getByLabel('Link nguồn thông tin', { exact: true })
       .fill('https://example.invalid/catalog-test');
     await page
-      .getByLabel('Có giá đủ căn cứ để tự tính', { exact: true })
-      .check();
+      .getByRole('tab', { name: 'Giá & giờ mở cửa', exact: true })
+      .click();
+    await page.getByRole('button', { name: 'Có thu phí', exact: true }).click();
+    await page.getByLabel('Giá từ (VND)', { exact: true }).fill('50000');
     await page
-      .getByLabel('Tên khoản giá', { exact: true })
-      .fill('Bữa ăn thử nghiệm');
-    await page.getByLabel('Giá tham khảo (VND)', { exact: true }).fill('50000');
+      .getByLabel('Đơn vị áp dụng', { exact: true })
+      .selectOption('person');
     await page
-      .getByLabel('Bao gồm gì / điều kiện áp dụng', { exact: true })
+      .getByLabel('Đối tượng và điều kiện áp dụng', { exact: true })
       .fill('Một bữa/người. Chỉ là giá kiểm thử.');
     await page
-      .getByLabel('Bao gồm trong giá', { exact: true })
-      .fill('Một bữa minh họa E2E');
-    await page
-      .getByLabel('Không bao gồm trong giá', { exact: true })
-      .fill('Đồ uống và dịch vụ khác');
-    await page
-      .getByLabel('Link nguồn giá', { exact: true })
+      .getByLabel('Nguồn để kiểm tra giá', { exact: true })
       .fill('https://example.invalid/test-price');
     await page
-      .getByLabel('Ngày đối chiếu giá', { exact: true })
-      .fill(catalogToday());
+      .getByLabel('Đối tượng của giá', { exact: true })
+      .selectOption('standard');
     await page
-      .getByLabel('Cần kiểm tra lại vào', { exact: true })
+      .getByLabel('Đã bao gồm', { exact: true })
+      .fill('Một bữa minh họa E2E');
+    await page
+      .getByLabel('Chưa bao gồm', { exact: true })
+      .fill('Đồ uống và dịch vụ khác');
+    await page
+      .getByLabel('Kiểm tra giá lại vào ngày', { exact: true })
       .fill('2099-12-31');
+    await page
+      .getByRole('button', { name: 'Xác nhận giá này', exact: true })
+      .click();
     let lost = false;
     await page.route('**/api/v1/admin/places', async (route) => {
       if (route.request().method() === 'POST' && !lost) {
@@ -3176,9 +3186,9 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await page
       .getByRole('button', { name: `Chỉnh sửa ${name}`, exact: true })
       .click();
-    await expect(
-      page.getByLabel('Giá tham khảo (VND)', { exact: true }),
-    ).toHaveValue('50000');
+    await expect(page.getByLabel('Giá từ (VND)', { exact: true })).toHaveValue(
+      '50000',
+    );
     await mkdir('.local/catalog-review', { recursive: true });
     await page.screenshot({
       path: '.local/catalog-review/admin-desktop.png',
@@ -3246,7 +3256,7 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     expect(original.days[0]!.activities[0]!.estimatedCost.confidence).toBe(
       'catalog_reference',
     );
-    await page.getByLabel('Giá tham khảo (VND)', { exact: true }).fill('80000');
+    await page.getByLabel('Giá từ (VND)', { exact: true }).fill('80000');
     await page
       .getByRole('button', { name: 'Xem trước để xuất bản', exact: true })
       .click();

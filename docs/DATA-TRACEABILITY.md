@@ -381,3 +381,6 @@ OSM ID + tên → opening_hours/charge/fee → website liên kết JSON-LD đún
 
 
 CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa độ), HTML giờ/giá có nhãn và liên kết cùng origin; visitSearch.providerVersion=3 xếp tìm lại observation cũ, context bổ sung tọa độ. Giữ nội dung đã duyệt/public, không thay giá ngân sách. Phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
+
+
+CAT-23: source observation → unreviewed candidate → single editorial visitInfo.price + terms → admin confirmation → server-derived referencePrice → explicit publication/publicRevision → customer label + planner/budget + trip price snapshot. Client second amount is ignored for shared inputs; raw source never authorizes automatic pricing. Old published and saved trip data are not bulk-rewritten. See [SHARED-PLACE-PRICE](SHARED-PLACE-PRICE.md).

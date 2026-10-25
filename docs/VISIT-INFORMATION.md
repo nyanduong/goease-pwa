@@ -40,3 +40,11 @@ Ngoài JSON-LD, đọc đoạn HTML có nhãn giờ mở cửa/giá vé cùng s�
 Giới hạn một lượt: tối đa 6 lời gọi nguồn, deadline 70 giây; website tối đa 4 trang trong ngân sách. Bộ lấy nguồn cũ được xếp tìm lại qua visitSearch.providerVersion=3, không xóa result cũ, không thay visitInfo đã lưu/đã duyệt/public, không tự xuất bản. Context bổ sung tọa độ để loại kết quả sai vị trí; form đang sửa vị trí không tự nhận gợi ý cũ. API key mới không bắt buộc.
 
 Kiểm chứng: fixture Wikidata-linked và tìm tên+tọa độ, trang con, HTML thường, điều kiện và trường hợp nguồn không khớp; kiểm tra live mẫu Bảo tàng Hồ Chí Minh tại tọa độ Cần Thơ chưa tìm thấy dữ liệu mới phù hợp. Không tuyên bố độ phủ tăng cho toàn bộ catalog khi hàng đợi chưa hoàn tất. Nguồn tham chiếu: https://www.wikidata.org/wiki/Property:P856.
+
+
+## Giao diện kiểm tra đơn giản (25/10/2026)
+
+Thay checkbox duyệt bằng nút **Dùng giờ này** và **Xác nhận giá này**. Có thể giữ Chưa rõ giá, hoặc chọn Miễn phí/Có thu phí và nhập nguồn/điều kiện. Bản xem trước “Từ …” đặt ngay trong khối giá. Cấu hình referencePrice được thu gọn dưới cùng. Giữ nguyên contract/gate/field locks và luồng save → preview publication; hướng dẫn hiện hành tại [ADMIN-EDITOR](ADMIN-EDITOR.md).
+
+
+CAT-23 cập nhật thay quy tắc tách giá trước đây: giá đã xác nhận và đủ metadata áp dụng được server dùng chung cho referencePrice projection, không nhập giá ngân sách riêng. Worker vẫn chỉ quan sát, không tự xác nhận. Xem [SHARED-PLACE-PRICE](SHARED-PLACE-PRICE.md).
