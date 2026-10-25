@@ -143,3 +143,7 @@ Kiểm chứng cập nhật ảnh bìa: typecheck/lint/build đạt; 74 unit và
 ## Cần kiểm tra và ảnh gốc — 25/10/2026
 
 Hàng chờ #work đổi nhãn Cần kiểm tra, dùng hai cột và count theo phạm vi từ API. imageSearch.storageVersion=2 triển khai ảnh nguyên kích thước từ Wikimedia, WebP lossless trên Cloudinary; xếp lại quan sát cũ, nâng URL cùng sourceUrl cho draft không khóa; giữ bản công khai. Không thêm collection. Hợp đồng và giới hạn: [ADMIN-REVIEW-QUEUE](ADMIN-REVIEW-QUEUE.md).
+
+## Catalog library refinement (2026-10-25)
+See [ADMIN-CATALOG-LIBRARY.md](ADMIN-CATALOG-LIBRARY.md) for the approved layout, derived readiness contract, real Cloudinary images and verification limits.
+Verified: typecheck, lint, 84 server unit tests, readonly local catalog service and fixture browser checks. Full MongoDB integration not rerun due low disk space.

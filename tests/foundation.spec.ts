@@ -3090,7 +3090,7 @@ test('admin publishes reference prices and mobile customer gets automatic estima
       .selectOption('000000000000000000000004');
     await page.getByRole('link', { name: 'Địa điểm', exact: true }).click();
     await page
-      .getByRole('button', { name: 'Thêm địa điểm / quán ăn', exact: true })
+      .getByRole('button', { name: 'Thêm thủ công', exact: true })
       .click();
     await page
       .getByRole('combobox', { name: 'Loại địa điểm', exact: true })

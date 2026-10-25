@@ -195,6 +195,7 @@ export const adminPlaceInputSchema = z
   });
 export type AdminPlaceInput = z.infer<typeof adminPlaceInputSchema>;
 export type AdminPlaceDto = AdminPlaceInput & {
+  publicationReadiness?: { ready: boolean; label: string };
   photoSearch?: { state: string; count: number };
   source?: PlaceProvenance;
   id: string;

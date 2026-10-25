@@ -33,6 +33,7 @@ import type { exploreService } from './explore.service.js';
 import { normalizeSearch } from './explore.service.js';
 import { HttpError } from '../../http-error.js';
 import { catalogQuery } from './catalog-query.js';
+import { publicationReadiness } from './catalog-publication-readiness.js';
 import { adminOperationsModels } from './admin-operations.models.js';
 import {
   catalogProvenance,
@@ -525,9 +526,88 @@ export function adminCatalog(
         )
         .skip(query.offset)
         .limit(21);
+      const page = docs.slice(0, 20);
+      const ids = page.map((p) => p._id);
+      const destinationIds = page.map((p) => p.destinationId);
+      const [destinations, reviews, archiving, versions] = await Promise.all([
+        Destination.find({
+          _id: { $in: destinationIds },
+          deletedAt: null,
+          publicationStatus: 'published',
+          catalogKind: { $ne: 'legacy' },
+        }).select('_id'),
+        connection
+          .collection('catalog_reviews')
+          .find({
+            placeId: { $in: ids },
+            kind: { $in: ['source', 'duplicate'] },
+            $or: [
+              { state: { $ne: 'resolved' } },
+              { state: 'resolved', decision: 'keep' },
+            ],
+          })
+          .project({ placeId: 1, kind: 1, state: 1, decision: 1 })
+          .toArray(),
+        connection
+          .collection('catalog_bulk_jobs')
+          .find({
+            destinationId: { $in: destinationIds },
+            action: 'archive_destination',
+            state: 'running',
+          })
+          .project({ destinationId: 1 })
+          .toArray(),
+        Version.find({ placeId: { $in: ids }, state: 'proposal' }).select(
+          'placeId revision basePublicRevision',
+        ),
+      ]);
       return {
         items: await Promise.all(
-          docs.slice(0, 20).map(async (p) => dto(await proposal(p))),
+          page.map(async (p) => {
+            const effective = await proposal(p);
+            const related = reviews.filter(
+              (r) => String(r.placeId) === String(p._id),
+            );
+            const blocked = related.find((r) => r.state !== 'resolved');
+            const version = versions.find(
+              (v) =>
+                String(v.placeId) === String(p._id) &&
+                v.revision === p.proposalRevision,
+            );
+            return {
+              ...dto(effective),
+              publicationReadiness: publicationReadiness(input(effective), {
+                destinationVisible: destinations.some(
+                  (d) => String(d._id) === String(p.destinationId),
+                ),
+                archiving: archiving.some(
+                  (d) => String(d.destinationId) === String(p.destinationId),
+                ),
+                blockingKind: blocked
+                  ? (blocked.kind as 'source' | 'duplicate')
+                  : null,
+                closedUnconfirmed:
+                  !!p.sourceSnapshot?.closed &&
+                  !related.some(
+                    (r) =>
+                      r.kind === 'source' &&
+                      r.state === 'resolved' &&
+                      r.decision === 'keep',
+                  ),
+                staleProposal:
+                  p.proposalRevision != null &&
+                  (!version ||
+                    version.basePublicRevision !==
+                      (p.publicRevision ??
+                        (p.publicationStatus === 'published'
+                          ? p.revision
+                          : null))),
+                alreadyPublished:
+                  p.publicationStatus === 'published' &&
+                  p.proposalRevision == null,
+              }),
+            };
+          }),
         ),
         hasMore: docs.length > 20,
         total: await Place.countDocuments(filter),

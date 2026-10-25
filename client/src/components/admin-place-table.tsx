@@ -1,125 +1,160 @@
-import { AdminPlaceImage, PhotoSearchStatus } from './admin-visuals';
+import { useEffect, useRef } from 'react';
+import { AdminPlaceImage } from './admin-visuals';
+import type { AdminPlaceDto } from '@goease/contracts';
 import {
-  catalogQuality,
-  catalogCapabilities,
-  type AdminPlaceDto,
-} from '@goease/contracts';
-import { Pencil } from 'lucide-react';
+  ArrowUpRight,
+  CheckCircle2,
+  CircleAlert,
+  MapPin,
+  Pencil,
+  MinusCircle,
+} from 'lucide-react';
 export function AdminPlaceTable({
   items,
   selected,
   onSelect,
+  onSelectPage,
   onOpen,
   busy,
+  allMatching = false,
 }: {
   items: AdminPlaceDto[];
   selected: AdminPlaceDto[];
   onSelect: (p: AdminPlaceDto, checked: boolean) => void;
+  onSelectPage: (checked: boolean) => void;
   onOpen: (id: string) => void;
   busy: boolean;
+  allMatching?: boolean;
 }) {
+  const pageCheckbox = useRef<HTMLInputElement>(null);
+  const checked =
+    allMatching ||
+    (items.length > 0 &&
+      items.every((p) => selected.some((s) => s.id === p.id)));
+  useEffect(() => {
+    if (pageCheckbox.current)
+      pageCheckbox.current.indeterminate =
+        !checked && items.some((p) => selected.some((s) => s.id === p.id));
+  }, [items, selected, checked]);
   return (
-    <div className="admin-table-scroll">
-      <table className="admin-data-table">
+    <div className="admin-table-scroll catalog-library-scroll">
+      <table className="admin-data-table catalog-library-table">
         <thead>
           <tr>
-            <th>Chọn</th>
+            <th className="catalog-select-cell">
+              <input
+                ref={pageCheckbox}
+                type="checkbox"
+                aria-label="Chọn toàn bộ trang hiện tại"
+                checked={checked}
+                disabled={busy || !items.length}
+                onChange={(e) => onSelectPage(e.target.checked)}
+              />
+            </th>
             <th>Địa điểm</th>
-            <th>Loại hình</th>
-            <th>Độ đầy đủ</th>
-            <th>Khả năng sử dụng</th>
-            <th>Nguồn</th>
-            <th>Cập nhật</th>
+            <th>Loại</th>
+            <th>Sẵn sàng xuất bản</th>
             <th>Trạng thái</th>
-            <th>Thao tác</th>
+            <th>Cập nhật</th>
+            <th>
+              <span className="sr-only">Thao tác</span>
+            </th>
           </tr>
         </thead>
         <tbody>
           {items.map((p) => {
-            const quality = catalogQuality(p);
+            const isSelected =
+              allMatching || selected.some((s) => s.id === p.id);
+            const readiness = p.publicationReadiness;
+            const published =
+              p.publicationStatus === 'published' && p.proposalRevision == null;
+            const count = p.photoSearch?.count || p.images?.length || 0;
             return (
-              <tr key={p.id}>
-                <td>
+              <tr key={p.id} className={isSelected ? 'is-selected' : ''}>
+                <td className="catalog-select-cell">
                   <input
                     type="checkbox"
                     aria-label={`Chọn ${p.name}`}
-                    checked={selected.some((s) => s.id === p.id)}
-                    disabled={
-                      selected.length >= 50 &&
-                      !selected.some((s) => s.id === p.id)
-                    }
+                    checked={isSelected}
+                    disabled={busy || (!isSelected && selected.length >= 50)}
                     onChange={(e) => onSelect(p, e.target.checked)}
                   />
                 </td>
                 <td>
-                  <div className="admin-place-identity">
-                    <AdminPlaceImage place={p} />
-                    <div>
+                  <button
+                    className="catalog-place-open"
+                    onClick={() => onOpen(p.id)}
+                    disabled={busy}
+                    aria-label={`Mở ${p.name}`}
+                  >
+                    <span className="catalog-place-cover">
+                      <AdminPlaceImage place={p} />
+                      {!!count && !!p.imageUrl && (
+                        <span className="catalog-photo-count">{count} ảnh</span>
+                      )}
+                    </span>
+                    <span className="catalog-place-copy">
                       <h2>{p.name}</h2>
-                      <small>{p.locationQuery}</small>
-                      <PhotoSearchStatus place={p} />
-                    </div>
-                  </div>
+                      <span
+                        className="catalog-place-address"
+                        title={p.locationQuery}
+                      >
+                        <MapPin size={13} />
+                        <span>{p.locationQuery}</span>
+                      </span>
+                    </span>
+                  </button>
                 </td>
-                <td>
+                <td data-label="Loại">
                   {p.category === 'food'
                     ? 'Ăn uống'
                     : p.category === 'culture'
                       ? 'Văn hóa'
                       : 'Thiên nhiên'}
                 </td>
-                <td>
-                  <strong>{quality.completeness}%</strong>
-                  <progress
-                    value={quality.completeness}
-                    max={100}
-                    aria-label={`Độ đầy đủ ${p.name}`}
-                  />
-                  <small>
-                    {quality.issues.length
-                      ? `${quality.issues.length} điểm cần kiểm tra`
-                      : 'Đủ thông tin'}
-                  </small>
+                <td data-label="Sẵn sàng">
+                  <span
+                    className={`catalog-readiness ${readiness?.ready ? 'is-ready' : published ? 'is-neutral' : 'is-missing'}`}
+                    title="Máy chủ sẽ kiểm tra lại điều kiện và phiên bản khi xem trước/xuất bản."
+                  >
+                    {readiness?.ready ? (
+                      <CheckCircle2 size={18} />
+                    ) : published ? (
+                      <MinusCircle size={18} />
+                    ) : (
+                      <CircleAlert size={18} />
+                    )}
+                    <span>{readiness?.label ?? 'Xem trước để kiểm tra'}</span>
+                  </span>
                 </td>
-                <td>
-                  <div className="admin-capabilities">
-                    {Object.entries(
-                      p.capabilities ?? catalogCapabilities(p),
-                    ).map(([key, ready]) => (
-                      <span
-                        className={`admin-pill ${ready ? 'is-good' : ''}`}
-                        key={key}
-                      >
-                        {key === 'discovery'
-                          ? 'Khám phá'
-                          : key === 'scheduling'
-                            ? 'Goe'
-                            : 'Ngân sách'}
-                        : {ready ? 'đủ' : 'thiếu'}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td>{p.source ? 'Geoapify / OSM' : 'Biên tập'}</td>
-                <td>{new Date(p.updatedAt).toLocaleDateString('vi-VN')}</td>
-                <td>
+                <td data-label="Trạng thái">
                   <span
                     className={`admin-status status-${p.publicationStatus}`}
                   >
                     {p.publicationStatus === 'published'
                       ? 'Đã xuất bản'
                       : p.publicationStatus === 'draft'
-                        ? 'Nháp'
-                        : 'Lưu trữ'}
+                        ? 'Bản nháp'
+                        : 'Đã lưu trữ'}
                   </span>
                 </td>
-                <td>
+                <td data-label="Cập nhật">
+                  <time dateTime={p.updatedAt}>
+                    {new Date(p.updatedAt).toLocaleDateString('vi-VN', {
+                      timeZone: 'Asia/Ho_Chi_Minh',
+                    })}
+                  </time>
+                </td>
+                <td className="catalog-edit-cell">
                   <button
+                    className="catalog-edit-button"
                     disabled={busy}
                     aria-label={`Chỉnh sửa ${p.name}`}
                     onClick={() => onOpen(p.id)}
                   >
-                    <Pencil size={16} />
+                    <Pencil size={14} />
+                    <span>Chỉnh sửa</span>
+                    <ArrowUpRight size={13} />
                   </button>
                 </td>
               </tr>

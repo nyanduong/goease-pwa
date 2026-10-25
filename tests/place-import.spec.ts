@@ -181,7 +181,7 @@ test('admin import UI: failure/retry, duplicate review, same-key lost response, 
   await page.getByRole('link', { name: 'Địa điểm', exact: true }).click();
   await page.getByLabel('Khu vực quản lý').selectOption(current.destinationId);
   await page
-    .getByRole('button', { name: 'Nhập địa điểm từ Geoapify', exact: true })
+    .getByRole('button', { name: 'Lấy địa điểm', exact: true })
     .click();
   await page.getByRole('button', { name: 'Tìm địa điểm', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(

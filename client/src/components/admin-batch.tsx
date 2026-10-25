@@ -6,6 +6,7 @@ import {
   type BulkPreviewInput,
 } from '@goease/contracts';
 import { api } from '../api';
+import { Archive, ArrowRight, CheckSquare } from 'lucide-react';
 
 export function AdminBatch({
   selected,
@@ -15,6 +16,8 @@ export function AdminBatch({
   allMatching = false,
   onAllMatching,
   archiveDestination,
+  compact = false,
+  onClear,
 }: {
   selected: AdminPlaceDto[];
   onDone: (ids: string[]) => void;
@@ -23,11 +26,18 @@ export function AdminBatch({
   allMatching?: boolean;
   onAllMatching?: (value: boolean) => void;
   archiveDestination?: { id: string; name: string };
+  compact?: boolean;
+  onClear?: () => void;
 }) {
   const [job, setJob] = useState<BulkJobDto | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [offset, setOffset] = useState(0);
+  const previewPanel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (compact && job)
+      previewPanel.current?.scrollIntoView({ block: 'start' });
+  }, [compact, job?.id]);
   const stop = useRef(false);
   const previewRequest = useRef({ body: '', key: '' });
   const persistenceKey = `goease-admin-last-bulk${archiveDestination ? `:${archiveDestination.id}` : ''}`;
@@ -164,7 +174,12 @@ export function AdminBatch({
         : 'Máy chủ chưa trả thông tin phạm vi của lô này. Tập ID và revision giữ theo bản xem trước đã lưu.';
 
   return (
-    <section aria-label="Thao tác theo lô">
+    <section
+      aria-label="Thao tác theo lô"
+      className={
+        compact ? `catalog-bulk${job ? ' has-preview' : ''}` : undefined
+      }
+    >
       {archiveDestination && (
         <div className="admin-batch-bar">
           <strong>Kế hoạch lưu trữ: {archiveDestination.name}</strong>
@@ -178,26 +193,46 @@ export function AdminBatch({
       )}
       {!archiveDestination && (count > 0 || job) && (
         <div className="admin-batch-bar">
-          <strong>{count.toLocaleString('vi-VN')} địa điểm được chọn</strong>
+          {compact ? (
+            <div className="catalog-selection-summary">
+              <CheckSquare size={22} />
+              <div>
+                <strong>
+                  Đã chọn {count.toLocaleString('vi-VN')} địa điểm
+                </strong>
+                <small>Kiểm tra điều kiện trước khi xuất bản.</small>
+              </div>
+              <button disabled={busy || !count} onClick={onClear}>
+                Bỏ chọn
+              </button>
+            </div>
+          ) : (
+            <strong>{count.toLocaleString('vi-VN')} địa điểm được chọn</strong>
+          )}
           {filter && onAllMatching && (
-            <button disabled={busy} onClick={() => onAllMatching(!allMatching)}>
+            <button
+              className={compact ? 'catalog-select-matching' : undefined}
+              disabled={busy || !total}
+              onClick={() => onAllMatching(!allMatching)}
+            >
               {allMatching
                 ? 'Chỉ giữ lựa chọn trên trang'
                 : `Chọn toàn bộ ${total.toLocaleString('vi-VN')} kết quả khớp bộ lọc`}
             </button>
           )}
           <button
+            className={compact ? 'catalog-archive-selection' : undefined}
             disabled={busy || !count}
             onClick={() => void preview('archive')}
           >
-            Xem trước lưu trữ
+            {compact && <Archive size={16} />} Xem trước lưu trữ
           </button>
           <button
             className="journey-primary"
             disabled={busy || !count}
             onClick={() => void preview('publish')}
           >
-            Xem trước xuất bản
+            Xem trước xuất bản {compact && <ArrowRight size={16} />}
           </button>
         </div>
       )}
@@ -212,7 +247,7 @@ export function AdminBatch({
         </p>
       )}
       {job && (
-        <div className="admin-panel admin-bulk-preview">
+        <div ref={previewPanel} className="admin-panel admin-bulk-preview">
           <div className="admin-panel-title">
             <h2>
               {job.pending === 0

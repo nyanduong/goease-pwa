@@ -27,7 +27,19 @@ import { AdminPlaceTools } from './admin-place-tools';
 import { AdminPlaceSidebar, type PlaceEditorTab } from './admin-place-sidebar';
 import { AdminWikimediaImages } from './admin-wikimedia-images';
 import { AdminImageGallery } from './admin-image-gallery';
-import { CheckCircle2, Info, ShieldCheck } from 'lucide-react';
+import {
+  CheckCircle2,
+  Info,
+  ShieldCheck,
+  Search,
+  SlidersHorizontal,
+  List,
+  Map,
+  ChevronLeft,
+  ChevronRight,
+  PlusCircle,
+  Download,
+} from 'lucide-react';
 const AdminPlaceImport = lazy(() =>
   import('./admin-place-import').then((v) => ({ default: v.AdminPlaceImport })),
 );
@@ -78,6 +90,7 @@ const formFromDto = ({
   publicRevision,
   capabilities,
   photoSearch,
+  publicationReadiness,
   fieldProvenance,
   ...input
 }: AdminPlaceDto) => {
@@ -91,6 +104,7 @@ const formFromDto = ({
   void publicRevision;
   void capabilities;
   void photoSearch;
+  void publicationReadiness;
   void fieldProvenance;
   return input;
 };
@@ -504,7 +518,9 @@ export function AdminCatalog({
     }
   }
   return (
-    <section className={`admin-catalog${form ? ' is-editing' : ''}`}>
+    <section
+      className={`admin-catalog${form ? ' is-editing' : !importing ? ' is-listing' : ''}`}
+    >
       {!form && (
         <AdminPageHeader
           title={
@@ -517,21 +533,21 @@ export function AdminCatalog({
           description={
             form
               ? 'Cập nhật thông tin địa điểm để khách hàng nhận được lịch trình và dự toán chính xác hơn.'
-              : 'Xem, chỉnh sửa và quản lý địa điểm, quán ăn, điểm tham quan trên GoEase.'
+              : 'Chuẩn bị và quản lý nội dung khách hàng sẽ thấy.'
           }
           illustrated={false}
           actions={
             !form && !importing ? (
               <div className="admin-actions admin-catalog-actions">
                 <button
-                  className="journey-outline"
+                  className="journey-primary catalog-import-action"
                   disabled={busy}
                   onClick={() => setImporting(true)}
                 >
-                  Nhập địa điểm từ Geoapify
+                  <Download size={17} /> Lấy địa điểm
                 </button>
                 <button
-                  className="journey-primary"
+                  className="journey-outline catalog-create-action"
                   disabled={busy || !destinations.length}
                   onClick={() => {
                     setSaved(null);
@@ -544,7 +560,7 @@ export function AdminCatalog({
                     setSuccess('');
                   }}
                 >
-                  Thêm địa điểm / quán ăn
+                  <PlusCircle size={17} /> Thêm thủ công
                 </button>
               </div>
             ) : undefined
@@ -600,98 +616,67 @@ export function AdminCatalog({
               </button>
             </p>
           )}
-          {overview && (
-            <div className="admin-place-statistics">
-              {[
-                {
-                  label: 'Tổng địa điểm',
-                  value: overview.total,
-                  status: 'all',
-                  tone: 'blue',
-                },
-                {
-                  label: 'Nháp',
-                  value: overview.draft,
-                  status: 'draft',
-                  tone: 'amber',
-                },
-                {
-                  label: 'Cần kiểm tra',
-                  value: overview.needsAttention,
-                  status: 'all',
-                  tone: 'orange',
-                },
-                {
-                  label: 'Đã xuất bản',
-                  value: overview.published,
-                  status: 'published',
-                  tone: 'green',
-                },
-                {
-                  label: 'Đã lưu trữ',
-                  value: overview.archived,
-                  status: 'archived',
-                  tone: 'gray',
-                },
-              ].map((k) => (
+          <nav className="catalog-status-tabs" aria-label="Trạng thái địa điểm">
+            {[
+              { label: 'Tất cả', value: overview?.total, status: 'all' },
+              { label: 'Bản nháp', value: overview?.draft, status: 'draft' },
+              {
+                label: 'Cần kiểm tra',
+                value: overview?.needsAttention,
+                status: 'attention',
+              },
+              {
+                label: 'Đã xuất bản',
+                value: overview?.published,
+                status: 'published',
+              },
+              {
+                label: 'Đã lưu trữ',
+                value: overview?.archived,
+                status: 'archived',
+              },
+            ].map((tab) =>
+              tab.status === 'attention' ? (
+                <a
+                  key={tab.status}
+                  href="#work"
+                  title="Mở hàng chờ cần kiểm tra"
+                >
+                  {tab.label}
+                  <span>{tab.value ?? '—'}</span>
+                </a>
+              ) : (
                 <button
-                  className={`admin-place-stat ${k.tone}`}
-                  key={k.label}
+                  key={tab.status}
+                  aria-pressed={status === tab.status}
                   onClick={() => {
-                    if (k.label === 'Cần kiểm tra') location.hash = 'work';
-                    else {
-                      setStatus(k.status);
-                      setOffset(0);
-                    }
+                    setStatus(tab.status);
+                    setOffset(0);
                   }}
                 >
-                  <span>{k.label}</span>
-                  <strong>{k.value}</strong>
-                  <small>
-                    {k.label === 'Cần kiểm tra'
-                      ? 'Mở việc cần làm'
-                      : 'Xem danh sách →'}
-                  </small>
+                  {tab.label}
+                  <span>{tab.value ?? '—'}</span>
                 </button>
-              ))}
-            </div>
-          )}
-          <div className="admin-filter-layout">
-            <div className="admin-filters">
-              <label>
-                Tìm trong danh mục
+              ),
+            )}
+          </nav>
+          <div className="catalog-library">
+            <div className="catalog-library-toolbar">
+              <label className="catalog-library-search">
+                <Search size={18} />
+                <span className="sr-only">Tìm trong danh mục</span>
                 <input
                   value={q}
                   maxLength={100}
-                  placeholder="Tên địa điểm, quán ăn…"
+                  placeholder="Tìm tên hoặc địa chỉ…"
                   onChange={(e) => {
                     setQ(e.target.value);
                     setOffset(0);
                   }}
                 />
               </label>
-              <label>
-                Trạng thái
-                <select
-                  aria-label="Trạng thái"
-                  value={status}
-                  onChange={(e) => {
-                    setStatus(e.target.value);
-                    setOffset(0);
-                  }}
-                >
-                  <option value="all">Tất cả</option>
-                  {Object.entries(statusText).map(([v, label]) => (
-                    <option key={v} value={v}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="admin-advanced-filters">
-              <label>
-                Nhóm địa điểm
+              <label className="catalog-library-category">
+                <span className="sr-only">Nhóm địa điểm</span>
                 <select
                   value={category}
                   onChange={(e) => {
@@ -699,43 +684,99 @@ export function AdminCatalog({
                     setOffset(0);
                   }}
                 >
-                  <option value="all">Tất cả loại</option>
+                  <option value="all">Loại địa điểm</option>
                   <option value="food">Ăn uống</option>
                   <option value="culture">Văn hóa</option>
                   <option value="nature">Thiên nhiên</option>
                 </select>
               </label>
-              <label>
-                Nguồn
-                <select
-                  value={sourceFilter}
-                  onChange={(e) => {
-                    setSourceFilter(e.target.value);
-                    setOffset(0);
-                  }}
+              <details className="catalog-library-filters">
+                <summary>
+                  <SlidersHorizontal size={17} /> Bộ lọc
+                  {(sourceFilter !== 'all' || qualityFilter !== 'all') && (
+                    <span
+                      className="catalog-filter-dot"
+                      aria-label="Có bộ lọc đang áp dụng"
+                    />
+                  )}
+                </summary>
+                <div className="catalog-filter-popover">
+                  <label>
+                    Trạng thái
+                    <select
+                      value={status}
+                      onChange={(e) => {
+                        setStatus(e.target.value);
+                        setOffset(0);
+                      }}
+                    >
+                      <option value="all">Tất cả</option>
+                      {Object.entries(statusText).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Nguồn
+                    <select
+                      value={sourceFilter}
+                      onChange={(e) => {
+                        setSourceFilter(e.target.value);
+                        setOffset(0);
+                      }}
+                    >
+                      <option value="all">Tất cả nguồn</option>
+                      <option value="geoapify">Geoapify / OSM</option>
+                      <option value="manual">Biên tập</option>
+                    </select>
+                  </label>
+                  <label>
+                    Chất lượng
+                    <select
+                      value={qualityFilter}
+                      onChange={(e) => {
+                        setQualityFilter(e.target.value);
+                        setOffset(0);
+                      }}
+                    >
+                      <option value="all">Tất cả chất lượng</option>
+                      <option value="price">Giá cần bổ sung</option>
+                      <option value="hours">Thiếu giờ mở cửa</option>
+                      <option value="location">Thiếu tọa độ</option>
+                    </select>
+                  </label>
+                  <button
+                    onClick={() => {
+                      setSourceFilter('all');
+                      setQualityFilter('all');
+                      setOffset(0);
+                    }}
+                  >
+                    Xóa bộ lọc bổ sung
+                  </button>
+                </div>
+              </details>
+              <div
+                className="catalog-view-switch"
+                role="group"
+                aria-label="Cách xem danh mục"
+              >
+                <button
+                  aria-pressed={!mapView}
+                  onClick={() => setMapView(false)}
                 >
-                  <option value="all">Tất cả nguồn</option>
-                  <option value="geoapify">Geoapify / OSM</option>
-                  <option value="manual">Biên tập</option>
-                </select>
-              </label>
-              <label>
-                Chất lượng
-                <select
-                  value={qualityFilter}
-                  onChange={(e) => {
-                    setQualityFilter(e.target.value);
-                    setOffset(0);
-                  }}
-                >
-                  <option value="all">Tất cả chất lượng</option>
-                  <option value="price">Giá cần bổ sung</option>
-                  <option value="hours">Thiếu giờ mở cửa</option>
-                  <option value="location">Thiếu tọa độ</option>
-                </select>
-              </label>
-              <label>
-                Sắp xếp
+                  <List size={17} />
+                  Danh sách
+                </button>
+                <button aria-pressed={mapView} onClick={() => setMapView(true)}>
+                  <Map size={17} />
+                  Bản đồ
+                </button>
+              </div>
+              <label className="catalog-library-sort">
+                <span className="sr-only">Sắp xếp</span>
                 <select
                   value={sort}
                   onChange={(e) => {
@@ -743,164 +784,159 @@ export function AdminCatalog({
                     setOffset(0);
                   }}
                 >
-                  <option value="updated">Cập nhật mới nhất</option>
+                  <option value="updated">Mới cập nhật</option>
                   <option value="oldest">Cũ nhất trước</option>
                   <option value="name">Tên A–Z</option>
                 </select>
               </label>
-              <button
-                aria-pressed={mapView}
-                onClick={() => setMapView((v) => !v)}
-              >
-                {mapView ? 'Bảng danh sách' : 'Xem bản đồ'}
-              </button>
             </div>
+            <div className="catalog-library-summary">
+              <span role="status">
+                {loading ? 'Đang tải danh mục…' : `${total} địa điểm`}
+              </span>
+              <span>
+                {mapView ? 'Bản đồ theo vùng đang xem' : '20 địa điểm / trang'}
+              </span>
+            </div>
+            {loading ? (
+              <div
+                className="catalog-list-loading"
+                aria-label="Đang tải danh mục"
+              >
+                <span />
+                <span />
+                <span />
+              </div>
+            ) : listError ? (
+              <div className="admin-empty" role="alert">
+                <p>{listError}</p>
+                <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button>
+              </div>
+            ) : !items.length ? (
+              <div className="admin-empty">
+                <h2>Không có địa điểm khớp bộ lọc</h2>
+                <p>Thử bớt điều kiện hoặc chọn một phạm vi khác.</p>
+                <button
+                  onClick={() => {
+                    setQ('');
+                    setStatus('all');
+                    setCategory('all');
+                    setSourceFilter('all');
+                    setQualityFilter('all');
+                    setOffset(0);
+                  }}
+                >
+                  Xóa bộ lọc tìm kiếm
+                </button>
+                <a href="#automatic">Thiết lập đợt thu thập →</a>
+              </div>
+            ) : mapView ? (
+              <AdminCatalogMap filter={filter} onOpen={(id) => void open(id)} />
+            ) : (
+              <AdminPlaceTable
+                items={items}
+                selected={selected}
+                allMatching={allMatching}
+                busy={busy}
+                onOpen={(id) => void open(id)}
+                onSelect={(p, checked) => {
+                  if (allMatching) {
+                    setAllMatching(false);
+                    setSelected(
+                      items.filter((item) => checked || item.id !== p.id),
+                    );
+                  } else
+                    setSelected((v) =>
+                      checked
+                        ? [...v.filter((s) => s.id !== p.id), p].slice(0, 50)
+                        : v.filter((s) => s.id !== p.id),
+                    );
+                }}
+                onSelectPage={(checked) => {
+                  if (allMatching) {
+                    setAllMatching(false);
+                    setSelected(checked ? items : []);
+                  } else
+                    setSelected((v) =>
+                      checked
+                        ? [
+                            ...v,
+                            ...items.filter(
+                              (p) => !v.some((s) => s.id === p.id),
+                            ),
+                          ].slice(0, 50)
+                        : v.filter((p) => !items.some((i) => i.id === p.id)),
+                    );
+                }}
+              />
+            )}
+            {!mapView && (
+              <footer className="catalog-library-pagination">
+                <span>
+                  {total && !listError
+                    ? `${offset + 1}–${Math.min(offset + items.length, total)} / ${total} địa điểm`
+                    : '0 địa điểm'}
+                </span>
+                <div>
+                  <button
+                    disabled={!offset || loading}
+                    aria-label="Trang trước"
+                    onClick={() => setOffset((v) => Math.max(0, v - 20))}
+                  >
+                    <ChevronLeft size={17} />
+                  </button>
+                  {Array.from(
+                    new Set([
+                      0,
+                      Math.max(0, Math.floor(offset / 20) - 1),
+                      Math.floor(offset / 20),
+                      Math.min(
+                        Math.max(0, Math.ceil(total / 20) - 1),
+                        Math.floor(offset / 20) + 1,
+                      ),
+                    ]),
+                  )
+                    .sort((a, b) => a - b)
+                    .map((page) => (
+                      <button
+                        key={page}
+                        disabled={loading}
+                        aria-current={
+                          page === Math.floor(offset / 20) ? 'page' : undefined
+                        }
+                        aria-label={`Trang ${page + 1}`}
+                        onClick={() => setOffset(page * 20)}
+                      >
+                        {page + 1}
+                      </button>
+                    ))}
+                  <button
+                    disabled={!hasMore || loading}
+                    aria-label="Trang tiếp"
+                    onClick={() => setOffset((v) => v + 20)}
+                  >
+                    <ChevronRight size={17} />
+                  </button>
+                </div>
+              </footer>
+            )}
           </div>
-          <p className="admin-list-count">
-            {total} địa điểm · Trang {Math.floor(offset / 20) + 1}
-            {mapView
-              ? ' · Bản đồ truy vấn toàn bộ kết quả theo vùng đang xem'
-              : ''}
-          </p>
           <AdminBatch
+            compact
             selected={selected}
             filter={filter}
             total={total}
             allMatching={allMatching}
             onAllMatching={setAllMatching}
+            onClear={() => {
+              setSelected([]);
+              setAllMatching(false);
+            }}
             onDone={(ids) => {
               setSelected((v) => v.filter((p) => !ids.includes(p.id)));
               setRetry((v) => v + 1);
             }}
           />
-          {!!items.length && (
-            <label className="admin-checkbox">
-              <input
-                type="checkbox"
-                checked={items.every((p) =>
-                  selected.some((s) => s.id === p.id),
-                )}
-                onChange={(e) =>
-                  setSelected((v) =>
-                    e.target.checked
-                      ? [
-                          ...v,
-                          ...items.filter((p) => !v.some((s) => s.id === p.id)),
-                        ].slice(0, 50)
-                      : v.filter((p) => !items.some((s) => s.id === p.id)),
-                  )
-                }
-              />
-              Chọn toàn bộ trang hiện tại
-            </label>
-          )}
-          {loading ? (
-            <p role="status">Đang tải danh mục…</p>
-          ) : listError ? (
-            <div role="alert">
-              {listError}
-              <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button>
-            </div>
-          ) : !items.length ? (
-            <div className="admin-empty">
-              <h2>Không có địa điểm khớp bộ lọc</h2>
-              <p>
-                Thử bớt điều kiện hoặc chọn một phạm vi khác. Kết quả rỗng không
-                có nghĩa nguồn đã đóng cửa.
-              </p>
-              <button
-                onClick={() => {
-                  setQ('');
-                  setStatus('all');
-                  setCategory('all');
-                  setSourceFilter('all');
-                  setQualityFilter('all');
-                  setOffset(0);
-                }}
-              >
-                Xóa bộ lọc tìm kiếm
-              </button>
-              <a href="#automatic" className="journey-primary">
-                Thiết lập đợt thu thập
-              </a>
-            </div>
-          ) : mapView ? (
-            <AdminCatalogMap filter={filter} onOpen={(id) => void open(id)} />
-          ) : (
-            <div className="admin-catalog-columns">
-              <div>
-                {' '}
-                <AdminPlaceTable
-                  items={items}
-                  selected={selected}
-                  busy={busy}
-                  onOpen={(id) => void open(id)}
-                  onSelect={(p, checked) =>
-                    setSelected((v) =>
-                      checked ? [...v, p] : v.filter((s) => s.id !== p.id),
-                    )
-                  }
-                />
-              </div>
-              <aside className="admin-catalog-map-summary">
-                <section className="admin-panel">
-                  <div className="admin-panel-title">
-                    <h2>Bản đồ địa điểm</h2>
-                    <button type="button" onClick={() => setMapView(true)}>
-                      Mở rộng ↗
-                    </button>
-                  </div>
-                  <AdminCatalogMap
-                    filter={filter}
-                    onOpen={(id) => void open(id)}
-                  />
-                </section>
-                <section className="admin-panel">
-                  <h2>Nhóm địa điểm</h2>
-                  <p>Trong trang kết quả hiện tại</p>
-                  {[
-                    { code: 'food', label: 'Ăn uống' },
-                    { code: 'culture', label: 'Văn hóa' },
-                    { code: 'nature', label: 'Thiên nhiên' },
-                  ].map((c) => (
-                    <button
-                      className="admin-category-stat"
-                      key={c.code}
-                      onClick={() => {
-                        setCategory(c.code);
-                        setOffset(0);
-                      }}
-                    >
-                      <span>{c.label}</span>
-                      <strong>
-                        {items.filter((p) => p.category === c.code).length}
-                      </strong>
-                      <progress
-                        max={items.length}
-                        value={
-                          items.filter((p) => p.category === c.code).length
-                        }
-                      />
-                    </button>
-                  ))}
-                </section>
-              </aside>
-            </div>
-          )}
-          <div className="admin-actions">
-            <button
-              disabled={!offset || loading}
-              onClick={() => setOffset((v) => Math.max(0, v - 20))}
-            >
-              Trang trước
-            </button>
-            <button
-              disabled={!hasMore || loading}
-              onClick={() => setOffset((v) => v + 20)}
-            >
-              Trang tiếp
-            </button>
-          </div>
         </>
       ) : (
         <form

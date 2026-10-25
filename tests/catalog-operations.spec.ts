@@ -494,7 +494,7 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
   await page.route('https://tile.openstreetmap.org/**', (route) =>
     route.abort(),
   );
-  await page.getByRole('button', { name: 'Xem bản đồ', exact: true }).click();
+  await page.getByRole('button', { name: 'Bản đồ', exact: true }).click();
   await expect(page.locator('.admin-cluster')).toHaveCount(1);
   const fullMap = page.getByRole('region', {
     name: 'Bản đồ toàn bộ catalog theo bộ lọc',
