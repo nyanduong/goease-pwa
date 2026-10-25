@@ -70,13 +70,7 @@ export function storedWikimediaImages(
       throw new Error('Invalid photo');
     const encoded = await raster
       .rotate()
-      .resize({
-        width: 1280,
-        height: 1280,
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .webp({ quality: 85 })
+      .webp({ lossless: true, effort: 6 })
       .toBuffer();
     // Content identity avoids duplicate assets on retry or across places.
     const digest = createHash('sha256').update(encoded).digest('hex');

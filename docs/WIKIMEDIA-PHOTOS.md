@@ -60,3 +60,8 @@ Cập nhật tương tác ảnh: nút **Chọn làm bìa** trên thumbnail chọ
 `admin/catalog/overview` áp dụng cùng `withSourceDefaults` như danh sách/editor trước khi tạo DTO. Vì vậy draft chưa lưu images thủ công vẫn hiển thị imageSearch.defaultCover tại Việc cần quan tâm/Việc cần làm; ảnh đã chọn, trạng thái public và khóa images tuân theo projection hiện có. Dòng số ảnh gợi ý hiển thị đã có bìa khi DTO có imageUrl. Không đổi schema hoặc BR.
 
 Kiểm chứng: gọi overview service với dữ liệu local (chỉ đọc), 63 draft có bìa tự động trả đúng Cloudinary URL; ảnh mẫu HEAD 200 image/*. Trình duyệt render component thumbnail thật với DTO đó, ảnh tải thành công và trạng thái có bìa. Typecheck client/server và lint đạt. Không chạy lại MongoDB integration suite trong đợt sửa hiển thị này.
+
+
+## Cập nhật ảnh nguyên kích thước — 25/10/2026
+
+Pipeline version 2 thay mô tả thumbnail/quality85/1280px ở trên: tải URL raster gốc, giữ kích thước, WebP lossless. Xếp lại quan sát cũ và nâng URL đúng cùng ảnh, không tự thay bản công khai. Giới hạn và trạng thái nâng cấp chưa hoàn tất: [ADMIN-REVIEW-QUEUE](ADMIN-REVIEW-QUEUE.md).

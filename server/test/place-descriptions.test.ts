@@ -7,6 +7,7 @@ import {
   type DescriptionQuery,
 } from '../src/features/explore/wikipedia-descriptions.js';
 import { createProduct } from '../src/product.js';
+import { storedFixtureCandidate } from './support/photo.js';
 import { parseConfig } from '../src/config.js';
 import { descriptionTranslator } from '../src/features/explore/description-translation.js';
 import {
@@ -178,6 +179,44 @@ test('source projection fills only empty unlocked drafts, respects manual edits 
     assert.equal(projected.description, result!.text);
     assert.equal(projected.descriptionSource?.sourceUrl, result!.sourceUrl);
     assert.equal(doc.description, '');
+    const photo = {
+      ...storedFixtureCandidate.image,
+      selection: 'admin' as const,
+    };
+    const upgraded = {
+      ...photo,
+      url: photo.url.replace('test-fixture', 'test-fixture-original'),
+    };
+    const photoDraft = Place.hydrate({
+      ...base,
+      images: [photo],
+      imageSearch: {
+        storageVersion: 2,
+        state: 'ready',
+        candidates: [{ ...storedFixtureCandidate, image: upgraded }],
+      },
+    });
+    assert.equal(
+      product.catalog.withSourceDefaults(photoDraft).images[0]?.url,
+      upgraded.url,
+    );
+    assert.equal(
+      product.catalog.withSourceDefaults(photoDraft).images[0]?.selection,
+      'admin',
+    );
+    assert.equal(photoDraft.images[0]?.url, photo.url);
+    for (const patch of [
+      { publicationStatus: 'published' },
+      { fieldLocks: ['images'] },
+    ]) {
+      assert.equal(
+        product.catalog.withSourceDefaults(
+          Place.hydrate({ ...photoDraft.toObject(), ...patch }),
+        ).images[0]?.url,
+        photo.url,
+      );
+    }
+
     for (const patch of [
       { description: 'Admin đã viết nội dung khác.' },
       { publicationStatus: 'published' },

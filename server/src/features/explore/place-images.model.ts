@@ -19,7 +19,7 @@ export const photoSchema = new Schema(
 export const imageSearchSchema = new Schema(
   {
     defaultCover: { type: photoSchema, default: null },
-    storageVersion: { type: Number, default: 1 },
+    storageVersion: { type: Number, default: 2 },
     state: {
       type: String,
       enum: ['pending', 'searching', 'ready', 'empty', 'failed'],

@@ -1,19 +1,20 @@
 import { AdminScopeSummary } from './admin-scope-summary';
 import { AdminCampaigns } from './admin-campaigns';
 import { AdminPolicies } from './admin-policies';
-import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
+import { AdminPageHeader } from './admin-visuals';
+import { AdminReviewQueue } from './admin-review-queue';
+import { ReviewDetail } from './admin-review-detail';
+import { catalogTime } from './admin-review-utils';
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type {
   CatalogOperationsDto,
   CatalogReviewDto,
+  CatalogReviewListDto,
   CatalogScheduleInput,
   DestinationDto,
-  ReviewDecision,
-  SourceSnapshot,
 } from '@goease/contracts';
 import { api } from '../api';
 import { AdminCatalog } from './admin-catalog';
-import { SourceCredit } from './source-credit';
 import { AdminDashboard, AdminTopbar } from './admin-dashboard';
 import {
   LayoutDashboard,
@@ -27,7 +28,7 @@ import {
 
 const tabs = {
   overview: 'Tổng quan',
-  work: 'Ngoại lệ',
+  work: 'Cần kiểm tra',
   places: 'Địa điểm',
   automatic: 'Đợt thu thập',
   history: 'Lịch sử & phê duyệt',
@@ -76,14 +77,6 @@ export function AdminNavigation() {
     </nav>
   );
 }
-export const catalogTime = (value: string | null) =>
-  value
-    ? new Date(value).toLocaleString('vi-VN', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        dateStyle: 'short',
-        timeStyle: 'short',
-      })
-    : 'Chưa có';
 const runLabels = {
   paused: 'Đã tạm dừng',
   queued: 'Đang chờ',
@@ -91,13 +84,6 @@ const runLabels = {
   retry: 'Sẽ tự thử lại',
   succeeded: 'Đã hoàn tất',
   failed: 'Cần can thiệp',
-};
-const groups = {
-  draft: 'Bản nháp cần xem',
-  duplicate: 'Có thể trùng',
-  source: 'Thông tin nguồn thay đổi / mâu thuẫn',
-  price: 'Giá cần kiểm tra',
-  quality: 'Chất lượng thông tin đang hiển thị',
 };
 const actionLabels: Record<string, string> = {
   'catalog.created': 'Thêm địa điểm',
@@ -175,6 +161,11 @@ export function AdminWorkspace({
     setData(null);
     setOffset(0);
   }, [scope]);
+  const [workSort, setWorkSort] = useState<'priority' | 'newest'>('priority');
+  const [reviewCounts, setReviewCounts] = useState<
+    CatalogReviewListDto['counts']
+  >({ draft: 0, duplicate: 0, source: 0, price: 0, quality: 0 });
+  const [publishedCount, setPublishedCount] = useState(0);
   const [workQuery, setWorkQuery] = useState(''),
     [workKind, setWorkKind] = useState('');
   const [locationKey, setLocationKey] = useState(location.hash);
@@ -255,17 +246,15 @@ export function AdminWorkspace({
         if (generation !== refreshGeneration.current) return;
         setData(state);
         if (tab === 'work' || tab === 'history') {
-          const work = await api<{
-            items: CatalogReviewDto[];
-            total: number;
-            hasMore: boolean;
-          }>(
-            `/admin/catalog/reviews?${new URLSearchParams({ offset: String(offset), q: workQuery, ...(scope ? { destinationId: scope } : {}), ...(workKind ? { kind: workKind } : {}) })}`,
+          const work = await api<CatalogReviewListDto>(
+            `/admin/catalog/reviews?${new URLSearchParams({ offset: String(offset), q: workQuery, sort: workSort, ...(scope ? { destinationId: scope } : {}), ...(workKind ? { kind: workKind } : {}) })}`,
           );
           if (generation !== refreshGeneration.current) return;
           setItems(work.items);
           setTotal(work.total);
           setMore(work.hasMore);
+          setReviewCounts(work.counts);
+          setPublishedCount(work.publishedCount);
         }
         if (tab === 'history') {
           const value = await api<{ items: History[]; hasMore: boolean }>(
@@ -286,7 +275,7 @@ export function AdminWorkspace({
         if (generation === refreshGeneration.current) setLoading(false);
       }
     },
-    [tab, offset, historyOffset, scope, workQuery, workKind],
+    [tab, offset, historyOffset, scope, workQuery, workKind, workSort],
   );
   useEffect(() => {
     void refresh();
@@ -388,10 +377,15 @@ export function AdminWorkspace({
             }
             description={
               tab === 'work'
-                ? 'Ưu tiên những vấn đề cần quyết định để dữ liệu sẵn sàng cho khách hàng.'
+                ? 'Kiểm tra dữ liệu trước khi đưa đến khách hàng.'
                 : tab === 'automatic'
                   ? 'Thiết lập và chạy tự động thu thập, cập nhật địa điểm từ các nguồn dữ liệu bên ngoài.'
                   : 'Theo dõi và quyết định các thay đổi đang chờ phê duyệt.'
+            }
+            actions={
+              tab === 'work' ? (
+                <a href="#history">Lịch sử xử lý ↗</a>
+              ) : undefined
             }
           />
 
@@ -406,7 +400,7 @@ export function AdminWorkspace({
               {notice}
             </p>
           )}
-          {loading ? (
+          {loading && !data ? (
             <p role="status">Đang tải dữ liệu…</p>
           ) : (
             data && (
@@ -428,195 +422,89 @@ export function AdminWorkspace({
                   </div>
                 )}
                 {(tab === 'work' ||
-                  (tab === 'history' && historyView === 'reviews')) &&
-                  (detail ? (
-                    <div className="admin-review-layout">
-                      <aside className="admin-panel admin-review-queue">
-                        <h2>Hàng đợi đang xem</h2>
-                        {items.map((item) => (
-                          <button
-                            key={item.id}
-                            aria-pressed={item.id === detail.id}
-                            onClick={() => setDetail(item)}
-                          >
-                            <AdminPlaceImage place={item.place} />
-                            <span>
-                              <strong>{item.place.name}</strong>
-                              <small>{groups[item.kind]}</small>
-                            </span>
-                          </button>
-                        ))}
-                      </aside>
-                      <ReviewDetail
-                        key={`${detail.id}:${detail.revision}`}
-                        review={detail}
-                        onBack={() => setDetail(null)}
-                        onEdit={() => edit(detail.place.id)}
-                        onInspectDuplicate={edit}
-                        onDone={async (message) => {
-                          setNotice(message);
-                          setCatalogRevision((v) => v + 1);
-                          setDetail(null);
-                          await refresh();
-                        }}
-                        onReload={async () => {
-                          const v = await api<{ items: CatalogReviewDto[] }>(
-                            `/admin/catalog/reviews?${new URLSearchParams({ offset: String(offset), q: workQuery, ...(scope ? { destinationId: scope } : {}), ...(workKind ? { kind: workKind } : {}) })}`,
-                          );
-                          const fresh = v.items.find((p) => p.id === detail.id);
-                          if (fresh) setDetail(fresh);
-                          else {
+                  (tab === 'history' && historyView === 'reviews')) && (
+                  <AdminReviewQueue
+                    items={items}
+                    total={total}
+                    counts={reviewCounts}
+                    publishedCount={publishedCount}
+                    offset={offset}
+                    hasMore={more}
+                    loading={loading}
+                    query={workQuery}
+                    kind={workKind}
+                    sort={workSort}
+                    selectedId={
+                      items.find((item) => item.id === detail?.id)?.id ??
+                      items[0]?.id ??
+                      null
+                    }
+                    onSelect={(item) => {
+                      setDetail(item);
+                      if (window.matchMedia('(max-width:760px)').matches)
+                        requestAnimationFrame(() =>
+                          document
+                            .querySelector('.admin-check-inspector')
+                            ?.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'start',
+                            }),
+                        );
+                    }}
+                    onQuery={(value) => {
+                      setWorkQuery(value);
+                      setOffset(0);
+                      setDetail(null);
+                    }}
+                    onKind={(value) => {
+                      setWorkKind(value);
+                      setOffset(0);
+                      setDetail(null);
+                    }}
+                    onSort={(value) => {
+                      setWorkSort(value);
+                      setOffset(0);
+                      setDetail(null);
+                    }}
+                    onPage={(value) => {
+                      setOffset(value);
+                      setDetail(null);
+                    }}
+                    run={data.runs[0]}
+                  >
+                    {(() => {
+                      const selected =
+                        items.find((item) => item.id === detail?.id) ??
+                        items[0];
+                      return selected ? (
+                        <ReviewDetail
+                          key={`${selected.id}:${selected.revision}`}
+                          review={selected}
+                          onBack={() => {
                             setDetail(null);
-                            await refresh();
-                          }
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="admin-filters">
-                        <label>
-                          Tìm việc theo địa điểm
-                          <input
-                            value={workQuery}
-                            maxLength={100}
-                            onChange={(e) => {
-                              setWorkQuery(e.target.value);
-                              setOffset(0);
-                            }}
-                          />
-                        </label>
-                        <label>
-                          Loại việc
-                          <select
-                            value={workKind}
-                            onChange={(e) => {
-                              setWorkKind(e.target.value);
-                              setOffset(0);
-                            }}
-                          >
-                            <option value="">Tất cả</option>
-                            {Object.entries(groups).map(([key, label]) => (
-                              <option key={key} value={key}>
-                                {label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                      <div className="admin-overview">
-                        <div>
-                          <strong>{total}</strong>
-                          <span>việc cần quyết định</span>
-                        </div>
-                        <div>
-                          <strong>
-                            {data.runs[0]
-                              ? runLabels[data.runs[0].state]
-                              : 'Chưa cập nhật'}
-                          </strong>
-                          <span>
-                            Lượt gần nhất ·{' '}
-                            {catalogTime(data.runs[0]?.createdAt ?? null)}
-                          </span>
-                        </div>
-                        <div>
-                          <strong>
-                            {data.schedule.enabled
-                              ? 'Tự động đang bật'
-                              : 'Tự động đang tắt'}
-                          </strong>
-                          <a href="#automatic">Xem lịch cập nhật →</a>
-                        </div>
-                      </div>
-                      {data.runs[0]?.state === 'failed' && (
-                        <section className="admin-work-group">
-                          <h2>Lượt cập nhật cần can thiệp</h2>
-                          <p>{data.runs[0].message}</p>
-                          <a className="journey-outline" href="#automatic">
-                            Kiểm tra và thử lại
-                          </a>
-                        </section>
-                      )}
-                      {data.runs[0]?.state === 'retry' && (
-                        <p className="admin-soft-notice">
-                          Nguồn tạm chưa sẵn sàng. Hệ thống sẽ tự thử lại lúc{' '}
-                          {catalogTime(data.runs[0].nextAttemptAt)}. Bạn chưa
-                          cần xử lý.
-                        </p>
-                      )}
-                      {!total && (
-                        <div className="admin-empty">
-                          <h2>Hiện không có việc cần xử lý</h2>
-                          <p>
-                            {data.runs[0]?.message ||
-                              'Chọn Tự động cập nhật để kết nối nguồn và thiết lập lịch.'}
-                          </p>
-                        </div>
-                      )}
-                      {(Object.keys(groups) as (keyof typeof groups)[]).map(
-                        (kind) => {
-                          const rows = items.filter((p) => p.kind === kind);
-                          return (
-                            !!rows.length && (
-                              <section className="admin-work-group" key={kind}>
-                                <h2>
-                                  {groups[kind]} <span>({rows.length})</span>
-                                </h2>
-                                {rows.map((p) => (
-                                  <article
-                                    className="admin-work-row"
-                                    key={p.id}
-                                  >
-                                    <AdminPlaceImage place={p.place} />
-                                    <div>
-                                      <h3>{p.place.name}</h3>
-                                      <p>{p.reason}</p>
-                                      <small>
-                                        {catalogTime(p.updatedAt)} ·{' '}
-                                        {p.place.publicationStatus ===
-                                        'published'
-                                          ? 'Khách vẫn đang thấy nội dung hiện tại'
-                                          : 'Chưa hiển thị cho khách'}
-                                      </small>
-                                    </div>
-                                    <button
-                                      className="journey-outline"
-                                      onClick={() => {
-                                        setDetail(p);
-                                        setNotice('');
-                                        window.scrollTo(0, 0);
-                                      }}
-                                    >
-                                      Xem và quyết định
-                                    </button>
-                                  </article>
-                                ))}
-                              </section>
-                            )
-                          );
-                        },
-                      )}
-                      {(more || offset > 0) && (
-                        <div className="admin-actions">
-                          <button
-                            disabled={!offset || loading}
-                            onClick={() =>
-                              setOffset((v) => Math.max(0, v - 20))
-                            }
-                          >
-                            Trang trước
-                          </button>
-                          <button
-                            disabled={!more || loading}
-                            onClick={() => setOffset((v) => v + 20)}
-                          >
-                            Trang tiếp
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ))}
+                            document
+                              .querySelector('.admin-check-list')
+                              ?.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start',
+                              });
+                          }}
+                          onEdit={() => edit(selected.place.id)}
+                          onInspectDuplicate={edit}
+                          onDone={async (message) => {
+                            setNotice(message);
+                            setCatalogRevision((v) => v + 1);
+                            setDetail(null);
+                            await refresh(true);
+                          }}
+                          onReload={async () => {
+                            await refresh(true);
+                          }}
+                        />
+                      ) : null;
+                    })()}
+                  </AdminReviewQueue>
+                )}
                 {tab === 'automatic' && (
                   <Automatic
                     key={scope}
@@ -694,412 +582,6 @@ export function AdminWorkspace({
         </section>
       )}
     </>
-  );
-}
-
-function ReviewDetail({
-  review: r,
-  onBack,
-  onEdit,
-  onInspectDuplicate,
-  onDone,
-  onReload,
-}: {
-  review: CatalogReviewDto;
-  onBack: () => void;
-  onEdit: () => void;
-  onInspectDuplicate: (id: string) => void;
-  onDone: (message: string) => Promise<void>;
-  onReload: () => Promise<void>;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [days, setDays] = useState(1);
-  const [confirmIgnore, setConfirmIgnore] = useState(false);
-  const [note, setNote] = useState('');
-  const key = useRef({ payload: '', value: '' });
-  const fields: {
-    name: string;
-    current: string;
-    incoming: string;
-    sourceField: keyof SourceSnapshot;
-  }[] = r.incoming
-    ? [
-        {
-          name: 'Tên địa điểm',
-          current: r.place.name,
-          incoming: r.incoming.name,
-          sourceField: 'name',
-        },
-        {
-          name: 'Địa chỉ',
-          current: r.place.locationQuery,
-          incoming: r.incoming.address || 'Chưa có',
-          sourceField: 'address',
-        },
-        {
-          name: 'Nhóm địa điểm',
-          current: {
-            food: 'Ăn uống',
-            culture: 'Văn hóa',
-            nature: 'Thiên nhiên',
-          }[r.place.category],
-          incoming: {
-            food: 'Ăn uống',
-            culture: 'Văn hóa',
-            nature: 'Thiên nhiên',
-          }[r.incoming.category],
-          sourceField: 'category',
-        },
-        {
-          name: 'Giờ mở cửa',
-          current: r.place.openingHoursNote || 'Chưa có',
-          incoming: r.incoming.openingHoursNote || 'Chưa có',
-          sourceField: 'openingHoursNote',
-        },
-        {
-          name: 'Vị trí nguồn',
-          current: r.currentLocation
-            ? `${r.currentLocation.latitude}, ${r.currentLocation.longitude}`
-            : 'Chưa có vị trí hiện tại',
-          incoming: `${r.incoming.latitude}, ${r.incoming.longitude}`,
-          sourceField: 'latitude',
-        },
-        {
-          name: 'Dấu hiệu đóng cửa từ nguồn',
-          current: r.previous?.closed
-            ? 'Có dấu hiệu cần xác nhận'
-            : 'Chưa có bằng chứng',
-          incoming: r.incoming.closed
-            ? 'Có dấu hiệu ngừng hoạt động; cần xác nhận'
-            : 'Chưa có bằng chứng',
-          sourceField: 'closed',
-        },
-      ]
-    : [];
-  async function decide(decision: ReviewDecision['decision'], publish = false) {
-    if (busy) return;
-    const body = {
-      expectedRevision: r.revision,
-      expectedPlaceRevision: r.place.revision,
-      decision,
-      note,
-      publish,
-      ...(decision === 'later'
-        ? { revisitAt: new Date(Date.now() + days * 86400000).toISOString() }
-        : {}),
-    };
-    // Retain the exact defer date and key after an uncertain response.
-    const identity = JSON.stringify({
-      id: r.id,
-      rev: r.revision,
-      place: r.place.revision,
-      decision,
-      days,
-      note,
-      publish,
-    });
-    if (key.current.value !== identity)
-      key.current = {
-        value: identity,
-        payload: JSON.stringify({ key: crypto.randomUUID(), body }),
-      };
-    const pending = JSON.parse(key.current.payload) as {
-      key: string;
-      body: ReviewDecision;
-    };
-    setBusy(true);
-    setError('');
-    try {
-      await api(`/admin/catalog/reviews/${r.id}/decision`, {
-        method: 'POST',
-        headers: { 'Idempotency-Key': pending.key },
-        body: JSON.stringify(pending.body),
-      });
-      await onDone(
-        decision === 'later'
-          ? `Đã hẹn xem lại lúc ${catalogTime(pending.body.revisitAt!)}.`
-          : publish
-            ? 'Đã chấp thuận và xuất bản địa điểm.'
-            : decision === 'revise'
-              ? 'Đã ghi yêu cầu chỉnh sửa. Việc vẫn được giữ để tiếp tục xử lý.'
-              : decision === 'reject'
-                ? 'Đã từ chối đề xuất. Nội dung địa điểm được giữ nguyên.'
-                : decision === 'apply'
-                  ? 'Đã lưu đề xuất thay đổi từ nguồn. Bản công khai được giữ nguyên cho tới khi xuất bản.'
-                  : decision === 'ignore'
-                    ? 'Đã bỏ qua việc. Nội dung và trạng thái địa điểm được giữ nguyên.'
-                    : decision === 'distinct'
-                      ? 'Đã xác nhận là hai địa điểm riêng. Có thể xem bản nháp và đăng.'
-                      : 'Đã giữ thông tin hiện tại. Nguồn không đổi sẽ không nhắc lại.',
-      );
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : 'Chưa lưu được quyết định. Hãy thử lại.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <section className="admin-review-detail">
-      <button disabled={busy} onClick={onBack}>
-        ← Về việc cần làm
-      </button>
-      <div className="admin-review-identity">
-        <AdminPlaceImage place={r.place} />
-        <div>
-          <h2>{r.place.name}</h2>
-          <p>{r.place.locationQuery}</p>
-        </div>
-      </div>
-      <p>
-        {r.reason}.{' '}
-        {r.place.publicationStatus === 'published'
-          ? 'Khách vẫn thấy bản công khai hiện tại cho tới khi xuất bản đề xuất.'
-          : 'Khách chưa thấy bản nháp này.'}
-      </p>
-      {error && (
-        <div role="alert" className="admin-alert">
-          {error}
-          <button
-            disabled={busy}
-            onClick={() => {
-              void onReload().catch((e) =>
-                setError(
-                  e instanceof Error ? e.message : 'Chưa tải được bản mới.',
-                ),
-              );
-            }}
-          >
-            Mở bản mới để đối chiếu
-          </button>
-        </div>
-      )}
-      {!!r.duplicates.length && (
-        <p className="admin-soft-notice">
-          Có thể trùng: {r.duplicates.join(', ')}. So sánh tên và vị trí trước
-          khi xác nhận đây là hai địa điểm riêng.
-        </p>
-      )}
-      {!!r.duplicatePlaces.length && (
-        <section className="admin-work-group">
-          <h3>Các địa điểm cần đối chiếu</h3>
-          {r.duplicatePlaces.map((p) => (
-            <article key={p.id} className="admin-work-row">
-              <div>
-                <h3>{p.name}</h3>
-                <p>{p.locationQuery}</p>
-                <p>
-                  {p.publicationStatus === 'published'
-                    ? 'Đang hiển thị cho khách'
-                    : p.publicationStatus === 'draft'
-                      ? 'Bản nháp khác'
-                      : 'Đã ngừng hiển thị'}
-                </p>
-                <a href={p.sourceUrl} target="_blank" rel="noreferrer">
-                  Xem nguồn đối chiếu ↗
-                </a>
-              </div>
-              <button disabled={busy} onClick={() => onInspectDuplicate(p.id)}>
-                Mở địa điểm đối chiếu
-              </button>
-            </article>
-          ))}
-        </section>
-      )}
-      <div className="admin-review-detail-grid">
-        <div className="admin-review-evidence">
-          {r.incoming ? (
-            <>
-              <p>
-                Lấy từ nguồn lúc {catalogTime(r.fetchedAt)}. Đây không phải ngày
-                con người xác minh.{' '}
-                <a href={r.incoming.sourceUrl} target="_blank" rel="noreferrer">
-                  Mở nguồn đối chiếu ↗
-                </a>
-              </p>
-              <div className="admin-comparison">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Thông tin</th>
-                      <th>Nội dung hiện tại / nguồn trước</th>
-                      <th>Nguồn mới</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fields.map((f) => {
-                      const changed = f.current !== f.incoming;
-                      const proposed =
-                        !r.previous ||
-                        JSON.stringify(r.previous[f.sourceField]) !==
-                          JSON.stringify(r.incoming![f.sourceField]) ||
-                        (f.sourceField === 'latitude' &&
-                          r.previous.longitude !== r.incoming!.longitude);
-                      return (
-                        <tr
-                          key={f.name}
-                          className={changed ? 'has-difference' : ''}
-                        >
-                          <th>
-                            {f.name}
-                            {changed && <small>Khác nhau</small>}
-                          </th>
-                          <td>{f.current}</td>
-                          <td>
-                            {f.incoming}
-                            {r.kind === 'source' && changed && (
-                              <small>
-                                {proposed
-                                  ? 'Đề nghị áp dụng'
-                                  : 'Giữ phần đã biên tập'}
-                              </small>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <SourceCredit expanded />
-            </>
-          ) : (
-            <div className="admin-preview">
-              <h3>Thông tin hiện tại</h3>
-              <p>{r.place.description}</p>
-              <p>{r.place.locationQuery}</p>
-              <a href={r.place.sourceUrl} target="_blank" rel="noreferrer">
-                Mở nguồn thông tin ↗
-              </a>
-              {r.kind === 'price' && (
-                <p>
-                  Giá kiểm tra lần cuối ngày {r.place.referencePrice?.checkedAt}
-                  ; đến hạn ngày {r.place.referencePrice?.reviewAfter}. Giá này
-                  không dùng cho dự toán mới. Mở địa điểm để cập nhật hoặc bỏ
-                  giá chưa rõ.
-                </p>
-              )}
-            </div>
-          )}
-          {r.incoming?.closed && (
-            <p className="admin-alert">
-              Nguồn có dấu hiệu đóng cửa; cần xác nhận trước khi thay đổi hiển
-              thị. Lưu đề xuất không đổi bản công khai.
-            </p>
-          )}
-        </div>
-        <aside className="admin-review-decisions">
-          <h3>Quyết định xử lý</h3>
-          <label>
-            Ghi chú quyết định
-            <textarea
-              maxLength={500}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Lý do quyết định hoặc thông tin cần bổ sung"
-            />
-          </label>
-          <div className="admin-actions">
-            <button
-              disabled={busy}
-              className="journey-primary"
-              onClick={onEdit}
-            >
-              Mở địa điểm để biên tập
-            </button>
-            {r.kind === 'source' && (
-              <button disabled={busy} onClick={() => void decide('apply')}>
-                Lưu đề xuất từ nguồn
-              </button>
-            )}
-            {['source', 'draft'].includes(r.kind) && (
-              <button
-                disabled={busy}
-                onClick={() => {
-                  if (
-                    confirm(
-                      'Chấp thuận nội dung và xuất bản cho khách? Server sẽ kiểm tra lại các điều kiện bắt buộc.',
-                    )
-                  )
-                    void decide(r.kind === 'source' ? 'apply' : 'keep', true);
-                }}
-              >
-                Chấp thuận và xuất bản
-              </button>
-            )}
-            <button
-              disabled={busy || !note.trim()}
-              onClick={() => void decide('revise')}
-            >
-              Yêu cầu chỉnh sửa
-            </button>
-            {r.kind === 'source' && (
-              <button
-                disabled={busy || !note.trim()}
-                onClick={() => void decide('reject')}
-              >
-                Từ chối đề xuất
-              </button>
-            )}
-            {r.kind === 'duplicate' && (
-              <button disabled={busy} onClick={() => void decide('distinct')}>
-                Đây là hai địa điểm riêng
-              </button>
-            )}
-            {r.kind !== 'duplicate' && (
-              <button disabled={busy} onClick={() => void decide('keep')}>
-                Giữ thông tin hiện tại
-              </button>
-            )}
-            <button disabled={busy} onClick={() => setConfirmIgnore(true)}>
-              Bỏ qua việc này
-            </button>
-          </div>
-          {confirmIgnore && (
-            <div className="admin-preview">
-              <p>
-                Việc sẽ được đóng với lý do đã nhập. Địa điểm vẫn giữ nội dung
-                và trạng thái hiển thị hiện tại.
-              </p>
-              <button disabled={busy} onClick={() => void decide('ignore')}>
-                Xác nhận bỏ qua việc
-              </button>
-              <button disabled={busy} onClick={() => setConfirmIgnore(false)}>
-                Quay lại
-              </button>
-            </div>
-          )}
-          <div className="admin-defer">
-            <label>
-              Xem lại sau
-              <select
-                disabled={busy}
-                value={days}
-                onChange={(e) => setDays(Number(e.target.value))}
-              >
-                <option value={1}>1 ngày</option>
-                <option value={7}>1 tuần</option>
-                <option value={30}>30 ngày</option>
-              </select>
-            </label>
-            <button disabled={busy} onClick={() => void decide('later')}>
-              Để sau
-            </button>
-            <small>
-              Hẹn vào{' '}
-              {catalogTime(
-                new Date(Date.now() + days * 86400000).toISOString(),
-              )}{' '}
-              (giờ Việt Nam)
-            </small>
-          </div>
-        </aside>
-      </div>
-    </section>
   );
 }
 

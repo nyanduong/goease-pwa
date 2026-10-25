@@ -3522,3 +3522,605 @@
   color: #6e858e;
   font-size: 11px;
 }
+/* Review queue: list and inspector share the same current draft projection. */
+.admin-check-workspace {
+  margin-top: 22px;
+}
+.admin-check-priority {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid #eed5a4;
+  background: #fff5df;
+  border-radius: 12px;
+  color: #88550b;
+  margin-bottom: 18px;
+}
+.admin-check-priority > span {
+  flex: 1;
+  min-width: 0;
+}
+.admin-check-priority strong {
+  display: block;
+  font-size: 14px;
+}
+.admin-check-priority small {
+  display: block;
+  margin-top: 3px;
+  color: #8b7150;
+}
+.admin-check-priority button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #88550b;
+  white-space: nowrap;
+}
+.admin-check-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.admin-check-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  flex: 1 1 620px;
+}
+.admin-check-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #dfe7e4;
+  border-radius: 9px;
+  white-space: nowrap;
+  color: #50656b;
+  font-size: 13px;
+}
+.admin-check-tabs button > span {
+  padding: 1px 7px;
+  background: #f0f3ef;
+  border-radius: 20px;
+  color: #405b61;
+  font-size: 12px;
+}
+.admin-check-tabs button[aria-pressed='true'] {
+  background: #00878c;
+  border-color: #00878c;
+  color: white;
+}
+.admin-check-tabs button[aria-pressed='true'] > span {
+  background: #fff;
+  color: #007f84;
+}
+.admin-check-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 200px;
+  max-width: 310px;
+}
+.admin-check-search > svg {
+  position: absolute;
+  left: 12px;
+  color: #627e83;
+  pointer-events: none;
+}
+.admin-check-search input {
+  padding-left: 37px !important;
+  margin: 0 !important;
+  min-height: 42px;
+  width: 100%;
+  background: #fff;
+}
+.admin-check-sort {
+  flex: 0 1 160px;
+}
+.admin-check-sort select {
+  margin: 0 !important;
+  min-height: 42px;
+  background: white;
+}
+.admin-check-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.admin-check-list,
+.admin-check-inspector {
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #dfe7e4;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.admin-check-list > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 20px 20px 12px;
+}
+.admin-check-list h2 {
+  font-size: 16px;
+  margin: 0;
+}
+.admin-check-list > header > span {
+  font-size: 12px;
+  color: #799093;
+}
+.admin-check-rows {
+  padding: 0 10px;
+  max-height: 860px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.admin-check-row {
+  display: flex;
+  width: 100%;
+  gap: 14px;
+  align-items: center;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid #e7ece7;
+  background: #fff;
+  padding: 17px 12px;
+  color: var(--ink, #164752);
+  border-radius: 0;
+  min-height: 124px;
+  position: relative;
+}
+.admin-check-row:hover {
+  background: #f5f9f7;
+}
+.admin-check-row[aria-pressed='true'] {
+  background: #e8f3f2;
+  border-radius: 9px;
+  border-color: transparent;
+  box-shadow: inset 4px 0 #008b8d;
+}
+.admin-check-row .admin-place-photo {
+  width: 74px;
+  height: 74px;
+  border-radius: 9px;
+  flex: 0 0 74px;
+}
+.admin-check-row-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+.admin-check-row-copy > strong {
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.admin-check-row-copy > small {
+  color: #647e85;
+  font-size: 12px;
+}
+.admin-check-row-copy time {
+  font-size: 11px;
+  color: #789096;
+}
+.admin-check-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.admin-check-tag {
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #eff3f3;
+  color: #46656c;
+}
+.admin-check-tag.is-draft {
+  color: #346b55;
+  background: #eaf4eb;
+}
+.admin-check-tag.is-source {
+  color: #39698b;
+  background: #e9f2fb;
+}
+.admin-check-tag.is-warning,
+.admin-check-tag.is-duplicate {
+  color: #936416;
+  background: #fff2d7;
+}
+.admin-check-tag.is-price {
+  color: #ac493e;
+  background: #fcebe7;
+}
+.admin-check-list > footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 18px;
+  border-top: 1px solid #e6ece7;
+  font-size: 12px;
+  color: #6d878d;
+  gap: 10px;
+}
+.admin-check-list > footer > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.admin-check-list > footer button {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  border: 0;
+  background: #f1f6f4;
+  border-radius: 7px;
+}
+.admin-check-detail.admin-review-detail {
+  margin: 0;
+  padding: 20px;
+  border: 0;
+  border-radius: 0;
+  background: white;
+  box-shadow: none;
+}
+.admin-check-detail-heading {
+  position: relative;
+  margin-bottom: 14px;
+}
+.admin-check-detail-heading > small {
+  display: block;
+  color: #75888a;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.7px;
+}
+.admin-check-detail-heading h2 {
+  font-size: 21px;
+  line-height: 1.35;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.admin-check-edit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #007d83;
+  text-decoration: underline;
+  font-size: 12px;
+}
+.admin-check-back {
+  display: none;
+}
+.admin-check-hero {
+  display: block;
+  padding: 0 !important;
+  position: relative;
+  width: 100%;
+  border: 0 !important;
+  background: #edf3f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.admin-check-hero .admin-place-photo.is-large {
+  display: block;
+  width: 100%;
+  height: 240px;
+  border-radius: 0;
+}
+.admin-check-hero .admin-place-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: auto;
+}
+.admin-check-hero > span:last-child:not(.admin-place-photo) {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  background: #fffef3eb;
+  padding: 6px 9px;
+  border-radius: 6px;
+}
+.admin-check-checklist {
+  padding: 17px 0 12px;
+}
+.admin-check-checklist h3 {
+  font-size: 14px;
+  margin: 0 0 11px;
+}
+.admin-check-checklist ul {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.admin-check-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.admin-check-checklist li svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.admin-check-checklist .is-ready svg {
+  color: #008b8d;
+}
+.admin-check-checklist .is-missing {
+  color: #a36913;
+}
+.admin-check-checklist .is-neutral {
+  color: #78878c;
+  font-size: 12px;
+}
+.admin-check-impact {
+  font-size: 11px;
+  color: #738b90;
+  margin: 13px 0 0;
+}
+.admin-check-source {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-top: 1px solid #e5ece6;
+  border-bottom: 1px solid #e5ece6;
+  color: #7a8d91;
+  font-size: 11px;
+}
+.admin-check-source a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #5f7e85;
+}
+.admin-check-detail .admin-review-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 15px;
+}
+.admin-check-detail .admin-review-evidence {
+  width: 100%;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.admin-check-detail .admin-review-evidence > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #38676e;
+  padding: 4px 0;
+}
+.admin-check-detail .admin-review-decisions {
+  padding: 0;
+  border: 0;
+  background: none;
+  width: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+.admin-check-detail .admin-review-decisions h3 {
+  font-size: 13px;
+  margin: 0 0 7px;
+}
+.admin-check-detail .admin-review-decisions textarea {
+  min-height: 72px;
+  resize: vertical;
+  font-size: 12px;
+  margin-top: 0;
+  background: #fff;
+}
+.admin-check-detail .admin-review-decisions .admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 12px;
+}
+.admin-check-detail .admin-review-decisions .admin-actions > button {
+  width: auto;
+  flex: 1 1 150px;
+  font-size: 12px;
+  padding: 11px 13px;
+}
+.admin-check-more-actions {
+  width: 100%;
+  padding: 10px 0;
+  color: #5e7b81;
+  font-size: 12px;
+}
+.admin-check-more-actions > summary {
+  cursor: pointer;
+}
+.admin-check-more-actions button {
+  margin: 8px 7px 0 0;
+  width: auto !important;
+  padding: 8px 12px !important;
+  font-size: 12px;
+}
+.admin-check-detail .admin-defer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  border-top: 1px solid #e5ece6;
+  padding-top: 13px;
+  margin-top: 7px;
+  font-size: 12px;
+}
+.admin-check-detail .admin-defer label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  font-size: 12px;
+}
+.admin-check-detail .admin-defer select {
+  width: auto;
+  margin: 0;
+  padding: 7px;
+  min-height: 34px;
+}
+.admin-check-detail .admin-defer small {
+  display: block;
+  width: 100%;
+  font-size: 10px;
+}
+.admin-check-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 58px 24px;
+  color: #839a9e;
+  min-height: 250px;
+  justify-content: center;
+}
+.admin-check-empty h2,
+.admin-check-empty h3 {
+  font-size: 17px;
+  color: #41656b;
+  margin: 14px 0 5px;
+}
+.admin-check-empty p {
+  font-size: 13px;
+  max-width: 310px;
+}
+.admin-check-columns button:focus-visible,
+.admin-check-tools button:focus-visible {
+  outline: 3px solid #70c6c9;
+  outline-offset: 2px;
+}
+@media (min-width: 1500px) {
+  .admin-check-row {
+    min-height: 128px;
+  }
+  .admin-check-hero .admin-place-photo.is-large {
+    height: 280px;
+  }
+}
+@media (max-width: 1100px) {
+  .admin-check-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 12px;
+  }
+  .admin-check-row {
+    gap: 10px;
+    padding: 14px 9px;
+  }
+  .admin-check-row .admin-place-photo {
+    width: 55px;
+    height: 62px;
+    flex-basis: 55px;
+  }
+  .admin-check-detail.admin-review-detail {
+    padding: 16px;
+  }
+  .admin-check-hero .admin-place-photo.is-large {
+    height: 190px;
+  }
+}
+@media (max-width: 760px) {
+  .admin-check-columns {
+    grid-template-columns: 1fr;
+  }
+  .admin-check-rows {
+    max-height: 400px;
+  }
+  .admin-check-search {
+    max-width: none;
+  }
+  .admin-check-tabs {
+    flex-basis: 100%;
+  }
+  .admin-check-priority {
+    align-items: flex-start;
+    padding: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .admin-check-priority button {
+    margin-left: 25px;
+    padding: 0;
+    font-size: 12px;
+  }
+  .admin-check-back {
+    display: block;
+    border: 0;
+    background: none;
+    font-size: 12px;
+    color: #00838a;
+    padding: 0 0 14px;
+  }
+  .admin-check-hero .admin-place-photo.is-large {
+    height: 230px;
+  }
+  .admin-check-tabs button {
+    padding: 8px;
+    font-size: 12px;
+  }
+  .admin-check-list > header {
+    padding: 16px;
+  }
+}
+/* Match the queue's flat rows and quiet links inside legacy operations controls. */
+.admin-operations .admin-check-row {
+  border: 0;
+  border-bottom: 1px solid #e7ece7;
+  background: #fff;
+  border-radius: 0;
+  padding: 17px 12px;
+}
+.admin-operations .admin-check-row:hover {
+  background: #f5f9f7;
+}
+.admin-operations .admin-check-row[aria-pressed='true'] {
+  background: #e8f3f2;
+  border-color: transparent;
+  border-radius: 9px;
+}
+.admin-operations .admin-check-edit-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  min-height: 24px;
+  border-radius: 0;
+  color: #007d83;
+}
+.admin-operations .admin-check-back {
+  border: 0;
+  background: none;
+}
+.admin-check-workspace .admin-check-list h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.admin-check-detail .admin-check-detail-heading h2 {
+  font-size: 21px;
+  margin: 8px 0;
+}
+.admin-check-detail .admin-check-checklist h3 {
+  font-weight: 700;
+}

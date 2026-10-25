@@ -90,7 +90,8 @@ export function parseCommons(
       .replace(/^CC0.*$/, 'CC0')
       .replace(/^Public domain$/i, 'Public-domain');
     if (!license.startsWith('CC') && license !== 'Public-domain') continue;
-    const url = info.thumburl ?? info.url;
+    // Cache the original raster, never a small Commons preview.
+    const url = info.url;
     if (
       (!safeUrl(url, 'upload.wikimedia.org') &&
         !safeUrl(url, 'thumb.wikimedia.org')) ||
@@ -129,7 +130,6 @@ export function wikimediaImages(request: typeof fetch = fetch): FindImages {
       formatversion: '2',
       prop: 'imageinfo',
       iiprop: 'url|mime|extmetadata',
-      iiurlwidth: '960',
       maxlag: '5',
       ...params,
     }).toString();

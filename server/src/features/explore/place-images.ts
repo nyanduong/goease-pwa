@@ -96,7 +96,7 @@ export function placeImages(
       {
         $set: {
           'imageSearch.state': 'searching',
-          'imageSearch.storageVersion': 1,
+          'imageSearch.storageVersion': 2,
           'imageSearch.leaseToken': token,
           'imageSearch.leaseUntil': new Date(Date.now() + 120000),
         },
@@ -144,6 +144,23 @@ export function placeImages(
                     ...candidates[0].image,
                     selection: 'automatic',
                     reviewed: false,
+                  },
+                }
+              : {}),
+            ...(place.imageSearch?.defaultCover &&
+            candidates.find(
+              (c) =>
+                c.image.sourceUrl ===
+                place.imageSearch!.defaultCover!.sourceUrl,
+            )
+              ? {
+                  'imageSearch.defaultCover': {
+                    ...place.toObject().imageSearch!.defaultCover,
+                    url: candidates.find(
+                      (c) =>
+                        c.image.sourceUrl ===
+                        place.imageSearch!.defaultCover!.sourceUrl,
+                    )!.image.url,
                   },
                 }
               : {}),
@@ -220,7 +237,7 @@ export function placeImages(
     await Place.updateMany(
       {
         deletedAt: null,
-        'imageSearch.storageVersion': 1,
+        'imageSearch.storageVersion': { $in: [1, 2] },
         'imageSearch.defaultCover': null,
         'imageSearch.candidates.0': { $exists: true },
       },
@@ -243,7 +260,7 @@ export function placeImages(
       {
         deletedAt: null,
         publicationStatus: { $ne: 'archived' },
-        'imageSearch.storageVersion': { $ne: 1 },
+        'imageSearch.storageVersion': { $ne: 2 },
         $or: [
           { 'imageSearch.leaseUntil': null },
           { 'imageSearch.leaseUntil': { $lt: new Date() } },
@@ -251,12 +268,12 @@ export function placeImages(
       },
       {
         $set: {
-          'imageSearch.storageVersion': 1,
+          'imageSearch.storageVersion': 2,
           'imageSearch.state': 'pending',
-          'imageSearch.candidates': [],
           'imageSearch.attempts': 0,
           'imageSearch.nextAttemptAt': new Date(),
-          'imageSearch.message': 'Đang chuẩn bị ảnh lưu trên Cloudinary.',
+          'imageSearch.message':
+            'Đang lấy ảnh gốc chất lượng cao và lưu trên Cloudinary.',
         },
       },
       { timestamps: false },

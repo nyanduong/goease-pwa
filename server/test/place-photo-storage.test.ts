@@ -30,8 +30,13 @@ test('stores bounded re-encoded photos with deterministic IDs, preserves rights,
       Buffer.from(await file.arrayBuffer()),
     ).metadata();
     assert.equal(metadata.format, 'webp');
-    assert.equal(metadata.width, 1280);
-    assert.equal(metadata.height, 720);
+    assert.equal(metadata.width, 1600);
+    assert.equal(metadata.height, 900);
+    const originalPixels = await sharp(source).raw().toBuffer();
+    const storedPixels = await sharp(Buffer.from(await file.arrayBuffer()))
+      .raw()
+      .toBuffer();
+    assert.deepEqual(storedPixels, originalPixels);
     return Response.json({
       public_id: id,
       format: 'webp',

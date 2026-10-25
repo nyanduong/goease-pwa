@@ -153,6 +153,19 @@ export function adminCatalog(
       value.imageSearch?.defaultCover
     )
       defaultImages = [value.imageSearch.defaultCover];
+    if (
+      value.images.length &&
+      !doc.fieldLocks?.includes('images') &&
+      value.imageSearch?.storageVersion === 2 &&
+      value.imageSearch.state === 'ready'
+    ) {
+      defaultImages = value.images.map((image) => {
+        const original = value.imageSearch!.candidates.find(
+          (candidate) => candidate.image?.sourceUrl === image.sourceUrl,
+        )?.image;
+        return original ? { ...image, url: original.url } : image;
+      });
+    }
     if (needsPlaceDescription(doc.description)) {
       if (
         doc.description.trim() === importedDescriptionPlaceholder &&

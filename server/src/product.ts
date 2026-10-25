@@ -686,6 +686,10 @@ export function createProduct(
           req.query.kind,
         ),
         parse(z.string().trim().max(100).default(''), req.query.q),
+        parse(
+          z.enum(['priority', 'newest']).default('priority'),
+          req.query.sort,
+        ),
       ),
     }),
   );

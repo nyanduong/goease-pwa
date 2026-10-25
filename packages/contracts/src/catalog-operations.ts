@@ -88,6 +88,13 @@ export type CatalogReviewDto = {
   >[];
   currentLocation: { latitude: number; longitude: number } | null;
 };
+export type CatalogReviewListDto = {
+  items: CatalogReviewDto[];
+  total: number;
+  hasMore: boolean;
+  counts: Record<CatalogReviewDto['kind'], number>;
+  publishedCount: number;
+};
 export type CatalogRunDto = {
   id: string;
   state: 'queued' | 'running' | 'retry' | 'paused' | 'succeeded' | 'failed';

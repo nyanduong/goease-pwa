@@ -138,3 +138,8 @@ Kiểm chứng cập nhật ảnh bìa: typecheck/lint/build đạt; 74 unit và
 ## Bổ sung CAT-21 — Giới thiệu địa điểm
 
 Đã triển khai hàng đợi embedded `places.descriptionSearch`, snapshot `descriptionSource`, optional Wikipedia/Wikidata hints trong `sourceSnapshot`; draft cho phép giới thiệu trống, xuất bản yêu cầu nội dung thực. Worker chỉ điền mặc định đúng ngữ cảnh và giữ nội dung admin/field locks; nguồn và bản dịch được truy vết. Dịch dùng quota AI global hiện có. Không thêm collection hoặc index. Hợp đồng, dictionary, giới hạn và kiểm chứng: [WIKIPEDIA-DESCRIPTIONS](WIKIPEDIA-DESCRIPTIONS.md).
+
+
+## Cần kiểm tra và ảnh gốc — 25/10/2026
+
+Hàng chờ #work đổi nhãn Cần kiểm tra, dùng hai cột và count theo phạm vi từ API. imageSearch.storageVersion=2 triển khai ảnh nguyên kích thước từ Wikimedia, WebP lossless trên Cloudinary; xếp lại quan sát cũ, nâng URL cùng sourceUrl cho draft không khóa; giữ bản công khai. Không thêm collection. Hợp đồng và giới hạn: [ADMIN-REVIEW-QUEUE](ADMIN-REVIEW-QUEUE.md).

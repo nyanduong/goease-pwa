@@ -512,3 +512,8 @@ Owner chốt tự lấy giới thiệu vào draft thay câu thông báo import. 
 - Dịch dùng quota global AI hiện có, không vượt giới hạn; lượt lỗi đã reserve vẫn tính. Chưa cấu hình provider hoặc hết quota thì báo chưa dịch được, không giả thành công.
 
 Phạm vi triển khai và hợp đồng: [WIKIPEDIA-DESCRIPTIONS](WIKIPEDIA-DESCRIPTIONS.md).
+
+
+### CAT-20 — Bổ sung chất lượng ảnh 25/10/2026
+
+Owner yêu cầu dùng ảnh chất lượng cao nhất từ nguồn: lấy raster gốc, giữ nguyên độ phân giải, lưu WebP lossless lên Cloudinary thay thumbnail nhỏ. Không upscale. Giới hạn tải/pixel/provider vẫn được kiểm tra và báo lỗi đúng; không cam kết mọi nguồn đều có ảnh nét. Nâng chất lượng đúng cùng ảnh qua sourceUrl, không tự đổi ảnh admin đã chọn hoặc sửa bản công khai. Chi tiết storageVersion=2 và kiểm chứng: [ADMIN-REVIEW-QUEUE](ADMIN-REVIEW-QUEUE.md).

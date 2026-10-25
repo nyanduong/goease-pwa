@@ -40,6 +40,18 @@ test('Commons accepts explicit open rights, strips markup and never marks candid
         }),
       ),
       'name',
+    )[0]?.image.url,
+    'https://upload.wikimedia.org/wikipedia/commons/a/ab/Bridge.jpg',
+  );
+  assert.equal(
+    parseCommons(
+      response(
+        page({
+          thumburl:
+            'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Bridge.jpg/960px-Bridge.jpg',
+        }),
+      ),
+      'name',
     ).length,
     1,
   );

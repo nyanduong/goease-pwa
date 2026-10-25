@@ -445,6 +445,7 @@ export function catalogOperations(
     destinationId?: string,
     kind?: string,
     query = '',
+    sort: 'priority' | 'newest' = 'priority',
   ) {
     await catalog.requireAdmin(actor);
     await reconcileReviews();
@@ -457,8 +458,10 @@ export function catalogOperations(
     const [page] = await Review.aggregate<{
       items: { _id: Types.ObjectId }[];
       count: { total: number }[];
+      groups: { _id: string; count: number }[];
+      published: { total: number }[];
     }>([
-      { $match: { state: 'open', ...(kind ? { kind } : {}) } },
+      { $match: { state: 'open' } },
       {
         $lookup: {
           from: 'places',
@@ -512,11 +515,26 @@ export function catalogOperations(
           ],
         },
       },
-      { $sort: { 'place.publicationStatus': -1, updatedAt: -1, _id: -1 } },
       {
         $facet: {
-          items: [{ $skip: offset }, { $limit: 20 }, { $project: { _id: 1 } }],
-          count: [{ $count: 'total' }],
+          items: [
+            ...(kind ? [{ $match: { kind } }] : []),
+            {
+              $sort:
+                sort === 'newest'
+                  ? { updatedAt: -1, _id: -1 }
+                  : { 'place.publicationStatus': -1, updatedAt: -1, _id: -1 },
+            },
+            { $skip: offset },
+            { $limit: 20 },
+            { $project: { _id: 1 } },
+          ],
+          count: [...(kind ? [{ $match: { kind } }] : []), { $count: 'total' }],
+          groups: [{ $group: { _id: '$kind', count: { $sum: 1 } } }],
+          published: [
+            { $match: { 'place.publicationStatus': 'published' } },
+            { $count: 'total' },
+          ],
         },
       },
     ]);
@@ -530,11 +548,12 @@ export function catalogOperations(
     for (const row of rows) {
       const p = await Place.findOne({ _id: row.placeId, deletedAt: null });
       if (!p) continue;
+      const effective = catalog.dto(await catalog.proposal(p));
       items.push({
         id: String(row._id),
         revision: row.revision,
         kind: row.kind as CatalogReviewDto['kind'],
-        place: catalog.dto(await catalog.proposal(p)),
+        place: effective,
         currentLocation: p.mapLocation
           ? {
               latitude: p.mapLocation.latitude,
@@ -543,7 +562,7 @@ export function catalogOperations(
           : null,
         reason:
           row.kind === 'quality' || row.kind === 'draft'
-            ? catalogQuality(catalog.dto(p), freshnessDays)
+            ? catalogQuality(effective, freshnessDays)
                 .issues.map((i) => i.label)
                 .join(' · ') || reason[row.kind]
             : reason[row.kind as CatalogReviewDto['kind']],
@@ -582,6 +601,13 @@ export function catalogOperations(
       items,
       total,
       hasMore: total > offset + 20,
+      counts: Object.fromEntries(
+        ['draft', 'duplicate', 'source', 'price', 'quality'].map((code) => [
+          code,
+          page?.groups.find((g) => g._id === code)?.count ?? 0,
+        ]),
+      ) as Record<CatalogReviewDto['kind'], number>,
+      publishedCount: page?.published[0]?.total ?? 0,
     };
   }
   async function decide(

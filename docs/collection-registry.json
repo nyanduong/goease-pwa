@@ -692,6 +692,12 @@
           "string?; string?",
           "optional",
           "IMPLEMENTED: max300 Wikipedia tag; Q positive integer Wikidata hint."
+        ],
+        [
+          "imageSearch.storageVersion",
+          "number",
+          "2 for current pipeline",
+          "IMPLEMENTED original raster dimensions + lossless WebP Cloudinary. Legacy observations requeued, matching defaultCover sourceUrl upgraded. Draft unlocked selected photos may project same-source high-resolution URL; public snapshot unchanged. See ADMIN-REVIEW-QUEUE.md."
         ]
       ],
       "indexes": "Unique partial {source.provider,source.externalId} khi có externalId; {destinationId,publicationStatus,deletedAt}; 2dsphere location nếu dùng near.",

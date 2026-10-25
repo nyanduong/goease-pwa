@@ -26,27 +26,29 @@ test('V3 operator preserves public content through proposals, publishes a frozen
     path: 'test-results/catalog-evidence/00-dashboard-1366.png',
     fullPage: true,
   });
-  await page.getByRole('link', { name: 'Ngoại lệ', exact: true }).click();
+  await page.getByRole('link', { name: 'Cần kiểm tra', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Ngoại lệ', exact: true }),
+    page.getByRole('heading', { name: 'Cần kiểm tra', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: /Thông tin nguồn thay đổi/ }),
+    page.getByRole('button', { name: /Nguồn thay đổi/ }),
   ).toBeVisible();
   expect(
-    (await page.locator('.admin-work-row h3').first().boundingBox())!.width,
-  ).toBeGreaterThan(250);
+    (await page
+      .locator('.admin-check-row-copy > strong')
+      .first()
+      .boundingBox())!.width,
+  ).toBeGreaterThan(150);
   expect(
-    (await page.locator('.admin-work-row').first().boundingBox())!.height,
+    (await page.locator('.admin-check-row').first().boundingBox())!.height,
   ).toBeLessThan(250);
   await page.screenshot({
     path: 'test-results/catalog-evidence/01-work-1366.png',
     fullPage: true,
   });
   await page
-    .getByRole('article')
+    .locator('.admin-check-row')
     .filter({ hasText: 'Quán An đã biên tập' })
-    .getByRole('button', { name: 'Xem và quyết định' })
     .click();
   await expect(
     page.getByRole('cell', {
@@ -272,7 +274,7 @@ test('V3 operator preserves public content through proposals, publishes a frozen
         Math.floor(viewport.width / zoom),
       );
       for (const tab of [
-        'Ngoại lệ',
+        'Cần kiểm tra',
         'Địa điểm',
         'Quy tắc & lịch',
         'Lịch sử & phê duyệt',
@@ -282,7 +284,7 @@ test('V3 operator preserves public content through proposals, publishes a frozen
           .getByRole('link', { name: tab, exact: true })
           .click();
         await expect(page.locator('main')).toBeVisible();
-        if (tab === 'Ngoại lệ')
+        if (tab === 'Cần kiểm tra')
           await expect(page.locator('.admin-overview')).toBeVisible();
         if (tab === 'Quy tắc & lịch')
           await expect(page.getByLabel('Tần suất')).toBeVisible();
@@ -296,7 +298,7 @@ test('V3 operator preserves public content through proposals, publishes a frozen
           ),
         ).toBe(true);
         await page.screenshot({
-          path: `test-results/catalog-evidence/${zoom === 1 ? 'normal' : 'zoom'}-${viewport.width}-${tab === 'Ngoại lệ' ? 'work' : tab === 'Địa điểm' ? 'places' : tab === 'Lịch sử & phê duyệt' ? 'history' : 'automatic'}.png`,
+          path: `test-results/catalog-evidence/${zoom === 1 ? 'normal' : 'zoom'}-${viewport.width}-${tab === 'Cần kiểm tra' ? 'work' : tab === 'Địa điểm' ? 'places' : tab === 'Lịch sử & phê duyệt' ? 'history' : 'automatic'}.png`,
           fullPage: false,
         });
       }
@@ -306,7 +308,7 @@ test('V3 operator preserves public content through proposals, publishes a frozen
     await cdp.send('Emulation.clearDeviceMetricsOverride');
     await page.setViewportSize({ width, height: 800 });
     for (const tab of [
-      'Ngoại lệ',
+      'Cần kiểm tra',
       'Địa điểm',
       'Quy tắc & lịch',
       'Lịch sử & phê duyệt',
@@ -322,7 +324,7 @@ test('V3 operator preserves public content through proposals, publishes a frozen
         ),
       ).toBe(true);
       await page.screenshot({
-        path: `test-results/catalog-evidence/narrow-${width}-${tab === 'Địa điểm' ? 'places' : tab === 'Ngoại lệ' ? 'work' : tab === 'Quy tắc & lịch' ? 'rules' : 'history'}.png`,
+        path: `test-results/catalog-evidence/narrow-${width}-${tab === 'Địa điểm' ? 'places' : tab === 'Cần kiểm tra' ? 'work' : tab === 'Quy tắc & lịch' ? 'rules' : 'history'}.png`,
         fullPage: false,
       });
     }
@@ -390,12 +392,12 @@ test('V3 operator preserves public content through proposals, publishes a frozen
   await page
     .getByRole('button', { name: '← Về danh sách', exact: true })
     .click();
-  await page.getByRole('link', { name: 'Ngoại lệ', exact: true }).click();
+  await page.getByRole('link', { name: 'Cần kiểm tra', exact: true }).click();
   const duplicate = page
-    .getByRole('article')
+    .locator('.admin-check-row')
     .filter({ hasText: 'Quán Bình' })
     .first();
-  await duplicate.getByRole('button', { name: 'Xem và quyết định' }).click();
+  await duplicate.click();
   await page.getByRole('button', { name: 'Để sau', exact: true }).click();
   await expect(
     page.getByRole('status').filter({ hasText: 'Đã hẹn xem lại' }),
