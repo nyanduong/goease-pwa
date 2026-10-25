@@ -28,6 +28,7 @@ const accessPath = '.local/admin-v3-review-access.json';
 const config: Config = {
   PHOTO_WORKER_CONCURRENCY: 3,
   DESCRIPTION_WORKER_CONCURRENCY: 3,
+  DESCRIPTION_TRANSLATION_ENABLED: false,
   VISIT_WORKER_CONCURRENCY: 4,
   REGISTRATION_OTP_REQUIRED: false,
   NODE_ENV: 'test',

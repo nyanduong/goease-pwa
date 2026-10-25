@@ -1,5 +1,11 @@
 # Gemini planner — local customer MVP (2026-10-23)
 
+26/10/2026: arranger thêm chọn cụm tọa độ bán kính12km quanh từng ứng viên, ưu tiên cụm nhiều ứng viên nhất khi vẫn đủ2tham quan/ngày và2quán ăn. Validate ID theo catalog gốc trước; thiếu tọa độ hoặc không có cụm đủ coverage giữ luồng cũ. Không dùng khoảng cách thẳng làm kết quả chỉ đường. Bản live đầu có1điểm Hội An chen vào; sửa được kiểm lại bằng phản hồi model đã lưu, không gọi model lần hai. Trip giữ9activityId nguồn AI gốc và1điểm thay source=manual đúng provenance.
+
+**Runtime26/10/2026 — AI-02/TRIP-08:** plannerVersion5, prompt vietnam-v2/vietnam-rank-v2/goe-v5; apply tiếp tục nhận goe-v1..v4. Date reschedule dùng date-reschedule-v2/plannerVersion5. Candidate tối đa30, dành chỗ cho tối đa20tham quan+8bữa ăn+2café khi có2café; không có café giữ20+10. Projection thêm boolean cafeSuitable, không gửi thêm mô tả/private notes. Balanced/active có thể dùng1café được model chọn trước17:30, không thay bữa ăn; relaxed giữ4điểm. Ưu tiên đa dạng quán giữa ngày khi đủ lựa chọn. Cafe kind=free_time và reschedule giữ/thay đúng café. Không thêm Mongo/REST schema hoặc nới quota/provider failure guards.
+
+Catalog thật Đà Nẵng và kiểm thử2ngày: [DANANG-DEMO-2026-10-26](DANANG-DEMO-2026-10-26.md). Kiểm tra arranger bằng thứ tự được cung cấp không phải bằng chứng model thật; receipt live riêng ghi số provider call và kết quả. Không tự thử lại sau lượt Fulldichvu duy nhất owner cho phép.
+
 **Cập nhật 24/10/2026 — CAT-16:** runtime hiện dùng mọi destination published/VN có catalog đủ điều kiện, không giới hạn Hội An. Một điểm đến/chuyến, 1–7 ngày; 3 miền/8 vùng là taxonomy biên tập. Prompt vietnam-v1/vietnam-rank-v1/goe-v4 và plannerVersion4; quota/privacy/owner/revision giữ nguyên, apply nhận cả Goe cũ. Các ghi nhận Hội An bên dưới là lịch sử triển khai/thử nghiệm, chưa chứng minh dữ liệu thật toàn quốc. Xem [Việt Nam planner và bàn giao](VIETNAM-PLANNER.md).
 
 ## Implemented scope

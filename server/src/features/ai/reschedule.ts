@@ -12,6 +12,7 @@ import {
   eligibleForPlanner,
   outsideKnownHours,
   mealSuitable,
+  cafeSuitable,
 } from './itinerary-policy.js';
 
 const minutes = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3));
@@ -51,20 +52,30 @@ export function rescheduleDates(
         continue;
       }
       const original = places.find((p) => p.id === activity.placeId);
+      // Goe's place-linked free_time stops are coffee breaks. Keep that purpose
+      // even if the original cafe no longer passes the current catalog filters.
+      const coffeeBreak =
+        activity.kind === 'free_time' &&
+        (activity.source === 'ai' || (original && cafeSuitable(original)));
       const sameKind = (p: PlaceDto) =>
-        activity.kind === 'meal' ? mealSuitable(p) : p.category !== 'food';
+        activity.kind === 'meal'
+          ? mealSuitable(p)
+          : coffeeBreak
+            ? cafeSuitable(p)
+            : p.category !== 'food';
       const alternatives = places.filter(
         (p) =>
           p.destinationId === day.destinationId &&
           sameKind(p) &&
           !used.has(p.id) &&
-          !occupied.has(p.id),
+          (coffeeBreak || !occupied.has(p.id)),
       );
       // Prefer the same category; preserve the original stop whenever its hours permit.
       alternatives.sort(
         (a, b) =>
+          Number(occupied.has(a.id)) - Number(occupied.has(b.id)) ||
           Number(b.category === original?.category) -
-          Number(a.category === original?.category),
+            Number(a.category === original?.category),
       );
       const candidates = [
         ...(original && sameKind(original) && !used.has(original.id)

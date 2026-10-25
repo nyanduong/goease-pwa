@@ -722,7 +722,11 @@ export function PlaceDetail({
               target="_blank"
               rel="noreferrer"
             >
-              Wikipedia · {place.descriptionSource.title}
+              {new URL(place.descriptionSource.sourceUrl).hostname ===
+              'en.wikivoyage.org'
+                ? 'Wikivoyage'
+                : 'Wikipedia'}{' '}
+              · {place.descriptionSource.title}
             </a>{' '}
             ·{' '}
             <a

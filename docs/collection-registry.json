@@ -1,5 +1,20 @@
 {
   "version": "0.2",
+  "danangDemo20261026": {
+    "brRefs": ["AI-02", "TRIP-08", "CAT-23"],
+    "storageChanged": false,
+    "spatialPolicy": "Derived 12km anchor cluster when all coordinates and required coverage exist; validate original catalog IDs first; no route/duration guarantee or stored field.",
+    "plannerVersion": "5",
+    "promptVersions": [
+      "vietnam-v2",
+      "vietnam-rank-v2",
+      "goe-v5",
+      "date-reschedule-v2"
+    ],
+    "providerProjection": "Derived cafeSuitable boolean only; no new stored place/public DTO field.",
+    "activityKind": "Existing free_time enum for Goe coffee breaks; preserve cafe purpose on reschedule.",
+    "documentation": "DANANG-DEMO-2026-10-26.md"
+  },
   "date": "2026-10-22",
   "sourceCommit": "685552e549a474bc300d361c9343a82c3a7c181b",
   "status": "accepted-design-baseline-with-local-product-subset",
@@ -780,7 +795,7 @@
           "descriptionSource",
           "embedded object?",
           "null",
-          "IMPLEMENTED: source result snapshot saved with editorial content and versions; public exposes attribution only."
+          "IMPLEMENTED: source result snapshot saved with editorial content and versions; public exposes attribution only. CAT-21 free demo also uses matched Wikivoyage CC-BY-SA-4.0 extracts/adaptations with actual source URL/title/revision. No shape change or new automatic provider. DESCRIPTION_TRANSLATION_ENABLED=false disables external translation and usage reservation (server config, not a Mongo field)."
         ],
         [
           "sourceSnapshot.wikipedia; sourceSnapshot.wikidata",

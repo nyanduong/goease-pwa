@@ -28,6 +28,60 @@ export function mealSuitable(p: PlaceDto) {
   );
 }
 
+export function cafeSuitable(p: PlaceDto) {
+  return (
+    p.category === 'food' &&
+    p.venueType === 'restaurant' &&
+    !mealSuitable(p) &&
+    /cà\s*phê|cafe|café|coffee|espresso/i.test(`${p.name} ${p.description}`)
+  );
+}
+
+export function selectPlannerCandidates(pools: {
+  visits: PlaceDto[];
+  meals: PlaceDto[];
+  cafes: PlaceDto[];
+  other: PlaceDto[];
+}) {
+  const visits = pools.visits.slice(0, 20),
+    cafes = pools.cafes.slice(0, 2),
+    meals = pools.meals.slice(
+      0,
+      Math.min(10, 30 - visits.length - cafes.length),
+    );
+  return [...visits, ...meals, ...cafes, ...pools.other].slice(0, 30);
+}
+
+function compactPlannerPlaces(places: PlaceDto[], days: number) {
+  if (places.some((p) => !p.mapLocation)) return places;
+  const radians = (degrees: number) => (degrees * Math.PI) / 180;
+  const distanceKm = (a: PlaceDto, b: PlaceDto) => {
+    const from = a.mapLocation!,
+      to = b.mapLocation!;
+    const latitude = radians(to.latitude - from.latitude),
+      longitude = radians(to.longitude - from.longitude);
+    const arc =
+      Math.sin(latitude / 2) ** 2 +
+      Math.cos(radians(from.latitude)) *
+        Math.cos(radians(to.latitude)) *
+        Math.sin(longitude / 2) ** 2;
+    return 6371 * 2 * Math.asin(Math.sqrt(Math.min(1, arc)));
+  };
+  let best: PlaceDto[] | undefined;
+  // Coordinates only guide a compact area choice; this is not road routing or
+  // a guarantee that any two stops are within twelve kilometres of each other.
+  for (const anchor of places) {
+    const nearby = places.filter((p) => distanceKm(anchor, p) <= 12);
+    if (
+      nearby.filter((p) => p.category !== 'food').length < days * 2 ||
+      nearby.filter(mealSuitable).length < 2
+    )
+      continue;
+    if (!best || nearby.length > best.length) best = nearby;
+  }
+  return best ?? places;
+}
+
 // AI ranks candidates; the server constructs a feasible day from the supplied
 // catalog. This is not a fallback for provider errors or a routing service.
 export function arrangeCompleteDays(
@@ -60,8 +114,15 @@ export function arrangeCompleteDays(
       'AI_UNKNOWN_SELECTION',
       'Goe chọn nhầm mã địa điểm ngoài danh mục. Lịch cũ vẫn được giữ.',
     );
-  const visits = places.filter((p) => p.category !== 'food');
-  const meals = places.filter(mealSuitable);
+  // Validate provider IDs against the original catalog above, before selecting
+  // a smaller area. A valid outlying ID is not an invented provider selection.
+  const localPlaces = compactPlannerPlaces(places, input.trip.days.length);
+  const visits = localPlaces.filter((p) => p.category !== 'food');
+  const meals = localPlaces.filter(mealSuitable);
+  const cafes = localPlaces.filter(
+    (p) =>
+      cafeSuitable(p) && eligibleForPlanner(p, input.trip.travelers.totalCount),
+  );
   if (visits.length < input.trip.days.length * 2 || meals.length < 2)
     throw new HttpError(
       409,
@@ -77,7 +138,10 @@ export function arrangeCompleteDays(
         [...pool].sort((a, b) => {
           const ai = ranked.indexOf(a.id),
             bi = ranked.indexOf(b.id);
-          return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+          return (
+            Number(used.has(a.id)) - Number(used.has(b.id)) ||
+            (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi)
+          );
         });
       const stops: GeneratedPlan['days'][number]['stops'] = [];
       let end = 510;
@@ -111,7 +175,7 @@ export function arrangeCompleteDays(
               end: toClock(finish),
             });
             end = finish;
-            if (visit) used.add(p.id);
+            used.add(p.id);
             return true;
           }
         }
@@ -126,6 +190,16 @@ export function arrangeCompleteDays(
           409,
           'AI_DAY_COVERAGE',
           'Goe chưa ghép được điểm tham quan và bữa trưa theo giờ hoạt động.',
+        );
+      // A coffee break is optional and never displaces the two visits or meals.
+      // Finish by 17:30 so dinner retains its existing 18:00 earliest start.
+      if (max > 4)
+        take(
+          cafes.filter((p) => ranked.includes(p.id)),
+          900,
+          1020,
+          1050,
+          false,
         );
       // Keep at least two unused visits for each remaining day before adding extras.
       const remainingDays = plan.days.length - plan.days.indexOf(day) - 1;
@@ -239,6 +313,7 @@ export function plannerCatalog(places: PlaceDto[]) {
     category: p.category,
     venueType: p.venueType,
     mealSuitable: mealSuitable(p),
+    cafeSuitable: cafeSuitable(p),
     durationMinutes: p.planning!.durationMinutes,
     location: p.planning!.locationQuery,
     coordinates: p.mapLocation

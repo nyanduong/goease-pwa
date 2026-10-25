@@ -1,5 +1,7 @@
 # GoEase
 
+**Demo Đà Nẵng2ngày1đêm (26/10/2026):** đã có10mục trong cụm Đà Nẵng/Sơn Trà/Ngũ Hành Sơn:4tham quan,4quán ăn,2café, dùng giá/giờ có nguồn. Café không thay bữa trưa/tối; model vẫn chịu quota và kiểm tra lịch. Xem [dữ liệu, điều kiện giá và bằng chứng thử nghiệm](docs/DANANG-DEMO-2026-10-26.md); đây không phải xác nhận đủ toàn bộ tỉnh hoặc báo giá gồm khách sạn/đi lại.
+
 Hộp xác nhận trong ứng dụng dùng modal GoEase cho thao tác bỏ thay đổi, xóa, xuất bản và thu hồi chia sẻ. Xem [phạm vi rà soát và hành vi bàn phím](docs/CONFIRMATION-MODALS.md).
 
 **Giờ mở cửa và giá từ nguồn (CAT-22):** draft nhập mới/cũ tự xếp hàng đọc OSM và website liên kết có dữ liệu cấu trúc. Admin → địa điểm → Giá & giờ mở cửa → kiểm tra từng mục → lưu/xuất bản. Admin nhập giá một lần; cùng giá đã xác nhận được dùng hiển thị và tính ngân sách khi đủ điều kiện (CAT-23). Xem [VISIT-INFORMATION](docs/VISIT-INFORMATION.md) và [giá dùng chung](docs/SHARED-PLACE-PRICE.md).
@@ -263,6 +265,7 @@ Admin đã có tìm/xem trước/nhập bản nháp từ Geoapify cho Hội An. 
 Địa điểm mới tự nhận ứng viên Wikimedia vào nháp. Admin chọn ảnh thật, lưu đề xuất rồi xuất bản; thiếu cover đã duyệt bị chặn ở server, không có AI fallback. Hướng dẫn: [WIKIMEDIA-PHOTOS](docs/WIKIMEDIA-PHOTOS.md).
 
 Admin có trang **Tiến trình lấy dữ liệu** để theo dõi hàng đợi giờ/giá, lọc tỉnh/trạng thái/dữ liệu thiếu và mở editor; tự cập nhật mỗi 5 giây. Xem [hướng dẫn](docs/ADMIN-VISIT-PROGRESS.md).
+
 # Bổ sung dữ liệu toàn quốc
 
 Admin → Đợt thu thập → **Bổ sung dữ liệu toàn quốc**: tiến độ từng mục, lọc kết quả, tạm dừng/tiếp tục, chạy tiếp sau khi API khởi động lại. Kết quả nguồn vẫn chờ duyệt, không tự xuất bản. Nguồn hiện hỗ trợ và giới hạn: [BULK-ENRICHMENT](docs/BULK-ENRICHMENT.md).

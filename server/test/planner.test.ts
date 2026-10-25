@@ -18,6 +18,8 @@ import {
   itineraryPolicy,
   outsideKnownHours,
   plannerCatalog,
+  cafeSuitable,
+  selectPlannerCandidates,
 } from '../src/features/ai/itinerary-policy.js';
 const destinationId = '000000000000000000000004',
   placeId = '100000000000000000000001';
@@ -425,7 +427,7 @@ test('complete Hoi An days need no budget, include meals, use verified prices an
   const catalog: PlaceDto[] = Array.from({ length: 6 }, (_, i) => ({
     ...place,
     id: `20000000000000000000000${i}`,
-    name: `Catalog ${i}`,
+    name: i < 4 ? `Catalog ${i}` : `Restaurant ${i}`,
     category: i < 4 ? 'culture' : 'food',
     venueType: i < 4 ? 'place' : 'restaurant',
     planning: { ...place.planning!, durationMinutes: 60 },
@@ -581,5 +583,384 @@ test('server arranges full days from AI choices, avoids monthly closures and use
   );
   assert.throws(() =>
     arrangeCompleteDays(ranked, request, catalog.slice(0, 4)),
+  );
+});
+
+const coffeeRequest = () => {
+  const request = structuredClone(input);
+  request.trip.endDate = '2026-11-13';
+  request.trip.days.push({
+    ...structuredClone(request.trip.days[0]!),
+    dayId: randomUUID(),
+    date: '2026-11-13',
+  });
+  return request;
+};
+
+const coffeeCatalog = (): PlaceDto[] =>
+  Array.from({ length: 10 }, (_, i) => ({
+    ...place,
+    id: `40000000000000000000000${i}`,
+    name: i < 4 ? `Visit ${i}` : i < 8 ? `Restaurant ${i}` : `Coffee ${i}`,
+    category: i < 4 ? 'culture' : 'food',
+    venueType: i < 4 ? 'place' : 'restaurant',
+    planning: {
+      ...place.planning!,
+      durationMinutes: i < 4 ? 60 : i < 8 ? 45 : 30,
+    },
+    referencePrice: {
+      ...place.referencePrice!,
+      amountMinor: i < 8 ? 20000 : 35000,
+    },
+  }));
+
+test('balanced and active two-day plans keep visits and meals, add ranked coffee breaks and vary venues', () => {
+  const catalog = coffeeCatalog(),
+    ranked = { placeIds: catalog.map((p) => p.id) };
+  for (const pace of ['balanced', 'active'] as const) {
+    const request = coffeeRequest();
+    request.trip.preferences.pace = pace;
+    const before = JSON.stringify(request);
+    const proposal = validatePlan(
+      arrangeCompleteDays(ranked, request, catalog),
+      request,
+      catalog,
+      randomUUID(),
+    );
+    for (const day of proposal.trip.days) {
+      assert.equal(day.activities.length, 5);
+      assert.equal(day.activities.filter((a) => a.kind === 'visit').length, 2);
+      assert.equal(day.activities.filter((a) => a.kind === 'meal').length, 2);
+      const breaks = day.activities.filter((a) => a.kind === 'free_time');
+      assert.equal(breaks.length, 1);
+      assert.equal(breaks[0]!.estimatedCost.amountMinor, 35000);
+      assert.ok(breaks[0]!.endLocalTime! <= '17:30');
+    }
+    for (const kind of ['visit', 'meal', 'free_time'] as const) {
+      const stops = proposal.trip.days.flatMap((d) =>
+        d.activities.filter((a) => a.kind === kind),
+      );
+      assert.equal(new Set(stops.map((a) => a.placeId)).size, stops.length);
+    }
+    assert.equal(proposal.budget.missingCostCount, 0);
+    assert.equal(JSON.stringify(request), before);
+  }
+});
+
+test('coffee cannot satisfy lunch or dinner coverage even when imported as a restaurant', () => {
+  const catalog = coffeeCatalog(),
+    request = coffeeRequest();
+  const invalid = {
+    days: request.trip.days.map((d, i) => ({
+      date: d.date,
+      stops: [
+        { placeId: catalog[i * 2]!.id, start: '09:00', end: '10:00' },
+        { placeId: catalog[8]!.id, start: '12:00', end: '12:30' },
+        { placeId: catalog[i * 2 + 1]!.id, start: '14:00', end: '15:00' },
+        { placeId: catalog[9]!.id, start: '18:00', end: '18:30' },
+      ],
+    })),
+  };
+  assert.throws(
+    () => validatePlan(invalid, request, catalog, randomUUID()),
+    (e) => e instanceof HttpError && e.code === 'AI_INVALID_OUTPUT',
+  );
+  assert.throws(
+    () =>
+      arrangeCompleteDays(
+        {
+          placeIds: catalog
+            .filter((p) => !p.name.startsWith('Restaurant'))
+            .map((p) => p.id),
+        },
+        request,
+        catalog.filter((p) => !p.name.startsWith('Restaurant')),
+      ),
+    (e) => e instanceof HttpError && e.code === 'AI_CATALOG_COVERAGE',
+  );
+  for (const name of ['Cà phê Cộng', 'Café', 'Coffee & Tea', 'Espresso']) {
+    const cafe = { ...catalog[8]!, name };
+    assert.equal(cafeSuitable(cafe), true);
+    assert.equal(plannerCatalog([cafe])[0]!.mealSuitable, false);
+    assert.equal(plannerCatalog([cafe])[0]!.cafeSuitable, true);
+  }
+  assert.equal(
+    cafeSuitable({ ...catalog[8]!, description: 'Cơm, mì, món chay' }),
+    false,
+  );
+});
+
+test('two meal venues and one cafe may repeat across days when there are no fresh alternatives', () => {
+  const request = coffeeRequest(),
+    catalog = coffeeCatalog().filter((_, i) => i < 6 || i === 8);
+  const proposal = validatePlan(
+    arrangeCompleteDays(
+      { placeIds: catalog.map((p) => p.id) },
+      request,
+      catalog,
+    ),
+    request,
+    catalog,
+    randomUUID(),
+  );
+  assert.ok(proposal.trip.days.every((d) => d.activities.length === 5));
+  assert.equal(
+    new Set(
+      proposal.trip.days.flatMap((d) =>
+        d.activities.filter((a) => a.kind === 'meal').map((a) => a.placeId),
+      ),
+    ).size,
+    2,
+  );
+  assert.equal(
+    new Set(
+      proposal.trip.days.flatMap((d) =>
+        d.activities
+          .filter((a) => a.kind === 'free_time')
+          .map((a) => a.placeId),
+      ),
+    ).size,
+    1,
+  );
+});
+
+test('closed, unpriced and unranked cafes stay optional; relaxed days retain four stops', () => {
+  const catalog = coffeeCatalog(),
+    request = coffeeRequest();
+  const variants = [
+    catalog.map((p, i) =>
+      i < 8 ? p : { ...p, openingHoursNote: '08:00–09:00' },
+    ),
+    catalog.map((p, i) => (i < 8 ? p : { ...p, referencePrice: null })),
+  ];
+  for (const candidates of variants) {
+    const result = validatePlan(
+      arrangeCompleteDays(
+        { placeIds: candidates.map((p) => p.id) },
+        request,
+        candidates,
+      ),
+      request,
+      candidates,
+      randomUUID(),
+    );
+    assert.ok(result.trip.days.every((d) => d.activities.length === 4));
+    assert.ok(
+      result.trip.days.every((d) =>
+        d.activities.every((a) => a.kind !== 'free_time'),
+      ),
+    );
+  }
+  const unranked = arrangeCompleteDays(
+    { placeIds: catalog.slice(0, 8).map((p) => p.id) },
+    request,
+    catalog,
+  );
+  assert.ok(unranked.days.every((d) => d.stops.length === 4));
+  request.trip.preferences.pace = 'relaxed';
+  const relaxed = validatePlan(
+    arrangeCompleteDays(
+      { placeIds: catalog.map((p) => p.id) },
+      request,
+      catalog,
+    ),
+    request,
+    catalog,
+    randomUUID(),
+  );
+  assert.ok(relaxed.trip.days.every((d) => d.activities.length === 4));
+  assert.ok(
+    relaxed.trip.days.every((d) =>
+      d.activities.every((a) => a.kind !== 'free_time'),
+    ),
+  );
+});
+
+test('the thirty-candidate cap reserves coffee choices without starving visits or meal restaurants', () => {
+  const catalog = coffeeCatalog();
+  const group = (count: number, source: PlaceDto, prefix: string) =>
+    Array.from({ length: count }, (_, i) => ({
+      ...source,
+      id: prefix + String(i).padStart(22, '0'),
+    }));
+  const pools = {
+    visits: group(25, catalog[0]!, '51'),
+    meals: group(14, catalog[4]!, '52'),
+    cafes: group(3, catalog[8]!, '53'),
+    other: group(6, { ...catalog[8]!, name: 'Other food' }, '54'),
+  };
+  const selected = selectPlannerCandidates(pools);
+  assert.equal(selected.length, 30);
+  assert.equal(selected.filter((p) => p.category !== 'food').length, 20);
+  assert.equal(
+    selected.filter((p) => p.name.startsWith('Restaurant')).length,
+    8,
+  );
+  assert.equal(selected.filter(cafeSuitable).length, 2);
+  const withoutCafe = selectPlannerCandidates({ ...pools, cafes: [] });
+  assert.equal(withoutCafe.length, 30);
+  assert.equal(
+    withoutCafe.filter((p) => p.name.startsWith('Restaurant')).length,
+    10,
+  );
+});
+
+test('date changes retain coffee breaks and replace a closed cafe with a cafe, preserving private edits', () => {
+  const request = coffeeRequest(),
+    catalog = coffeeCatalog();
+  const trip = validatePlan(
+    arrangeCompleteDays(
+      { placeIds: catalog.map((p) => p.id) },
+      request,
+      catalog,
+    ),
+    request,
+    catalog,
+    randomUUID(),
+  ).trip;
+  const coffee = trip.days[0]!.activities.find((a) => a.kind === 'free_time')!;
+  coffee.notes = 'Ghi chú riêng lúc uống cà phê';
+  const before = JSON.stringify(trip);
+  const unchanged = rescheduleDates(trip, '2026-11-13', '2026-11-14', catalog);
+  assert.equal(
+    unchanged.trip.days[0]!.activities.find((a) => a.kind === 'free_time')!
+      .placeId,
+    coffee.placeId,
+  );
+  const closed = catalog.map((p) =>
+    p.id === coffee.placeId
+      ? { ...p, openingHoursNote: '07:00–22:00; nghỉ thứ sáu' }
+      : p,
+  );
+  const alternate = {
+    ...catalog[8]!,
+    id: '400000000000000000000010',
+    name: 'Café thay thế',
+  };
+  const replacement = rescheduleDates(trip, '2026-11-13', '2026-11-14', [
+    ...closed,
+    alternate,
+  ]);
+  const saved = replacement.trip.days[0]!.activities.find(
+    (a) => a.kind === 'free_time',
+  )!;
+  assert.equal(saved.placeId, alternate.id);
+  assert.equal(saved.activityId, coffee.activityId);
+  assert.equal(saved.notes, coffee.notes);
+  assert.equal(saved.estimatedCost.amountMinor, 35000);
+  const repeated = rescheduleDates(trip, '2026-11-13', '2026-11-14', closed);
+  assert.equal(
+    repeated.trip.days[0]!.activities.find((a) => a.kind === 'free_time')!
+      .placeId,
+    catalog[9]!.id,
+  );
+  assert.throws(
+    () =>
+      rescheduleDates(
+        trip,
+        '2026-11-13',
+        '2026-11-14',
+        closed.filter((p) => !cafeSuitable(p)),
+      ),
+    (e) => e instanceof HttpError && e.code === 'DATE_SCHEDULE_UNAVAILABLE',
+  );
+  assert.equal(JSON.stringify(trip), before);
+});
+
+const mappedCoffeeCatalog = (): PlaceDto[] =>
+  coffeeCatalog().map((p, i) => ({
+    ...p,
+    mapLocation: {
+      latitude: 16.055 + i * 0.001,
+      longitude: 108.22 + i * 0.001,
+      label: 'Khu vực kiểm thử',
+      precision: 'area',
+      sourceUrl: 'https://example.invalid/coordinates',
+      checkedAt: catalogToday(),
+    },
+  }));
+
+test('full days choose a complete compact area despite the AI ranking a distant same-province visit first', () => {
+  const request = coffeeRequest(),
+    local = mappedCoffeeCatalog();
+  const outlier: PlaceDto = {
+    ...local[0]!,
+    id: '400000000000000000000011',
+    name: 'Distant visit in the same province',
+    mapLocation: {
+      ...local[0]!.mapLocation!,
+      latitude: 15.8771754,
+      longitude: 108.3342411,
+    },
+  };
+  const catalog = [...local, outlier],
+    before = JSON.stringify(catalog);
+  const ranked = { placeIds: [outlier.id, ...local.map((p) => p.id)] };
+  const proposal = validatePlan(
+    arrangeCompleteDays(ranked, request, catalog),
+    request,
+    catalog,
+    randomUUID(),
+  );
+  const stops = proposal.trip.days.flatMap((d) => d.activities);
+  assert.equal(stops.length, 10);
+  assert.ok(stops.every((a) => a.placeId !== outlier.id));
+  assert.equal(stops.filter((a) => a.kind === 'visit').length, 4);
+  assert.equal(stops.filter((a) => a.kind === 'meal').length, 4);
+  assert.equal(stops.filter((a) => a.kind === 'free_time').length, 2);
+  assert.equal(new Set(stops.map((a) => a.placeId)).size, 10);
+  assert.equal(JSON.stringify(catalog), before);
+  assert.throws(
+    () =>
+      arrangeCompleteDays(
+        { placeIds: [...ranked.placeIds, 'ffffffffffffffffffffffff'] },
+        request,
+        catalog,
+      ),
+    (e) => e instanceof HttpError && e.code === 'AI_UNKNOWN_SELECTION',
+  );
+});
+
+test('compact area selection keeps the previous behavior when coordinates are missing or no area covers the trip', () => {
+  const request = coffeeRequest(),
+    catalog = mappedCoffeeCatalog();
+  catalog[0]!.mapLocation = {
+    ...catalog[0]!.mapLocation!,
+    latitude: 15.8771754,
+    longitude: 108.3342411,
+  };
+  const ranked = { placeIds: catalog.map((p) => p.id) };
+  const noCompleteArea = validatePlan(
+    arrangeCompleteDays(ranked, request, catalog),
+    request,
+    catalog,
+    randomUUID(),
+  );
+  assert.ok(
+    noCompleteArea.trip.days
+      .flatMap((d) => d.activities)
+      .some((a) => a.placeId === catalog[0]!.id),
+  );
+  const withUnknownCoordinates = [...mappedCoffeeCatalog(), catalog[0]!].map(
+    (p) => ({ ...p }),
+  );
+  withUnknownCoordinates[10]!.id = '400000000000000000000011';
+  delete withUnknownCoordinates[9]!.mapLocation;
+  const missingRanked = {
+    placeIds: [
+      withUnknownCoordinates[10]!.id,
+      ...withUnknownCoordinates.slice(0, 10).map((p) => p.id),
+    ],
+  };
+  const unknown = validatePlan(
+    arrangeCompleteDays(missingRanked, request, withUnknownCoordinates),
+    request,
+    withUnknownCoordinates,
+    randomUUID(),
+  );
+  assert.ok(
+    unknown.trip.days
+      .flatMap((d) => d.activities)
+      .some((a) => a.placeId === withUnknownCoordinates[10]!.id),
   );
 });

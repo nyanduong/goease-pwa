@@ -23,6 +23,8 @@ import {
   outsideKnownHours,
   plannerCatalog,
   mealSuitable,
+  cafeSuitable,
+  selectPlannerCandidates,
 } from './itinerary-policy.js';
 import type { tripService } from '../trips/trip.service.js';
 import type { exploreService } from '../explore/explore.service.js';
@@ -44,8 +46,7 @@ export function validatePlan(
   const visited = new Set<string>();
   const fullCatalog =
     places.filter((p) => p.category !== 'food').length >= 2 &&
-    places.filter((p) => p.category === 'food' && p.venueType === 'restaurant')
-      .length >= 2;
+    places.filter(mealSuitable).length >= 2;
   if (
     JSON.stringify(plan.days.map((d) => d.date)) !==
     JSON.stringify(input.trip.days.map((d) => d.date))
@@ -57,9 +58,10 @@ export function validatePlan(
     let end = 390;
     const seen = new Set<string>();
     if (!adjustment && fullCatalog) {
-      const meals = day.stops.filter(
-        (s) => places.find((p) => p.id === s.placeId)?.category === 'food',
-      );
+      const meals = day.stops.filter((s) => {
+        const place = places.find((p) => p.id === s.placeId);
+        return place && mealSuitable(place);
+      });
       const lunch = meals.some(
         (s) => minutes(s.start) >= 660 && minutes(s.start) <= 840,
       );
@@ -134,8 +136,11 @@ export function validatePlan(
         return {
           activityId: randomUUID(),
           placeId: place.id,
-          kind:
-            place.category === 'food' ? ('meal' as const) : ('visit' as const),
+          kind: cafeSuitable(place)
+            ? ('free_time' as const)
+            : place.category === 'food'
+              ? ('meal' as const)
+              : ('visit' as const),
           title: place.name,
           startLocalTime: stop.start,
           endLocalTime: stop.end,
@@ -250,6 +255,7 @@ export function plannerService(
   async function candidates(input: Pick<PlannerRequest, 'trip'>) {
     const visits: PlaceDto[] = [],
       meals: PlaceDto[] = [],
+      cafes: PlaceDto[] = [],
       other: PlaceDto[] = [];
     for (let offset = 0; offset < 1000; offset += 30) {
       const page = await explore.list({
@@ -260,15 +266,22 @@ export function plannerService(
       for (const p of page.items) {
         if (!eligibleForPlanner(p, input.trip.travelers.totalCount)) continue;
         const pool =
-          p.category !== 'food' ? visits : mealSuitable(p) ? meals : other;
+          p.category !== 'food'
+            ? visits
+            : mealSuitable(p)
+              ? meals
+              : cafeSuitable(p)
+                ? cafes
+                : other;
         if (pool.length < 30) pool.push(p);
       }
-      if (!page.hasMore || (visits.length >= 20 && meals.length >= 10)) break;
+      if (
+        !page.hasMore ||
+        (visits.length >= 20 && meals.length >= 10 && cafes.length >= 2)
+      )
+        break;
     }
-    return [...visits.slice(0, 20), ...meals.slice(0, 10), ...other].slice(
-      0,
-      30,
-    );
+    return selectPlannerCandidates({ visits, meals, cafes, other });
   }
   async function cached(owner: Types.ObjectId, key: string, hash: string) {
     const run = await Run.findOne({ userId: owner, key });
@@ -367,8 +380,8 @@ export function plannerService(
                 expectedRevision: input.expectedRevision!,
               }
             : {}),
-          promptVersion: 'date-reschedule-v1',
-          plannerVersion: '3',
+          promptVersion: 'date-reschedule-v2',
+          plannerVersion: '5',
           status: 'succeeded',
           quotaState: 'released',
           sources: items.map((p) => p.id),
@@ -431,7 +444,9 @@ export function plannerService(
         userId: owner,
         tripId,
         status: 'succeeded',
-        promptVersion: { $in: ['goe-v1', 'goe-v2', 'goe-v3', 'goe-v4'] },
+        promptVersion: {
+          $in: ['goe-v1', 'goe-v2', 'goe-v3', 'goe-v4', 'goe-v5'],
+        },
       });
       if (!run || run.expectedRevision !== expectedRevision)
         throw new HttpError(
@@ -589,11 +604,11 @@ export function plannerService(
                 ? config.FULLDICHVU_MODEL
                 : config.GEMINI_MODEL,
             promptVersion: input.adjustment
-              ? 'goe-v4'
+              ? 'goe-v5'
               : config.AI_PROVIDER === 'fulldichvu'
-                ? 'vietnam-rank-v1'
-                : 'vietnam-v1',
-            plannerVersion: '4',
+                ? 'vietnam-rank-v2'
+                : 'vietnam-v2',
+            plannerVersion: '5',
             status: 'pending',
             quotaState: 'reserved',
             inputSummary: {

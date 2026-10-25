@@ -12,6 +12,7 @@ export function descriptionTranslator(
   request: typeof fetch = fetch,
 ): TranslateDescription {
   return async (text) => {
+    if (!config.DESCRIPTION_TRANSLATION_ENABLED) return null;
     const external = config.AI_PROVIDER === 'fulldichvu',
       key = external ? config.FULLDICHVU_API_KEY : config.GEMINI_API_KEY;
     if (!key) return null;

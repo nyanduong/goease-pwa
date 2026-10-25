@@ -1,5 +1,7 @@
 # Giới thiệu địa điểm có nguồn — CAT-21
 
+26/10/2026: DESCRIPTION_TRANSLATION_ENABLED mặc địnhfalse; local đang tắt theo yêu cầu chỉ dùng nguồn miễn phí. Khi tắt không reserve quota hoặc gọi provider, kể cả có credentials. Muốn bật dịch AI ngoài phải chủ động cấu hìnhtrue và tự chịu điều kiện/chi phí provider. Đợt biên tập thủ công cũng dùng Wikivoyage CC-BY-SA-4.0 khi tên/alias+tọa độ khớp; metadata/attribution giữ đúng Wikivoyage và revision. Chưa thêm Wikivoyage vào worker tự tìm. Xem FREE-DEMO-CURATION-2026-10-26.md.
+
 Đã triển khai local ngày 25/10/2026. Nguồn hiện tại là Wikipedia tiếng Việt/Anh, định danh bổ sung qua Wikipedia/Wikidata tags của Geoapify/OSM. Chưa triển khai thu thập website du lịch chính thức hoặc mọi nguồn Internet.
 
 ## Luồng admin

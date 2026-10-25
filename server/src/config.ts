@@ -69,6 +69,10 @@ const schema = z.object({
     .min(1)
     .max(8)
     .default(3),
+  DESCRIPTION_TRANSLATION_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   VISIT_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(8).default(4),
   PHOTO_PRIORITY_PROVINCE_CODE: z
     .string()

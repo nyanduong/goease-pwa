@@ -101,7 +101,10 @@ export function AdminPlaceDescription({
         {data?.result ? (
           <>
             <a href={data.result.sourceUrl} target="_blank" rel="noreferrer">
-              Wikipedia · {data.result.title} ↗
+              {new URL(data.result.sourceUrl).hostname === 'en.wikivoyage.org'
+                ? 'Wikivoyage'
+                : 'Wikipedia'}{' '}
+              · {data.result.title} ↗
             </a>
             <p>
               {data.result.translated

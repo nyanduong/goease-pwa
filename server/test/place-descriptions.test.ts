@@ -269,6 +269,7 @@ test('translation respects missing credentials, exhausted quota and numeric fact
     MONGODB_URI: 'mongodb://localhost:27021/unused',
     AI_PROVIDER: 'gemini',
     GEMINI_API_KEY: 'test-fixture-key',
+    DESCRIPTION_TRANSLATION_ENABLED: 'true',
   });
   let quota = true,
     calls = 0,
@@ -306,6 +307,19 @@ test('translation respects missing credentials, exhausted quota and numeric fact
   );
   assert.equal(calls, 0);
   quota = true;
+  assert.equal(
+    await descriptionTranslator(
+      {
+        collection: () => {
+          throw new Error('Disabled translation must not reserve quota');
+        },
+      } as unknown as mongoose.Connection,
+      { ...config, DESCRIPTION_TRANSLATION_ENABLED: false },
+      request,
+    )('Built in 1900.'),
+    null,
+  );
+  assert.equal(calls, 0);
   assert.equal(
     await descriptionTranslator(connection, config, request)('Built in 1900.'),
     translated,

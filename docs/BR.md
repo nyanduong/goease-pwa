@@ -1,5 +1,15 @@
 # GoEase — BR v0.2 / Baseline thiết kế hiện hành
 
+## AI-02 / TRIP-08 / CAT-23 — demo Đà Nẵng và nghỉ cà phê, 26/10/2026
+
+AI-02: kiểm thử thật phát hiện trộn Hội An với cụm trung tâm Đà Nẵng. Khi mọi ứng viên có tọa độ và có cụm bán kính12km quanh một ứng viên đủ2tham quan/ngày+2quán ăn, arranger dùng cụm nhiều ứng viên nhất; thiếu tọa độ hoặc không có cụm đủ coverage thì giữ luồng cũ. Kiểm ID model theo catalog gốc trước khi lọc cụm. Đây là heuristic khoảng cách thẳng, không phải tuyến đường, giới hạn khoảng cách từng cặp hoặc cam kết thời gian di chuyển.
+
+Owner ưu tiên hoàn thiện Đà Nẵng cho chuyến2ngày1đêm bằng nguồn miễn phí, xuất bản mục đủ điều kiện và kiểm thử. Sau đó owner cho phép đúng1lượt Fulldichvu bằng số dư hiện có để thử model thật; không nạp tiền/bật billing/tự gọi lại. Không đổi provider toàn ứng dụng hoặc xóa catalog toàn quốc. Danh sách và bằng chứng tại [DANANG-DEMO-2026-10-26](DANANG-DEMO-2026-10-26.md).
+
+AI-02: café có giá/giờ đủ điều kiện nhưng giá chỉ cho đồ uống không thay thế bữa trưa/tối. Server nhận biết café food/restaurant không mealSuitable theo tên/mô tả cà phê; boolean cafeSuitable chỉ là projection gửi provider, không thêm venueType hay field lưu trữ. Balanced/active có thể thêm tối đa1nghỉ cà phê được model chọn trong mỗi ngày nếu còn chỗ, kết thúc trước17:30, vẫn giữ2tham quan+lunch+dinner và các giới hạn4/5/6. Relaxed4điểm không tự thêm café. Ưu tiên quán ăn/café chưa dùng giữa các ngày, cho phép lặp khi thiếu lựa chọn hợp giờ. Lựa chọn phải qua giá/giờ hiện có; không bịa café khi thiếu.
+
+TRIP-08: café do Goe tạo mang kind=free_time; khi đổi ngày giữ mục đích café, không thay bằng điểm tham quan hoặc tính thành bữa ăn. Giá1tô/phần ăn/ly nước ghi rõ món, đơn vị và phần loại trừ; không coi là tổng chi phí mọi món, mọi thuế/phụ phí hoặc cả chuyến có khách sạn/đi lại. Hình minh họa AI theo fallback ảnh owner đã chốt phải được gắn nhãn, không giả làm ảnh món ăn/cơ sở thực tế.
+
 Ngày thiết kế: **22/10/2026**. Repository: `nyanduong/goease-pwa`. Nền source đã đối chiếu: `685552e549a474bc300d361c9343a82c3a7c181b`.
 
 **Trạng thái:** Baseline thiết kế v0.2 được chấp thuận trong F1-A. Task sản phẩm sau F1-B đã triển khai tài khoản local và lịch trình thủ công; xem [phạm vi và nghiệm thu](PRODUCT-VERIFICATION.md). Các module còn lại vẫn là thiết kế, không phải tính năng đã chạy. F1-B đã triển khai phần kỹ thuật context/log/audit probe test-only, xem [bằng chứng](F1-B-VERIFICATION.md); không đồng nghĩa auth/trip hoặc audit production đã hoàn thành. Quyết định ở mục 1 đã xác nhận; policy ghi đề xuất/cần duyệt vẫn còn mở. Đây là nguồn nghiệp vụ chính; [bản nhập lưu trữ](archive/BR-v0.2-draft.md) chỉ để tham chiếu.
@@ -502,6 +512,8 @@ Hợp đồng và giới hạn: [WIKIMEDIA-PHOTOS](WIKIMEDIA-PHOTOS.md).
 
 ## CAT-21 — Giới thiệu tự động có nguồn (25/10/2026)
 
+26/10/2026 owner yêu cầu dữ liệu demo không dùng dịch vụ tính phí: dịch tự động qua AI ngoài được opt-in bằng DESCRIPTION_TRANSLATION_ENABLED mặc địnhfalse, tắt trước reserve quota/HTTP. Nguồn Wikivoyage CC-BY-SA-4.0 được phép bổ sung khi tên/alias và tọa độ khớp duy nhất; giữ trích đoạn gốc/URL phiên bản, ghi công đúng Wikivoyage và biên tập tiếng Việt có nguồn. Không tự duyệt giá/giờ từ listing hoặc xuất bản cả lô. Google Maps website được dùng đối chiếu danh tính, không suy quyền sao chép ảnh. Bằng chứng và phần chưa hoàn thành: FREE-DEMO-CURATION-2026-10-26.md.
+
 Owner chốt tự lấy giới thiệu vào draft thay câu thông báo import. Ưu tiên Wikipedia tiếng Việt; dùng liên kết Wikipedia/Wikidata từ OSM để định danh, dự phòng tìm tên kèm tỉnh và đối chiếu tọa độ. Không chấp nhận kết quả mơ hồ. Có thể dịch trích đoạn tiếng Anh sang tiếng Việt bằng provider AI đã cấu hình, chỉ dịch nội dung nguồn, không tự sáng tác thông tin địa điểm.
 
 - Import lưu description rỗng, chuyển thông báo kỹ thuật sang internalNote. Worker tự tìm cho draft; admin đọc và sửa trước khi xuất bản. Draft cũ có đúng placeholder cũng được xử lý, không tự sửa bản công khai.
@@ -536,6 +548,10 @@ Owner chốt tiếp: chỉ lưu 1 ảnh bìa cho mỗi bộ ảnh mới, tối �
 
 Ngày 26/10/2026 owner yêu cầu xử lý song song/import ảnh. Đã triển khai pool bounded 1–4 (mặc định 3), ưu tiên tỉnh server cấu hình và yêu cầu tìm ảnh của admin, giữ claim/lease/retry. Commons search tuần tự theo process; không hứa tăng tốc tuyến tính hoặc đủ ảnh cho mọi POI. Không tự chọn ảnh lân cận không khớp tên địa điểm. Gỡ gợi ý automatic không khớp chỉ trên draft chưa chọn ảnh/không khóa; không thay ảnh đã chọn hoặc bản công khai. Chi tiết vận hành và giới hạn tại ONE-COVER-MEDIA.md.
 # CAT-24 — Bổ sung dữ liệu hàng loạt (26/10/2026, implemented)
+
+### Phạm vi ưu tiên demo và Google Maps — owner chốt26/10/2026, chưa triển khai gate
+
+Owner chuyển ưu tiên sang20địa điểm/tỉnh, Hà Nội/Đà Nẵng/TP.HCM40địa điểm/nơi, tổng740. Mỗi20gồm10tham quan,7ăn uống,3cà phê; chọn cụm để kiểm thử chuyến1–2ngày. Không xóa26.566mục còn lại. Chỉ xuất bản mục đủ nội dung/ảnh/giờ/giá phù hợp và được đối chiếu đúng cơ sở trên Google Maps; link tìm kiếm đơn thuần không là xác minh. Không tự coi740ứng viên là đã đủ điều kiện. Owner cấm thanh toán bill; không liên kết billing/thẻ/nâng gói tự động. Project Cloud hiện chưa liên kết billing, Places chưa bật. Chưa có schema/API/gate Google mới hoặc job demo riêng; worker toàn quốc hiện hữu chưa đổi scope. Xem DEMO-CATALOG-2026-10-26.md để biết manifest và phần chưa triển khai.
 
 Ứng viên ảnh từ đối chiếu Wikidata theo tên và vị trí chỉ là quan sát chưa duyệt. Worker có thể dùng metadata Commons đã chuẩn bị trong24giờ khi tên, tỉnh/thành, source URL và tọa độ bản đề xuất không đổi; vẫn kiểm tên ảnh, giấy phép, lưu bìa thật và tuân thủ cooldown. Không suy giờ/giá từ ảnh hoặc coi khớp Wikidata là đủ điều kiện xuất bản. Bản công khai và ảnh admin đã chọn/khóa được giữ nguyên.
 
