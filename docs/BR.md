@@ -57,7 +57,7 @@ Backend xác định actor từ phiên đã xác thực. Role không lấy từ 
 
 | AUTH-09 | Trang chủ sau đăng nhập và ảnh đại diện | Đăng nhập/đăng ký thông thường về Trang chủ `/`. Nếu người dùng bắt đầu tạo chuyến, email/password auth tiếp tục duy nhất `next=/trips/new`, giữ điểm đến hợp lệ trong catalog; không tự nhập nội dung nháp hoặc chấp nhận redirect tùy ý. Google callback vẫn về Trang chủ. Avatar dùng URL HTTPS của tài khoản nếu có; khi thiếu hoặc tải lỗi dùng avatar người du lịch mặc định. URL ảnh Google chỉ nhận từ claim đã xác minh; không chấp nhận avatar do client tự gửi trong login/register. |
 
-**AUTH-10 — Đăng ký bằng OTP email (owner yêu cầu 25/10/2026):** Khi `REGISTRATION_OTP_REQUIRED=true`, đăng ký email/password phải xác nhận mã 6 số trước khi tạo User/Identity/Session. Mã có hiệu lực 10 phút, tối đa 5 lần thử, gửi lại sau 60 giây; mã mới vô hiệu yêu cầu cũ. SMTP thiếu/lỗi không được bỏ qua xác minh hoặc báo thành công. OTP/password chỉ lưu hash; tạo account, xác minh email, phiên và audit cùng transaction. Không ép xác minh lại account cũ, không tự liên kết account chỉ vì trùng email, không thay Google OIDC. Flag và `.env.example` mặc định false để giữ đăng ký local hoạt động khi chưa có SMTP; chỉ bật true sau khi cấu hình SMTP. Chi tiết giới hạn, endpoint và kiểm chứng tại [EMAIL-REGISTRATION](EMAIL-REGISTRATION.md). Chưa nghiệm thu giao thư thật vì chưa cấu hình SMTP.
+**AUTH-10 — Đăng ký bằng OTP email (owner yêu cầu 25/10/2026):** Khi `REGISTRATION_OTP_REQUIRED=true`, đăng ký email/password phải xác nhận mã 6 số trước khi tạo User/Identity/Session. Mã có hiệu lực 10 phút, tối đa 5 lần thử, gửi lại sau 60 giây; mã mới vô hiệu yêu cầu cũ. SMTP thiếu/lỗi không được bỏ qua xác minh hoặc báo thành công. OTP/password chỉ lưu hash; tạo account, xác minh email, phiên và audit cùng transaction. Không ép xác minh lại account cũ, không tự liên kết account chỉ vì trùng email, không thay Google OIDC. Flag và `.env.example` mặc định false để giữ đăng ký local hoạt động khi chưa có SMTP; chỉ bật true sau khi cấu hình SMTP. Chi tiết giới hạn, endpoint và kiểm chứng tại [EMAIL-REGISTRATION](EMAIL-REGISTRATION.md). Đã kiểm chứng gửi/nhận Gmail OTP và xác nhận tài khoản trên cấu hình local ngày25/10/2026; xem phần nghiệm thu trong EMAIL-REGISTRATION.md.
 
 ### B. Danh mục, nguồn dữ liệu và nội dung
 
@@ -500,7 +500,6 @@ Owner chốt: hệ thống tự dùng ảnh đầu tiên làm bìa cho bản nh�
 
 Hợp đồng và giới hạn: [WIKIMEDIA-PHOTOS](WIKIMEDIA-PHOTOS.md).
 
-
 ## CAT-21 — Giới thiệu tự động có nguồn (25/10/2026)
 
 Owner chốt tự lấy giới thiệu vào draft thay câu thông báo import. Ưu tiên Wikipedia tiếng Việt; dùng liên kết Wikipedia/Wikidata từ OSM để định danh, dự phòng tìm tên kèm tỉnh và đối chiếu tọa độ. Không chấp nhận kết quả mơ hồ. Có thể dịch trích đoạn tiếng Anh sang tiếng Việt bằng provider AI đã cấu hình, chỉ dịch nội dung nguồn, không tự sáng tác thông tin địa điểm.
@@ -513,22 +512,17 @@ Owner chốt tự lấy giới thiệu vào draft thay câu thông báo import. 
 
 Phạm vi triển khai và hợp đồng: [WIKIPEDIA-DESCRIPTIONS](WIKIPEDIA-DESCRIPTIONS.md).
 
-
 ### CAT-20 — Bổ sung chất lượng ảnh 25/10/2026
 
 Owner yêu cầu dùng ảnh chất lượng cao nhất từ nguồn: lấy raster gốc, giữ nguyên độ phân giải, lưu WebP lossless lên Cloudinary thay thumbnail nhỏ. Không upscale. Giới hạn tải/pixel/provider vẫn được kiểm tra và báo lỗi đúng; không cam kết mọi nguồn đều có ảnh nét. Nâng chất lượng đúng cùng ảnh qua sourceUrl, không tự đổi ảnh admin đã chọn hoặc sửa bản công khai. Chi tiết storageVersion=2 và kiểm chứng: [ADMIN-REVIEW-QUEUE](ADMIN-REVIEW-QUEUE.md).
-
 
 ## CAT-22 — Tự lấy giờ mở cửa và giá tham khảo (25/10/2026)
 
 Owner chốt: lấy thông tin có nguồn vào draft để admin kiểm tra rồi xuất bản. Giá hiển thị “Từ …đ” với đơn vị và điều kiện; không tự lấy giá thấp nhất cho dự toán. Tự động đọc OSM theo ID, thiếu thì đọc dữ liệu có cấu trúc ở website được liên kết. Giờ/giá nhận từ nguồn chưa phải đã xác minh. Mục giữ lại chưa reviewed chặn publish đơn lẻ/theo lô; admin được bỏ gợi ý không phù hợp. Thiếu dữ liệu không suy miễn phí/mở cả ngày, giữ gate khám phá CAT-17. CAT-14 vẫn quyết định referencePrice cho ngân sách/Goe. Không tự xuất bản hoặc ghi đè nội dung admin/public. Đã triển khai phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
 
-
 CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa độ), HTML giờ/giá có nhãn và liên kết cùng origin; visitSearch.providerVersion=3 xếp tìm lại observation cũ, context bổ sung tọa độ. Giữ nội dung đã duyệt/public, không thay giá ngân sách. Phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
 
-
 CAT-22 bổ sung trang admin chỉ đọc Tiến trình lấy dữ liệu: counts hàng đợi và kết quả lưu có giải thích phân biệt dữ liệu đã duyệt, không đổi gate hoặc tự thực thi provider. Hợp đồng/ý nghĩa số liệu tại [ADMIN-VISIT-PROGRESS](ADMIN-VISIT-PROGRESS.md).
-
 
 ## CAT-23 — Một giá cho hiển thị và tính ngân sách (25/10/2026)
 

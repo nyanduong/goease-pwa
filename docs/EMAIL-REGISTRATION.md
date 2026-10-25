@@ -2,6 +2,18 @@
 
 Ngày 25/10/2026. Phạm vi: đăng ký email/password trong PWA. Triển khai ban đầu tại nhánh `codex/email-registration-otp`; lần audit tích hợp với `codex/demo-ui-polish` được ghi tại [BRANCH-AUDIT-2026-10-25](BRANCH-AUDIT-2026-10-25.md).
 
+## Nghiệm thu SMTP thật — 25/10/2026
+
+Sau khi owner xác nhận đăng nhập Google và cho phép tạo Mật khẩu ứng dụng riêng, đã cấu hình Gmail SMTP/TLS465 trong `.env` local, bật OTP và khởi động lại API. Secret chỉ ở file bị Git ignore; mẫu cấu hình và default parser vẫn false để checkout mới không phụ thuộc hộp thư của owner.
+
+- Xác thực SMTP thật: PASS. POST register trả202, không cấp cookie trước xác nhận.
+- Đã nhận và đọc đúng thư OTP trong hộp thư Gmail gửi thử đến chính tài khoản gửi; đây là bằng chứng giao thư thực tế, không chỉ phản hồi SMTP accepted.
+- Dùng mã trong thư gọi verify:201, emailVerified=true; phiên mới đọc auth/me:200. Dùng lại cùng mã/challenge:400. Tài khoản traveler kiểm thử được lưu trong database demo đã import; không cấp admin.
+- Chạy lại OTP unit/integration sau khi nhận cập nhật main đến a4cb916:15/15 đạt, dùng SMTP inject và MongoDB kiểm thử riêng. Các kết quả gửi thật bên trên được kiểm tra riêng qua HTTP/API local và Gmail.
+- Không thay database cũ, không ghi credential vào Git, không đổi contract hoặc hành vi nghiệp vụ. Giao thư khôi phục mật khẩu thật, thiết bị mobile, deployment và độ tin cậy gửi hàng loạt chưa nghiệm thu trong lượt này.
+
+Bằng chứng chi tiết/ảnh nằm trong `.local/otp-mail-setup/` trên máy thực hiện, không commit token, nội dung hộp thư hoặc thông tin đăng nhập. Các ghi nhận SMTP chưa cấu hình ở phần kiểm thử ban đầu bên dưới là lịch sử trước lượt nghiệm thu này.
+
 ## Luồng và hợp đồng
 
 1. POST `/api/v1/auth/register` với `{email,password,displayName}`. Email được chuẩn hóa bằng contract hiện có. Khi bật OTP: HTTP 202, `{ok:true,data:{verificationRequired:true,challenge,expiresAt,retryAfterSeconds:60}}`. Chưa tạo user/identity/session/cookie. `challenge` là bí mật ràng buộc trình duyệt, không phải mã OTP.
@@ -30,7 +42,7 @@ Các giá trị trên là ví dụ, không hoạt động cho gửi thật. Tài
 
 MongoDB phải hỗ trợ transaction (replica set). Cấu hình ứng dụng của repository dùng service `localhost:27017` primary của `rs0`, database riêng `goease`; không tự sửa hoặc dừng service dùng chung. Bộ kiểm thử dùng mongod riêng cổng27021, database/thư mục có ID ngẫu nhiên, không sửa database ứng dụng.
 
-Sau cấu hình: khởi động lại API, đăng ký bằng hộp thư bạn kiểm soát, xác nhận mã, kiểm tra đăng nhập lại. Thử mã sai/gửi lại/hết hạn; kiểm tra lỗi SMTP không báo thành công. Chưa chạy bước giao thư live trong lần triển khai này do SMTP còn trống. Tắt flag chỉ là quay lại chế độ đăng ký không yêu cầu OTP, không xóa account đã tạo và không được coi là fallback tự động khi SMTP lỗi.
+Sau cấu hình: khởi động lại API, đăng ký bằng hộp thư bạn kiểm soát, xác nhận mã, kiểm tra đăng nhập lại. Thử mã sai/gửi lại/hết hạn; kiểm tra lỗi SMTP không báo thành công. Kết quả gửi/nhận thật của cấu hình local được ghi ở mục nghiệm thu phía trên. Tắt flag chỉ là quay lại chế độ đăng ký không yêu cầu OTP, không xóa account đã tạo và không được coi là fallback tự động khi SMTP lỗi.
 
 ## Dữ liệu và giới hạn
 
@@ -56,6 +68,6 @@ npx playwright test --config tests/registration.playwright.config.ts
 
 Thay MONGOD_BINARY bằng binary thật trên máy. Integration dùng HTTP/MongoDB thật, **SMTP được inject để kiểm tra**, không gửi thư/không dùng provider credentials. Kiểm tra chưa có account trước verify, cookie/login, hash, mã sai/hết hạn/replay/binding, resend, tranh chấp, cấu hình thiếu, SMTP lỗi, audit rollback, không lộ bí mật. Browser dùng API mock để kiểm tra form320/390px, lỗi/retry/gửi lại; không chứng minh giao thư thật.
 
-Kết quả local 25/10/2026: npm test **64 pass**; OTP unit + integration **15 pass** (có4unit trùng trong64, không cộng hai số); account/password-recovery/product integration **22 pass**; Edge browser **3 pass**. Typecheck, lint, format và build pass. Đã mở ảnh chụp320px để kiểm tra bố cục. Build vẫn cảnh báo bundle chính lớn hơn500kB; Vite test config cảnh báo cách tải module, không làm các gate thất bại. Chưa chạy toàn bộ integration/E2E của catalog/AI; chưa gửi SMTP thật, chưa nghiệm thu trên điện thoại. Dịch vụ MongoDB dùng chung27017 và repo Expo bản chính không bị sửa.
+Kết quả kiểm thử ban đầu (trước nghiệm thu SMTP thật bên trên): npm test **64 pass**; OTP unit + integration **15 pass** (có4unit trùng trong64, không cộng hai số); account/password-recovery/product integration **22 pass**; Edge browser **3 pass**. Typecheck, lint, format và build pass. Đã mở ảnh chụp320px để kiểm tra bố cục. Build vẫn cảnh báo bundle chính lớn hơn500kB; Vite test config cảnh báo cách tải module, không làm các gate thất bại. Chưa chạy toàn bộ integration/E2E của catalog/AI; chưa gửi SMTP thật, chưa nghiệm thu trên điện thoại. Dịch vụ MongoDB dùng chung27017 và repo Expo bản chính không bị sửa.
 
 Tham khảo adapter: [Nodemailer SMTP](https://nodemailer.com/smtp), [Node crypto](https://nodejs.org/api/crypto.html#cryptorandomintmin-max-callback).

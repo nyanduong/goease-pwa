@@ -139,15 +139,14 @@ Kiểm chứng cập nhật ảnh bìa: typecheck/lint/build đạt; 74 unit và
 
 Đã triển khai hàng đợi embedded `places.descriptionSearch`, snapshot `descriptionSource`, optional Wikipedia/Wikidata hints trong `sourceSnapshot`; draft cho phép giới thiệu trống, xuất bản yêu cầu nội dung thực. Worker chỉ điền mặc định đúng ngữ cảnh và giữ nội dung admin/field locks; nguồn và bản dịch được truy vết. Dịch dùng quota AI global hiện có. Không thêm collection hoặc index. Hợp đồng, dictionary, giới hạn và kiểm chứng: [WIKIPEDIA-DESCRIPTIONS](WIKIPEDIA-DESCRIPTIONS.md).
 
-
 ## Cần kiểm tra và ảnh gốc — 25/10/2026
 
 Hàng chờ #work đổi nhãn Cần kiểm tra, dùng hai cột và count theo phạm vi từ API. imageSearch.storageVersion=2 triển khai ảnh nguyên kích thước từ Wikimedia, WebP lossless trên Cloudinary; xếp lại quan sát cũ, nâng URL cùng sourceUrl cho draft không khóa; giữ bản công khai. Không thêm collection. Hợp đồng và giới hạn: [ADMIN-REVIEW-QUEUE](ADMIN-REVIEW-QUEUE.md).
 
 ## Catalog library refinement (2026-10-25)
+
 See [ADMIN-CATALOG-LIBRARY.md](ADMIN-CATALOG-LIBRARY.md) for the approved layout, derived readiness contract, real Cloudinary images and verification limits.
 Verified: typecheck, lint, 84 server unit tests, readonly local catalog service and fixture browser checks. Full MongoDB integration not rerun due low disk space.
-
 
 ## CAT-22 — Giờ mở cửa / giá từ nguồn
 
@@ -155,21 +154,17 @@ Verified: typecheck, lint, 84 server unit tests, readonly local catalog service 
 
 CAT-22 verification: 89 unit tests pass; province-import + visit-info integration 14/14, catalog + visit-info integration 11/11, final visit-info integration 1/1 (overlapping runs, not additive). Fixture browser desktop/mobile pass. Typecheck/lint/build checked; Vite retains existing >500KB bundle warning. Live OSM read-only evidence in VISIT-INFORMATION.md; website extraction fixture-tested only.
 
-
 CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa độ), HTML giờ/giá có nhãn và liên kết cùng origin; visitSearch.providerVersion=3 xếp tìm lại observation cũ, context bổ sung tọa độ. Giữ nội dung đã duyệt/public, không thay giá ngân sách. Phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
 
 CAT-22 expanded-source verification: 93 unit tests pass; focused visit-info Mongo integration passes including provider-version requeue/idempotence and retained observations; typecheck/lint pass; fixture browser still passes. Live additional-source coverage increase not established; old drafts requeued for providerVersion=3.
-
 
 Đã thêm trang admin #progress / Tiến trình lấy dữ liệu và GET admin/catalog/visit-progress. Aggregate toàn scope, lọc/pagination, trạng thái lỗi/quá hạn, polling 5s và mở editor. Không thêm persistence/index. Kiểm chứng và ý nghĩa counts tại [ADMIN-VISIT-PROGRESS](ADMIN-VISIT-PROGRESS.md).
 
 Verification trang tiến trình: typecheck/lint/build đạt; integration MongoDB riêng đạt (counts/filter/role/pagination/read-only); service chỉ đọc local thật và browser fixture desktop/mobile đạt. Vite vẫn có cảnh báo bundle >500KB hiện hữu. Không chạy lại toàn bộ integration suite cho thay đổi trang này.
 
-
 ## Refine thao tác Giá & giờ mở cửa (25/10/2026)
 
 Đã gom thành giờ + giá tham khảo, bỏ giờ lặp, nút xác nhận rõ ràng, ba loại giá và preview; referencePrice thu gọn tùy chọn, sidebar/focus lỗi đúng khối. Fix validator URL để empty/partial URL không làm crash khi admin nhập. Hướng dẫn và bằng chứng tại [ADMIN-EDITOR](ADMIN-EDITOR.md).
-
 
 CAT-23: implemented single price editor, eligibility reasons, shared server projection, public/legacy handling and paired price locks. No public bulk price migration; trip snapshots preserved. See [SHARED-PLACE-PRICE](SHARED-PLACE-PRICE.md) for rules/contracts/tests. Dedicated repeatable browser command: npm run test:price-editor (test server uses owned MongoDB; set E2E_API_PORT/E2E_WEB_PORT to free ports if the app is running).
 
