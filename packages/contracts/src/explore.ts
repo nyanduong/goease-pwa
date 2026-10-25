@@ -44,6 +44,12 @@ export type PlaceDto = {
   category: PlaceCategory;
   subtitle: string;
   description: string;
+  descriptionSource?: {
+    title: string;
+    sourceUrl: string;
+    license: string;
+    translated: boolean;
+  } | null;
   imageUrl: string;
   durationLabel: string;
   travelLabel: string;

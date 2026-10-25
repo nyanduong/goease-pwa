@@ -730,11 +730,12 @@ export function adminV3Service(
                 String(v.placeId) === String(place._id) &&
                 v.revision === place.proposalRevision,
             );
-            const effective = catalog.withDefaultCover(
+            const effective = catalog.withSourceDefaults(
               version
                 ? Place.hydrate({
                     ...version.snapshot,
                     imageSearch: place.toObject().imageSearch,
+                    descriptionSearch: place.toObject().descriptionSearch,
                     fieldLocks: place.fieldLocks,
                     _id: place._id,
                     revision: place.revision,

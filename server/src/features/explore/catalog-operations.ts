@@ -81,6 +81,8 @@ const snapshot = (p: GeoapifyCandidate): SourceSnapshot =>
     categories: [...p.categories].sort(),
     openingHoursNote: p.openingHoursNote,
     sourceUrl: p.sourceUrl,
+    ...(p.wikipedia ? { wikipedia: p.wikipedia } : {}),
+    ...(p.wikidata ? { wikidata: p.wikidata } : {}),
     closed: p.closed ?? null,
   });
 const fingerprint = (p: unknown) => tokenHash(JSON.stringify(p));
@@ -1440,9 +1442,11 @@ export function catalogOperations(
             name: incoming.name,
             category: incoming.category,
             venueType: incoming.venueType,
-            description:
-              'Địa điểm nhập từ Geoapify / OpenStreetMap; cần biên tập và kiểm tra thông tin trước khi đi.',
-            subtitle: 'Thông tin nguồn mở, chưa xác minh tại cơ sở.',
+            description: '',
+            internalNote:
+              'Nhập từ Geoapify / OpenStreetMap; cần kiểm tra thông tin trước khi xuất bản.',
+            descriptionSearch: { state: 'pending', nextAttemptAt: new Date() },
+            subtitle: '',
             searchText: normalizeSearch(
               `${incoming.name} ${incoming.address}`,
             ).slice(0, 2500),

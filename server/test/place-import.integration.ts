@@ -323,6 +323,7 @@ test(
           const edited: AdminPlaceInput = {
             ...input,
             images: [fixturePhoto],
+            description: 'Giới thiệu dành cho kiểm thử.',
             name: 'Tên do admin biên tập',
             referencePrice: {
               label: 'Vé kiểm thử',

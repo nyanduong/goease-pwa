@@ -499,3 +499,16 @@ Owner chốt: hệ thống tự dùng ảnh đầu tiên làm bìa cho bản nh�
 - Không có ảnh/lỗi provider thì báo rõ và cho thử lại, không sinh AI hoặc fallback URL ảnh gốc. Public không dùng imageUrl AI cũ.
 
 Hợp đồng và giới hạn: [WIKIMEDIA-PHOTOS](WIKIMEDIA-PHOTOS.md).
+
+
+## CAT-21 — Giới thiệu tự động có nguồn (25/10/2026)
+
+Owner chốt tự lấy giới thiệu vào draft thay câu thông báo import. Ưu tiên Wikipedia tiếng Việt; dùng liên kết Wikipedia/Wikidata từ OSM để định danh, dự phòng tìm tên kèm tỉnh và đối chiếu tọa độ. Không chấp nhận kết quả mơ hồ. Có thể dịch trích đoạn tiếng Anh sang tiếng Việt bằng provider AI đã cấu hình, chỉ dịch nội dung nguồn, không tự sáng tác thông tin địa điểm.
+
+- Import lưu description rỗng, chuyển thông báo kỹ thuật sang internalNote. Worker tự tìm cho draft; admin đọc và sửa trước khi xuất bản. Draft cũ có đúng placeholder cũng được xử lý, không tự sửa bản công khai.
+- Không ghi đè giới thiệu admin đã nhập hoặc trường khóa; kết quả gắn ngữ cảnh tên/tỉnh/tọa độ/nguồn và chặn kết quả lỗi thời khi revision thay đổi. Không tự xuất bản.
+- Không tìm thấy hoặc dịch thất bại: để trống, báo đúng trạng thái và cho tìm lại. Không dùng placeholder để vượt gate. Cho lưu draft trống; xuất bản riêng/lô phải có giới thiệu thực.
+- Giữ trích đoạn gốc, URL phiên bản, ngôn ngữ, giấy phép và trạng thái dịch trong nguồn; thông tin nguồn ở tab Nguồn & lịch sử và attribution công khai. Lưu/xuất bản chụp metadata cùng nội dung.
+- Dịch dùng quota global AI hiện có, không vượt giới hạn; lượt lỗi đã reserve vẫn tính. Chưa cấu hình provider hoặc hết quota thì báo chưa dịch được, không giả thành công.
+
+Phạm vi triển khai và hợp đồng: [WIKIPEDIA-DESCRIPTIONS](WIKIPEDIA-DESCRIPTIONS.md).

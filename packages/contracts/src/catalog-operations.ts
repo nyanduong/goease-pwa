@@ -26,6 +26,11 @@ export const sourceSnapshotSchema = z.strictObject({
   openingHoursNote: z.string().max(400),
   closed: z.boolean().nullable(),
   sourceUrl: z.url().max(2048),
+  wikipedia: z.string().max(300).optional(),
+  wikidata: z
+    .string()
+    .regex(/^Q[1-9][0-9]*$/)
+    .optional(),
 });
 export type SourceSnapshot = z.infer<typeof sourceSnapshotSchema>;
 export const reviewDecisionSchema = z.strictObject({

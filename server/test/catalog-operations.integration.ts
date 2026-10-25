@@ -342,6 +342,7 @@ test(
                   },
                   publicationStatus: 'published',
                   images: [fixturePhoto],
+                  description: 'Giới thiệu dành cho kiểm thử.',
                 },
                 expectedRevision: revision,
                 intent: 'publish',
@@ -466,7 +467,12 @@ test(
           assert.ok(blockedPrice.items.every((item) => !item.eligible));
           await Place.updateMany(
             { _id: { $in: selected.map((item) => item.id) } },
-            { $set: { images: [fixturePhoto] } },
+            {
+              $set: {
+                images: [fixturePhoto],
+                description: 'Giới thiệu dành cho kiểm thử.',
+              },
+            },
           );
           await Place.updateOne(
             { _id: selected[0]!.id },

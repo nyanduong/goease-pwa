@@ -1,3 +1,9 @@
+import { placeDescriptions } from './features/explore/place-descriptions.js';
+import {
+  wikipediaDescriptions,
+  type FindDescription,
+} from './features/explore/wikipedia-descriptions.js';
+import { descriptionTranslator } from './features/explore/description-translation.js';
 import { passwordRecovery } from './features/auth/password-recovery.js';
 import { emailRegistration } from './features/auth/email-registration.js';
 import {
@@ -107,6 +113,7 @@ export function createProduct(
     geoapify?: ReturnType<typeof geoapifyProvider>;
     resolveProvinceArea?: ResolveProvinceArea;
     findImages?: FindImages;
+    findDescription?: FindDescription;
     generate?: Generate;
     avatarUpload?: (bytes: Buffer) => Promise<string>;
   } = {},
@@ -148,6 +155,12 @@ export function createProduct(
     trips,
     explore,
     dependencies.generate,
+  );
+  const descriptionSearch = placeDescriptions(
+    explore,
+    catalog,
+    dependencies.findDescription ??
+      wikipediaDescriptions(fetch, descriptionTranslator(connection, config)),
   );
   const imageSearch = placeImages(
     explore,
@@ -514,6 +527,24 @@ export function createProduct(
             .optional(),
           req.query.destinationId,
         ),
+      ),
+    }),
+  );
+  router.get('/admin/places/:id/description', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await descriptionSearch.read(
+        res.locals.authUser._id,
+        parse(z.string().regex(/^[a-f0-9]{24}$/), req.params.id),
+      ),
+    }),
+  );
+  router.post('/admin/places/:id/description/search', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await descriptionSearch.enqueue(
+        res.locals.authUser._id,
+        parse(z.string().regex(/^[a-f0-9]{24}$/), req.params.id),
       ),
     }),
   );
@@ -1060,6 +1091,7 @@ export function createProduct(
     v3,
     catalog,
     imageSearch,
+    descriptionSearch,
     async initialize(withProvinceCatalog = false) {
       ready = false;
       const all = [
@@ -1078,6 +1110,7 @@ export function createProduct(
       }
       await audit.initialize();
       await imageSearch.prepareStorage();
+      await descriptionSearch.prepare();
       if (withProvinceCatalog)
         await syncProvinceCatalog(connection, trips.models.Destination, audit);
       await planner.reconcile();

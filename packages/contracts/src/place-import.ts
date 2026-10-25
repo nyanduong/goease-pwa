@@ -29,6 +29,8 @@ export type PlaceImportCandidate = {
   venueType: 'restaurant' | 'place';
   categories: string[];
   sourceUrl: string;
+  wikipedia?: string;
+  wikidata?: string;
   openingHoursNote: string;
   flags: string[];
   closed?: boolean | null;

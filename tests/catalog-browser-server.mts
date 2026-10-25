@@ -81,6 +81,17 @@ async function main() {
     return { group, received: items.length, rejected: 0, items };
   };
   const product = createProduct(harness.connection, config, {
+    findDescription: async () => ({
+      text: 'Giới thiệu địa điểm dùng cho kiểm thử có nguồn.',
+      originalText: 'Giới thiệu địa điểm dùng cho kiểm thử có nguồn.',
+      title: 'Địa điểm kiểm thử',
+      sourceUrl: 'https://vi.wikipedia.org/w/index.php?title=Fixture&oldid=123',
+      language: 'vi',
+      translated: false,
+      revisionId: 123,
+      license: 'CC-BY-SA-4.0',
+      match: 'linked',
+    }),
     findImages: async () =>
       Array.from({ length: 6 }, (_, index) => ({
         ...storedFixtureCandidate,
@@ -170,7 +181,13 @@ async function main() {
   // Older operational scenarios start with reviewed photos before any proposal snapshots.
   await product.explore.models.Place.updateMany(
     {},
-    { $set: { images: [fixturePhoto] } },
+    {
+      $set: {
+        images: [fixturePhoto],
+        description: 'Nội dung giới thiệu dành cho dữ liệu kiểm thử.',
+        subtitle: 'Dữ liệu kiểm thử.',
+      },
+    },
   );
   await product.explore.models.Place.updateOne(
     { 'source.externalId': 'osm:node:8001' },
@@ -211,9 +228,11 @@ async function main() {
   phase = 2;
   product.operations.start();
   product.imageSearch.start();
+  product.descriptionSearch.start();
   const stop = async () => {
     await product.operations.stop();
     await product.imageSearch.stop();
+    await product.descriptionSearch.stop();
     server.close();
     await harness.stop();
     process.exit(0);

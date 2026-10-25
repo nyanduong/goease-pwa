@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
+import mongoose from 'mongoose';
 import { adminPlaceQuerySchema, provinceImportSchema } from '@goease/contracts';
 import { createProduct } from '../src/product.js';
 import { parseConfig } from '../src/config.js';
@@ -20,6 +21,8 @@ test(
     let imageMode: 'ready' | 'empty' | 'failed' = 'ready';
     let imageHook: (() => Promise<void>) | undefined;
     let imageCalls = 0;
+    let descriptionCalls = 0;
+    let descriptionHook: (() => Promise<void>) | undefined;
     const product = createProduct(
       harness.connection,
       parseConfig({
@@ -28,6 +31,22 @@ test(
         MONGODB_URI: `mongodb://127.0.0.1:27021/${harness.connection.name}?replicaSet=${harness.setName}`,
       }),
       {
+        findDescription: async () => {
+          descriptionCalls++;
+          await descriptionHook?.();
+          return {
+            text: 'Giới thiệu địa điểm dùng cho kiểm thử có nguồn.',
+            originalText: 'Giới thiệu địa điểm dùng cho kiểm thử có nguồn.',
+            title: 'Địa điểm kiểm thử',
+            sourceUrl:
+              'https://vi.wikipedia.org/w/index.php?title=Fixture&oldid=123',
+            language: 'vi',
+            translated: false,
+            revisionId: 123,
+            license: 'CC-BY-SA-4.0',
+            match: 'linked',
+          };
+        },
         findImages: async () => {
           imageCalls++;
           await imageHook?.();
@@ -191,6 +210,8 @@ test(
         'worker writes drafts with unknown prices; no automatic publication',
         async () => {
           assert.equal(place.publicationStatus, 'draft');
+          assert.equal(place.description, '');
+          assert.match(place.internalNote, /Geoapify/);
           assert.equal(place.referencePrice, null);
           assert.equal(place.source?.provider, 'geoapify');
           assert.equal(
@@ -227,6 +248,12 @@ test(
           await assert.rejects(
             product.imageSearch.read(traveler, String(place._id)),
           );
+          await product.descriptionSearch.tick();
+          const described = await product.catalog.proposal(
+            (await product.explore.models.Place.findById(place._id))!,
+          );
+          assert.match(described.description, /kiểm thử có nguồn/);
+          assert.equal(described.descriptionSource?.revisionId, 123);
           await product.imageSearch.tick();
           const suggestions = await product.imageSearch.read(
             actor,
@@ -256,7 +283,7 @@ test(
             ...observed.toObject(),
             fieldLocks: ['images'],
           });
-          assert.equal(catalog.withDefaultCover(locked).images.length, 0);
+          assert.equal(catalog.withSourceDefaults(locked).images.length, 0);
           const chosen = product.explore.models.Place.hydrate({
             ...observed.toObject(),
             images: [
@@ -268,7 +295,7 @@ test(
             ],
           });
           assert.equal(
-            catalog.withDefaultCover(chosen).images[0]?.url,
+            catalog.withSourceDefaults(chosen).images[0]?.url,
             'https://res.cloudinary.com/fixture/image/upload/other.webp',
           );
           assert.equal(suggestions.defaultCover?.selection, 'automatic');
@@ -296,6 +323,7 @@ test(
             {
               ...form,
               publicationStatus: 'draft',
+              description: described.description,
               images: [
                 {
                   ...suggestions.candidates[0]!.image,
@@ -343,6 +371,11 @@ test(
           assert.equal(preview.eligible, 1);
           const result = await product.v3.executeBulk(actor, preview.id, false);
           assert.equal(result.succeeded, 1);
+          assert.equal(
+            (await product.explore.models.Place.findById(place._id))!
+              .descriptionSource?.revisionId,
+            123,
+          );
           assert.equal(
             (await product.explore.models.Place.findById(place._id))!
               .publicationStatus,
@@ -520,6 +553,70 @@ test(
             (await product.imageSearch.read(actor, String(place._id))).state,
             'ready',
             'storage preparation is idempotent',
+          );
+        },
+      );
+      await t.test(
+        'description lookup respects locks, authorization and stale revisions without overwriting drafts',
+        async () => {
+          const { Place } = product.explore.models;
+          const current = (await Place.findById(place._id))!;
+          const draft = await Place.create({
+            ...current.toObject(),
+            _id: new mongoose.Types.ObjectId(),
+            name: 'Địa điểm giới thiệu kiểm thử',
+            publicationStatus: 'draft',
+            proposalRevision: null,
+            publicRevision: null,
+            description: '',
+            descriptionSource: null,
+            fieldLocks: ['description'],
+            source: {
+              ...current.toObject().source,
+              externalId: 'osm:node:77777777',
+            },
+            descriptionSearch: { state: 'pending', nextAttemptAt: new Date(0) },
+          });
+          await assert.rejects(
+            product.descriptionSearch.read(traveler, String(draft._id)),
+          );
+          const before = descriptionCalls;
+          await product.descriptionSearch.tick();
+          assert.equal(descriptionCalls, before);
+          assert.equal((await Place.findById(draft._id))!.description, '');
+          await Place.updateOne(
+            { _id: draft._id },
+            {
+              $set: {
+                fieldLocks: [],
+                'descriptionSearch.state': 'pending',
+                'descriptionSearch.nextAttemptAt': new Date(0),
+              },
+            },
+          );
+          descriptionHook = async () => {
+            await Place.updateOne(
+              { _id: draft._id },
+              {
+                $inc: { revision: 1 },
+                $set: { description: 'Admin đang biên tập nội dung.' },
+              },
+            );
+          };
+          await product.descriptionSearch.tick();
+          descriptionHook = undefined;
+          const after = (await Place.findById(draft._id))!;
+          assert.equal(after.description, 'Admin đang biên tập nội dung.');
+          assert.equal(after.descriptionSearch?.state, 'pending');
+          assert.equal(after.descriptionSearch?.result, null);
+          await Place.updateOne(
+            { _id: draft._id },
+            { $set: { 'descriptionSearch.nextAttemptAt': new Date(0) } },
+          );
+          await product.descriptionSearch.tick();
+          assert.equal(
+            (await Place.findById(draft._id))!.description,
+            'Admin đang biên tập nội dung.',
           );
         },
       );

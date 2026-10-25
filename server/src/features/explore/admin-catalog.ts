@@ -1,3 +1,8 @@
+import {
+  needsPlaceDescription,
+  importedDescriptionPlaceholder,
+} from '@goease/contracts';
+import { descriptionContext, descriptionQuery } from './place-descriptions.js';
 import { catalogPhotoCover } from '@goease/contracts';
 import mongoose, {
   type Connection,
@@ -138,21 +143,45 @@ export function adminCatalog(
       ]),
     ) as AdminPlaceInput;
   }
-  function withDefaultCover(doc: Doc): Doc {
+  function withSourceDefaults(doc: Doc): Doc {
+    if (doc.publicationStatus !== 'draft') return doc;
+    const value = doc.toObject();
+    let defaultImages;
     if (
-      doc.publicationStatus !== 'draft' ||
-      doc.images.length ||
-      doc.fieldLocks?.includes('images') ||
-      !doc.imageSearch?.defaultCover
+      !doc.images.length &&
+      !doc.fieldLocks?.includes('images') &&
+      value.imageSearch?.defaultCover
     )
-      return doc;
+      defaultImages = [value.imageSearch.defaultCover];
+    if (needsPlaceDescription(doc.description)) {
+      if (
+        doc.description.trim() === importedDescriptionPlaceholder &&
+        !value.internalNote
+      )
+        value.internalNote =
+          'Nhập từ Geoapify / OpenStreetMap; cần kiểm tra trước khi xuất bản.';
+      const source = value.descriptionSearch;
+      value.description =
+        !doc.fieldLocks?.includes('description') &&
+        source?.context === descriptionContext(descriptionQuery(doc))
+          ? (source.result?.text ?? '')
+          : '';
+      value.subtitle = value.description.slice(0, 150);
+      if (value.description && source?.result)
+        value.descriptionSource = source.result;
+    }
     return Place.hydrate({
-      ...doc.toObject(),
-      images: [doc.toObject().imageSearch!.defaultCover],
+      ...value,
+      ...(defaultImages ? { images: defaultImages } : {}),
     });
   }
-  async function proposal(doc: Doc, session?: ClientSession): Promise<Doc> {
-    if (doc.proposalRevision == null) return withDefaultCover(doc);
+  async function proposal(
+    doc: Doc,
+    session?: ClientSession,
+    applyDefaults = true,
+  ): Promise<Doc> {
+    if (doc.proposalRevision == null)
+      return applyDefaults ? withSourceDefaults(doc) : doc;
     const version = await Version.findOne({
       placeId: doc._id,
       revision: doc.proposalRevision,
@@ -164,22 +193,22 @@ export function adminCatalog(
         'CATALOG_PROPOSAL_MISSING',
         'Bản đề xuất không còn hợp lệ. Tải lại để đối chiếu.',
       );
-    return withDefaultCover(
-      Place.hydrate({
-        ...version.snapshot,
-        _id: doc._id,
-        revision: doc.revision,
-        publicRevision: doc.publicRevision,
-        proposalRevision: doc.proposalRevision,
-        updatedAt: doc.updatedAt,
-        fieldLocks: doc.fieldLocks,
-        source: doc.toObject().source,
-        sourceSnapshot: doc.toObject().sourceSnapshot,
-        sourceCheckedAt: doc.sourceCheckedAt,
-        imageSearch: doc.toObject().imageSearch,
-        deletedAt: doc.deletedAt,
-      }),
-    );
+    const projected = Place.hydrate({
+      ...version.snapshot,
+      _id: doc._id,
+      revision: doc.revision,
+      publicRevision: doc.publicRevision,
+      proposalRevision: doc.proposalRevision,
+      updatedAt: doc.updatedAt,
+      fieldLocks: doc.fieldLocks,
+      source: doc.toObject().source,
+      sourceSnapshot: doc.toObject().sourceSnapshot,
+      sourceCheckedAt: doc.sourceCheckedAt,
+      imageSearch: doc.toObject().imageSearch,
+      descriptionSearch: doc.toObject().descriptionSearch,
+      deletedAt: doc.deletedAt,
+    });
+    return applyDefaults ? withSourceDefaults(projected) : projected;
   }
   async function stageInSession(
     current: Doc,
@@ -220,6 +249,7 @@ export function adminCatalog(
     const revision = current.revision + 1;
     snapshot.revision = revision;
     delete snapshot.imageSearch;
+    delete snapshot.descriptionSearch;
     await Version.create(
       [
         {
@@ -414,6 +444,7 @@ export function adminCatalog(
             'sourceSnapshot',
             'sourceCheckedAt',
             'imageSearch',
+            'descriptionSearch',
             'destinationId',
             'destinationName',
             'deletedAt',
@@ -461,7 +492,7 @@ export function adminCatalog(
     dto,
     input,
     proposal,
-    withDefaultCover,
+    withSourceDefaults,
     stageInSession,
     publishInSession,
     requireAdmin,

@@ -53,6 +53,8 @@ const featureSchema = z.object({
             opening_hours: z.string().max(1000).optional(),
             disused: z.string().max(20).optional(),
             abandoned: z.string().max(20).optional(),
+            wikipedia: z.string().max(300).optional(),
+            wikidata: z.string().max(40).optional(),
             website: z.string().max(2048).optional(),
             phone: z.string().max(200).optional(),
           })
@@ -75,6 +77,8 @@ export type GeoapifyCandidate = {
   category: 'food' | 'culture' | 'nature';
   venueType: 'restaurant' | 'place';
   sourceUrl: string;
+  wikipedia?: string;
+  wikidata?: string;
   openingHoursNote: string;
   flags: string[];
   closed?: boolean | null;
@@ -171,6 +175,10 @@ export function normalizeGeoapify(
       category: food ? 'food' : nature ? 'nature' : 'culture',
       venueType: food ? 'restaurant' : 'place',
       sourceUrl,
+      ...(osm?.wikipedia ? { wikipedia: osm.wikipedia } : {}),
+      ...(osm?.wikidata && /^Q[1-9][0-9]*$/.test(osm.wikidata)
+        ? { wikidata: osm.wikidata }
+        : {}),
       openingHoursNote: (osm?.opening_hours ?? '').slice(0, 400),
       closed: osm?.disused === 'yes' || osm?.abandoned === 'yes' ? true : null,
       flags: [

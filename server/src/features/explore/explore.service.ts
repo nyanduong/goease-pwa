@@ -1,3 +1,7 @@
+import {
+  descriptionSearchModel,
+  descriptionResultModel,
+} from './place-descriptions.model.js';
 import { photoSchema, imageSearchSchema } from './place-images.model.js';
 
 import mongoose, {
@@ -48,6 +52,8 @@ export function exploreService(connection: Connection) {
         default: [],
         validate: (v: unknown[]) => v.length <= 8,
       },
+      descriptionSearch: { type: descriptionSearchModel, required: false },
+      descriptionSource: { type: descriptionResultModel, default: null },
       imageSearch: { type: imageSearchSchema, default: () => ({}) },
       sourceCheckedAt: { type: Date, default: null },
       venueType: { type: String, enum: ['place', 'restaurant', 'food_idea'] },
@@ -79,8 +85,8 @@ export function exploreService(connection: Connection) {
         enum: ['food', 'culture', 'nature'],
         required: true,
       },
-      subtitle: { type: String, required: true, maxlength: 150 },
-      description: { type: String, required: true, maxlength: 2000 },
+      subtitle: { type: String, default: '', maxlength: 150 },
+      description: { type: String, default: '', maxlength: 2000 },
       searchText: { type: String, required: true, maxlength: 2500 },
       imageUrl: { type: String, default: '', maxlength: 2048 },
       durationLabel: { type: String, required: true, maxlength: 60 },
@@ -263,6 +269,14 @@ export function exploreService(connection: Connection) {
     category: doc.category as PlaceDto['category'],
     subtitle: doc.subtitle,
     description: doc.description,
+    descriptionSource: doc.descriptionSource
+      ? {
+          title: doc.descriptionSource.title,
+          sourceUrl: doc.descriptionSource.sourceUrl,
+          license: doc.descriptionSource.license,
+          translated: doc.descriptionSource.translated,
+        }
+      : null,
     imageUrl:
       catalogPhotoCover(
         doc.images.map((i) =>

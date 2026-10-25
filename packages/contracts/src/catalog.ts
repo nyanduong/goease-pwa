@@ -1,3 +1,4 @@
+import { needsPlaceDescription } from './place-description.js';
 import { z } from 'zod';
 import type { ActivityInput } from './product.js';
 import type { PlaceDto } from './explore.js';
@@ -133,7 +134,7 @@ export const adminPlaceInputSchema = z
     name: z.string().trim().min(1).max(120),
     category: z.enum(['food', 'culture', 'nature']),
     venueType: z.enum(['place', 'restaurant', 'food_idea']),
-    description: z.string().trim().min(1).max(2000),
+    description: z.string().trim().max(2000),
     locationQuery: z.string().trim().min(1).max(200),
     durationMinutes: z.number().int().min(15).max(720),
     openingHoursNote: z.string().trim().max(400),
@@ -150,6 +151,15 @@ export const adminPlaceInputSchema = z
       .optional(),
   })
   .superRefine((v, ctx) => {
+    if (
+      v.publicationStatus === 'published' &&
+      needsPlaceDescription(v.description)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['description'],
+        message: 'Cần giới thiệu địa điểm có nội dung trước khi xuất bản.',
+      });
     if (v.publicationStatus === 'published' && !approvedPhoto(v.images?.[0]))
       ctx.addIssue({
         code: 'custom',
@@ -240,7 +250,7 @@ export function catalogCapabilities(
   const discovery =
     approvedPhoto(place.images?.[0]) &&
     !!place.name.trim() &&
-    !!place.description.trim() &&
+    !needsPlaceDescription(place.description) &&
     !!place.locationQuery.trim() &&
     publicSourceSchema.safeParse(place.sourceUrl).success &&
     !/cần đối chiếu|đang rà soát|cần xác minh/i.test(

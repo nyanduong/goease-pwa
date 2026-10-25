@@ -27,6 +27,8 @@ export const sourceSnapshotModel = new Schema(
     categories: { type: [String], validate: (v: string[]) => v.length <= 100 },
     openingHoursNote: { type: String, default: '', maxlength: 400 },
     closed: { type: Boolean, default: null },
+    wikipedia: { type: String, maxlength: 300 },
+    wikidata: { type: String, maxlength: 40 },
     sourceUrl: { type: String, required: true, maxlength: 2048 },
   },
   { _id: false, strict: 'throw', versionKey: false },

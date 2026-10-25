@@ -1,3 +1,4 @@
+import { AdminPlaceDescription } from './admin-place-description';
 import { AdminPageHeader } from './admin-visuals';
 import {
   AdminFieldEvidence,
@@ -1175,7 +1176,7 @@ export function AdminCatalog({
                   >
                     Giới thiệu ngắn
                     <textarea
-                      required
+                      placeholder="Giới thiệu về địa điểm. Có thể để trống khi lưu bản nháp."
                       rows={3}
                       maxLength={2000}
                       value={form.description}
@@ -1183,6 +1184,12 @@ export function AdminCatalog({
                     />
                     {fieldError('description')}
                   </label>
+                  <AdminPlaceDescription
+                    place={saved}
+                    form={form}
+                    update={update}
+                    disabled={busy}
+                  />
                   <label
                     data-editor-field="locationQuery"
                     id="admin-section-location"
@@ -1578,6 +1585,14 @@ export function AdminCatalog({
               >
                 <section className="admin-panel" id="admin-section-evidence">
                   <h2>Nguồn & lịch sử</h2>
+                  {editorTab === 'sources' && (
+                    <AdminPlaceDescription
+                      place={saved}
+                      form={form}
+                      update={update}
+                      sourceOnly
+                    />
+                  )}
                   {form && scope !== form.destinationId && (
                     <p className="admin-soft-notice">
                       Đang sửa địa điểm thuộc{' '}

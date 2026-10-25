@@ -373,9 +373,14 @@ export function placeImportService(
                 ),
                 category: p.category,
                 venueType: p.venueType,
-                description:
-                  'Địa điểm nhập từ Geoapify / OpenStreetMap; cần biên tập và kiểm tra thông tin trước khi đi.',
-                subtitle: 'Thông tin nguồn mở, chưa xác minh tại cơ sở.',
+                description: '',
+                internalNote:
+                  'Nhập từ Geoapify / OpenStreetMap; cần kiểm tra thông tin trước khi xuất bản.',
+                descriptionSearch: {
+                  state: 'pending',
+                  nextAttemptAt: new Date(),
+                },
+                subtitle: '',
                 searchText: normalizeSearch(`${p.name} ${p.address}`).slice(
                   0,
                   2500,
@@ -397,6 +402,8 @@ export function placeImportService(
                   category: p.category,
                   venueType: p.venueType,
                   categories: [...p.categories].sort(),
+                  ...(p.wikipedia ? { wikipedia: p.wikipedia } : {}),
+                  ...(p.wikidata ? { wikidata: p.wikidata } : {}),
                   sourceUrl: p.sourceUrl,
                   openingHoursNote: p.openingHoursNote,
                   closed: p.closed ?? null,

@@ -703,6 +703,28 @@ export function PlaceDetail({
           </span>
         </div>
         <p className="place-description">{place.description}</p>
+        {place.descriptionSource && (
+          <small className="place-description-credit">
+            {place.descriptionSource.translated
+              ? 'Dịch và biên tập từ '
+              : 'Trích/biên tập từ '}
+            <a
+              href={place.descriptionSource.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Wikipedia · {place.descriptionSource.title}
+            </a>{' '}
+            ·{' '}
+            <a
+              href="https://creativecommons.org/licenses/by-sa/4.0/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {place.descriptionSource.license}
+            </a>
+          </small>
+        )}
         <aside className="place-tip">
           <img src={images.goeMascot} alt="Goe" />
           <div>

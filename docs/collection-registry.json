@@ -674,6 +674,24 @@
           "2; number|null; number|null; enum[]; strict object[]",
           "2; null; null; []; []",
           "CAT-17: public fields remain stable on proposal save/restore. Arrays bounded by editable field set. Provenance origin/receivedAt/verifiedAt/validUntil/actorId/state, unknown remains unknown."
+        ],
+        [
+          "descriptionSearch",
+          "embedded object?",
+          "Imported drafts queued pending",
+          "IMPLEMENTED CAT-21: state/result/context/message/attempts/nextAttemptAt/leaseToken/leaseUntil/checkedAt. Result text/originalText/title/sourceUrl/language/translated/revisionId/license/match. Not editorial revision; context/revision fenced. See WIKIPEDIA-DESCRIPTIONS.md."
+        ],
+        [
+          "descriptionSource",
+          "embedded object?",
+          "null",
+          "IMPLEMENTED: source result snapshot saved with editorial content and versions; public exposes attribution only."
+        ],
+        [
+          "sourceSnapshot.wikipedia; sourceSnapshot.wikidata",
+          "string?; string?",
+          "optional",
+          "IMPLEMENTED: max300 Wikipedia tag; Q positive integer Wikidata hint."
         ]
       ],
       "indexes": "Unique partial {source.provider,source.externalId} khi có externalId; {destinationId,publicationStatus,deletedAt}; 2dsphere location nếu dùng near.",
@@ -694,7 +712,7 @@
         "CAT-13",
         "CAT-15"
       ],
-      "implementationStatus": "Local curated catalog: destinationId/destinationName/name/slug/description/category/subtitle/searchText/imageUrl/durationLabel/travelLabel/bestTimeLabel/tip/highlights/sourceUrl/imageCredit/publicationStatus/deletedAt and mutable metadata. Index destinationId/publicationStatus/deletedAt implemented. Geoapify/OSM source subset and partial unique external index implemented; other providers/general SourceRef/geo index remain planned. Map runtime: optional mapLocation latitude/longitude/label/precision=area/sourceUrl/checkedAt with bounds and HTTPS/date validation; no geo index; absent-only backfill, see TRIP-MAP.md.",
+      "implementationStatus": "Local curated catalog: destinationId/destinationName/name/slug/description/category/subtitle/searchText/imageUrl/durationLabel/travelLabel/bestTimeLabel/tip/highlights/sourceUrl/imageCredit/publicationStatus/deletedAt and mutable metadata. Index destinationId/publicationStatus/deletedAt implemented. Geoapify/OSM source subset and partial unique external index implemented; other providers/general SourceRef/geo index remain planned. Map runtime: optional mapLocation latitude/longitude/label/precision=area/sourceUrl/checkedAt with bounds and HTTPS/date validation; no geo index; absent-only backfill, see TRIP-MAP.md. CAT-21 implemented: description may be empty on draft, publication rejects empty/import placeholder. Embedded description queue and source snapshot, no dedicated queue index. See WIKIPEDIA-DESCRIPTIONS.md.",
       "runtimeFields": [
         [
           "destinationName; name; slug",

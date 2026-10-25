@@ -1395,3 +1395,7 @@ Destination.catalogWriteFence mặc định0: chốt ghi chung của source/inge
 Owner cập nhật CAT-20: tự chọn ảnh đầu tiên cho draft chưa có ảnh và không khóa images; admin đổi ảnh bằng **Dùng làm ảnh bìa**, không cần bước duyệt riêng. Thông tin ảnh trong editor thu gọn; giữ metadata và ghi công public. Thay các hướng dẫn duyệt thủ công bắt buộc ở phần trước.
 
 Schema đã triển khai: photo.selection optional enum automatic/admin; reviewed vẫn là boolean, không tự gán true cho ảnh tự chọn. imageSearch.defaultCover photo|null giữ ảnh đầu tiên ổn định qua retry. Backfill ứng viên Cloudinary cũ khi thiếu defaultCover, không đổi editorial revision/publication. DTO draft và bulk áp dụng defaultCover khi images rỗng, không khóa; save/publish lưu vào snapshot. Ảnh đã chọn và public không bị thay. GET images bổ sung defaultCover để form đang mở cập nhật khi worker hoàn tất. Gate chấp nhận selection automatic/admin hoặc reviewed=true, metadata hợp lệ và không phải AI. Không tự xuất bản.
+
+## Bổ sung CAT-21 — Giới thiệu địa điểm
+
+Đã triển khai hàng đợi embedded `places.descriptionSearch`, snapshot `descriptionSource`, optional Wikipedia/Wikidata hints trong `sourceSnapshot`; draft cho phép giới thiệu trống, xuất bản yêu cầu nội dung thực. Worker chỉ điền mặc định đúng ngữ cảnh và giữ nội dung admin/field locks; nguồn và bản dịch được truy vết. Dịch dùng quota AI global hiện có. Không thêm collection hoặc index. Hợp đồng, dictionary, giới hạn và kiểm chứng: [WIKIPEDIA-DESCRIPTIONS](WIKIPEDIA-DESCRIPTIONS.md).
