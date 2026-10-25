@@ -16,6 +16,14 @@ export const fixtureCandidate: ImageCandidate = {
   image: { ...fixturePhoto, reviewed: false },
 };
 
+export const storedFixtureCandidate: ImageCandidate = {
+  ...fixtureCandidate,
+  image: {
+    ...fixtureCandidate.image,
+    url: 'https://res.cloudinary.com/fixture/image/upload/v1/goease/places/wikimedia/test-fixture.webp',
+  },
+};
+
 export async function publishFixturePhotos(
   Place: ReturnType<
     typeof import('../../src/features/explore/explore.service.js').exploreService

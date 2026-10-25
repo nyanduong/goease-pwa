@@ -453,11 +453,14 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
   await page
     .getByLabel('Địa chỉ / vị trí tìm trên bản đồ')
     .fill('Địa chỉ kiểm thử Hội An');
+  await page.getByRole('tab', { name: 'Nguồn & lịch sử' }).click();
   await page
     .getByLabel('Link nguồn thông tin')
     .fill('https://example.com/ui-fixture');
+  await page.getByText('Kiểm tra vị trí →', { exact: true }).click();
   await page.getByLabel('Vĩ độ', { exact: true }).fill('15.88');
   await page.getByLabel('Kinh độ', { exact: true }).fill('108.328');
+  await page.getByText('Ghi chú nội bộ', { exact: true }).click();
   await page
     .getByLabel('Chỉ quản trị viên nhìn thấy')
     .fill('Ghi chú kiểm thử riêng');
@@ -466,6 +469,7 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
     page.getByRole('status').filter({ hasText: 'Đã lưu đề xuất' }),
   ).toBeVisible();
   await page.getByLabel('Tự lưu bản nháp hợp lệ sau 2 giây').check();
+  await page.getByRole('tab', { name: 'Tổng quan', exact: true }).click();
   await page
     .getByLabel('Tên địa điểm / quán ăn', { exact: true })
     .fill('Địa điểm V3 đã tự lưu fixture');
@@ -711,6 +715,7 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
     publicBefore,
   );
 
+  await page.getByRole('tab', { name: 'Nguồn & lịch sử' }).click();
   const historical = page
     .locator('.admin-version')
     .filter({ hasText: `Bản ${initial.publicRevision} · Công khai` });

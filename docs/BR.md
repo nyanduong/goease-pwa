@@ -487,15 +487,15 @@ Owner yêu cầu tự động lấy địa điểm sau khi bật tỉnh. Thay ph
 
 Chi tiết và bằng chứng: [PROVINCE-IMPORT](PROVINCE-IMPORT.md).
 
-## CAT-20 — Ảnh thật Wikimedia, duyệt ảnh và chặn xuất bản (25/10/2026)
+## CAT-20 — Ảnh thật và ảnh bìa mặc định (25/10/2026)
 
-Owner chốt tự lấy ảnh thật vào draft cho admin chọn; thiếu ảnh không xuất bản và bỏ ảnh AI của địa điểm. Quy tắc này thay phần ảnh minh họa trong CAT-19 và bổ sung CAT-15/17.
+Owner chốt: hệ thống tự dùng ảnh đầu tiên làm bìa cho bản nháp; admin có thể đổi ảnh khác, không cần bước duyệt quyền sử dụng riêng trong luồng chọn ảnh. Quy tắc này thay yêu cầu duyệt thủ công trước đây của CAT-20; vẫn không dùng ảnh AI cho địa điểm.
 
-- Mỗi POI mới có lượt tìm Wikimedia Commons tự động. Gợi ý theo tên + tỉnh; không có kết quả hợp lệ thì thử ảnh trong 500 m nếu có tọa độ. Tối đa 6 ứng viên, chưa phải ảnh đã xác minh. Không cam kết mọi địa điểm đều có ảnh hoặc kết quả cùng tên là đúng địa điểm.
-- Chỉ nhận JPEG/PNG/WebP từ host Wikimedia được phép, có ghi công và giấy phép mở được hỗ trợ. Không nhận AI/illustration/map/logo nhận biết được từ metadata. Bộ lọc không thay kiểm tra của con người. Admin mở trang nguồn, kiểm tra ảnh thật đúng địa điểm và điều kiện giấy phép rồi chọn làm bìa, lưu đề xuất.
-- Xuất bản từng mục, duyệt xuất bản và theo lô đều yêu cầu ảnh đầu tiên có `reviewed=true`, URL HTTPS, ghi công, nguồn và giấy phép hợp lệ. Thiếu/chưa duyệt ảnh là blocker phía server. Chọn ảnh không tự lưu, không tự xuất bản. Ảnh thủ công vẫn được dùng nếu admin xác nhận ảnh thật/quyền sử dụng và đủ metadata.
-- Lượt tìm ảnh là quan sát nguồn, không sửa ảnh biên tập, public revision hoặc chuyến cũ. Lỗi/không tìm thấy ảnh giữ nội dung nguyên trạng và báo rõ; không sinh ảnh AI thay thế. Retry tự động tối đa 3 lần; có nút thử lại với khoảng nghỉ 60 giây.
-- UI địa điểm dùng placeholder trung tính khi chưa có ảnh được duyệt hoặc ảnh không tải được. Không sử dụng `imageUrl` AI cũ làm fallback. Không tự xác nhận quyền/duyệt ảnh cũ và không tự archive nội dung đã published trước quy tắc này; lần xuất bản tiếp theo phải qua gate mới. Seed mẫu tạo POI mới ở draft, không tự xuất bản thiếu ảnh.
-- Public hiển thị ghi công/giấy phép và nguồn ảnh; ứng viên và trạng thái thu thập chỉ admin xem. Hiện dùng URL Wikimedia, chưa tải lại lên Cloudinary hay triển khai kiểm tra ảnh hỏng định kỳ.
+- Tìm tối đa 6 ảnh Wikimedia theo tên/tỉnh hoặc gần tọa độ, lọc định dạng và metadata giấy phép, tải/re-encode lên Cloudinary. Không cam kết mọi địa điểm có đủ 6 ảnh hoặc ảnh luôn đúng đối tượng.
+- Lưu ảnh đầu tiên làm imageSearch.defaultCover ổn định với selection=automatic, reviewed=false. Retry không thay bìa mặc định. Bản nháp chưa có ảnh và không khóa trường images sử dụng bìa này trong DTO, kiểm tra và xuất bản theo lô; lưu/xuất bản đưa ảnh vào snapshot biên tập. Không giả định admin đã duyệt ảnh tự động.
+- Ảnh admin đã chọn ưu tiên hơn bìa mặc định. Đổi ảnh có selection=admin; nút Dùng làm ảnh bìa không đòi nhập lại nguồn/giấy phép. Metadata giấy phép và ghi công vẫn được giữ, thông tin ảnh trong editor thu gọn; public vẫn giữ ghi công.
+- Gate xuất bản yêu cầu ảnh bìa hợp lệ có selection=automatic/admin hoặc reviewed=true từ dữ liệu cũ; thiếu ảnh vẫn bị chặn. Chọn ảnh không tự xuất bản. Ảnh thủ công ngoài ứng viên vẫn cần metadata hợp lệ.
+- Ảnh mặc định là quan sát nguồn bền vững, không đổi editorial revision; không ghi đè ảnh đã chọn, trường khóa, bản công khai hay chuyến cũ. Backfill observation Cloudinary hiện có một lần khi thiếu defaultCover; không purge asset hay xóa attribution.
+- Không có ảnh/lỗi provider thì báo rõ và cho thử lại, không sinh AI hoặc fallback URL ảnh gốc. Public không dùng imageUrl AI cũ.
 
-Hợp đồng, hướng dẫn demo và giới hạn: [WIKIMEDIA-PHOTOS](WIKIMEDIA-PHOTOS.md).
+Hợp đồng và giới hạn: [WIKIMEDIA-PHOTOS](WIKIMEDIA-PHOTOS.md).

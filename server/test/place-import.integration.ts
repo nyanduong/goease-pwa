@@ -3,6 +3,7 @@ import {
   fixtureDestinationId,
 } from './support/catalog-scope.js';
 import assert from 'node:assert/strict';
+import { fixturePhoto } from './support/photo.js';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import type { AddressInfo } from 'node:net';
@@ -307,18 +308,21 @@ test(
             publicRevision,
             fieldProvenance,
             capabilities,
+            photoSearch,
             ...input
           } = saved.place;
           void proposalRevision;
           void publicRevision;
           void fieldProvenance;
           void capabilities;
+          void photoSearch;
           void updatedAt;
           void source;
           void imageUrl;
           void imageCredit;
           const edited: AdminPlaceInput = {
             ...input,
+            images: [fixturePhoto],
             name: 'Tên do admin biên tập',
             referencePrice: {
               label: 'Vé kiểm thử',

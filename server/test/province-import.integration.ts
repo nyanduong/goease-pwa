@@ -6,7 +6,7 @@ import { createProduct } from '../src/product.js';
 import { parseConfig } from '../src/config.js';
 import { HttpError } from '../src/http-error.js';
 import { startTestReplicaSet } from './support/replica-set.js';
-import { fixtureCandidate } from './support/photo.js';
+import { storedFixtureCandidate as fixtureCandidate } from './support/photo.js';
 
 test(
   'province enable → source draft → reviewed bulk publication, retries and boundaries',
@@ -208,7 +208,7 @@ test(
         },
       );
       await t.test(
-        'missing photos block publication; automatic candidates require explicit editorial approval',
+        'missing photos block publication; first candidate becomes a stable automatic draft cover',
         async () => {
           const bulk = {
             action: 'publish' as const,
@@ -233,15 +233,48 @@ test(
             String(place._id),
           );
           assert.equal(suggestions.state, 'ready');
+          assert.ok(
+            suggestions.candidates[0]?.image.url.startsWith(
+              'https://res.cloudinary.com/',
+            ),
+          );
           assert.equal(suggestions.candidates[0]?.image.reviewed, false);
           const observed = (await product.explore.models.Place.findById(
             place._id,
           ))!;
           assert.equal(observed.revision, place.revision);
           assert.equal(observed.images.length, 0);
+          const effective = await catalog.proposal(observed);
+          assert.equal(
+            effective.images[0]?.url,
+            suggestions.candidates[0]?.image.url,
+          );
+          assert.equal(effective.images[0]?.selection, 'automatic');
+          assert.equal(effective.images[0]?.reviewed, false);
+          assert.equal(effective.publicationStatus, 'draft');
+          const locked = product.explore.models.Place.hydrate({
+            ...observed.toObject(),
+            fieldLocks: ['images'],
+          });
+          assert.equal(catalog.withDefaultCover(locked).images.length, 0);
+          const chosen = product.explore.models.Place.hydrate({
+            ...observed.toObject(),
+            images: [
+              {
+                ...fixtureCandidate.image,
+                url: 'https://res.cloudinary.com/fixture/image/upload/other.webp',
+                selection: 'admin',
+              },
+            ],
+          });
+          assert.equal(
+            catalog.withDefaultCover(chosen).images[0]?.url,
+            'https://res.cloudinary.com/fixture/image/upload/other.webp',
+          );
+          assert.equal(suggestions.defaultCover?.selection, 'automatic');
           assert.equal(
             (await product.v3.previewBulk(actor, bulk, randomUUID())).eligible,
-            0,
+            1,
           );
           const form = {
             ...catalog.input(observed),
@@ -461,6 +494,33 @@ test(
           ))!;
           assert.equal(current.publicationStatus, 'published');
           assert.equal(current.images[0]?.reviewed, true);
+          await product.explore.models.Place.collection.updateOne(
+            { _id: place._id },
+            {
+              $unset: { 'imageSearch.storageVersion': '' },
+              $set: { 'imageSearch.state': 'ready' },
+            },
+          );
+          await product.imageSearch.prepareStorage();
+          const requeued = (await product.explore.models.Place.findById(
+            place._id,
+          ))!;
+          assert.equal(requeued.imageSearch?.storageVersion, 1);
+          assert.equal(requeued.imageSearch?.state, 'pending');
+          assert.equal(requeued.revision, current.revision);
+          assert.equal(requeued.images[0]?.url, current.images[0]?.url);
+          await product.imageSearch.tick();
+          await product.imageSearch.prepareStorage();
+          assert.equal(
+            (await product.imageSearch.read(actor, String(place._id)))
+              .defaultCover?.url,
+            current.imageSearch?.defaultCover?.url,
+          );
+          assert.equal(
+            (await product.imageSearch.read(actor, String(place._id))).state,
+            'ready',
+            'storage preparation is idempotent',
+          );
         },
       );
     } finally {

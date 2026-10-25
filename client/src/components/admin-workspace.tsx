@@ -320,6 +320,7 @@ export function AdminWorkspace({
       )}
       <div hidden={tab !== 'places'}>
         <AdminCatalog
+          adminName={name}
           destinations={destinations}
           openPlace={openPlace}
           scope={scope}

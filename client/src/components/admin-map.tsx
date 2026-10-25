@@ -139,7 +139,9 @@ export function AdminMap({
       {failed && (
         <p role="alert">
           Chưa tải được nền bản đồ. Vị trí đã lưu vẫn giữ nguyên.{' '}
-          <button onClick={() => setRetry((v) => v + 1)}>Thử lại bản đồ</button>
+          <button type="button" onClick={() => setRetry((v) => v + 1)}>
+            Thử lại bản đồ
+          </button>
         </p>
       )}
       <p className="admin-map-legend" hidden={!!area}>
@@ -162,7 +164,10 @@ export function AdminMap({
           <strong>{selected.name}</strong>
           <p>{selected.locationQuery}</p>
           {onOpen && (
-            <button onClick={() => openRef.current?.(selected.id)}>
+            <button
+              type="button"
+              onClick={() => openRef.current?.(selected.id)}
+            >
               Mở địa điểm
             </button>
           )}

@@ -15,9 +15,7 @@ export function AdminImageGallery({
     [error, setError] = useState('');
   return (
     <details>
-      <summary>
-        Quản lý ảnh có quyền sử dụng ({form.images?.length ?? 0}/8)
-      </summary>
+      <summary>Ảnh đã chọn ({form.images?.length ?? 0}/8)</summary>
       <p>
         Ảnh đầu tiên làm ảnh đại diện. Chỉ thêm ảnh bạn sở hữu, được cho phép
         hoặc có giấy phép phù hợp.

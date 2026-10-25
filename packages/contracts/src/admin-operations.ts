@@ -97,7 +97,7 @@ export function catalogQuality(
   if (!approvedPhoto(p.images?.[0]))
     issues.push({
       code: 'image',
-      label: 'Thiếu ảnh bìa thật đã duyệt và thông tin quyền sử dụng',
+      label: 'Chưa có ảnh bìa hợp lệ',
       severity: 'high',
     });
   if (now - new Date(p.updatedAt).getTime() > freshnessDays * 86400000)

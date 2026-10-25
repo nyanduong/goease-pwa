@@ -712,7 +712,7 @@
           "imageUrl; sourceUrl; imageCredit",
           "string",
           "imageUrl default empty; sourceUrl/imageCredit required",
-          "CAT-20: max2048; max2048; max1000. Public cover projects first reviewed real photo; legacy AI imageUrl never used as fallback. No provider file cache."
+          "CAT-20: max2048; max2048; max1000. Public cover projects first selected real photo; legacy AI imageUrl never used as fallback. No provider file cache."
         ],
         [
           "durationLabel; travelLabel; bestTimeLabel; tip",
@@ -754,13 +754,13 @@
           "images",
           "object[]",
           "[]",
-          "CAT-20: max8 HTTPS url/sourceUrl<=2048,credit1..1000,license owned/permission/CC0/Public-domain/CC-BY[-SA]-2.0|2.5|3.0|4.0,licenseUrl? HTTPS,reviewed defaultfalse. First approved photo projects hero; published writes require approved cover. No AI fallback/upload/server rights verification."
+          "CAT-20: max8 HTTPS url/sourceUrl<=2048,credit1..1000,license owned/permission/CC0/Public-domain/CC-BY[-SA]-2.0|2.5|3.0|4.0,licenseUrl? HTTPS,reviewed defaultfalse; selection? enum automatic/admin. First selected photo projects hero; publication accepts selection automatic/admin or reviewed=true. No AI fallback/upload/server rights verification."
         ],
         [
           "imageSearch",
           "bounded embedded object",
-          "state=pending; candidates=[]; attempts=0; nextAttemptAt=now; leaseToken/leaseUntil/checkedAt=null; message=empty",
-          "CAT-20 implemented: state pending/searching/ready/empty/failed; <=6 candidates(id<=40,title<=300,match name|nearby,image same photo schema); message<=300. Index state+nextAttemptAt+leaseUntil. Independent source observation; no editorial revision/updatedAt change, publish/restore preserve current state."
+          "defaultCover=null; storageVersion=1; state=pending; candidates=[]; attempts=0; nextAttemptAt=now; leaseToken/leaseUntil/checkedAt=null; message=empty",
+          "CAT-20 implemented: defaultCover photo|null is the stable automatic first candidate, applied only to empty unlocked draft images; selection automatic/admin does not imply human review. state pending/searching/ready/empty/failed; <=6 candidates(id<=40,title<=300,match name|nearby,image same photo schema); message<=300. Index state+nextAttemptAt+leaseUntil. Independent source observation; no editorial revision/updatedAt change, publish/restore preserve current state."
         ]
       ]
     },

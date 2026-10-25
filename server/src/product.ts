@@ -8,6 +8,7 @@ import { registrationOtpSchema } from '@goease/contracts';
 import { adminCatalog } from './features/explore/admin-catalog.js';
 import { placeImportService } from './features/explore/place-import.js';
 import { placeImages } from './features/explore/place-images.js';
+import { storedWikimediaImages } from './features/explore/place-photo-storage.js';
 import {
   wikimediaImages,
   type FindImages,
@@ -151,7 +152,7 @@ export function createProduct(
   const imageSearch = placeImages(
     explore,
     catalog,
-    dependencies.findImages ?? wikimediaImages(),
+    dependencies.findImages ?? storedWikimediaImages(config, wikimediaImages()),
   );
   const destinations = destinationCatalog(
     connection,
@@ -1076,6 +1077,7 @@ export function createProduct(
         await model.createIndexes();
       }
       await audit.initialize();
+      await imageSearch.prepareStorage();
       if (withProvinceCatalog)
         await syncProvinceCatalog(connection, trips.models.Destination, audit);
       await planner.reconcile();

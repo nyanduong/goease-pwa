@@ -15,7 +15,7 @@ import { HttpError } from '../server/src/http-error.js';
 import type { GeoapifyCandidate } from '../server/src/features/explore/geoapify.js';
 import { e2eApiPort, e2eWebOrigin } from './ports.js';
 import {
-  fixtureCandidate,
+  storedFixtureCandidate,
   fixturePhoto,
 } from '../server/test/support/photo.js';
 
@@ -81,7 +81,19 @@ async function main() {
     return { group, received: items.length, rejected: 0, items };
   };
   const product = createProduct(harness.connection, config, {
-    findImages: async () => [fixtureCandidate],
+    findImages: async () =>
+      Array.from({ length: 6 }, (_, index) => ({
+        ...storedFixtureCandidate,
+        id: String(123 + index),
+        title: 'File:GoEase test fixture ' + (index + 1),
+        image: {
+          ...storedFixtureCandidate.image,
+          url: storedFixtureCandidate.image.url.replace(
+            'test-fixture.webp',
+            'test-fixture-' + index + '.webp',
+          ),
+        },
+      })),
     geoapify: provider,
     resolveProvinceArea: async (name) => {
       if (name !== 'Cao Bằng')

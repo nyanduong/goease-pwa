@@ -60,6 +60,10 @@ export function adminCatalog(
     id: String(doc._id),
     revision: doc.revision,
     updatedAt: doc.updatedAt.toISOString(),
+    photoSearch: {
+      state: doc.imageSearch?.state ?? 'pending',
+      count: doc.imageSearch?.candidates.length ?? 0,
+    },
     imageUrl: catalogPhotoCover(doc.toObject().images)?.url ?? '',
     imageCredit:
       catalogPhotoCover(doc.toObject().images)?.credit ??
@@ -134,8 +138,21 @@ export function adminCatalog(
       ]),
     ) as AdminPlaceInput;
   }
+  function withDefaultCover(doc: Doc): Doc {
+    if (
+      doc.publicationStatus !== 'draft' ||
+      doc.images.length ||
+      doc.fieldLocks?.includes('images') ||
+      !doc.imageSearch?.defaultCover
+    )
+      return doc;
+    return Place.hydrate({
+      ...doc.toObject(),
+      images: [doc.toObject().imageSearch!.defaultCover],
+    });
+  }
   async function proposal(doc: Doc, session?: ClientSession): Promise<Doc> {
-    if (doc.proposalRevision == null) return doc;
+    if (doc.proposalRevision == null) return withDefaultCover(doc);
     const version = await Version.findOne({
       placeId: doc._id,
       revision: doc.proposalRevision,
@@ -147,20 +164,22 @@ export function adminCatalog(
         'CATALOG_PROPOSAL_MISSING',
         'Bản đề xuất không còn hợp lệ. Tải lại để đối chiếu.',
       );
-    return Place.hydrate({
-      ...version.snapshot,
-      _id: doc._id,
-      revision: doc.revision,
-      publicRevision: doc.publicRevision,
-      proposalRevision: doc.proposalRevision,
-      updatedAt: doc.updatedAt,
-      fieldLocks: doc.fieldLocks,
-      source: doc.toObject().source,
-      sourceSnapshot: doc.toObject().sourceSnapshot,
-      sourceCheckedAt: doc.sourceCheckedAt,
-      imageSearch: doc.toObject().imageSearch,
-      deletedAt: doc.deletedAt,
-    });
+    return withDefaultCover(
+      Place.hydrate({
+        ...version.snapshot,
+        _id: doc._id,
+        revision: doc.revision,
+        publicRevision: doc.publicRevision,
+        proposalRevision: doc.proposalRevision,
+        updatedAt: doc.updatedAt,
+        fieldLocks: doc.fieldLocks,
+        source: doc.toObject().source,
+        sourceSnapshot: doc.toObject().sourceSnapshot,
+        sourceCheckedAt: doc.sourceCheckedAt,
+        imageSearch: doc.toObject().imageSearch,
+        deletedAt: doc.deletedAt,
+      }),
+    );
   }
   async function stageInSession(
     current: Doc,
@@ -442,6 +461,7 @@ export function adminCatalog(
     dto,
     input,
     proposal,
+    withDefaultCover,
     stageInSession,
     publishInSession,
     requireAdmin,

@@ -67,11 +67,14 @@ export const catalogImageSchema = z.strictObject({
   sourceUrl: publicSourceSchema,
   licenseUrl: publicSourceSchema.optional(),
   reviewed: z.boolean().optional(),
+  selection: z.enum(['automatic', 'admin']).optional(),
 });
 export type CatalogImage = z.infer<typeof catalogImageSchema>;
 export const approvedPhoto = (image: CatalogImage | undefined) =>
   !!image &&
-  image.reviewed === true &&
+  (image.reviewed === true ||
+    image.selection === 'automatic' ||
+    image.selection === 'admin') &&
   !/minh họa|\bAI\b|generated|illustration/i.test(image.credit) &&
   catalogImageSchema.safeParse(image).success;
 export function catalogPhotoCover(images: unknown[]) {
@@ -90,6 +93,7 @@ export type PlaceImageSearchDto = {
   candidates: ImageCandidate[];
   message: string;
   checkedAt: string | null;
+  defaultCover?: CatalogImage | null;
 };
 export const priceSnapshotSchema = referencePriceSchema.safeExtend({
   placeRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
@@ -150,8 +154,7 @@ export const adminPlaceInputSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['images'],
-        message:
-          'Cần ảnh bìa thật đã được admin duyệt và đủ nguồn/quyền sử dụng trước khi xuất bản.',
+        message: 'Cần có ảnh bìa hợp lệ trước khi xuất bản.',
       });
     if (
       v.publicationStatus === 'published' &&
@@ -182,6 +185,7 @@ export const adminPlaceInputSchema = z
   });
 export type AdminPlaceInput = z.infer<typeof adminPlaceInputSchema>;
 export type AdminPlaceDto = AdminPlaceInput & {
+  photoSearch?: { state: string; count: number };
   source?: PlaceProvenance;
   id: string;
   revision: number;

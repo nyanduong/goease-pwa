@@ -12,11 +12,14 @@ export const photoSchema = new Schema(
     sourceUrl: { type: String, required: true, maxlength: 2048 },
     licenseUrl: { type: String, maxlength: 2048 },
     reviewed: { type: Boolean, default: false },
+    selection: { type: String, enum: ['automatic', 'admin'] },
   },
   { _id: false, strict: 'throw', versionKey: false },
 );
 export const imageSearchSchema = new Schema(
   {
+    defaultCover: { type: photoSchema, default: null },
+    storageVersion: { type: Number, default: 1 },
     state: {
       type: String,
       enum: ['pending', 'searching', 'ready', 'empty', 'failed'],

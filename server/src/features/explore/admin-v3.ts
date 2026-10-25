@@ -730,13 +730,17 @@ export function adminV3Service(
                 String(v.placeId) === String(place._id) &&
                 v.revision === place.proposalRevision,
             );
-            const effective = version
-              ? Place.hydrate({
-                  ...version.snapshot,
-                  _id: place._id,
-                  revision: place.revision,
-                })
-              : place;
+            const effective = catalog.withDefaultCover(
+              version
+                ? Place.hydrate({
+                    ...version.snapshot,
+                    imageSearch: place.toObject().imageSearch,
+                    fieldLocks: place.fieldLocks,
+                    _id: place._id,
+                    revision: place.revision,
+                  })
+                : place,
+            );
             if (!visible.has(String(place.destinationId)))
               reason = 'Điểm đến chưa được xuất bản.';
             else if (place.proposalRevision != null && !version)
@@ -755,7 +759,7 @@ export function adminV3Service(
               reason = 'Đã đăng địa điểm này.';
             else if (!approvedPhoto(catalog.input(effective).images?.[0]))
               reason =
-                'Thiếu ảnh bìa thật đã duyệt. Mở địa điểm để chọn ảnh Wikimedia hoặc bổ sung ảnh có quyền sử dụng.';
+                'Chưa có ảnh bìa. Chờ hệ thống lấy ảnh hoặc bổ sung ảnh.';
             else if (
               !adminPlaceInputSchema.safeParse({
                 ...catalog.input(effective),

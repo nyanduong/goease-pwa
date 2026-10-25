@@ -120,3 +120,17 @@ Email/password register/login/session và chuyến riêng cho account chưa xác
 ## CAT-20 — ảnh thật Wikimedia (25/10/2026)
 
 Implemented auto candidate worker, admin selection, mandatory approved cover for publication, no AI fallback on POI surfaces. New sample seed is draft. No destructive migration or automatic approval of existing images. Live read-only Commons Chùa Cầu lookup returned 6 candidates with source/credit/licenses. Follow WIKIMEDIA-PHOTOS.md for demo and runtime limits. Verified 71 unit tests, 49 targeted integration tests across final runs, 5 catalog browser tests, typecheck/lint/build and local API DB health. Full integration stress archive run was interrupted; no full-suite success claim. Existing large client bundle warning remains.
+
+Owner bổ sung lưu ảnh Wikimedia lên Cloudinary trước khi admin chọn: đã triển khai re-encode/upload có giới hạn, giữ source attribution, deterministic asset ID, không fallback ảnh gốc khi lỗi. Requeue observation cũ qua storageVersion=1; giữ ảnh đã chọn/publication/revision. Tổng quan/danh sách có photoSearch state/count. Bổ sung đã kiểm: 74 unit, 31 integration liên quan qua các lượt cuối, 5 browser, typecheck/lint/build. Live Bắc Bộ Phủ có 6 Cloudinary candidates, HEAD200 image/webp; xử lý nền các địa điểm còn lại. Không auto-publish hay purge asset.
+
+## Refine trang chỉnh sửa địa điểm (25/10/2026)
+
+Áp dụng bố cục mockup đã duyệt: masthead gọn, bốn tab, ảnh ứng viên ở đầu, checklist/bản đồ/ghi chú bên phải và thanh lưu cố định. Thêm xem ảnh lớn với attribution trước khi chọn bìa. Giữ luồng proposal/publication và quản lý phiên bản hiện hành; không thêm schema hoặc business gate. Hướng dẫn tại [ADMIN-EDITOR.md](ADMIN-EDITOR.md).
+
+## Bổ sung ảnh bìa mặc định — 25/10/2026
+
+Owner cập nhật CAT-20: tự chọn ảnh đầu tiên cho draft chưa có ảnh và không khóa images; admin đổi ảnh bằng **Dùng làm ảnh bìa**, không cần bước duyệt riêng. Thông tin ảnh trong editor thu gọn; giữ metadata và ghi công public. Thay các hướng dẫn duyệt thủ công bắt buộc ở phần trước.
+
+Schema đã triển khai: photo.selection optional enum automatic/admin; reviewed vẫn là boolean, không tự gán true cho ảnh tự chọn. imageSearch.defaultCover photo|null giữ ảnh đầu tiên ổn định qua retry. Backfill ứng viên Cloudinary cũ khi thiếu defaultCover, không đổi editorial revision/publication. DTO draft và bulk áp dụng defaultCover khi images rỗng, không khóa; save/publish lưu vào snapshot. Ảnh đã chọn và public không bị thay. GET images bổ sung defaultCover để form đang mở cập nhật khi worker hoàn tất. Gate chấp nhận selection automatic/admin hoặc reviewed=true, metadata hợp lệ và không phải AI. Không tự xuất bản.
+
+Kiểm chứng cập nhật ảnh bìa: typecheck/lint/build đạt; 74 unit và 5 catalog browser tests đạt; province-import 12 kiểm tra đạt trước khi bổ sung assertion khóa trường/giữ bìa, catalog-operations + catalog-publication 14 kiểm tra đạt. Lượt chạy lại province-import cuối không khởi tạo được vì dung lượng trống dưới mức MongoDB yêu cầu (500 MiB); các assertion bổ sung đó chưa được chạy lại. Lệnh dọn thư mục test tạm bị chính sách công cụ từ chối, chưa xóa chúng. API local health/db trả 200.

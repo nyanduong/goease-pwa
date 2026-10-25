@@ -108,8 +108,26 @@ export async function catalogOverview(
     },
     {
       code: 'image',
-      label: 'Thiếu ảnh thật đã duyệt và quyền sử dụng',
-      ready: { $eq: [{ $arrayElemAt: ['$images.reviewed', 0] }, true] },
+      label: 'Chưa có ảnh bìa',
+      ready: {
+        $or: [
+          { $eq: [{ $arrayElemAt: ['$images.reviewed', 0] }, true] },
+          {
+            $in: [
+              { $ifNull: [{ $arrayElemAt: ['$images.selection', 0] }, ''] },
+              ['automatic', 'admin'],
+            ],
+          },
+          {
+            $and: [
+              { $eq: ['$publicationStatus', 'draft'] },
+              { $eq: [{ $size: { $ifNull: ['$images', []] } }, 0] },
+              { $not: [{ $in: ['images', { $ifNull: ['$fieldLocks', []] }] }] },
+              { $ne: [{ $ifNull: ['$imageSearch.defaultCover', null] }, null] },
+            ],
+          },
+        ],
+      },
       required: false,
     },
     {

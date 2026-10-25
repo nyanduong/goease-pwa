@@ -2902,3 +2902,586 @@
   color: #fff;
   border-color: #087f80;
 }
+/* Place review workspace: the editor owns the full canvas. */
+.admin-desktop-shell:has(div:not([hidden]) > .admin-catalog.is-editing) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.admin-desktop-shell:has(div:not([hidden]) > .admin-catalog.is-editing)
+  > .admin-sidebar,
+.admin-desktop-shell:has(div:not([hidden]) > .admin-catalog.is-editing)
+  .admin-topbar {
+  display: none;
+}
+.admin-desktop-shell:has(div:not([hidden]) > .admin-catalog.is-editing)
+  .admin-desktop-main {
+  padding: 0;
+}
+.admin-catalog.is-editing {
+  max-width: 1600px;
+  margin: auto;
+  padding: 0 40px 120px;
+  color: #174651;
+}
+.admin-catalog.is-editing [hidden] {
+  display: none !important;
+}
+.place-editor-form {
+  display: block;
+}
+.place-editor-masthead {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 18px 0;
+  border-bottom: 1px solid #e3e7e3;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: #64808a;
+}
+.place-editor-masthead > strong {
+  font-size: 25px;
+  color: #00898c;
+}
+.place-editor-masthead i {
+  margin: 0 10px;
+  font-style: normal;
+  color: #9baeb1;
+}
+.place-editor-account {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.place-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin: 18px 0 26px;
+}
+.place-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.place-title-row h1 {
+  font-size: 29px;
+  line-height: 1.3;
+  margin: 0;
+  letter-spacing: -0.6px;
+}
+.place-editor-heading p {
+  color: #69818a;
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+.place-editor-save-state {
+  font-size: 13px;
+  color: #67838b;
+  text-align: right;
+  flex-shrink: 0;
+}
+.place-editor-save-state span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.place-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 24px;
+  align-items: start;
+}
+.place-editor-main {
+  min-width: 0;
+}
+.place-editor-tabs {
+  display: flex;
+  gap: 26px;
+  border-bottom: 1px solid #dce5e2;
+  margin-bottom: 22px;
+  overflow-x: auto;
+}
+.admin-catalog .place-editor-tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  white-space: nowrap;
+  padding: 14px 0;
+  color: #68808a;
+  font-size: 14px;
+  border-bottom: 3px solid transparent;
+}
+.admin-catalog .place-editor-tabs button[aria-selected='true'] {
+  color: #00868a;
+  border-bottom-color: #00868a;
+  font-weight: 700;
+}
+.place-editor-card,
+.place-photo-picker {
+  background: #fff;
+  border: 1px solid #e0e6e1;
+  border-radius: 12px;
+  padding: 20px;
+}
+.place-photo-picker {
+  margin-bottom: 22px;
+}
+.place-photo-heading,
+.place-editor-card > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.place-photo-heading {
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.place-photo-heading h2,
+.place-editor-card h2 {
+  font-size: 17px;
+  margin: 0;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.place-photo-heading p {
+  font-size: 12px;
+  color: #70868d;
+  margin: 6px 0 0;
+}
+.admin-catalog .place-photo-heading button {
+  padding: 4px 0;
+  background: transparent;
+  border: 0;
+  color: #00868a;
+  font-size: 13px;
+}
+.place-photo-candidates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.is-compact .place-photo-candidates {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 9px;
+}
+.place-photo-candidates figure {
+  margin: 0;
+  min-width: 0;
+}
+.place-candidate-image {
+  height: 190px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #edf2ef;
+  border: 2px solid transparent;
+}
+.is-compact .place-candidate-image {
+  height: 138px;
+}
+.is-cover .place-candidate-image {
+  border-color: #008b85;
+}
+.place-candidate-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.admin-catalog .place-candidate-image button {
+  position: absolute;
+  inset: auto 5px 5px;
+  min-height: 30px;
+  padding: 5px 2px;
+  border: 0;
+  background: #fffffff0;
+  border-radius: 5px;
+  color: #17616b;
+  font-size: 11px;
+}
+.place-cover-label {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #008981;
+  color: white;
+  font-size: 10px;
+}
+.place-photo-candidates figcaption {
+  display: grid;
+  gap: 7px;
+  padding: 12px 2px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.place-photo-help {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #69818a;
+  margin-top: 16px;
+}
+.place-photos-empty {
+  padding: 24px;
+  border-radius: 8px;
+  background: #f3f7f5;
+  text-align: center;
+  color: #6a838b;
+}
+.admin-catalog.is-editing .admin-form-fields {
+  padding: 22px;
+  border: 1px solid #e0e6e1;
+  border-radius: 12px;
+  background: white;
+  font-size: 14px;
+  margin: 0 0 22px;
+}
+.admin-catalog.is-editing .admin-form-fields legend {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 17px;
+  font-weight: 700;
+  padding: 0 6px;
+}
+.admin-catalog.is-editing label {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.admin-catalog.is-editing input:not([type='checkbox']):not([type='radio']),
+.admin-catalog.is-editing select,
+.admin-catalog.is-editing textarea {
+  font-size: 15px;
+  line-height: 1.5;
+  padding: 11px 13px;
+  border-radius: 8px;
+  border: 1px solid #dce4df;
+  background: #fffefa;
+  width: 100%;
+  min-width: 0;
+}
+.admin-catalog.is-editing textarea {
+  min-height: 100px;
+}
+.place-editor-sidebar {
+  display: grid;
+  gap: 18px;
+  padding-top: 68px;
+  min-width: 0;
+}
+.place-editor-card > p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #6c8188;
+  margin: 12px 0;
+}
+.place-readiness {
+  display: block;
+  padding: 12px;
+  background: #edf7f2;
+  border-radius: 7px;
+  font-size: 13px;
+  margin: 16px 0;
+}
+.place-readiness.needs-review {
+  background: #fff5df;
+  color: #a47624;
+}
+.place-check-ok {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #368c73;
+  font-size: 13px;
+  margin: 14px 0;
+}
+.admin-catalog .place-check-action {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: #a77529;
+  font-size: 13px;
+}
+.place-check-action span:last-child {
+  margin-left: auto;
+}
+.place-extra-checks {
+  border-top: 1px solid #e6ebe5;
+  margin-top: 12px;
+  padding-top: 14px;
+}
+.place-extra-checks h3 {
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+.admin-catalog .place-extra-checks button {
+  display: block;
+  border: 0;
+  background: transparent;
+  padding: 5px 0;
+  min-height: 32px;
+  font-size: 12px;
+  color: #72848a;
+  text-align: left;
+}
+.place-extra-checks small,
+.place-editor-map > small {
+  display: block;
+  color: #859299;
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 10px;
+}
+.place-editor-map .admin-map-legend {
+  display: none;
+}
+.place-editor-map .leaflet-container {
+  height: 200px !important;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.place-editor-map summary {
+  color: #00858a;
+  padding-top: 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.place-editor-map fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  font-size: 12px;
+}
+.place-editor-notes summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.place-editor-notes label {
+  display: block;
+  margin-top: 14px;
+}
+.admin-catalog.is-editing .admin-save-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1100;
+  margin: 0;
+  border-radius: 0;
+  padding: 16px 40px;
+  border-top: 1px solid #dce5e2;
+  box-shadow: 0 -4px 22px #183f4b08;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #fff;
+}
+.place-save-caption {
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6d858b;
+}
+@media (max-width: 1100px) {
+  .admin-catalog.is-editing {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .place-editor-layout {
+    grid-template-columns: minmax(0, 1fr) 290px;
+    gap: 18px;
+  }
+  .is-compact .place-photo-candidates {
+    display: flex;
+    overflow-x: auto;
+  }
+  .is-compact .place-photo-candidates figure {
+    flex: 0 0 110px;
+  }
+  .place-editor-tabs {
+    gap: 18px;
+  }
+}
+@media (max-width: 800px) {
+  .place-editor-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .place-editor-sidebar {
+    padding-top: 0;
+  }
+  .place-editor-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .place-editor-save-state {
+    text-align: left;
+  }
+  .place-editor-account {
+    display: none;
+  }
+  .place-title-row h1 {
+    font-size: 25px;
+  }
+  .place-save-caption {
+    display: none;
+  }
+  .admin-catalog.is-editing .admin-save-bar {
+    padding: 12px 16px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 480px) {
+  .admin-catalog.is-editing {
+    padding: 0 16px 170px;
+  }
+  .place-editor-masthead {
+    gap: 14px;
+    font-size: 11px;
+  }
+  .place-editor-masthead i {
+    margin: 0 3px;
+  }
+  .place-editor-card,
+  .place-photo-picker {
+    padding: 15px;
+  }
+  .admin-catalog.is-editing .admin-form-fields {
+    padding: 16px;
+  }
+  .place-photo-candidates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .place-photo-help {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .place-editor-tabs {
+    gap: 20px;
+  }
+  .admin-catalog.is-editing .admin-save-bar button {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+}
+.place-title-row h1 {
+  font-family: inherit;
+  font-weight: 750;
+}
+.place-status-badge {
+  border-radius: 30px;
+  background: #f1f0e6;
+  color: #79785b;
+  font-size: 12px;
+  padding: 5px 10px;
+}
+.place-photo-heading {
+  justify-content: flex-start;
+}
+.place-photo-heading > button {
+  margin-left: auto;
+}
+.place-editor-tabs button > span {
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: #eaf1ee;
+  font-size: 11px;
+}
+.admin-catalog.is-editing .admin-form-fields legend {
+  float: left;
+  padding: 0;
+  margin-bottom: 8px;
+}
+.place-card-description {
+  clear: both;
+  color: #71858d;
+  font-size: 12px;
+  margin: 0 0 22px;
+}
+.admin-catalog.is-editing .admin-form-fields > label:first-of-type {
+  clear: both;
+}
+.place-editor-photos {
+  margin: 0;
+}
+.place-gallery-controls {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+/* Image-only viewer; cover selection stays on the thumbnail. */
+.admin-catalog .place-candidate-image .place-photo-open {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+.place-cover-label {
+  pointer-events: none;
+}
+.place-photo-viewer {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: fit-content;
+  height: fit-content;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100dvh - 80px);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+.place-photo-viewer::backdrop {
+  background: #07151fe6;
+}
+.place-photo-viewer > img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100dvh - 80px);
+  object-fit: contain;
+}
+.admin-catalog .place-photo-viewer .place-photo-close {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: white;
+  background: #0007;
+}

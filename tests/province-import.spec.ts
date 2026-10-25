@@ -4,7 +4,7 @@ test('enable province automatically imports drafts, restores progress and leads 
   page,
 }) => {
   test.setTimeout(60000);
-  await page.route('https://upload.wikimedia.org/**', (route) =>
+  await page.route('https://res.cloudinary.com/fixture/**', (route) =>
     route.fulfill({
       contentType: 'image/png',
       body: Buffer.from(
@@ -65,7 +65,7 @@ test('enable province automatically imports drafts, restores progress and leads 
   await page
     .getByRole('button', { name: 'Xem trước xuất bản', exact: true })
     .click();
-  await expect(page.getByText(/Thiếu ảnh bìa thật đã duyệt/)).toBeVisible();
+
   await page
     .getByRole('button', {
       name: 'Chỉnh sửa Tham quan Cao Bằng · dữ liệu thử',
@@ -74,9 +74,79 @@ test('enable province automatically imports drafts, restores progress and leads 
     .click();
   const photos = page.getByRole('region', { name: 'Ảnh gợi ý Wikimedia' });
   await photos.scrollIntoViewIfNeeded();
+  await expect(photos.locator('figure')).toHaveCount(6, { timeout: 30000 });
+  await expect(photos.locator('figure').first()).toHaveClass('is-cover');
+  const overview = page.getByRole('tab', { name: 'Tổng quan', exact: true });
+  await overview.focus();
+  await overview.press('ArrowRight');
+  await expect(page.getByRole('tab', { name: /Ảnh địa điểm/ })).toBeFocused();
+  await page.getByRole('tab', { name: /Ảnh địa điểm/ }).press('Home');
+  await expect(overview).toBeFocused();
+  const description = page.getByLabel('Giới thiệu ngắn');
+  const edited = 'Giới thiệu đã kiểm tra cho dữ liệu thử Cao Bằng.';
+  await description.fill(edited);
+  await page.getByRole('tab', { name: 'Nguồn & lịch sử' }).click();
+  const source = page.getByLabel('Link nguồn thông tin');
+  const originalSource = await source.inputValue();
+  await source.fill('invalid-url');
+  await overview.click();
+  await expect(description).toHaveValue(edited);
+  await page.getByRole('button', { name: 'Lưu đề xuất', exact: true }).click();
+  await expect(
+    page.getByRole('tab', { name: 'Nguồn & lịch sử' }),
+  ).toHaveAttribute('aria-selected', 'true');
+  await expect(source).toBeFocused();
+  await source.fill(originalSource);
+  await overview.click();
+  await expect(photos.locator('img').first()).toHaveAttribute(
+    'src',
+    /^https:\/\/res\.cloudinary\.com\//,
+  );
   await photos
-    .getByRole('button', { name: 'Chọn ảnh thật này làm bìa' })
+    .getByRole('button', { name: /^Xem ảnh:/ })
+    .first()
     .click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  // A modal must stay centered even after the editor has scrolled.
+  for (const viewport of [
+    { width: 1366, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    const bounds = await page.getByRole('dialog').boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(
+      Math.abs(bounds!.x + bounds!.width / 2 - viewport.width / 2),
+    ).toBeLessThan(2);
+    expect(
+      Math.abs(bounds!.y + bounds!.height / 2 - viewport.height / 2),
+    ).toBeLessThan(2);
+    expect(bounds!.y).toBeGreaterThanOrEqual(15);
+    expect(bounds!.x).toBeGreaterThanOrEqual(15);
+    await page.screenshot({
+      path: `.local/national-planner/photo-dialog-${viewport.width}.png`,
+    });
+    await page.getByRole('dialog').locator('img').click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.mouse.click(3, 3);
+    await expect(page.getByRole('dialog')).not.toBeVisible();
+    await expect(photos.locator('figure').first()).toHaveClass('is-cover');
+    await photos
+      .getByRole('button', { name: /^Xem ảnh:/ })
+      .first()
+      .click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+  }
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.getByRole('button', { name: 'Đóng xem ảnh' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(photos.getByText(/Đã chọn ảnh bìa/)).toBeVisible();
+  await photos
+    .getByRole('button', { name: /^Chọn làm bìa:/ })
+    .nth(1)
+    .click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(photos.locator('figure').nth(1)).toHaveClass('is-cover');
   await page.screenshot({
     path: '.local/national-planner/wikimedia-selected.png',
     fullPage: true,

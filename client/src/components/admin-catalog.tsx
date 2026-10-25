@@ -23,6 +23,10 @@ import { AdminBatch } from './admin-batch';
 import { AdminPlaceTable } from './admin-place-table';
 import { AdminCatalogMap } from './admin-catalog-map';
 import { AdminPlaceTools } from './admin-place-tools';
+import { AdminPlaceSidebar, type PlaceEditorTab } from './admin-place-sidebar';
+import { AdminWikimediaImages } from './admin-wikimedia-images';
+import { AdminImageGallery } from './admin-image-gallery';
+import { CheckCircle2, Info, ShieldCheck } from 'lucide-react';
 const AdminPlaceImport = lazy(() =>
   import('./admin-place-import').then((v) => ({ default: v.AdminPlaceImport })),
 );
@@ -72,6 +76,7 @@ const formFromDto = ({
   proposalRevision,
   publicRevision,
   capabilities,
+  photoSearch,
   fieldProvenance,
   ...input
 }: AdminPlaceDto) => {
@@ -84,6 +89,7 @@ const formFromDto = ({
   void proposalRevision;
   void publicRevision;
   void capabilities;
+  void photoSearch;
   void fieldProvenance;
   return input;
 };
@@ -93,8 +99,10 @@ export function AdminCatalog({
   scope = '',
   locationKey = '',
   refreshKey = 0,
+  adminName = 'Quản trị viên',
 }: {
   destinations: DestinationDto[];
+  adminName?: string;
   scope?: string;
   locationKey?: string;
   refreshKey?: number;
@@ -112,6 +120,8 @@ export function AdminCatalog({
   const [total, setTotal] = useState(0);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [overviewError, setOverviewError] = useState('');
+  const [editorTab, setEditorTab] = useState<PlaceEditorTab>('overview');
+  const [photoCount, setPhotoCount] = useState(0);
   const [autosave, setAutosave] = useState(false);
   const [status, setStatus] = useState('all');
   const [q, setQ] = useState('');
@@ -199,6 +209,7 @@ export function AdminCatalog({
       setSourceEvidence(null);
       setHistory([]);
       setImporting(false);
+      setEditorTab('overview');
       setForm(newPlace(scope));
     }
   }, [locationKey]);
@@ -369,6 +380,7 @@ export function AdminCatalog({
         history: HistoryItem[];
         sourceEvidence: SourceEvidence;
       }>(`/admin/places/${id}`);
+      setEditorTab('overview');
       setSaved(value.place);
       setPublicPlace(value.publicPlace ?? null);
       setForm(formFromDto(value.place));
@@ -385,6 +397,32 @@ export function AdminCatalog({
       setBusy(false);
     }
   }
+  function showField(field: string) {
+    const tab: PlaceEditorTab =
+      field === 'images'
+        ? 'photos'
+        : ['referencePrice', 'openingHoursNote'].includes(field)
+          ? 'practical'
+          : field === 'sourceUrl'
+            ? 'sources'
+            : 'overview';
+    setEditorTab(tab);
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(
+        '[data-editor-field="' + field + '"]',
+      );
+      el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el?.querySelector<HTMLElement>('input,textarea,select,button')?.focus({
+        preventScroll: true,
+      });
+    });
+  }
+  const isDirty =
+    !!form &&
+    (!saved || JSON.stringify(form) !== JSON.stringify(formFromDto(saved)));
+  const destinationName =
+    destinations.find((d) => d.id === form?.destinationId)?.name ??
+    'Chưa chọn tỉnh / thành phố';
   async function save(
     publicationStatus: AdminPlaceInput['publicationStatus'],
     intent: 'save' | 'publish' = 'save',
@@ -405,6 +443,7 @@ export function AdminCatalog({
           ]),
         ),
       );
+      showField(String(checked.error.issues[0]?.path[0] ?? 'description'));
       setError('Chưa thể lưu. Kiểm tra các trường được đánh dấu bên dưới.');
       return;
     }
@@ -464,76 +503,57 @@ export function AdminCatalog({
     }
   }
   return (
-    <section className="admin-catalog">
-      <AdminPageHeader
-        title={
-          form
-            ? saved
-              ? 'Chỉnh sửa địa điểm'
-              : 'Thêm địa điểm / quán ăn'
-            : 'Quản lý địa điểm'
-        }
-        description={
-          form
-            ? 'Cập nhật thông tin địa điểm để khách hàng nhận được lịch trình và dự toán chính xác hơn.'
-            : 'Xem, chỉnh sửa và quản lý địa điểm, quán ăn, điểm tham quan trên GoEase.'
-        }
-        illustrated={false}
-        actions={
-          !form && !importing ? (
-            <div className="admin-actions admin-catalog-actions">
-              <button
-                className="journey-outline"
-                disabled={busy}
-                onClick={() => setImporting(true)}
-              >
-                Nhập địa điểm từ Geoapify
-              </button>
-              <button
-                className="journey-primary"
-                disabled={busy || !destinations.length}
-                onClick={() => {
-                  setSaved(null);
-                  setPublicPlace(null);
-                  setSourceEvidence(null);
-                  setForm(newPlace(scope));
-                  setHistory([]);
-                  setError('');
-                  setSuccess('');
-                }}
-              >
-                Thêm địa điểm / quán ăn
-              </button>
-            </div>
-          ) : undefined
-        }
-        region={
-          destinations.find((d) => d.id === scope)?.name ?? 'Tất cả khu vực'
-        }
-      />
+    <section className={`admin-catalog${form ? ' is-editing' : ''}`}>
+      {!form && (
+        <AdminPageHeader
+          title={
+            form
+              ? saved
+                ? 'Chỉnh sửa địa điểm'
+                : 'Thêm địa điểm / quán ăn'
+              : 'Quản lý địa điểm'
+          }
+          description={
+            form
+              ? 'Cập nhật thông tin địa điểm để khách hàng nhận được lịch trình và dự toán chính xác hơn.'
+              : 'Xem, chỉnh sửa và quản lý địa điểm, quán ăn, điểm tham quan trên GoEase.'
+          }
+          illustrated={false}
+          actions={
+            !form && !importing ? (
+              <div className="admin-actions admin-catalog-actions">
+                <button
+                  className="journey-outline"
+                  disabled={busy}
+                  onClick={() => setImporting(true)}
+                >
+                  Nhập địa điểm từ Geoapify
+                </button>
+                <button
+                  className="journey-primary"
+                  disabled={busy || !destinations.length}
+                  onClick={() => {
+                    setSaved(null);
+                    setPublicPlace(null);
+                    setSourceEvidence(null);
+                    setEditorTab('overview');
+                    setForm(newPlace(scope));
+                    setHistory([]);
+                    setError('');
+                    setSuccess('');
+                  }}
+                >
+                  Thêm địa điểm / quán ăn
+                </button>
+              </div>
+            ) : undefined
+          }
+          region={
+            destinations.find((d) => d.id === scope)?.name ?? 'Tất cả khu vực'
+          }
+        />
+      )}
 
-      {form && scope !== form.destinationId && (
-        <p className="admin-soft-notice">
-          Đang sửa địa điểm thuộc{' '}
-          {destinations.find((d) => d.id === form.destinationId)?.name ??
-            'điểm đến chưa chọn'}
-          . Đổi phạm vi xem không chuyển địa điểm sang phạm vi khác.
-        </p>
-      )}
-      {form && saved && (
-        <div className="admin-soft-notice">
-          Đề xuất: {saved.proposalRevision ?? 'chưa có'} · Bản công khai:{' '}
-          {saved.publicRevision ?? 'chưa xuất bản'}. Lưu chỉnh sửa không thay
-          đổi bản khách đang xem.
-        </div>
-      )}
-      {form && saved?.source && (
-        <div>
-          Nhập từ nguồn lúc{' '}
-          {new Date(saved.source.fetchedAt).toLocaleString('vi-VN')}. Thông tin
-          cần biên tập, giờ mở cửa chưa được xác minh. <SourceCredit expanded />
-        </div>
-      )}
       {error && (
         <div role="alert" className="admin-alert">
           {error}
@@ -883,10 +903,26 @@ export function AdminCatalog({
         </>
       ) : (
         <form
+          className="place-editor-form"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
             setError('');
-            if (!adminPlaceInputSchema.safeParse(form).success) {
+            const checked = adminPlaceInputSchema.safeParse(form);
+            if (!checked.success) {
+              setFieldErrors(
+                Object.fromEntries(
+                  checked.error.issues.map((i) => [
+                    String(i.path[0] ?? 'description'),
+                    i.code === 'custom'
+                      ? i.message
+                      : 'Kiểm tra thông tin của trường này.',
+                  ]),
+                ),
+              );
+              showField(
+                String(checked.error.issues[0]?.path[0] ?? 'description'),
+              );
               setError(
                 'Điền đủ tên, mô tả, vị trí, nguồn và thông tin giá nếu bật.',
               );
@@ -895,6 +931,16 @@ export function AdminCatalog({
             setPreview(true);
           }}
         >
+          <div className="place-editor-masthead">
+            <strong>GoEase</strong>
+            <span>
+              Địa điểm <i>/</i> {destinationName} <i>/</i> Chỉnh sửa
+            </span>
+            <span className="place-editor-account">
+              <ShieldCheck size={18} />
+              {adminName}
+            </span>
+          </div>
           <button
             type="button"
             className="admin-back"
@@ -915,591 +961,773 @@ export function AdminCatalog({
           >
             ← Về danh sách
           </button>
-          {saved?.publicationStatus === 'draft' && (
-            <label className="admin-checkbox">
-              <input
-                type="checkbox"
-                checked={autosave}
-                onChange={(e) => setAutosave(e.target.checked)}
-              />
-              Tự lưu bản nháp hợp lệ sau 2 giây
-            </label>
-          )}
-          <div className="admin-editor-grid">
-            <nav className="admin-editor-index" aria-label="Các phần chỉnh sửa">
-              {[
-                ['basic', 'Thông tin cơ bản'],
-                ['category', 'Danh mục'],
-                ['description', 'Mô tả & giới thiệu'],
-                ['location', 'Địa chỉ & bản đồ'],
-                ['duration', 'Thời gian gợi ý'],
-                ['hours', 'Giờ mở cửa'],
-                ['price', 'Giá & điều kiện'],
-                ['images', 'Ảnh địa điểm'],
-                ['evidence', 'Nguồn dữ liệu'],
-                ['notes', 'Ghi chú vận hành'],
-              ].map(([id, label], i) => (
-                <button
-                  type="button"
-                  key={id}
-                  onClick={() =>
-                    document
-                      .getElementById(`admin-section-${id}`)
-                      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                  }
-                >
-                  <span>{i + 1}</span>
-                  {label}
-                </button>
-              ))}
-            </nav>
+          <header className="place-editor-heading">
             <div>
-              <fieldset
-                disabled={busy}
-                className="admin-form-fields"
-                id="admin-section-basic"
+              <div className="place-title-row">
+                <h1>{form.name || 'Thêm địa điểm mới'}</h1>
+                <span className="place-status-badge">
+                  {statusText[saved?.publicationStatus ?? 'draft']}
+                </span>
+              </div>
+              <p>
+                {destinationName} ·{' '}
+                {form.venueType === 'place'
+                  ? 'Điểm tham quan'
+                  : form.venueType === 'restaurant'
+                    ? 'Quán ăn cụ thể'
+                    : 'Gợi ý món ăn'}{' '}
+                ·{' '}
+                {form.category === 'culture'
+                  ? 'Văn hóa'
+                  : form.category === 'nature'
+                    ? 'Thiên nhiên'
+                    : 'Ăn uống'}
+              </p>
+            </div>
+            <div className="place-editor-save-state">
+              <span>
+                {saved?.publicRevision
+                  ? 'Đã có bản công khai'
+                  : 'Chưa xuất bản'}
+              </span>
+              <span>
+                <CheckCircle2 size={17} />
+                {busy
+                  ? 'Đang lưu…'
+                  : isDirty
+                    ? 'Có thay đổi chưa lưu'
+                    : 'Đã lưu đề xuất'}
+              </span>
+            </div>
+          </header>
+          <div className="place-editor-layout">
+            <div className="place-editor-main">
+              <div
+                className="place-editor-tabs"
+                role="tablist"
+                aria-label="Các phần chỉnh sửa"
               >
-                <legend>Thông tin khách sẽ thấy</legend>
-                <div className="admin-two">
-                  <label>
-                    Điểm đến
-                    <select
-                      required
-                      aria-label="Điểm đến"
-                      disabled={!!saved}
-                      value={form.destinationId}
-                      onChange={(e) =>
-                        update({ destinationId: e.target.value })
+                {(
+                  [
+                    ['overview', 'Tổng quan'],
+                    ['photos', 'Ảnh địa điểm'],
+                    ['practical', 'Giá & giờ mở cửa'],
+                    ['sources', 'Nguồn & lịch sử'],
+                  ] as const
+                ).map(([id, label], index, tabs) => (
+                  <button
+                    type="button"
+                    role="tab"
+                    id={'place-tab-' + id}
+                    aria-controls={'place-panel-' + id}
+                    aria-selected={editorTab === id}
+                    tabIndex={editorTab === id ? 0 : -1}
+                    key={id}
+                    onClick={() => setEditorTab(id)}
+                    onKeyDown={(e) => {
+                      const delta =
+                        e.key === 'ArrowRight'
+                          ? 1
+                          : e.key === 'ArrowLeft'
+                            ? -1
+                            : 0;
+                      if (delta || e.key === 'Home' || e.key === 'End') {
+                        e.preventDefault();
+                        const target =
+                          tabs[
+                            e.key === 'Home'
+                              ? 0
+                              : e.key === 'End'
+                                ? tabs.length - 1
+                                : (index + delta + tabs.length) % tabs.length
+                          ]![0];
+                        setEditorTab(target);
+                        document.getElementById('place-tab-' + target)?.focus();
                       }
-                    >
-                      <option value="">Chọn điểm đến cụ thể</option>
-                      {destinations.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label id="admin-section-category">
-                    Loại địa điểm
-                    <select
-                      aria-label="Loại địa điểm"
-                      value={form.venueType}
-                      onChange={(e) => {
-                        const venueType = e.target
-                          .value as AdminPlaceInput['venueType'];
-                        update({
-                          venueType,
-                          category: venueType === 'place' ? 'culture' : 'food',
-                          ...(venueType === 'food_idea'
-                            ? { referencePrice: null }
-                            : {}),
-                        });
-                      }}
-                    >
-                      <option value="place">Điểm tham quan</option>
-                      <option value="restaurant">Quán ăn cụ thể</option>
-                      <option value="food_idea">
-                        Gợi ý món ăn, chưa có quán
-                      </option>
-                    </select>
-                  </label>
-                </div>
-                <label>
-                  Tên địa điểm / quán ăn
-                  <input
-                    required
-                    maxLength={120}
-                    value={form.name}
-                    onChange={(e) => update({ name: e.target.value })}
-                  />
-                  {fieldError('name')}
-                </label>
-                {!saved && duplicateCheck && (
-                  <div className="admin-duplicate-check" role="status">
-                    <p>{duplicateCheck}</p>
-                    {duplicateCandidates.map((p) => (
-                      <button
-                        type="button"
-                        key={p.id}
-                        onClick={() => {
-                          if (
-                            confirm(
-                              'Mở địa điểm có sẵn? Nội dung mới chưa lưu sẽ bị bỏ.',
-                            )
-                          )
-                            void open(p.id);
-                        }}
-                      >
-                        {p.name} · {p.locationQuery}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <label id="admin-section-description">
-                  Giới thiệu ngắn
-                  <textarea
-                    required
-                    rows={3}
-                    maxLength={2000}
-                    value={form.description}
-                    onChange={(e) => update({ description: e.target.value })}
-                  />
-                  {fieldError('description')}
-                </label>
-                <label id="admin-section-location">
-                  Địa chỉ / vị trí tìm trên bản đồ
-                  <input
-                    required
-                    maxLength={200}
-                    value={form.locationQuery}
-                    placeholder="Tên cơ sở, số nhà, đường, khu vực"
-                    onChange={(e) => update({ locationQuery: e.target.value })}
-                  />
-                  {fieldError('locationQuery')}
-                </label>
-                <div className="admin-two">
-                  <label id="admin-section-duration">
-                    Thời gian dành ở đây (phút)
+                    }}
+                  >
+                    {label}
+                    {id === 'photos' && <span>{photoCount}</span>}
+                  </button>
+                ))}
+              </div>
+              <section
+                className="place-editor-photos"
+                hidden={!['overview', 'photos'].includes(editorTab)}
+                data-editor-field="images"
+              >
+                <AdminWikimediaImages
+                  id={saved?.id}
+                  form={form}
+                  update={update}
+                  compact={editorTab === 'overview'}
+                  onViewAll={() => setEditorTab('photos')}
+                  onCount={setPhotoCount}
+                  disabled={busy}
+                />
+                {fieldError('images')}
+                <fieldset
+                  className="place-gallery-controls"
+                  disabled={busy}
+                  hidden={editorTab !== 'photos'}
+                >
+                  <AdminImageGallery form={form} update={update} />
+                </fieldset>
+              </section>
+              <div
+                role="tabpanel"
+                id="place-panel-overview"
+                aria-labelledby="place-tab-overview"
+                hidden={editorTab !== 'overview'}
+              >
+                <fieldset
+                  disabled={busy}
+                  className="admin-form-fields"
+                  id="admin-section-basic"
+                >
+                  <legend>
+                    <Info size={21} />
+                    Thông tin cơ bản
+                  </legend>
+                  <p className="place-card-description">
+                    Nội dung khách sẽ thấy sau khi xuất bản.
+                  </p>
+                  <label data-editor-field="name">
+                    Tên địa điểm / quán ăn
                     <input
                       required
-                      type="number"
-                      min={15}
-                      max={720}
-                      step={1}
-                      value={form.durationMinutes}
-                      onChange={(e) =>
-                        update({ durationMinutes: Number(e.target.value) })
-                      }
+                      maxLength={120}
+                      value={form.name}
+                      onChange={(e) => update({ name: e.target.value })}
                     />
+                    {fieldError('name')}
                   </label>
-                  {form.venueType === 'place' && (
-                    <label>
-                      Nhóm trải nghiệm
+                  <div className="admin-two">
+                    <label data-editor-field="destinationId">
+                      Điểm đến
                       <select
-                        aria-label="Nhóm trải nghiệm"
-                        value={form.category}
+                        required
+                        aria-label="Điểm đến"
+                        disabled={!!saved}
+                        value={form.destinationId}
                         onChange={(e) =>
-                          update({
-                            category: e.target
-                              .value as AdminPlaceInput['category'],
-                          })
+                          update({ destinationId: e.target.value })
                         }
                       >
-                        <option value="culture">Văn hóa</option>
-                        <option value="nature">Thiên nhiên</option>
+                        <option value="">Chọn điểm đến cụ thể</option>
+                        {destinations.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
                       </select>
                     </label>
+                    <label id="admin-section-category">
+                      Loại địa điểm
+                      <select
+                        aria-label="Loại địa điểm"
+                        value={form.venueType}
+                        onChange={(e) => {
+                          const venueType = e.target
+                            .value as AdminPlaceInput['venueType'];
+                          update({
+                            venueType,
+                            category:
+                              venueType === 'place' ? 'culture' : 'food',
+                            ...(venueType === 'food_idea'
+                              ? { referencePrice: null }
+                              : {}),
+                          });
+                        }}
+                      >
+                        <option value="place">Điểm tham quan</option>
+                        <option value="restaurant">Quán ăn cụ thể</option>
+                        <option value="food_idea">
+                          Gợi ý món ăn, chưa có quán
+                        </option>
+                      </select>
+                    </label>
+                  </div>
+                  {!saved && duplicateCheck && (
+                    <div className="admin-duplicate-check" role="status">
+                      <p>{duplicateCheck}</p>
+                      {duplicateCandidates.map((p) => (
+                        <button
+                          type="button"
+                          key={p.id}
+                          onClick={() => {
+                            if (
+                              confirm(
+                                'Mở địa điểm có sẵn? Nội dung mới chưa lưu sẽ bị bỏ.',
+                              )
+                            )
+                              void open(p.id);
+                          }}
+                        >
+                          {p.name} · {p.locationQuery}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </div>
-                <label id="admin-section-hours">
-                  Giờ mở cửa (nếu đã kiểm tra)
-                  <input
-                    maxLength={400}
-                    value={form.openingHoursNote}
-                    placeholder="Để trống nếu chưa rõ"
-                    onChange={(e) =>
-                      update({ openingHoursNote: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Link nguồn thông tin
-                  <input
-                    required
-                    type="url"
-                    placeholder="https://…"
-                    maxLength={2048}
-                    value={form.sourceUrl}
-                    onChange={(e) => update({ sourceUrl: e.target.value })}
-                  />
-                  {fieldError('sourceUrl')}
-                </label>
-              </fieldset>
-              <fieldset disabled={busy} className="admin-form-fields">
-                <legend id="admin-section-price">
-                  Giá cho dự toán tự động
-                </legend>
-                {fieldError('referencePrice')}
-                <p>
-                  Giá được dùng riêng cho dự toán và Goe. Thiếu giá vẫn có thể
-                  xuất bản để khám phá nếu đủ điều kiện; không tự suy ra miễn
-                  phí.
-                </p>
-                <label className="admin-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={!!form.referencePrice}
-                    disabled={form.venueType === 'food_idea'}
-                    onChange={(e) =>
-                      update({
-                        referencePrice: e.target.checked ? newPrice() : null,
-                      })
-                    }
-                  />
-                  Có giá đủ căn cứ để tự tính
-                </label>
-                {form.referencePrice ? (
-                  <>
-                    <label>
-                      Tên khoản giá
+                  <label
+                    data-editor-field="description"
+                    id="admin-section-description"
+                  >
+                    Giới thiệu ngắn
+                    <textarea
+                      required
+                      rows={3}
+                      maxLength={2000}
+                      value={form.description}
+                      onChange={(e) => update({ description: e.target.value })}
+                    />
+                    {fieldError('description')}
+                  </label>
+                  <label
+                    data-editor-field="locationQuery"
+                    id="admin-section-location"
+                  >
+                    Địa chỉ / vị trí tìm trên bản đồ
+                    <input
+                      required
+                      maxLength={200}
+                      value={form.locationQuery}
+                      placeholder="Tên cơ sở, số nhà, đường, khu vực"
+                      onChange={(e) =>
+                        update({ locationQuery: e.target.value })
+                      }
+                    />
+                    {fieldError('locationQuery')}
+                  </label>
+                  <div className="admin-two">
+                    <label
+                      data-editor-field="durationMinutes"
+                      id="admin-section-duration"
+                    >
+                      Thời gian dành ở đây (phút)
                       <input
                         required
-                        maxLength={120}
-                        value={form.referencePrice.label}
-                        placeholder="Ví dụ: bữa ăn tham khảo / vé tham quan"
-                        onChange={(e) => updatePrice({ label: e.target.value })}
+                        type="number"
+                        min={15}
+                        max={720}
+                        step={1}
+                        value={form.durationMinutes}
+                        onChange={(e) =>
+                          update({ durationMinutes: Number(e.target.value) })
+                        }
                       />
                     </label>
-                    <div className="admin-two">
+                    {form.venueType === 'place' && (
                       <label>
-                        Giá tham khảo (VND)
-                        <input
-                          required
-                          type="number"
-                          min={0}
-                          max={1e12}
-                          step={1}
-                          value={
-                            Number.isFinite(form.referencePrice.amountMinor)
-                              ? form.referencePrice.amountMinor
-                              : ''
-                          }
-                          placeholder="0 chỉ khi đã xác nhận miễn phí"
-                          onChange={(e) =>
-                            updatePrice({
-                              amountMinor:
-                                e.target.value === ''
-                                  ? Number.NaN
-                                  : Number(e.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Đơn vị tính
+                        Nhóm trải nghiệm
                         <select
-                          aria-label="Đơn vị tính"
-                          value={form.referencePrice.basis}
+                          aria-label="Nhóm trải nghiệm"
+                          value={form.category}
                           onChange={(e) =>
-                            updatePrice({
-                              basis: e.target.value as ReferencePrice['basis'],
-                              maxTravelers:
-                                e.target.value === 'group_total' ? 1 : 1000,
+                            update({
+                              category: e.target
+                                .value as AdminPlaceInput['category'],
                             })
                           }
                         >
-                          <option value="per_person">Theo người</option>
-                          <option value="group_total">Cho cả nhóm</option>
+                          <option value="culture">Văn hóa</option>
+                          <option value="nature">Thiên nhiên</option>
                         </select>
                       </label>
-                    </div>
-                    <label>
-                      Áp dụng cho nhóm tối thiểu (người)
-                      <input
-                        required
-                        type="number"
-                        min={1}
-                        max={1000}
-                        step={1}
-                        value={form.referencePrice.minTravelers ?? 1}
-                        onChange={(e) =>
-                          updatePrice({ minTravelers: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Áp dụng cho nhóm tối đa (người)
-                      <input
-                        required
-                        type="number"
-                        min={1}
-                        max={1000}
-                        step={1}
-                        value={form.referencePrice.maxTravelers}
-                        onChange={(e) =>
-                          updatePrice({ maxTravelers: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Bao gồm gì / điều kiện áp dụng
-                      <textarea
-                        required
-                        rows={2}
-                        maxLength={500}
-                        value={form.referencePrice.conditions}
-                        onChange={(e) =>
-                          updatePrice({ conditions: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Link nguồn giá
-                      <input
-                        required
-                        type="url"
-                        maxLength={2048}
-                        value={form.referencePrice.sourceUrl}
-                        placeholder="https://…"
-                        onChange={(e) =>
-                          updatePrice({ sourceUrl: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Bao gồm trong giá
-                      <input
-                        required
-                        maxLength={500}
-                        value={form.referencePrice.inclusions ?? ''}
-                        onChange={(e) =>
-                          updatePrice({ inclusions: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Không bao gồm trong giá
-                      <input
-                        required
-                        maxLength={500}
-                        placeholder="Ghi Không có nếu đã xác minh không có khoản loại trừ"
-                        value={form.referencePrice.exclusions ?? ''}
-                        onChange={(e) =>
-                          updatePrice({ exclusions: e.target.value })
-                        }
-                      />
-                    </label>
-                    {form.category !== 'food' && (
-                      <>
-                        <label className="admin-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={!!form.referencePrice.bundle}
-                            onChange={(e) => {
-                              const { bundle: _old, ...price } =
-                                form.referencePrice!;
-                              void _old;
-                              update({
-                                referencePrice: e.target.checked
-                                  ? {
-                                      ...price,
-                                      bundle: {
-                                        code: '',
-                                        validDays: 1,
-                                        maxEntries: 1,
-                                      },
-                                    }
-                                  : price,
-                              });
-                            }}
-                          />
-                          Dùng chung vé gói với các điểm khác
-                        </label>
-                        {form.referencePrice.bundle && (
-                          <>
-                            <p>
-                              Chỉ gán cùng mã cho các điểm thực sự được vé bao
-                              gồm, cùng giá và điều kiện. Số lượt tính mỗi lần
-                              vào cửa; không dùng cho gói có hạn mức riêng từng
-                              nhóm di tích hoặc thời hạn theo giờ chưa được hỗ
-                              trợ.
-                            </p>
-                            <label>
-                              Mã vé gói
-                              <input
-                                required
-                                pattern="[a-z0-9-]{3,80}"
-                                value={form.referencePrice.bundle.code}
-                                onChange={(e) =>
-                                  updatePrice({
-                                    bundle: {
-                                      ...form.referencePrice!.bundle!,
-                                      code: e.target.value,
-                                    },
-                                  })
-                                }
-                              />
-                            </label>
-                            <label>
-                              Hiệu lực (ngày, tính cả ngày đầu)
-                              <input
-                                required
-                                type="number"
-                                min={1}
-                                max={31}
-                                value={form.referencePrice.bundle.validDays}
-                                onChange={(e) =>
-                                  updatePrice({
-                                    bundle: {
-                                      ...form.referencePrice!.bundle!,
-                                      validDays: Number(e.target.value),
-                                    },
-                                  })
-                                }
-                              />
-                            </label>
-                            <label>
-                              Số lượt vào cửa trong một gói
-                              <input
-                                required
-                                type="number"
-                                min={1}
-                                max={300}
-                                value={form.referencePrice.bundle.maxEntries}
-                                onChange={(e) =>
-                                  updatePrice({
-                                    bundle: {
-                                      ...form.referencePrice!.bundle!,
-                                      maxEntries: Number(e.target.value),
-                                    },
-                                  })
-                                }
-                              />
-                            </label>
-                          </>
-                        )}
-                      </>
                     )}
-                    <div className="admin-two">
+                  </div>
+                </fieldset>
+              </div>
+              <div
+                role="tabpanel"
+                id="place-panel-photos"
+                aria-labelledby="place-tab-photos"
+                hidden={editorTab !== 'photos'}
+              >
+                <p className="place-tab-help">
+                  Ảnh được chọn thuộc đề xuất. Lưu đề xuất trước khi xuất bản.
+                </p>
+              </div>
+              <div
+                role="tabpanel"
+                id="place-panel-practical"
+                aria-labelledby="place-tab-practical"
+                hidden={editorTab !== 'practical'}
+              >
+                <fieldset disabled={busy} className="admin-form-fields">
+                  <legend>Giờ mở cửa</legend>{' '}
+                  <label
+                    data-editor-field="openingHoursNote"
+                    id="admin-section-hours"
+                  >
+                    Giờ mở cửa (nếu đã kiểm tra)
+                    <input
+                      maxLength={400}
+                      value={form.openingHoursNote}
+                      placeholder="Để trống nếu chưa rõ"
+                      onChange={(e) =>
+                        update({ openingHoursNote: e.target.value })
+                      }
+                    />
+                  </label>
+                </fieldset>
+                <fieldset
+                  disabled={busy}
+                  className="admin-form-fields"
+                  data-editor-field="referencePrice"
+                >
+                  <legend id="admin-section-price">
+                    Giá cho dự toán tự động
+                  </legend>
+                  {fieldError('referencePrice')}
+                  <p>
+                    Giá được dùng riêng cho dự toán và Goe. Thiếu giá vẫn có thể
+                    xuất bản để khám phá nếu đủ điều kiện; không tự suy ra miễn
+                    phí.
+                  </p>
+                  <label className="admin-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={!!form.referencePrice}
+                      disabled={form.venueType === 'food_idea'}
+                      onChange={(e) =>
+                        update({
+                          referencePrice: e.target.checked ? newPrice() : null,
+                        })
+                      }
+                    />
+                    Có giá đủ căn cứ để tự tính
+                  </label>
+                  {form.referencePrice ? (
+                    <>
                       <label>
-                        Ngày đối chiếu giá
+                        Tên khoản giá
                         <input
                           required
-                          type="date"
-                          max={catalogToday()}
-                          value={form.referencePrice.checkedAt}
-                          onInput={(e) =>
-                            updatePrice({ checkedAt: e.currentTarget.value })
-                          }
+                          maxLength={120}
+                          value={form.referencePrice.label}
+                          placeholder="Ví dụ: bữa ăn tham khảo / vé tham quan"
                           onChange={(e) =>
-                            updatePrice({ checkedAt: e.target.value })
+                            updatePrice({ label: e.target.value })
                           }
                         />
                       </label>
+                      <div className="admin-two">
+                        <label>
+                          Giá tham khảo (VND)
+                          <input
+                            required
+                            type="number"
+                            min={0}
+                            max={1e12}
+                            step={1}
+                            value={
+                              Number.isFinite(form.referencePrice.amountMinor)
+                                ? form.referencePrice.amountMinor
+                                : ''
+                            }
+                            placeholder="0 chỉ khi đã xác nhận miễn phí"
+                            onChange={(e) =>
+                              updatePrice({
+                                amountMinor:
+                                  e.target.value === ''
+                                    ? Number.NaN
+                                    : Number(e.target.value),
+                              })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Đơn vị tính
+                          <select
+                            aria-label="Đơn vị tính"
+                            value={form.referencePrice.basis}
+                            onChange={(e) =>
+                              updatePrice({
+                                basis: e.target
+                                  .value as ReferencePrice['basis'],
+                                maxTravelers:
+                                  e.target.value === 'group_total' ? 1 : 1000,
+                              })
+                            }
+                          >
+                            <option value="per_person">Theo người</option>
+                            <option value="group_total">Cho cả nhóm</option>
+                          </select>
+                        </label>
+                      </div>
                       <label>
-                        Cần kiểm tra lại vào
+                        Áp dụng cho nhóm tối thiểu (người)
                         <input
                           required
-                          type="date"
-                          min={form.referencePrice.checkedAt}
-                          value={form.referencePrice.reviewAfter}
-                          onInput={(e) =>
-                            updatePrice({ reviewAfter: e.currentTarget.value })
-                          }
+                          type="number"
+                          min={1}
+                          max={1000}
+                          step={1}
+                          value={form.referencePrice.minTravelers ?? 1}
                           onChange={(e) =>
-                            updatePrice({ reviewAfter: e.target.value })
-                          }
-                        />
-                      </label>
-                    </div>
-                  </>
-                ) : (
-                  <p>
-                    Chưa có căn cứ giá. Địa điểm có thể phục vụ khám phá; Goe và
-                    ngân sách vẫn cần dữ liệu đủ điều kiện.
-                  </p>
-                )}
-              </fieldset>
-            </div>
-            <aside>
-              <section className="admin-panel" id="admin-section-evidence">
-                <details>
-                  <summary>Khóa biên tập theo trường</summary>
-                  <p>
-                    Trường khóa được bảo vệ khi nguồn cập nhật, xuất bản và phục
-                    hồi. Khóa không tự xác minh dữ kiện.
-                  </p>
-                  <div className="admin-lock-fields">
-                    {catalogEditableFields.map((field) => (
-                      <label className="admin-checkbox" key={field}>
-                        <input
-                          type="checkbox"
-                          checked={form.fieldLocks?.includes(field) ?? false}
-                          onChange={(e) =>
-                            update({
-                              fieldLocks: e.target.checked
-                                ? [...(form.fieldLocks ?? []), field]
-                                : (form.fieldLocks?.filter(
-                                    (v) => v !== field,
-                                  ) ?? []),
+                            updatePrice({
+                              minTravelers: Number(e.target.value),
                             })
                           }
                         />
-                        {
-                          {
-                            name: 'Tên địa điểm',
-                            description: 'Mô tả',
-                            category: 'Nhóm trải nghiệm',
-                            venueType: 'Loại địa điểm',
-                            locationQuery: 'Địa chỉ',
-                            durationMinutes: 'Thời lượng',
-                            openingHoursNote: 'Giờ mở cửa',
-                            sourceUrl: 'Nguồn thông tin',
-                            referencePrice: 'Giá',
-                            mapLocation: 'Tọa độ',
-                            images: 'Ảnh',
-                          }[field]
-                        }
                       </label>
-                    ))}
-                  </div>
-                </details>
-                {saved?.fieldProvenance?.length ? (
-                  <details>
-                    <summary>Lịch sử nguồn theo trường</summary>
-                    {saved.fieldProvenance.map((p) => (
-                      <div key={p.field} className="admin-version">
-                        <strong>{p.field}</strong>
-                        <span>
-                          Nguồn: {p.origin} ·{' '}
-                          {p.state === 'verified'
-                            ? 'Đã xác minh'
-                            : p.state === 'edited'
-                              ? 'Đã biên tập'
-                              : p.state === 'observed'
-                                ? 'Quan sát nguồn'
-                                : 'Chưa rõ'}
-                        </span>
-                        <small>
-                          Nhận:{' '}
-                          {p.receivedAt
-                            ? new Date(p.receivedAt).toLocaleString('vi-VN')
-                            : 'chưa có'}{' '}
-                          · xác minh:{' '}
-                          {p.verifiedAt
-                            ? new Date(p.verifiedAt).toLocaleString('vi-VN')
-                            : 'chưa có'}
-                        </small>
-                        {p.sourceUrl && (
-                          <a
-                            href={p.sourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Mở căn cứ nguồn ↗
-                          </a>
-                        )}
+                      <label>
+                        Áp dụng cho nhóm tối đa (người)
+                        <input
+                          required
+                          type="number"
+                          min={1}
+                          max={1000}
+                          step={1}
+                          value={form.referencePrice.maxTravelers}
+                          onChange={(e) =>
+                            updatePrice({
+                              maxTravelers: Number(e.target.value),
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Bao gồm gì / điều kiện áp dụng
+                        <textarea
+                          required
+                          rows={2}
+                          maxLength={500}
+                          value={form.referencePrice.conditions}
+                          onChange={(e) =>
+                            updatePrice({ conditions: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Link nguồn giá
+                        <input
+                          required
+                          type="url"
+                          maxLength={2048}
+                          value={form.referencePrice.sourceUrl}
+                          placeholder="https://…"
+                          onChange={(e) =>
+                            updatePrice({ sourceUrl: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Bao gồm trong giá
+                        <input
+                          required
+                          maxLength={500}
+                          value={form.referencePrice.inclusions ?? ''}
+                          onChange={(e) =>
+                            updatePrice({ inclusions: e.target.value })
+                          }
+                        />
+                      </label>
+                      <label>
+                        Không bao gồm trong giá
+                        <input
+                          required
+                          maxLength={500}
+                          placeholder="Ghi Không có nếu đã xác minh không có khoản loại trừ"
+                          value={form.referencePrice.exclusions ?? ''}
+                          onChange={(e) =>
+                            updatePrice({ exclusions: e.target.value })
+                          }
+                        />
+                      </label>
+                      {form.category !== 'food' && (
+                        <>
+                          <label className="admin-checkbox">
+                            <input
+                              type="checkbox"
+                              checked={!!form.referencePrice.bundle}
+                              onChange={(e) => {
+                                const { bundle: _old, ...price } =
+                                  form.referencePrice!;
+                                void _old;
+                                update({
+                                  referencePrice: e.target.checked
+                                    ? {
+                                        ...price,
+                                        bundle: {
+                                          code: '',
+                                          validDays: 1,
+                                          maxEntries: 1,
+                                        },
+                                      }
+                                    : price,
+                                });
+                              }}
+                            />
+                            Dùng chung vé gói với các điểm khác
+                          </label>
+                          {form.referencePrice.bundle && (
+                            <>
+                              <p>
+                                Chỉ gán cùng mã cho các điểm thực sự được vé bao
+                                gồm, cùng giá và điều kiện. Số lượt tính mỗi lần
+                                vào cửa; không dùng cho gói có hạn mức riêng
+                                từng nhóm di tích hoặc thời hạn theo giờ chưa
+                                được hỗ trợ.
+                              </p>
+                              <label>
+                                Mã vé gói
+                                <input
+                                  required
+                                  pattern="[a-z0-9-]{3,80}"
+                                  value={form.referencePrice.bundle.code}
+                                  onChange={(e) =>
+                                    updatePrice({
+                                      bundle: {
+                                        ...form.referencePrice!.bundle!,
+                                        code: e.target.value,
+                                      },
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label>
+                                Hiệu lực (ngày, tính cả ngày đầu)
+                                <input
+                                  required
+                                  type="number"
+                                  min={1}
+                                  max={31}
+                                  value={form.referencePrice.bundle.validDays}
+                                  onChange={(e) =>
+                                    updatePrice({
+                                      bundle: {
+                                        ...form.referencePrice!.bundle!,
+                                        validDays: Number(e.target.value),
+                                      },
+                                    })
+                                  }
+                                />
+                              </label>
+                              <label>
+                                Số lượt vào cửa trong một gói
+                                <input
+                                  required
+                                  type="number"
+                                  min={1}
+                                  max={300}
+                                  value={form.referencePrice.bundle.maxEntries}
+                                  onChange={(e) =>
+                                    updatePrice({
+                                      bundle: {
+                                        ...form.referencePrice!.bundle!,
+                                        maxEntries: Number(e.target.value),
+                                      },
+                                    })
+                                  }
+                                />
+                              </label>
+                            </>
+                          )}
+                        </>
+                      )}
+                      <div className="admin-two">
+                        <label>
+                          Ngày đối chiếu giá
+                          <input
+                            required
+                            type="date"
+                            max={catalogToday()}
+                            value={form.referencePrice.checkedAt}
+                            onInput={(e) =>
+                              updatePrice({ checkedAt: e.currentTarget.value })
+                            }
+                            onChange={(e) =>
+                              updatePrice({ checkedAt: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Cần kiểm tra lại vào
+                          <input
+                            required
+                            type="date"
+                            min={form.referencePrice.checkedAt}
+                            value={form.referencePrice.reviewAfter}
+                            onInput={(e) =>
+                              updatePrice({
+                                reviewAfter: e.currentTarget.value,
+                              })
+                            }
+                            onChange={(e) =>
+                              updatePrice({ reviewAfter: e.target.value })
+                            }
+                          />
+                        </label>
                       </div>
-                    ))}
+                    </>
+                  ) : (
+                    <p>
+                      Chưa có căn cứ giá. Địa điểm có thể phục vụ khám phá; Goe
+                      và ngân sách vẫn cần dữ liệu đủ điều kiện.
+                    </p>
+                  )}
+                </fieldset>
+              </div>
+              <div
+                role="tabpanel"
+                id="place-panel-sources"
+                aria-labelledby="place-tab-sources"
+                hidden={editorTab !== 'sources'}
+              >
+                <section className="admin-panel" id="admin-section-evidence">
+                  <h2>Nguồn & lịch sử</h2>
+                  {form && scope !== form.destinationId && (
+                    <p className="admin-soft-notice">
+                      Đang sửa địa điểm thuộc{' '}
+                      {destinations.find((d) => d.id === form.destinationId)
+                        ?.name ?? 'điểm đến chưa chọn'}
+                      . Đổi phạm vi xem không chuyển địa điểm sang phạm vi khác.
+                    </p>
+                  )}
+                  {form && saved && (
+                    <div className="admin-soft-notice">
+                      Đề xuất: {saved.proposalRevision ?? 'chưa có'} · Bản công
+                      khai: {saved.publicRevision ?? 'chưa xuất bản'}. Lưu chỉnh
+                      sửa không thay đổi bản khách đang xem.
+                    </div>
+                  )}
+                  {form && saved?.source && (
+                    <div>
+                      Nhập từ nguồn lúc{' '}
+                      {new Date(saved.source.fetchedAt).toLocaleString('vi-VN')}
+                      . Thông tin cần biên tập, giờ mở cửa chưa được xác minh.{' '}
+                      <SourceCredit expanded />
+                    </div>
+                  )}
+
+                  {saved?.publicationStatus === 'draft' && (
+                    <label className="admin-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={autosave}
+                        onChange={(e) => setAutosave(e.target.checked)}
+                      />
+                      Tự lưu bản nháp hợp lệ sau 2 giây
+                    </label>
+                  )}
+
+                  <label data-editor-field="sourceUrl">
+                    Link nguồn thông tin
+                    <input
+                      required
+                      type="url"
+                      placeholder="https://…"
+                      maxLength={2048}
+                      value={form.sourceUrl}
+                      onChange={(e) => update({ sourceUrl: e.target.value })}
+                    />
+                    {fieldError('sourceUrl')}
+                  </label>
+
+                  <details>
+                    <summary>Khóa biên tập theo trường</summary>
+                    <p>
+                      Trường khóa được bảo vệ khi nguồn cập nhật, xuất bản và
+                      phục hồi. Khóa không tự xác minh dữ kiện.
+                    </p>
+                    <div className="admin-lock-fields">
+                      {catalogEditableFields.map((field) => (
+                        <label className="admin-checkbox" key={field}>
+                          <input
+                            type="checkbox"
+                            checked={form.fieldLocks?.includes(field) ?? false}
+                            onChange={(e) =>
+                              update({
+                                fieldLocks: e.target.checked
+                                  ? [...(form.fieldLocks ?? []), field]
+                                  : (form.fieldLocks?.filter(
+                                      (v) => v !== field,
+                                    ) ?? []),
+                              })
+                            }
+                          />
+                          {
+                            {
+                              name: 'Tên địa điểm',
+                              description: 'Mô tả',
+                              category: 'Nhóm trải nghiệm',
+                              venueType: 'Loại địa điểm',
+                              locationQuery: 'Địa chỉ',
+                              durationMinutes: 'Thời lượng',
+                              openingHoursNote: 'Giờ mở cửa',
+                              sourceUrl: 'Nguồn thông tin',
+                              referencePrice: 'Giá',
+                              mapLocation: 'Tọa độ',
+                              images: 'Ảnh',
+                            }[field]
+                          }
+                        </label>
+                      ))}
+                    </div>
                   </details>
-                ) : null}
-                <AdminFieldEvidence
-                  form={form}
-                  evidence={saved ? sourceEvidence : null}
+                  {saved?.fieldProvenance?.length ? (
+                    <details>
+                      <summary>Lịch sử nguồn theo trường</summary>
+                      {saved.fieldProvenance.map((p) => (
+                        <div key={p.field} className="admin-version">
+                          <strong>{p.field}</strong>
+                          <span>
+                            Nguồn: {p.origin} ·{' '}
+                            {p.state === 'verified'
+                              ? 'Đã xác minh'
+                              : p.state === 'edited'
+                                ? 'Đã biên tập'
+                                : p.state === 'observed'
+                                  ? 'Quan sát nguồn'
+                                  : 'Chưa rõ'}
+                          </span>
+                          <small>
+                            Nhận:{' '}
+                            {p.receivedAt
+                              ? new Date(p.receivedAt).toLocaleString('vi-VN')
+                              : 'chưa có'}{' '}
+                            · xác minh:{' '}
+                            {p.verifiedAt
+                              ? new Date(p.verifiedAt).toLocaleString('vi-VN')
+                              : 'chưa có'}
+                          </small>
+                          {p.sourceUrl && (
+                            <a
+                              href={p.sourceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Mở căn cứ nguồn ↗
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </details>
+                  ) : null}
+                  <AdminFieldEvidence
+                    form={form}
+                    evidence={saved ? sourceEvidence : null}
+                  />
+                </section>
+                <AdminPlaceTools
+                  saved={saved}
+                  busy={busy}
+                  onRestore={() => {
+                    if (saved) void open(saved.id);
+                    setRetry((v) => v + 1);
+                  }}
                 />
-              </section>
-              <AdminPlaceTools
-                form={form}
-                saved={saved}
-                update={update}
-                busy={busy}
-                onRestore={() => {
-                  if (saved) void open(saved.id);
-                  setRetry((v) => v + 1);
-                }}
-              />
-            </aside>
+              </div>
+            </div>
+            <AdminPlaceSidebar
+              form={form}
+              saved={saved}
+              update={update}
+              onField={showField}
+              busy={busy}
+            />
           </div>
           {preview && (
             <section
@@ -1592,6 +1820,18 @@ export function AdminCatalog({
             </section>
           )}
           <div className="admin-save-bar">
+            <span className="place-save-caption">
+              <CheckCircle2 size={22} />
+              {busy
+                ? 'Đang lưu…'
+                : isDirty
+                  ? 'Có thay đổi chưa lưu'
+                  : 'Đã lưu đề xuất'}{' '}
+              ·{' '}
+              {saved?.publicRevision
+                ? 'Bản công khai giữ nguyên khi lưu'
+                : 'Chưa công khai'}
+            </span>
             <button
               type="button"
               className="journey-outline"
@@ -1609,7 +1849,7 @@ export function AdminCatalog({
                 : 'Lưu đề xuất'}
             </button>
             <button type="submit" className="journey-primary" disabled={busy}>
-              Xem trước để xuất bản
+              Xem trước xuất bản
             </button>
             {saved?.publicationStatus === 'published' && (
               <button
@@ -1629,7 +1869,7 @@ export function AdminCatalog({
             )}
           </div>
           {!!history.length && (
-            <details className="admin-history">
+            <details className="admin-history" hidden={editorTab !== 'sources'}>
               <summary>Lịch sử lưu gần đây</summary>
               {history.map((h, i) => (
                 <p key={i}>

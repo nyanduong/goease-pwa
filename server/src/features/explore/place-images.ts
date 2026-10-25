@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Types } from 'mongoose';
 import {
   imageCandidateSchema,
+  catalogImageSchema,
   type PlaceImageSearchDto,
 } from '@goease/contracts';
 import type { exploreService } from './explore.service.js';
@@ -25,6 +26,9 @@ export function placeImages(
       throw new HttpError(404, 'PLACE_NOT_FOUND', 'Không tìm thấy địa điểm.');
     const search = place.imageSearch;
     return {
+      defaultCover: search?.defaultCover
+        ? catalogImageSchema.parse(place.toObject().imageSearch!.defaultCover)
+        : null,
       state: search?.state ?? 'pending',
       candidates: (search?.candidates ?? []).map((c) =>
         imageCandidateSchema.parse(c.toObject()),
@@ -92,8 +96,9 @@ export function placeImages(
       {
         $set: {
           'imageSearch.state': 'searching',
+          'imageSearch.storageVersion': 1,
           'imageSearch.leaseToken': token,
-          'imageSearch.leaseUntil': new Date(Date.now() + 60000),
+          'imageSearch.leaseUntil': new Date(Date.now() + 120000),
         },
         $inc: { 'imageSearch.attempts': 1 },
       },
@@ -133,13 +138,22 @@ export function placeImages(
         },
         {
           $set: {
+            ...(!place.imageSearch?.defaultCover && candidates[0]
+              ? {
+                  'imageSearch.defaultCover': {
+                    ...candidates[0].image,
+                    selection: 'automatic',
+                    reviewed: false,
+                  },
+                }
+              : {}),
             'imageSearch.state': candidates.length ? 'ready' : 'empty',
             'imageSearch.candidates': candidates,
             'imageSearch.checkedAt': new Date(),
             'imageSearch.leaseToken': null,
             'imageSearch.leaseUntil': null,
             'imageSearch.message': candidates.length
-              ? 'Ảnh gợi ý chưa được duyệt. Kiểm tra đúng địa điểm và quyền sử dụng trước khi chọn.'
+              ? `Có ${candidates.length}/6 ảnh đã sẵn sàng. Ảnh đầu tiên làm bìa mặc định; bạn có thể đổi ảnh khác.`
               : 'Chưa tìm thấy ảnh phù hợp có giấy phép được hỗ trợ. Bổ sung ảnh thật hoặc thử lại.',
           },
         },
@@ -158,7 +172,7 @@ export function placeImages(
           },
           { timestamps: false },
         );
-    } catch {
+    } catch (error) {
       const retry = (place.imageSearch?.attempts ?? 3) < 3;
       await Place.updateOne(
         fence(),
@@ -170,7 +184,10 @@ export function placeImages(
             'imageSearch.leaseToken': null,
             'imageSearch.leaseUntil': null,
             'imageSearch.message':
-              'Chưa lấy được ảnh Wikimedia. Địa điểm được giữ nguyên; có thể thử lại.',
+              error instanceof HttpError &&
+              error.code.startsWith('PLACE_PHOTO_STORAGE')
+                ? error.message
+                : 'Chưa lấy được ảnh Wikimedia. Địa điểm được giữ nguyên; có thể thử lại.',
           },
         },
         { timestamps: false },
@@ -198,5 +215,52 @@ export function placeImages(
     timer = undefined;
     await running;
   }
-  return { read, enqueue, tick, start, stop };
+  async function prepareStorage() {
+    // Persist a stable default for existing ready observations; retries never replace it.
+    await Place.updateMany(
+      {
+        deletedAt: null,
+        'imageSearch.storageVersion': 1,
+        'imageSearch.defaultCover': null,
+        'imageSearch.candidates.0': { $exists: true },
+      },
+      [
+        {
+          $set: {
+            'imageSearch.defaultCover': {
+              $mergeObjects: [
+                { $arrayElemAt: ['$imageSearch.candidates.image', 0] },
+                { selection: 'automatic', reviewed: false },
+              ],
+            },
+          },
+        },
+      ],
+      { timestamps: false, updatePipeline: true },
+    );
+    // Requeue legacy observations once; never modify selected images or publication state.
+    await Place.updateMany(
+      {
+        deletedAt: null,
+        publicationStatus: { $ne: 'archived' },
+        'imageSearch.storageVersion': { $ne: 1 },
+        $or: [
+          { 'imageSearch.leaseUntil': null },
+          { 'imageSearch.leaseUntil': { $lt: new Date() } },
+        ],
+      },
+      {
+        $set: {
+          'imageSearch.storageVersion': 1,
+          'imageSearch.state': 'pending',
+          'imageSearch.candidates': [],
+          'imageSearch.attempts': 0,
+          'imageSearch.nextAttemptAt': new Date(),
+          'imageSearch.message': 'Đang chuẩn bị ảnh lưu trên Cloudinary.',
+        },
+      },
+      { timestamps: false },
+    );
+  }
+  return { read, enqueue, tick, start, stop, prepareStorage };
 }

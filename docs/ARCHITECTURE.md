@@ -167,4 +167,12 @@ Existing explore feature adds a fixed-origin server adapter and admin import ser
 
 ## CAT-20 Wikimedia photo observations
 
-Place image worker starts/stops with API; fixed Commons adapter with timeout/body limits and allowlisted media hosts. Atomic lease + revision fence writes bounded places.imageSearch independently from editorial images. Shared publish schema gates approved cover across single/review/bulk paths. Candidates are admin-only; public DTO emits approved real photos with attribution or neutral placeholder. No collection or storage service added. See WIKIMEDIA-PHOTOS.md.
+Place image worker starts/stops with API; fixed Commons adapter with timeout/body limits and allowlisted media hosts. Atomic lease + revision fence writes bounded places.imageSearch independently from editorial images. Shared publish schema gates approved cover across single/review/bulk paths. Candidates are admin-only; public DTO emits approved real photos with attribution or neutral placeholder. No new collection; uses the existing Cloudinary account for stored photos. See WIKIMEDIA-PHOTOS.md.
+
+CAT-20 storage update: Commons candidates pass through bounded raster download/re-encode and signed Cloudinary upload before being returned to the image worker. Deterministic content IDs with overwrite=false avoid duplicate storage; fail closed, never hotlink on failure. Existing Cloudinary credentials remain server-only. imageSearch.storageVersion requeues old observations once; DTO admin photoSearch state/count explains pending cover. See WIKIMEDIA-PHOTOS.md.
+
+## Bổ sung ảnh bìa mặc định — 25/10/2026
+
+Owner cập nhật CAT-20: tự chọn ảnh đầu tiên cho draft chưa có ảnh và không khóa images; admin đổi ảnh bằng **Dùng làm ảnh bìa**, không cần bước duyệt riêng. Thông tin ảnh trong editor thu gọn; giữ metadata và ghi công public. Thay các hướng dẫn duyệt thủ công bắt buộc ở phần trước.
+
+Schema đã triển khai: photo.selection optional enum automatic/admin; reviewed vẫn là boolean, không tự gán true cho ảnh tự chọn. imageSearch.defaultCover photo|null giữ ảnh đầu tiên ổn định qua retry. Backfill ứng viên Cloudinary cũ khi thiếu defaultCover, không đổi editorial revision/publication. DTO draft và bulk áp dụng defaultCover khi images rỗng, không khóa; save/publish lưu vào snapshot. Ảnh đã chọn và public không bị thay. GET images bổ sung defaultCover để form đang mở cập nhật khi worker hoàn tất. Gate chấp nhận selection automatic/admin hoặc reviewed=true, metadata hợp lệ và không phải AI. Không tự xuất bản.

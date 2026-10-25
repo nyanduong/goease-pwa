@@ -1,5 +1,22 @@
 import { images } from '@goease/media';
 import { useState, type ReactNode } from 'react';
+import type { AdminPlaceDto } from '@goease/contracts';
+
+export function PhotoSearchStatus({ place }: { place: AdminPlaceDto }) {
+  const status = place.photoSearch;
+  if (!status) return null;
+  return (
+    <small>
+      {status.count > 0
+        ? `${status.count}/6 ảnh gợi ý · Mở địa điểm để chọn ảnh bìa`
+        : status.state === 'empty'
+          ? 'Chưa tìm thấy ảnh phù hợp'
+          : status.state === 'failed'
+            ? 'Lấy/lưu ảnh lỗi · Mở địa điểm để thử lại'
+            : 'Đang tìm và lưu ảnh · Mở địa điểm xem tiến trình'}
+    </small>
+  );
+}
 
 // Cloudinary illustrations are presentation assets, never catalog evidence.
 export const adminAssets = {

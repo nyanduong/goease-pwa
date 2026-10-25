@@ -1,4 +1,4 @@
-import { AdminPlaceImage } from './admin-visuals';
+import { AdminPlaceImage, PhotoSearchStatus } from './admin-visuals';
 import {
   catalogQuality,
   catalogCapabilities,
@@ -57,6 +57,7 @@ export function AdminPlaceTable({
                     <div>
                       <h2>{p.name}</h2>
                       <small>{p.locationQuery}</small>
+                      <PhotoSearchStatus place={p} />
                     </div>
                   </div>
                 </td>

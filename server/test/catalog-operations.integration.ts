@@ -308,12 +308,14 @@ test(
             publicRevision,
             fieldProvenance,
             capabilities,
+            photoSearch,
             ...input
           } = current;
           void proposalRevision;
           void publicRevision;
           void fieldProvenance;
           void capabilities;
+          void photoSearch;
           void updatedAt;
           void provenance;
           void imageUrl;

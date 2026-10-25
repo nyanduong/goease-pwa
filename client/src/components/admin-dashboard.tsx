@@ -1,4 +1,8 @@
-import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
+import {
+  AdminPageHeader,
+  AdminPlaceImage,
+  PhotoSearchStatus,
+} from './admin-visuals';
 import { AdminSourceConnection } from './admin-campaigns';
 import { catalogQuality } from '@goease/contracts';
 import { AdminRegionSettings } from './admin-region-settings';
@@ -421,6 +425,7 @@ export function AdminDashboard({
                                 <AdminPlaceImage place={p} />
                                 <span>
                                   <strong>{p.name}</strong>
+                                  <PhotoSearchStatus place={p} />
                                   <small>
                                     {
                                       catalogQuality(p, settings.freshnessDays)
