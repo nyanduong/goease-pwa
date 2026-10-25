@@ -1,5 +1,5 @@
 import { confirmAction } from '../confirmation';
-import { PlacePhoto } from './place-photo';
+import { PlaceGalleryPhoto, PlacePhoto } from './place-photo';
 import { images } from '@goease/media';
 import { useEffect, useRef, useState } from 'react';
 import { catalogCost } from '@goease/contracts';
@@ -688,18 +688,12 @@ export function PlaceDetail({
         {!!place.images?.length && (
           <div className="place-source-gallery">
             {place.images.map((image, i) => (
-              <figure key={image.url + i}>
-                <img
-                  src={image.url}
-                  alt={`${place.name} · ảnh ${i + 1}`}
-                  loading="lazy"
-                />
-                <figcaption>
-                  <a href={image.sourceUrl} target="_blank" rel="noreferrer">
-                    {image.credit} · {image.license}
-                  </a>
-                </figcaption>
-              </figure>
+              <PlaceGalleryPhoto
+                key={image.url + i}
+                image={image}
+                name={place.name}
+                index={i}
+              />
             ))}
           </div>
         )}

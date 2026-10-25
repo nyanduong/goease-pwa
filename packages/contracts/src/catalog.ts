@@ -18,36 +18,101 @@ export {
   priceReady,
   type ReferencePrice,
 } from './reference-price.js';
-export const catalogImageSchema = z.strictObject({
-  url: publicSourceSchema,
-  credit: z.string().trim().min(1).max(1000),
-  license: z.enum([
-    'owned',
-    'permission',
-    'CC0',
-    'Public-domain',
-    'CC-BY-2.0',
-    'CC-BY-2.5',
-    'CC-BY-3.0',
-    'CC-BY-4.0',
-    'CC-BY-SA-2.0',
-    'CC-BY-SA-2.5',
-    'CC-BY-SA-3.0',
-    'CC-BY-SA-4.0',
-  ]),
-  sourceUrl: publicSourceSchema,
-  licenseUrl: publicSourceSchema.optional(),
-  reviewed: z.boolean().optional(),
-  selection: z.enum(['automatic', 'admin']).optional(),
-});
+export const catalogImageSchema = z
+  .strictObject({
+    url: publicSourceSchema,
+    credit: z.string().trim().min(1).max(1000),
+    license: z.enum([
+      'owned',
+      'permission',
+      'CC0',
+      'Public-domain',
+      'CC-BY-2.0',
+      'CC-BY-2.5',
+      'CC-BY-3.0',
+      'CC-BY-4.0',
+      'CC-BY-SA-2.0',
+      'CC-BY-SA-2.5',
+      'CC-BY-SA-3.0',
+      'CC-BY-SA-4.0',
+    ]),
+    sourceUrl: publicSourceSchema,
+    licenseUrl: publicSourceSchema.optional(),
+    reviewed: z.boolean().optional(),
+    selection: z.enum(['automatic', 'admin']).optional(),
+    kind: z.enum(['photo', 'ai_illustration']).optional(),
+    // Absent on legacy photos; new writes identify a cached cover versus a source link.
+    storage: z.enum(['cloudinary', 'source']).optional(),
+    originalUrl: publicSourceSchema.optional(),
+  })
+  .superRefine((image, ctx) => {
+    if (
+      image.storage === 'cloudinary' &&
+      !/^https:\/\/res\.cloudinary\.com\//.test(image.url)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['storage'],
+        message: 'Ảnh đã lưu phải dùng URL Cloudinary hợp lệ.',
+      });
+  });
 export type CatalogImage = z.infer<typeof catalogImageSchema>;
-export const approvedPhoto = (image: CatalogImage | undefined) =>
-  !!image &&
-  (image.reviewed === true ||
-    image.selection === 'automatic' ||
-    image.selection === 'admin') &&
-  !/minh họa|\bAI\b|generated|illustration/i.test(image.credit) &&
-  catalogImageSchema.safeParse(image).success;
+export function approvedPhoto(image: unknown): boolean {
+  const parsed = catalogImageSchema.safeParse(image);
+  if (!parsed.success) return false;
+  const value = parsed.data;
+  return (
+    value.kind !== 'ai_illustration' &&
+    (value.reviewed === true ||
+      value.selection === 'automatic' ||
+      value.selection === 'admin') &&
+    !/minh họa|\bAI\b|generated|illustration/i.test(value.credit)
+  );
+}
+export function approvedIllustration(image: unknown): boolean {
+  const parsed = catalogImageSchema.safeParse(image);
+  if (!parsed.success) return false;
+  const value = parsed.data;
+  return (
+    value.kind === 'ai_illustration' &&
+    (value.reviewed === true ||
+      value.selection === 'admin' ||
+      value.selection === 'automatic') &&
+    ['owned', 'permission'].includes(value.license) &&
+    !/^https:\/\/(?:commons|upload|thumb)\.wikimedia\.org\//i.test(
+      value.sourceUrl,
+    )
+  );
+}
+export const approvedCover = (image: CatalogImage | undefined) =>
+  approvedPhoto(image) || approvedIllustration(image);
+export function catalogGallery(images: unknown[]): CatalogImage[] {
+  const parsed = images.flatMap((image) => {
+    const value = catalogImageSchema.safeParse(image);
+    return value.success ? [value.data] : [];
+  });
+  const photos = parsed
+    .filter(approvedPhoto)
+    .filter(
+      (image, index, all) =>
+        all.findIndex(
+          (other) =>
+            (other.originalUrl ?? other.url) ===
+            (image.originalUrl ?? image.url),
+        ) === index,
+    );
+  return photos.length
+    ? photos
+        .slice(0, 5)
+        .map((image, index) =>
+          index > 0 && image.storage === 'cloudinary' && image.originalUrl
+            ? { ...image, url: image.originalUrl, storage: 'source' as const }
+            : image,
+        )
+    : parsed.filter(approvedIllustration).slice(0, 1);
+}
+export const catalogImageCover = (images: unknown[]) =>
+  catalogGallery(images)[0];
 export function catalogPhotoCover(images: unknown[]) {
   const parsed = catalogImageSchema.safeParse(images[0]);
   return parsed.success && approvedPhoto(parsed.data) ? parsed.data : undefined;
@@ -115,7 +180,7 @@ export const adminPlaceInputSchema = z
     publicationStatus: z.enum(['draft', 'published', 'archived']),
     mapLocation: mapLocationSchema.nullable().optional(),
     internalNote: z.string().trim().max(1000).optional(),
-    images: z.array(catalogImageSchema).max(8).optional(),
+    images: z.array(catalogImageSchema).max(5).optional(),
     fieldLocks: z
       .array(catalogFieldSchema)
       .max(catalogEditableFields.length)
@@ -123,6 +188,16 @@ export const adminPlaceInputSchema = z
       .optional(),
   })
   .superRefine((v, ctx) => {
+    if (
+      v.images?.some((image) => image.kind === 'ai_illustration') &&
+      (v.images.length !== 1 || !approvedIllustration(v.images[0]))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['images'],
+        message:
+          'Chỉ dùng một ảnh minh họa AI có quyền sử dụng riêng khi chưa có ảnh thật; không trộn hai loại ảnh.',
+      });
     if (
       v.publicationStatus === 'published' &&
       (v.visitInfo?.hours?.reviewed === false ||
@@ -143,7 +218,7 @@ export const adminPlaceInputSchema = z
         path: ['description'],
         message: 'Cần giới thiệu địa điểm có nội dung trước khi xuất bản.',
       });
-    if (v.publicationStatus === 'published' && !approvedPhoto(v.images?.[0]))
+    if (v.publicationStatus === 'published' && !approvedCover(v.images?.[0]))
       ctx.addIssue({
         code: 'custom',
         path: ['images'],
@@ -232,7 +307,7 @@ export function catalogCapabilities(
   travelers = 1,
 ) {
   const discovery =
-    approvedPhoto(place.images?.[0]) &&
+    approvedCover(place.images?.[0]) &&
     !!place.name.trim() &&
     !needsPlaceDescription(place.description) &&
     !!place.locationQuery.trim() &&

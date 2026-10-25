@@ -18,6 +18,7 @@ async function main() {
         product.imageSearch.start();
         product.descriptionSearch.start();
         product.visitSearch.start();
+        product.enrichment.startWorker();
       })
       .catch(() => logger.write('product.init_failed'));
   });
@@ -36,6 +37,7 @@ async function main() {
     server.closeIdleConnections();
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await product.recovery.drain();
+    await product.enrichment.stopWorker();
     await product.operations.stop();
     await product.imageSearch.stop();
     await product.descriptionSearch.stop();

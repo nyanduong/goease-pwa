@@ -6,7 +6,12 @@ import type {
 } from '@goease/contracts';
 import { api } from '../api';
 import { Image as ImageIcon, X, Check, RefreshCw } from 'lucide-react';
-import { approvedPhoto } from '@goease/contracts';
+import {
+  approvedCover,
+  approvedPhoto,
+  approvedIllustration,
+  catalogGallery,
+} from '@goease/contracts';
 
 export function AdminWikimediaImages({
   id,
@@ -75,10 +80,25 @@ export function AdminWikimediaImages({
     if (
       data?.defaultCover &&
       form.publicationStatus === 'draft' &&
-      !form.images?.length &&
+      (!form.images?.length ||
+        (form.images.length === 1 && approvedIllustration(form.images[0]))) &&
       !form.fieldLocks?.includes('images')
     ) {
-      update({ images: [data.defaultCover] });
+      update({
+        images: catalogGallery([
+          data.defaultCover,
+          ...data.candidates.map((c) => ({
+            ...c.image,
+            selection: 'automatic' as const,
+          })),
+        ])
+          .filter(approvedPhoto)
+          .filter(
+            (image, index, all) =>
+              all.findIndex((i) => i.url === image.url) === index,
+          )
+          .slice(0, 5),
+      });
     }
   }, [
     data?.defaultCover,
@@ -105,7 +125,7 @@ export function AdminWikimediaImages({
       setBusy(false);
     }
   }
-  const cover = approvedPhoto(form.images?.[0]) ? form.images?.[0] : undefined;
+  const cover = approvedCover(form.images?.[0]) ? form.images?.[0] : undefined;
   const waiting = !data || ['pending', 'searching'].includes(data.state);
   return (
     <section
@@ -146,14 +166,44 @@ export function AdminWikimediaImages({
             <p role="status">Đang tìm và chuẩn bị ảnh gợi ý…</p>
           )}
           {data && !waiting && !data.candidates.length && (
-            <div className="place-photos-empty">
-              <ImageIcon size={32} />
+            <div className={cover ? 'place-photo-help' : 'place-photos-empty'}>
+              {!cover && <ImageIcon size={32} />}
               <p role="status">
-                {data.message || 'Chưa tìm thấy ảnh phù hợp.'}
+                {cover
+                  ? data.state === 'failed'
+                    ? 'Ảnh bìa đã chọn vẫn được giữ. Lượt tìm ảnh bổ sung chưa thành công; bạn có thể thử lại.'
+                    : 'Đã có ảnh bìa. Chưa tìm thấy ảnh bổ sung phù hợp.'
+                  : data.message || 'Chưa tìm thấy ảnh phù hợp.'}
               </p>
             </div>
           )}
           <div className="place-photo-candidates">
+            {cover &&
+              !data?.candidates.some(
+                (candidate) => candidate.image.url === cover.url,
+              ) && (
+                <figure className="is-cover">
+                  <div className="place-candidate-image">
+                    <img
+                      src={cover.url}
+                      alt={`Ảnh bìa đã chọn: ${form.name}`}
+                      referrerPolicy="no-referrer"
+                    />
+                    <span className="place-cover-label">
+                      <Check size={14} />
+                      Ảnh bìa đã chọn
+                    </span>
+                  </div>
+                  <figcaption>
+                    {cover.kind === 'ai_illustration' && (
+                      <strong>Ảnh minh họa AI · </strong>
+                    )}
+                    <a href={cover.sourceUrl} target="_blank" rel="noreferrer">
+                      {cover.credit} · {cover.license}
+                    </a>
+                  </figcaption>
+                </figure>
+              )}
             {data?.candidates.map((candidate) => (
               <figure
                 key={candidate.id}
@@ -198,7 +248,8 @@ export function AdminWikimediaImages({
                     disabled={
                       disabled ||
                       previews[candidate.image.url] !== 'loaded' ||
-                      ((form.images?.length ?? 0) >= 8 &&
+                      ((form.images?.filter((i) => i.kind !== 'ai_illustration')
+                        .length ?? 0) >= 5 &&
                         !form.images?.some(
                           (i) => i.url === candidate.image.url,
                         ))
@@ -212,7 +263,9 @@ export function AdminWikimediaImages({
                             reviewed: false,
                           },
                           ...(form.images ?? []).filter(
-                            (i) => i.url !== candidate.image.url,
+                            (i) =>
+                              i.url !== candidate.image.url &&
+                              i.kind !== 'ai_illustration',
                           ),
                         ],
                       })
@@ -229,13 +282,10 @@ export function AdminWikimediaImages({
               </figure>
             ))}
           </div>
-          {cover &&
-            !data?.candidates.some((c) => c.image.url === cover.url) && (
-              <p>Ảnh bìa đã chọn trong mục quản lý ảnh bên dưới.</p>
-            )}
           <footer className="place-photo-help">
             <span>
-              Ảnh đầu tiên được chọn làm bìa. Bạn có thể đổi ảnh khác.
+              Giữ 1 ảnh bìa trên Cloudinary, tối đa 4 ảnh khác dùng link nguồn.
+              Đổi bìa sẽ lưu ảnh được chọn khi lưu địa điểm.
             </span>
             {(!compact || !data?.candidates.length) && (
               <button

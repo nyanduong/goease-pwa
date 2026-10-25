@@ -489,14 +489,14 @@ Chi tiết và bằng chứng: [PROVINCE-IMPORT](PROVINCE-IMPORT.md).
 
 ## CAT-20 — Ảnh thật và ảnh bìa mặc định (25/10/2026)
 
-Owner chốt: hệ thống tự dùng ảnh đầu tiên làm bìa cho bản nháp; admin có thể đổi ảnh khác, không cần bước duyệt quyền sử dụng riêng trong luồng chọn ảnh. Quy tắc này thay yêu cầu duyệt thủ công trước đây của CAT-20; vẫn không dùng ảnh AI cho địa điểm.
+Owner chốt: hệ thống tự dùng ảnh đầu tiên làm bìa cho bản nháp; admin có thể đổi ảnh khác, không cần bước duyệt quyền sử dụng riêng trong luồng chọn ảnh. Quy tắc này thay yêu cầu duyệt thủ công trước đây của CAT-20. Owner cập nhật tiếp: gallery tối đa 5 ảnh thật; khi chưa có ảnh thật cho phép đúng 1 ảnh minh họa AI làm bìa, có metadata và nhãn rõ, không coi là ảnh chụp xác minh địa điểm.
 
-- Tìm tối đa 6 ảnh Wikimedia theo tên/tỉnh hoặc gần tọa độ, lọc định dạng và metadata giấy phép, tải/re-encode lên Cloudinary. Không cam kết mọi địa điểm có đủ 6 ảnh hoặc ảnh luôn đúng đối tượng.
+- Tìm tối đa 5 ảnh Wikimedia theo tên/tỉnh hoặc gần tọa độ, lọc định dạng và metadata giấy phép. Lưu 1 ảnh bìa gốc lossless lên Cloudinary, tối đa 4 ảnh bổ sung dùng URL nguồn. Không cam kết mọi địa điểm có đủ 5 ảnh hoặc ảnh luôn đúng đối tượng.
 - Lưu ảnh đầu tiên làm imageSearch.defaultCover ổn định với selection=automatic, reviewed=false. Retry không thay bìa mặc định. Bản nháp chưa có ảnh và không khóa trường images sử dụng bìa này trong DTO, kiểm tra và xuất bản theo lô; lưu/xuất bản đưa ảnh vào snapshot biên tập. Không giả định admin đã duyệt ảnh tự động.
 - Ảnh admin đã chọn ưu tiên hơn bìa mặc định. Đổi ảnh có selection=admin; nút Dùng làm ảnh bìa không đòi nhập lại nguồn/giấy phép. Metadata giấy phép và ghi công vẫn được giữ, thông tin ảnh trong editor thu gọn; public vẫn giữ ghi công.
 - Gate xuất bản yêu cầu ảnh bìa hợp lệ có selection=automatic/admin hoặc reviewed=true từ dữ liệu cũ; thiếu ảnh vẫn bị chặn. Chọn ảnh không tự xuất bản. Ảnh thủ công ngoài ứng viên vẫn cần metadata hợp lệ.
 - Ảnh mặc định là quan sát nguồn bền vững, không đổi editorial revision; không ghi đè ảnh đã chọn, trường khóa, bản công khai hay chuyến cũ. Backfill observation Cloudinary hiện có một lần khi thiếu defaultCover; không purge asset hay xóa attribution.
-- Không có ảnh/lỗi provider thì báo rõ và cho thử lại, không sinh AI hoặc fallback URL ảnh gốc. Public không dùng imageUrl AI cũ.
+- Không có ảnh/lỗi provider thì báo rõ và cho thử lại. Có thể bổ sung 1 ảnh minh họa AI có kind=ai_illustration và quyền owned/permission; customer bắt buộc thấy nhãn Ảnh minh họa AI. Không tự dùng imageUrl AI legacy không có metadata, không giả gắn nguồn/giấy phép Wikimedia. Ưu tiên ảnh thật khi có, giữ khóa biên tập và bản công khai. Chưa có job tạo ảnh AI hàng loạt; thao tác hiện tại nhận URL ảnh do admin chuẩn bị. Không dùng ảnh để tự xác minh giá/giờ.
 
 Hợp đồng và giới hạn: [WIKIMEDIA-PHOTOS](WIKIMEDIA-PHOTOS.md).
 
@@ -527,3 +527,14 @@ CAT-22 bổ sung trang admin chỉ đọc Tiến trình lấy dữ liệu: count
 ## CAT-23 — Một giá cho hiển thị và tính ngân sách (25/10/2026)
 
 Owner chốt bỏ nhập hai giá: admin nhập số tiền/đơn vị/điều kiện một lần, dùng chung để hiển thị và tính ngân sách khi đủ điều kiện. Giá canonical ở visitInfo.price (pricingVersion=1); referencePrice là projection server tạo từ cùng giá, không có form riêng. Giá phải được admin xác nhận, theo người/nhóm, áp dụng thông thường (người lớn/suất tiêu chuẩn), đủ nguồn và dịch vụ gồm/chưa gồm, còn hạn đối chiếu. Giữ CAT-14 về phạm vi nhóm/vé gói và CAT-17 về bản nháp/công khai. Giá món/ưu đãi/chưa rõ/quá hạn vẫn được hiển thị khi đã kiểm tra, nhưng không tự dùng tính ngân sách; UI nêu lý do. Xóa/sửa/chưa xác nhận giá làm projection trong draft thành null, không tự thay public hoặc snapshot chuyến cũ. API legacy được chuyển tiếp, không để giá thứ hai khác số tiền canonical. Quy tắc này thay mô hình nhập giá ngân sách riêng của CAT-22. Dictionary, giới hạn và bằng chứng: [SHARED-PLACE-PRICE](SHARED-PLACE-PRICE.md).
+
+### CAT-20 — Chốt lưu trữ 25/10/2026
+
+Owner chọn giữ raster gốc và WebP lossless, chấp nhận cần thêm dung lượng trả phí. Giữ nguyên giới hạn tải/pixel và kiểm lỗi provider; lựa chọn này không tự mua/nâng gói Cloudinary. Chỉ báo dữ liệu hoàn tất sau khi quan sát kết quả thật, xuất bản không bỏ gate nội dung/giờ/giá hoặc tự coi ảnh AI là bằng chứng địa điểm.
+
+Owner chốt tiếp: chỉ lưu 1 ảnh bìa cho mỗi bộ ảnh mới, tối đa 4 ảnh thật còn lại dùng link nguồn. Không có ảnh thật phù hợp thì dùng 1 ảnh AI đã lưu trên Cloudinary, có nhãn. Lưu bìa thất bại không báo bộ ảnh sẵn sàng. Đổi bìa nguồn Wikimedia sẽ lưu bản lossless trước khi lưu đề xuất; nguồn ảnh thủ công khác cần được admin tải lên Cloudinary trước. Các ảnh bổ sung lỗi tải được ẩn; ảnh bìa đã lưu không phụ thuộc link nguồn. Đây không phải sao lưu cả bộ 5 ảnh. Dữ liệu/asset cũ không bị xóa hoặc tải lại hàng loạt; không purge asset dư sau đổi bìa. Chi tiết và giới hạn: [ONE-COVER-MEDIA](ONE-COVER-MEDIA.md).
+
+Ngày 26/10/2026 owner yêu cầu xử lý song song/import ảnh. Đã triển khai pool bounded 1–4 (mặc định 3), ưu tiên tỉnh server cấu hình và yêu cầu tìm ảnh của admin, giữ claim/lease/retry. Commons search tuần tự theo process; không hứa tăng tốc tuyến tính hoặc đủ ảnh cho mọi POI. Không tự chọn ảnh lân cận không khớp tên địa điểm. Gỡ gợi ý automatic không khớp chỉ trên draft chưa chọn ảnh/không khóa; không thay ảnh đã chọn hoặc bản công khai. Chi tiết vận hành và giới hạn tại ONE-COVER-MEDIA.md.
+# CAT-24 — Bổ sung dữ liệu hàng loạt (26/10/2026, implemented)
+
+Owner yêu cầu chạy cho toàn bộ danh sách26.566 địa điểm và bật34 tỉnh/thành. Đợt toàn quốc snapshot scope, có tiến độ từng mục, pause/resume và tiếp tục sau restart; bảo vệ field locks/nội dung đã biên tập/publication. Thu thập source observations không tự duyệt giá/giờ hoặc xuất bản. Không suy giá0/24h/ảnh thật khi thiếu bằng chứng. Một đợt active, actor và scope do server kiểm; chưa có Google Maps hoặc search toàn web/sinh ảnhAI hàng loạt. Nguồn hiện có và ý nghĩa verdict tại [BULK-ENRICHMENT](BULK-ENRICHMENT.md). CAT-17/20/22/23 và gates planner tiếp tục áp dụng. Bật tỉnh không tự xuất bản POI; ngày26/10 đã bật34/34 qua destination toggle có audit, không tự gọi province-imports.

@@ -29,6 +29,14 @@ const context = {
   alreadyPublished: false,
 } as const;
 test('publication hint accepts discovery without guessing price/hours and rejects incomplete content', () => {
+  assert.equal(
+    publicationReadiness(
+      { ...place, images: [{ ...fixturePhoto, storage: 'source' }] },
+      context,
+    ).ready,
+    false,
+    'a new source-linked cover needs a backup before bulk publication',
+  );
   assert.deepEqual(publicationReadiness(place, context), {
     ready: true,
     label: 'Đủ để xuất bản',

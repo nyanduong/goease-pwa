@@ -10,6 +10,8 @@ const input = z.strictObject({
   action: z.enum([
     'catalog.created',
     'catalog.proposal_saved',
+    'catalog.enrichment_started',
+    'catalog.enrichment_controlled',
     'catalog.restore_prepared',
     'catalog.published',
     'catalog.campaign_paused',
@@ -131,26 +133,28 @@ export function businessAudit(
                       ? 'admin-bootstrap'
                       : 'auth',
             },
-        entityType: v.action.startsWith('catalog.campaign_')
-          ? 'catalog_campaign'
-          : v.action === 'catalog.policy_created'
-            ? 'catalog_policy'
-            : v.action.startsWith('catalog.destination_')
-              ? 'destination'
-              : v.action === 'catalog.schedule_saved' ||
-                  v.action === 'catalog.settings_saved'
-                ? 'catalog_schedule'
-                : v.action.startsWith('catalog.run_')
-                  ? 'catalog_run'
-                  : catalog
-                    ? 'place'
-                    : expense
-                      ? 'trip_expense'
-                      : trip
-                        ? 'trip'
-                        : authSession
-                          ? 'auth_session'
-                          : 'user',
+        entityType: v.action.startsWith('catalog.enrichment_')
+          ? 'catalog_enrichment_job'
+          : v.action.startsWith('catalog.campaign_')
+            ? 'catalog_campaign'
+            : v.action === 'catalog.policy_created'
+              ? 'catalog_policy'
+              : v.action.startsWith('catalog.destination_')
+                ? 'destination'
+                : v.action === 'catalog.schedule_saved' ||
+                    v.action === 'catalog.settings_saved'
+                  ? 'catalog_schedule'
+                  : v.action.startsWith('catalog.run_')
+                    ? 'catalog_run'
+                    : catalog
+                      ? 'place'
+                      : expense
+                        ? 'trip_expense'
+                        : trip
+                          ? 'trip'
+                          : authSession
+                            ? 'auth_session'
+                            : 'user',
         entityId: v.entityId,
         entityRevision: v.entityRevision,
         previousRevision: v.previousRevision,

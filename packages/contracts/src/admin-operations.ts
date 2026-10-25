@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { priceReady, approvedPhoto, type AdminPlaceDto } from './catalog.js';
+import { priceReady, approvedCover, type AdminPlaceDto } from './catalog.js';
 
 export const adminSettingsSchema = z.strictObject({
   expectedRevision: z.number().int().nonnegative(),
@@ -94,7 +94,7 @@ export function catalogQuality(
       label: 'Chưa có giờ mở cửa',
       severity: 'medium',
     });
-  if (!approvedPhoto(p.images?.[0]))
+  if (!approvedCover(p.images?.[0]))
     issues.push({
       code: 'image',
       label: 'Chưa có ảnh bìa hợp lệ',

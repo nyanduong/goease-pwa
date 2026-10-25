@@ -10,7 +10,12 @@ import {
   importedDescriptionPlaceholder,
 } from '@goease/contracts';
 import { descriptionContext, descriptionQuery } from './place-descriptions.js';
-import { catalogPhotoCover } from '@goease/contracts';
+import {
+  catalogImageCover,
+  approvedPhoto,
+  approvedIllustration,
+  catalogGallery,
+} from '@goease/contracts';
 import mongoose, {
   type Connection,
   type Types,
@@ -28,6 +33,7 @@ import {
   fieldProvenanceSchema,
   type AdminPlaceDto,
   type AdminPlaceInput,
+  type CatalogImage,
   type adminPlaceQuerySchema,
 } from '@goease/contracts';
 import type { z } from 'zod';
@@ -53,6 +59,9 @@ export function adminCatalog(
   trips: ReturnType<typeof tripService>,
   audit: ReturnType<typeof businessAudit>,
   User: ReturnType<typeof authModels>['User'],
+  prepareCover: (image: CatalogImage) => Promise<CatalogImage> = async (
+    image,
+  ) => image,
 ) {
   const { Place } = explore.models;
   const { Destination, Key } = trips.models;
@@ -77,9 +86,9 @@ export function adminCatalog(
       state: doc.imageSearch?.state ?? 'pending',
       count: doc.imageSearch?.candidates.length ?? 0,
     },
-    imageUrl: catalogPhotoCover(doc.toObject().images)?.url ?? '',
+    imageUrl: catalogImageCover(doc.toObject().images)?.url ?? '',
     imageCredit:
-      catalogPhotoCover(doc.toObject().images)?.credit ??
+      catalogImageCover(doc.toObject().images)?.credit ??
       'Chưa có ảnh thật được duyệt',
     internalNote: doc.internalNote ?? '',
     images: doc.images.map((i) => catalogImageSchema.parse(i.toObject())),
@@ -180,13 +189,29 @@ export function adminCatalog(
       };
     let defaultImages;
     if (
-      !doc.images.length &&
+      (!doc.images.length ||
+        (doc.publicationStatus === 'draft' &&
+          doc.images.length === 1 &&
+          approvedIllustration(doc.toObject().images[0]))) &&
       !doc.fieldLocks?.includes('images') &&
       value.imageSearch?.defaultCover
     )
-      defaultImages = [value.imageSearch.defaultCover];
+      defaultImages = catalogGallery([
+        value.imageSearch.defaultCover,
+        ...value.imageSearch.candidates.map((c) => ({
+          ...c.image,
+          selection: 'automatic' as const,
+        })),
+      ])
+        .filter(approvedPhoto)
+        .filter(
+          (image, index, all) =>
+            all.findIndex((i) => i.url === image.url) === index,
+        )
+        .slice(0, 5);
     if (
       value.images.length &&
+      !defaultImages &&
       !doc.fieldLocks?.includes('images') &&
       value.imageSearch?.storageVersion === 2 &&
       value.imageSearch.state === 'ready'
@@ -398,6 +423,12 @@ export function adminCatalog(
         checked.error.issues[0]?.message ?? 'Chưa đủ thông tin khám phá.',
       );
     if (status === 'published') {
+      if (checked.data.images?.[0]?.storage === 'source')
+        throw new HttpError(
+          409,
+          'COVER_BACKUP_REQUIRED',
+          'Lưu ảnh bìa lên Cloudinary trước khi xuất bản.',
+        );
       if (
         !(await Destination.exists({
           _id: current.destinationId,
@@ -747,6 +778,52 @@ export function adminCatalog(
       );
       const operationId = randomUUID(),
         reqId = requestId();
+      // Provider calls stay outside MongoDB transactions and their automatic retries.
+      // The receipt still compares the original user payload, not the transformed CDN URL.
+      const existingReceipt = await Key.exists({
+        actorId: actor,
+        operation,
+        key,
+      });
+      if (!existingReceipt && input.images?.[0]?.storage === 'source') {
+        if (id) {
+          const current = await Place.findOne({ _id: id, deletedAt: null });
+          if (!current)
+            throw new HttpError(
+              404,
+              'PLACE_NOT_FOUND',
+              'Không tìm thấy địa điểm.',
+            );
+          if (current.revision !== expectedRevision)
+            throw new HttpError(
+              409,
+              'CATALOG_CONFLICT',
+              'Địa điểm đã được sửa. Tải lại trước khi lưu.',
+            );
+        }
+        const backedCover = catalogImageSchema.parse(
+          await prepareCover(input.images[0]),
+        );
+        if (backedCover.storage !== 'cloudinary')
+          throw new HttpError(
+            502,
+            'PLACE_PHOTO_STORAGE_FAILED',
+            'Chưa lưu được bản sao ảnh bìa.',
+          );
+        input = {
+          ...input,
+          images: [backedCover, ...input.images.slice(1)],
+        };
+      }
+      if (input.images)
+        input = {
+          ...input,
+          images: input.images.map((image, index) =>
+            index > 0 && image.storage === 'cloudinary' && image.originalUrl
+              ? { ...image, url: image.originalUrl, storage: 'source' as const }
+              : image,
+          ),
+        };
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           return await connection.transaction(async (session) => {
@@ -800,6 +877,21 @@ export function adminCatalog(
                 404,
                 'PLACE_NOT_FOUND',
                 'Không tìm thấy địa điểm.',
+              );
+            if (
+              input.images?.some((image) => image.kind === 'ai_illustration') &&
+              !current?.fieldLocks.includes('images') &&
+              current?.imageSearch?.candidates.some((c) =>
+                approvedPhoto({
+                  ...c.toObject().image,
+                  selection: 'automatic',
+                }),
+              )
+            )
+              throw new HttpError(
+                409,
+                'REAL_PHOTO_AVAILABLE',
+                'Đã có ảnh thật phù hợp. Chọn ảnh thật thay ảnh minh họa AI.',
               );
             if (current && current.revision !== expectedRevision)
               throw new HttpError(

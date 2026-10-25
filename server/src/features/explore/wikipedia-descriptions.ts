@@ -5,6 +5,8 @@ import {
 } from '@goease/contracts';
 import { distanceMeters } from './geoapify.js';
 import { HttpError } from '../../http-error.js';
+import { SourceRateLimit, sourceRetryAfter } from './source-rate-limit.js';
+import { acquireSourceOrigin } from './source-origin-gate.js';
 export type DescriptionQuery = {
   name: string;
   destinationName: string;
@@ -80,20 +82,35 @@ export function wikipediaDescriptions(
   request: typeof fetch = fetch,
   translate?: TranslateDescription,
 ): FindDescription {
+  let pausedUntil = 0;
   return async (query) => {
+    if (Date.now() < pausedUntil)
+      throw new SourceRateLimit(pausedUntil - Date.now());
     let calls = 0;
     const get = async (url: URL) => {
       if (++calls > 8) throw new Error('Description request budget');
-      return boundedDescriptionJson(
-        await request(url, {
+      const release = await acquireSourceOrigin(url.origin);
+      try {
+        if (Date.now() < pausedUntil)
+          throw new SourceRateLimit(pausedUntil - Date.now());
+        const response = await request(url, {
           redirect: 'error',
           signal: AbortSignal.timeout(12000),
           headers: {
             'User-Agent':
               'GoEase/1.0 (place descriptions; admin-reviewed drafts)',
           },
-        }),
-      );
+        });
+        if (response.status === 429 || response.status === 503) {
+          const wait = sourceRetryAfter(response.headers.get('retry-after'));
+          pausedUntil = Date.now() + wait;
+          await response.body?.cancel();
+          throw new SourceRateLimit(wait);
+        }
+        return await boundedDescriptionJson(response);
+      } finally {
+        release();
+      }
     };
     try {
       let wikipedia = query.wikipedia,
@@ -127,7 +144,8 @@ export function wikipediaDescriptions(
               .parse(raw).elements[0]?.tags;
             wikipedia = tags?.wikipedia;
             wikidata = tags?.wikidata;
-          } catch {
+          } catch (error) {
+            if (error instanceof SourceRateLimit) throw error;
             /* Old POIs may have no OSM tags; bounded Wikipedia search still works. */
           }
         }

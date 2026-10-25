@@ -5,6 +5,89 @@
   "status": "accepted-design-baseline-with-local-product-subset",
   "collections": [
     {
+      "name": "catalog_enrichment_jobs",
+      "phase": "CAT-24",
+      "base": "OPERATIONAL",
+      "purpose": "Đợt bổ sung nguồn toàn quốc có scope/cursor/lease bền vững; không chứa mảng địa điểm.",
+      "fields": [
+        [
+          "createdBy/requestKey",
+          "ObjectId/UUID",
+          "required",
+          "Admin thực hiện; receipt tạo đợt"
+        ],
+        [
+          "state/active/revision",
+          "enum/boolean/integer",
+          "required",
+          "building|running|paused|completed; optimistic control"
+        ],
+        [
+          "destinationIds/cutoff/cursor/seeded/total",
+          "ObjectId[<=34]/ObjectId/ObjectId?/boolean/integer",
+          "required",
+          "Scope Việt Nam và population tiếp tục sau restart"
+        ],
+        [
+          "leaseToken/leaseUntil",
+          "UUID?/Date?",
+          "optional",
+          "Atomic orchestrator claim 120s, token fenced"
+        ],
+        [
+          "createdAt/updatedAt",
+          "Date",
+          "required",
+          "Operational timestamps, no TTL or purge"
+        ]
+      ],
+      "indexes": [
+        "UNIQUE singleton WHERE active=true",
+        "UNIQUE createdBy,requestKey"
+      ],
+      "implementation": "server/src/features/explore/catalog-enrichment.models.ts; runtime Mongoose schema implemented"
+    },
+    {
+      "name": "catalog_enrichment_items",
+      "phase": "CAT-24",
+      "base": "OPERATIONAL",
+      "purpose": "Một mục/địa điểm/đợt, kết quả và phần thiếu; không sao chép ảnh binary hoặc source HTML.",
+      "fields": [
+        [
+          "jobId/placeId",
+          "ObjectId",
+          "required",
+          "References; one record per pair"
+        ],
+        [
+          "name/destinationName",
+          "string<=200/string<=120",
+          "required",
+          "Tên danh mục tại thời điểm lập danh sách"
+        ],
+        [
+          "state",
+          "enum",
+          "required",
+          "queued|waiting|review|ready|unresolved|skipped; ready chưa tự xuất bản"
+        ],
+        [
+          "missing/message/nextCheckAt",
+          "string[]/string<=300/Date",
+          "required",
+          "Tối đa năm nhóm thiếu do service ghi; retry/reconciliation"
+        ],
+        [
+          "createdAt/updatedAt",
+          "Date",
+          "required",
+          "Không TTL; không auto-delete"
+        ]
+      ],
+      "indexes": ["UNIQUE jobId,placeId", "jobId,state,nextCheckAt,_id"],
+      "implementation": "server/src/features/explore/catalog-enrichment.models.ts; runtime Mongoose schema implemented"
+    },
+    {
       "name": "users",
       "phase": "F1",
       "base": "MUTABLE_SOFT",
@@ -708,8 +791,8 @@
         [
           "imageSearch.storageVersion",
           "number",
-          "2 for current pipeline",
-          "IMPLEMENTED original raster dimensions + lossless WebP Cloudinary. Legacy observations requeued, matching defaultCover sourceUrl upgraded. Draft unlocked selected photos may project same-source high-resolution URL; public snapshot unchanged. See ADMIN-REVIEW-QUEUE.md."
+          "3 for new one-cover pipeline; legacy 2 retained",
+          "IMPLEMENTED one original-dimension lossless Cloudinary cover plus up to4 source-linked supplemental images. New photo metadata storage? cloudinary|source and originalUrl? HTTPS<=2048. Legacy v2 not bulk-requeued or purged; public snapshots unchanged. See ONE-COVER-MEDIA.md."
         ]
       ],
       "indexes": "Unique partial {source.provider,source.externalId} khi có externalId; {destinationId,publicationStatus,deletedAt}; 2dsphere location nếu dùng near.",
@@ -790,13 +873,13 @@
           "images",
           "object[]",
           "[]",
-          "CAT-20: max8 HTTPS url/sourceUrl<=2048,credit1..1000,license owned/permission/CC0/Public-domain/CC-BY[-SA]-2.0|2.5|3.0|4.0,licenseUrl? HTTPS,reviewed defaultfalse; selection? enum automatic/admin. First selected photo projects hero; publication accepts selection automatic/admin or reviewed=true. No AI fallback/upload/server rights verification."
+          "CAT-20: max8 HTTPS url/sourceUrl<=2048,credit1..1000,license owned/permission/CC0/Public-domain/CC-BY[-SA]-2.0|2.5|3.0|4.0,licenseUrl? HTTPS,reviewed defaultfalse; selection? enum automatic/admin. kind? photo|ai_illustration; storage? cloudinary|source; originalUrl? HTTPS<=2048. New writes: <=5 real photos OR exactly1 AI, no mixed gallery. One cached cover, up to4 source links. New source covers must cache before publication; legacy untagged images retain previous behavior. AI requires owned/permission and explicit kind plus selection/review, never fake Wikimedia. Public gallery prioritizes real photos and labels AI. Legacy <=8 arrays retained; no AI generation job or server ownership verification."
         ],
         [
           "imageSearch",
           "bounded embedded object",
-          "defaultCover=null; storageVersion=1; state=pending; candidates=[]; attempts=0; nextAttemptAt=now; leaseToken/leaseUntil/checkedAt=null; message=empty",
-          "CAT-20 implemented: defaultCover photo|null is the stable automatic first candidate, applied only to empty unlocked draft images; selection automatic/admin does not imply human review. state pending/searching/ready/empty/failed; <=6 candidates(id<=40,title<=300,match name|nearby,image same photo schema); message<=300. Index state+nextAttemptAt+leaseUntil. Independent source observation; no editorial revision/updatedAt change, publish/restore preserve current state."
+          "defaultCover=null; storageVersion=3; state=pending; candidates=[]; attempts=0; priority=0 (0..100, admin enqueue=100); nextAttemptAt=now; leaseToken/leaseUntil/checkedAt=null; message=empty",
+          "CAT-20 implemented: defaultCover photo|null is stable automatic cached cover, applied to empty unlocked drafts or unlocked AI-only drafts when real candidates exist; selection automatic/admin does not imply human review. state pending/searching/ready/empty/failed; new workers <=5 candidates(id<=40,title<=300,match name|nearby,image same photo schema with optional kind/storage/originalUrl), upload only first successful cover; legacy <=6 observations retained; message<=300. Legacy v2 observations not requeued solely for v3. Index state+nextAttemptAt+leaseUntil. Independent source observation; no editorial revision/updatedAt change, publish/restore preserve current state."
         ]
       ]
     },
@@ -2301,7 +2384,7 @@
           "previousRevision; campaignId; batchId; runId",
           "number?; ObjectId?; ObjectId?; ObjectId?",
           "optional",
-          "CAT-17 links newly observed operations to immutable version history; legacy absent values are not backfilled. New actions proposal_saved/restore_prepared/published/campaign_paused/campaign_resumed/policy_created and entityType catalog_campaign/catalog_policy."
+          "CAT-17 links newly observed operations to immutable version history; legacy absent values are not backfilled. Actions proposal_saved/restore_prepared/published/campaign_paused/campaign_resumed/policy_created and entityType catalog_campaign/catalog_policy. CAT-24 adds catalog.enrichment_started/catalog.enrichment_controlled and entityType catalog_enrichment_job."
         ]
       ],
       "indexes": "Unique {operationId,action,entityType,entityId}; {entityType,entityId,occurredAt:-1}; {actor.userId,occurredAt:-1}; {requestId:1}.",

@@ -47,12 +47,14 @@ test(
             match: 'linked',
           };
         },
-        findImages: async () => {
+        findImages: async (query) => {
           imageCalls++;
           await imageHook?.();
           if (imageMode === 'failed')
             throw new Error('Fixture provider failure');
-          return imageMode === 'empty' ? [] : [fixtureCandidate];
+          return imageMode === 'empty'
+            ? []
+            : [{ ...fixtureCandidate, title: `File:${query.name}.jpg` }];
         },
         resolveProvinceArea: async () => {
           lookups++;
@@ -540,7 +542,7 @@ test(
           const requeued = (await product.explore.models.Place.findById(
             place._id,
           ))!;
-          assert.equal(requeued.imageSearch?.storageVersion, 2);
+          assert.equal(requeued.imageSearch?.storageVersion, 3);
           assert.equal(requeued.imageSearch?.state, 'pending');
           assert.equal(requeued.revision, current.revision);
           assert.equal(requeued.images[0]?.url, current.images[0]?.url);

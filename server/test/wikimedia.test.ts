@@ -3,7 +3,38 @@ import { test } from 'node:test';
 import {
   parseCommons,
   wikimediaImages,
+  matchesPlaceImage,
 } from '../src/features/explore/wikimedia.js';
+
+test('nearby airport/events photos cannot become cafe covers without a place-name match', () => {
+  const candidate = {
+    id: '1',
+    title: 'File:Environmental Remediation at Danang Airport.jpg',
+    match: 'nearby' as const,
+    image: {
+      url: 'https://upload.wikimedia.org/x.jpg',
+      sourceUrl: 'https://commons.wikimedia.org/wiki/File:X.jpg',
+      credit: 'Fixture',
+      license: 'Public-domain' as const,
+    },
+  };
+  assert.equal(matchesPlaceImage('ThanhHuong Coffee', candidate), false);
+  assert.equal(matchesPlaceImage('CaPhe Thu Dung', candidate), false);
+  assert.equal(
+    matchesPlaceImage('CafeThoang Sai Gon', {
+      ...candidate,
+      title: 'File:Tet Streamers.JPG',
+    }),
+    false,
+  );
+  assert.equal(
+    matchesPlaceImage('Chùa Cầu', {
+      ...candidate,
+      title: 'File:Chua Cau Hoi An 2024.jpg',
+    }),
+    true,
+  );
+});
 
 const page = (changes = {}) => ({
   pageid: 123,
@@ -116,7 +147,7 @@ test('Commons name lookup falls back to nearby only when coordinates exist and n
   const find = wikimediaImages(async (input) => {
     calls.push(new URL(String(input)));
     return Response.json(
-      calls.length === 1 ? { query: { pages: [] } } : response(page()),
+      calls.length <= 2 ? { query: { pages: [] } } : response(page()),
     );
   });
   const result = await find({
@@ -125,8 +156,9 @@ test('Commons name lookup falls back to nearby only when coordinates exist and n
     latitude: 15.88,
     longitude: 108.32,
   });
-  assert.equal(calls.length, 2);
-  assert.equal(calls[1]?.searchParams.get('ggsradius'), '500');
+  assert.equal(calls.length, 3);
+  assert.equal(calls[1]?.searchParams.get('gsrsearch'), '"Chùa Cầu"');
+  assert.equal(calls[2]?.searchParams.get('ggsradius'), '500');
   assert.equal(result[0]?.match, 'nearby');
 });
 
@@ -143,4 +175,36 @@ test('Commons failures and oversized responses are sanitized, never fabricated a
       wikimediaImages(request)({ name: 'X', destinationName: 'Y' }),
       { code: 'WIKIMEDIA_UNAVAILABLE' },
     );
+});
+
+test('concurrent photo jobs serialize Commons API requests; a rate limit prevents queued calls hitting the provider', async () => {
+  let active = 0,
+    peak = 0,
+    calls = 0;
+  const find = wikimediaImages(async () => {
+    active++;
+    calls++;
+    peak = Math.max(peak, active);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    active--;
+    return Response.json(response(page()));
+  });
+  await Promise.all(
+    Array.from({ length: 3 }, (_, i) =>
+      find({ name: `Fixture ${i}`, destinationName: 'Fixture' }),
+    ),
+  );
+  assert.equal(peak, 1);
+  assert.equal(calls, 6);
+  calls = 0;
+  const limited = wikimediaImages(async () => {
+    calls++;
+    return new Response('', { status: 429, headers: { 'retry-after': '60' } });
+  });
+  const result = await Promise.allSettled([
+    limited({ name: 'A', destinationName: 'X' }),
+    limited({ name: 'B', destinationName: 'X' }),
+  ]);
+  assert.ok(result.every((r) => r.status === 'rejected'));
+  assert.equal(calls, 1);
 });

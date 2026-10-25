@@ -124,8 +124,11 @@ test('English source remains untranslated when translator unavailable, never pas
   assert.equal(translated?.translated, true);
 });
 test('provider failures, invalid JSON and oversized responses fail truthfully', async () => {
+  await assert.rejects(
+    wikipediaDescriptions(fake(() => new Response('', { status: 429 })))(query),
+    { code: 'SOURCE_RATE_LIMITED' },
+  );
   for (const response of [
-    () => new Response('', { status: 429 }),
     () => new Response('not json'),
     () => new Response('a'.repeat(1_000_001)),
   ])

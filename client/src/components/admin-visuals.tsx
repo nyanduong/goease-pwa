@@ -8,12 +8,14 @@ export function PhotoSearchStatus({ place }: { place: AdminPlaceDto }) {
   return (
     <small>
       {status.count > 0
-        ? `${status.count}/6 ảnh gợi ý · ${place.imageUrl ? 'Đã có ảnh bìa · Có thể đổi trong chi tiết' : 'Mở địa điểm để chọn ảnh bìa'}`
+        ? `${status.count}/5 ảnh gợi ý · ${place.imageUrl ? 'Đã có ảnh bìa · Có thể đổi trong chi tiết' : 'Mở địa điểm để chọn ảnh bìa'}`
         : status.state === 'empty'
           ? 'Chưa tìm thấy ảnh phù hợp'
           : status.state === 'failed'
             ? 'Lấy/lưu ảnh lỗi · Mở địa điểm để thử lại'
-            : 'Đang tìm và lưu ảnh · Mở địa điểm xem tiến trình'}
+            : status.state === 'pending'
+              ? 'Đang chờ tìm ảnh'
+              : 'Đang tìm và lưu ảnh · Mở địa điểm xem tiến trình'}
     </small>
   );
 }
@@ -33,6 +35,7 @@ type PlaceImage = {
   category: string;
   imageUrl?: string | undefined;
   imageCredit?: string | undefined;
+  photoSearch?: AdminPlaceDto['photoSearch'];
 };
 export function adminIllustration(
   place: Pick<PlaceImage, 'name' | 'category'>,
@@ -58,14 +61,23 @@ export function AdminPlaceImage({
     /minh họa|\bAI\b/i.test(place.imageCredit ?? '') ||
     place.imageUrl === images.exploreHoian ||
     failed === place.imageUrl;
+  const missingLabel =
+    failed === place.imageUrl
+      ? 'Ảnh lỗi tải'
+      : ({
+          pending: 'Chờ tìm ảnh',
+          searching: 'Đang tìm ảnh',
+          empty: 'Chưa tìm thấy ảnh',
+          failed: 'Lấy ảnh lỗi',
+        }[place.photoSearch?.state ?? ''] ?? 'Chưa có ảnh');
   return (
     <span
       className={`admin-place-photo${large ? ' is-large' : ''}`}
-      title={illustrated ? 'Chưa có ảnh thật được duyệt' : place.imageCredit}
+      title={illustrated ? missingLabel : place.imageCredit}
     >
       {illustrated ? (
-        <span role="img" aria-label="Chưa có ảnh thật">
-          Chưa có ảnh
+        <span role="img" aria-label={missingLabel}>
+          {missingLabel}
         </span>
       ) : (
         <img
