@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { DestinationDto, TripDto, UserDto } from '@goease/contracts';
 import { DestinationRegions, matchesRegion } from './destination-regions';
+import { DestinationPicker } from './destination-picker';
 
 const suggestions = [
   {
@@ -57,6 +58,7 @@ export function HomeDiscovery({
   onNavigate,
 }: Props) {
   const [query, setQuery] = useState('');
+  const [showAllDestinations, setShowAllDestinations] = useState(false);
   const [category, setCategory] = useState('Tất cả');
   const [region, setRegion] = useState(''),
     [subregion, setSubregion] = useState('');
@@ -117,6 +119,7 @@ export function HomeDiscovery({
       ),
   );
   const IntroHeading = mode === 'home' ? 'h2' : 'h1';
+  const displayed = mode === 'home' ? visible.slice(0, 4) : visible;
 
   if (mode === 'goe')
     return (
@@ -328,7 +331,7 @@ export function HomeDiscovery({
         )}
         {visible.length ? (
           <div className="discovery-cards">
-            {visible.map((d) => {
+            {displayed.map((d) => {
               const destination = destinations.find(
                 (v) => fold(v.name) === fold(d.name),
               );
@@ -380,12 +383,39 @@ export function HomeDiscovery({
               : 'Chưa tìm thấy điểm đến phù hợp.'}
           </p>
         )}
+        {mode === 'home' && visible.length > 4 && (
+          <div className="discovery-all-destinations">
+            <span>
+              Hiển thị {displayed.length}/{visible.length} tỉnh/thành
+            </span>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={showAllDestinations}
+              onClick={() => setShowAllDestinations(true)}
+            >
+              Xem tất cả tỉnh/thành <ArrowRight size={17} aria-hidden="true" />
+            </button>
+          </div>
+        )}
         {mode === 'saved' && (
           <p className="discovery-storage-note">
             Điểm đến được lưu trên trình duyệt này.
           </p>
         )}
       </section>
+      {mode === 'home' && showAllDestinations && (
+        <DestinationPicker
+          destinations={cards
+            .filter((c) => category === 'Tất cả' || category === c.category)
+            .map((c) => c.destination)}
+          initialQuery={query}
+          initialRegion={region}
+          initialSubregion={subregion}
+          onClose={() => setShowAllDestinations(false)}
+          onSelect={(d) => onStart(d.id)}
+        />
+      )}
     </div>
   );
 }

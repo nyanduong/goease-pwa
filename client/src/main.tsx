@@ -12,6 +12,7 @@ import './admin-topbar.css';
 import './admin-schedules.css';
 import './confirmation.css';
 import './admin-v1.css';
+import './destination-picker.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

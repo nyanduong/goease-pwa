@@ -4,10 +4,12 @@ export function Sheet({
   title,
   children,
   onClose,
+  className = '',
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -25,7 +27,7 @@ export function Sheet({
   return (
     <dialog
       ref={ref}
-      className="journey-sheet"
+      className={`journey-sheet ${className}`.trim()}
       aria-label={title}
       onCancel={(e) => {
         e.preventDefault();

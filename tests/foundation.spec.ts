@@ -2808,16 +2808,18 @@ test('quick mobile plan: recover proposal, swap or undo a stop, choose dates onl
   expect(registered.status()).toBe(201);
   const user = (await registered.json()).data.user;
   await page.goto('/trips/new');
+  await page.getByRole('button', { name: /^Điểm đến / }).click();
   await page
-    .getByRole('button', { name: 'Hà Nội Goe kiểm tra dữ liệu khi lập lịch' })
+    .getByRole('dialog', { name: 'Chọn tỉnh/thành' })
+    .getByRole('button', { name: 'Hà Nội', exact: true })
     .click();
   await expect(
     page.getByRole('button', { name: 'Lên lịch giúp mình' }),
   ).toBeEnabled();
+  await page.getByRole('button', { name: /^Điểm đến / }).click();
   await page
-    .getByRole('button', {
-      name: 'Đà Nẵng Khu vực: Hội An Goe kiểm tra dữ liệu khi lập lịch',
-    })
+    .getByRole('dialog', { name: 'Chọn tỉnh/thành' })
+    .getByRole('button', { name: /^Đà Nẵng/ })
     .click();
   await expect(
     page.getByRole('button', { name: '2 ngày', exact: true }),
@@ -3211,8 +3213,10 @@ test('admin publishes reference prices and mobile customer gets automatic estima
       403,
     );
     await customer.goto('/trips/new');
+    await customer.getByRole('button', { name: /^Điểm đến / }).click();
     await customer
-      .getByRole('button', { name: /Hội An Goe kiểm tra dữ liệu khi lập lịch/ })
+      .getByRole('dialog', { name: 'Chọn tỉnh/thành' })
+      .getByRole('button', { name: /Hội An/ })
       .click();
     await customer
       .getByRole('button', { name: 'Tự chọn điểm dừng', exact: true })
