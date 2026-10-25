@@ -10,10 +10,11 @@ The original Expo project is untouched.
 
 ## Current design
 
-- White working area, neutral sidebar, restrained teal from the GoEase logo.
-  Orange is reserved for items requiring attention. No coloured KPI tiles.
+- White working area, neutral sidebar, brighter teal from the GoEase logo.
+  Orange highlights the main page action; supporting actions use teal or neutral
+  outlines. No coloured KPI tiles.
 - Segoe UI / system typography, moderate weights, 4px corners, minimal shadows.
-- A compact page title and count replace repeated descriptive headings in Places.
+- A 32px page title and quiet count replace repeated descriptive headings in Places.
 - Places has compact photos, simple status labels, text row actions and no repeated
   decorative icons in table cells. Search/filter/map/batch actions remain available.
 - Overview has an unboxed numerical strip, a prioritised task list and plain quick
@@ -51,3 +52,26 @@ The original Expo project is untouched.
 
 Local screenshots and layout measurements:
 `.local/ui-admin-v1/professional/` (ignored by Git).
+
+## Readability revision — 26/10/2026
+
+- Increased body copy to 16px, table copy to 15px and place names to 16px.
+  Reduced supporting text weights and increased row spacing. Page titles are
+  32px on desktop and 28px on narrow screens; section titles have a lower level.
+- Empty schedules have one create action. Search/filter controls and repeated
+  creation actions appear only when there are schedules to manage.
+- Schedule editor uses a 26px title, 16px supporting copy and larger controls.
+  Its header and footer remain visible while the form scrolls independently.
+- Integrated main through `1019a2e`. Adapted the new enrichment panel to the same
+  typography and action hierarchy, with responsive counts and unbroken action
+  labels. API handlers and data rules are unchanged by this UI revision.
+- Read-only layout checks covered all nine routes at 1366px and 390px, plus the
+  schedule creation drawer without saving. No page-level horizontal overflow
+  observed. No collection or enrichment job was started during visual review.
+- Screenshots and measurements: `.local/ui-admin-v1/readability/` (ignored).
+- After the main merge, root build and lint passed; all 109 unit tests passed.
+  The final CSS adjustment also passed the client TypeScript/production build
+  and `git diff --check`. Vite's existing large-chunk advisory remains.
+- Verified the campaign header actions at 390px after a fresh page load: labels
+  stay on one line and controls are 44–45px tall. Restarted the local web/API
+  preview after shared-package builds; database health reports connected.
