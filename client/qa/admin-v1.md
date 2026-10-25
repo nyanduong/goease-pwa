@@ -1,6 +1,6 @@
 # Admin UI V1 — structured working interface
 
-Branch: `V1-ui-admin`. Updated 25/10/2026 after review of the first UI trial.
+Branch: `V1-ui-admin`. Updated 26/10/2026 after screenshot-based review.
 
 ## Scope
 
@@ -35,6 +35,39 @@ The original Expo project is untouched.
   use recognizable icons sparingly to avoid visual noise.
 - [React Bits](https://reactbits.dev/) was reviewed for interaction references.
   No animation library or decorative effect was added to this working interface.
+
+## Editor, menus and table corrections — 26/10/2026
+
+- Removed the legacy rules that hid the navigation and header in the place
+  editor. Desktop sidebar stays on the left; the fixed save bar starts after
+  the sidebar, with its offset adjusted at the smaller desktop breakpoint.
+- Removed the editor's duplicate masthead. The outlined Back button, title,
+  status and save information use one compact header. Editor tabs span the
+  workspace above the two columns.
+- The form and map share one grid row, aligned at their top and bottom on desktop.
+  Publication checks occupy a separate full-width row below both columns;
+  optional checks are expandable. Notes follow as an expandable full-width row.
+  Existing map ResizeObserver adapts the canvas; coordinate handlers are unchanged.
+- Editor/history/settings/source/schedule menus use a segmented control surface.
+  Catalog and progress filters use bordered buttons with an explicit selected
+  state. Existing tab roles, keyboard movement and event handlers are preserved.
+- Replaced 9–13px text declarations in the six admin stylesheets with a 14px
+  floor. Progress rows use 15px values, 16px names and 14px status/metadata;
+  status and attempt count share a line. History activity labels and badges have
+  distinct lines and readable sizes. No table data or status meanings changed.
+- Measured create layout at 1920/1440/1024/390px. Desktop form/map share identical
+  top coordinates and heights; the sidebar remains visible and save bar does not
+  cover it. Narrow screens stack the columns. No page-level overflow observed.
+- Reviewed all nine routes at 1920/1440/390px (27 layout checks): no page-level
+  overflow, no hidden navigation and no rendered admin text below 14px in the
+  DOM sample (excluding screen-reader-only text, SVG and map attribution).
+- ArrowRight moved to the next editor tab. Back opened the existing unsaved
+  change confirmation, and discarding the empty test form returned to Places.
+  No place was saved, published, or deleted; this UI verification did not start
+  any operational job. Existing background work can continue independently.
+- Evidence: `.local/ui-admin-v1/requested-fixes/` (ignored by Git). Client lint,
+  TypeScript/production build and diff whitespace checks passed; existing Vite
+  large-chunk advisory remains. Backend/provider suites were not repeated.
 
 ## Composition and colour revision — 26/10/2026
 

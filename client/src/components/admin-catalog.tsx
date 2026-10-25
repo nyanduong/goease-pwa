@@ -115,10 +115,8 @@ export function AdminCatalog({
   scope = '',
   locationKey = '',
   refreshKey = 0,
-  adminName = 'Quản trị viên',
 }: {
   destinations: DestinationDto[];
-  adminName?: string;
   scope?: string;
   locationKey?: string;
   refreshKey?: number;
@@ -990,42 +988,35 @@ export function AdminCatalog({
             setPreview(true);
           }}
         >
-          <div className="place-editor-masthead">
-            <strong>GoEase</strong>
-            <span>
-              Địa điểm <i>/</i> {destinationName} <i>/</i> Chỉnh sửa
-            </span>
-            <span className="place-editor-account">{adminName}</span>
-          </div>
-          <button
-            type="button"
-            className="admin-back"
-            disabled={busy}
-            onClick={async () => {
-              if (
-                success ||
-                (saved &&
-                  JSON.stringify(form) ===
-                    JSON.stringify(formFromDto(saved))) ||
-                (await confirmAction(
-                  'Về danh sách? Thay đổi chưa lưu sẽ bị bỏ.',
-                  {
-                    title: 'Bỏ thay đổi chưa lưu?',
-                    confirmLabel: 'Bỏ thay đổi',
-                    cancelLabel: 'Ở lại',
-                    tone: 'warning',
-                  },
-                ))
-              ) {
-                setForm(null);
-                setSuccess('');
-                setError('');
-              }
-            }}
-          >
-            ← Về danh sách
-          </button>
           <header className="place-editor-heading">
+            <button
+              type="button"
+              className="admin-back"
+              disabled={busy}
+              onClick={async () => {
+                if (
+                  success ||
+                  (saved &&
+                    JSON.stringify(form) ===
+                      JSON.stringify(formFromDto(saved))) ||
+                  (await confirmAction(
+                    'Về danh sách? Thay đổi chưa lưu sẽ bị bỏ.',
+                    {
+                      title: 'Bỏ thay đổi chưa lưu?',
+                      confirmLabel: 'Bỏ thay đổi',
+                      cancelLabel: 'Ở lại',
+                      tone: 'warning',
+                    },
+                  ))
+                ) {
+                  setForm(null);
+                  setSuccess('');
+                  setError('');
+                }
+              }}
+            >
+              ← Về danh sách
+            </button>
             <div>
               <div className="place-title-row">
                 <h1>{form.name || 'Thêm địa điểm mới'}</h1>
@@ -1064,57 +1055,53 @@ export function AdminCatalog({
               </span>
             </div>
           </header>
+          <div
+            className="place-editor-tabs"
+            role="tablist"
+            aria-label="Các phần chỉnh sửa"
+          >
+            {(
+              [
+                ['overview', 'Tổng quan'],
+                ['photos', 'Ảnh địa điểm'],
+                ['practical', 'Giá & giờ mở cửa'],
+                ['sources', 'Nguồn & lịch sử'],
+              ] as const
+            ).map(([id, label], index, tabs) => (
+              <button
+                type="button"
+                role="tab"
+                id={'place-tab-' + id}
+                aria-controls={'place-panel-' + id}
+                aria-selected={editorTab === id}
+                tabIndex={editorTab === id ? 0 : -1}
+                key={id}
+                onClick={() => setEditorTab(id)}
+                onKeyDown={(e) => {
+                  const delta =
+                    e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+                  if (delta || e.key === 'Home' || e.key === 'End') {
+                    e.preventDefault();
+                    const target =
+                      tabs[
+                        e.key === 'Home'
+                          ? 0
+                          : e.key === 'End'
+                            ? tabs.length - 1
+                            : (index + delta + tabs.length) % tabs.length
+                      ]![0];
+                    setEditorTab(target);
+                    document.getElementById('place-tab-' + target)?.focus();
+                  }
+                }}
+              >
+                {label}
+                {id === 'photos' && <span>{photoCount}</span>}
+              </button>
+            ))}
+          </div>
           <div className="place-editor-layout">
             <div className="place-editor-main">
-              <div
-                className="place-editor-tabs"
-                role="tablist"
-                aria-label="Các phần chỉnh sửa"
-              >
-                {(
-                  [
-                    ['overview', 'Tổng quan'],
-                    ['photos', 'Ảnh địa điểm'],
-                    ['practical', 'Giá & giờ mở cửa'],
-                    ['sources', 'Nguồn & lịch sử'],
-                  ] as const
-                ).map(([id, label], index, tabs) => (
-                  <button
-                    type="button"
-                    role="tab"
-                    id={'place-tab-' + id}
-                    aria-controls={'place-panel-' + id}
-                    aria-selected={editorTab === id}
-                    tabIndex={editorTab === id ? 0 : -1}
-                    key={id}
-                    onClick={() => setEditorTab(id)}
-                    onKeyDown={(e) => {
-                      const delta =
-                        e.key === 'ArrowRight'
-                          ? 1
-                          : e.key === 'ArrowLeft'
-                            ? -1
-                            : 0;
-                      if (delta || e.key === 'Home' || e.key === 'End') {
-                        e.preventDefault();
-                        const target =
-                          tabs[
-                            e.key === 'Home'
-                              ? 0
-                              : e.key === 'End'
-                                ? tabs.length - 1
-                                : (index + delta + tabs.length) % tabs.length
-                          ]![0];
-                        setEditorTab(target);
-                        document.getElementById('place-tab-' + target)?.focus();
-                      }
-                    }}
-                  >
-                    {label}
-                    {id === 'photos' && <span>{photoCount}</span>}
-                  </button>
-                ))}
-              </div>
               <section
                 className="place-editor-photos"
                 hidden={editorTab !== 'photos'}

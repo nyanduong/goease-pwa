@@ -67,7 +67,7 @@
   border-radius: 20px;
   background: #e6f6f5;
   color: #007b85;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -88,7 +88,7 @@
 }
 .admin-settings-page .settings-visibility-note p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .admin-settings-page .settings-province-filters {
@@ -108,7 +108,7 @@
   min-width: 0;
   height: 42px;
   background: white;
-  font-size: 13px;
+  font-size: 14px;
 }
 .admin-settings-page .settings-province-search {
   display: flex;
@@ -142,7 +142,7 @@
   background: white;
   border-radius: 7px;
   color: #325663;
-  font-size: 13px;
+  font-size: 14px;
 }
 .settings-visibility-filters button span {
   background: #f0f4f6;
@@ -170,7 +170,7 @@
   text-align: left;
   color: #244d5a;
   padding: 13px 16px;
-  font-size: 13px;
+  font-size: 14px;
   border: 0;
 }
 .settings-province-table th:first-child {
@@ -191,7 +191,7 @@
   padding: 11px 16px;
   line-height: 1.4;
   vertical-align: middle;
-  font-size: 13px;
+  font-size: 14px;
   overflow-wrap: anywhere;
 }
 .settings-province-table td strong {
@@ -203,7 +203,7 @@
   display: block;
   margin-top: 4px;
   color: #718690;
-  font-size: 12px;
+  font-size: 14px;
 }
 .admin-settings-page .settings-province-switch {
   border: 0;
@@ -213,7 +213,7 @@
   align-items: center;
   gap: 12px;
   color: #657e89;
-  font-size: 13px;
+  font-size: 14px;
   text-align: left;
 }
 .admin-settings-page .settings-province-switch[aria-checked='true'] {
@@ -248,7 +248,7 @@
 }
 .settings-disabled-hint {
   color: #7a8e98;
-  font-size: 12px;
+  font-size: 14px;
 }
 .admin-settings-page .settings-province-table .journey-outline {
   background: white;
@@ -276,7 +276,7 @@
   padding-top: 14px;
 }
 .settings-province-pagination p {
-  font-size: 13px;
+  font-size: 14px;
   color: #6b828d;
   margin: 0;
 }
@@ -295,14 +295,14 @@
   gap: 10px;
   margin: 0;
   color: #6b828d;
-  font-size: 12px;
+  font-size: 14px;
 }
 .admin-settings-page .settings-pagination-summary select {
   width: auto;
   padding: 5px 24px 5px 9px;
   min-height: 32px;
   background: white;
-  font-size: 12px;
+  font-size: 14px;
 }
 .settings-pagination-gap {
   display: grid;
@@ -344,7 +344,7 @@
 }
 .settings-destination-tip p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 .settings-destination-tip a {
   display: inline-flex;
@@ -353,7 +353,7 @@
   margin-left: auto;
   color: #007b85;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 14px;
 }
 .settings-catalog-origin {
   background: white;
@@ -367,7 +367,7 @@
   gap: 8px;
   list-style: none;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
 }
 .settings-catalog-origin summary::after {
@@ -383,7 +383,7 @@
   margin-right: 8px;
 }
 .settings-catalog-origin p {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
   color: #667e87;
 }
@@ -427,7 +427,7 @@
 }
 .settings-form small {
   color: #718790;
-  font-size: 12px;
+  font-size: 14px;
 }
 .settings-form input[type='number'] {
   max-width: 220px;
@@ -473,7 +473,7 @@
     gap: 12px;
   }
   .admin-settings-page .settings-tabs button {
-    font-size: 12px;
+    font-size: 14px;
     padding: 10px 0;
     flex: 1;
   }
@@ -485,7 +485,7 @@
     line-height: 1.4;
   }
   .settings-province-heading p {
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.6;
   }
   .settings-visibility-note {
@@ -501,7 +501,7 @@
     flex-wrap: wrap;
   }
   .admin-settings-page .settings-visibility-filters button {
-    font-size: 12px;
+    font-size: 14px;
     padding: 7px 9px;
     gap: 5px;
   }

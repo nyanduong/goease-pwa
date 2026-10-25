@@ -252,6 +252,10 @@ export function AdminVisitProgress({
         </>
       )}
       <div className="visit-progress-library">
+        <header className="visit-progress-library-heading">
+          <h2>Chi tiết từng địa điểm</h2>
+          {data && <span>{data.total.toLocaleString('vi-VN')} địa điểm</span>}
+        </header>
         <div className="visit-progress-filters">
           <label>
             <Search size={17} />
@@ -332,29 +336,33 @@ export function AdminVisitProgress({
                       <small>{item.destinationName}</small>
                     </td>
                     <td>
-                      <span className={`visit-progress-badge is-${item.state}`}>
-                        {item.state === 'searching' ? (
-                          <RefreshCw size={13} />
-                        ) : item.state === 'pending' ? (
-                          <Clock3 size={13} />
-                        ) : null}
-                        {labels[item.state]}
-                      </span>
-                      <small>
-                        {item.expiredLease
-                          ? 'Quá hạn · chờ nhận lại'
-                          : item.state === 'pending' && item.attempts > 0
-                            ? `Thử lại sau lỗi · ${time(item.nextAttemptAt)}`
-                            : item.attempts
-                              ? `${item.attempts} lượt thử`
-                              : ''}
-                      </small>
-                      {item.message && (
-                        <details>
-                          <summary>Chi tiết</summary>
-                          <p>{item.message}</p>
-                        </details>
-                      )}
+                      <div className="visit-progress-status">
+                        <span
+                          className={`visit-progress-badge is-${item.state}`}
+                        >
+                          {item.state === 'searching' ? (
+                            <RefreshCw size={13} />
+                          ) : item.state === 'pending' ? (
+                            <Clock3 size={13} />
+                          ) : null}
+                          {labels[item.state]}
+                        </span>
+                        <small>
+                          {item.expiredLease
+                            ? 'Quá hạn · chờ nhận lại'
+                            : item.state === 'pending' && item.attempts > 0
+                              ? `Thử lại sau lỗi · ${time(item.nextAttemptAt)}`
+                              : item.attempts
+                                ? `${item.attempts} lượt thử`
+                                : ''}
+                        </small>
+                        {item.message && (
+                          <details>
+                            <summary>Chi tiết</summary>
+                            <p>{item.message}</p>
+                          </details>
+                        )}
+                      </div>
                     </td>
                     <td>
                       <span
