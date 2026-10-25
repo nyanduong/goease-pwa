@@ -30,7 +30,6 @@ Unit: giá rõ/không rõ/miễn phí/conditional, loại tiền và dấu phân
 
 Live read-only OSM ngày 25/10/2026: way/37933258 trả charge 40000 VND; way/37933256 trả giờ Mo off; Tu-Su 08:00-12:00,13:30-17:00. Đây là hai bản ghi riêng, không tự ghép hoặc coi là giá hiện hành đã duyệt. Chưa xác minh live website JSON-LD cho một cơ sở có đủ cả giờ/giá; nhánh này được kiểm thử fixture. Không bảo đảm mọi địa điểm sẽ có dữ liệu.
 
-
 ## Mở rộng nguồn (25/10/2026)
 
 Đã triển khai thêm Wikidata P856 qua entity được OSM liên kết. Nếu OSM thiếu website và entity, tìm Wikidata theo tên nhưng chỉ nhận entity có tên/alias trùng và tọa độ cách POI dưới 1.500m. Không dùng kết quả đầu tiên chỉ vì giống tên. Website/giờ/giá vẫn là gợi ý cần kiểm tra.

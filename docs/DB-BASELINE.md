@@ -1400,15 +1400,12 @@ Schema đã triển khai: photo.selection optional enum automatic/admin; reviewe
 
 Đã triển khai hàng đợi embedded `places.descriptionSearch`, snapshot `descriptionSource`, optional Wikipedia/Wikidata hints trong `sourceSnapshot`; draft cho phép giới thiệu trống, xuất bản yêu cầu nội dung thực. Worker chỉ điền mặc định đúng ngữ cảnh và giữ nội dung admin/field locks; nguồn và bản dịch được truy vết. Dịch dùng quota AI global hiện có. Không thêm collection hoặc index. Hợp đồng, dictionary, giới hạn và kiểm chứng: [WIKIPEDIA-DESCRIPTIONS](WIKIPEDIA-DESCRIPTIONS.md).
 
-
 ## Cần kiểm tra và ảnh gốc — 25/10/2026
 
 Hàng chờ #work đổi nhãn Cần kiểm tra, dùng hai cột và count theo phạm vi từ API. imageSearch.storageVersion=2 triển khai ảnh nguyên kích thước từ Wikimedia, WebP lossless trên Cloudinary; xếp lại quan sát cũ, nâng URL cùng sourceUrl cho draft không khóa; giữ bản công khai. Không thêm collection. Hợp đồng và giới hạn: [ADMIN-REVIEW-QUEUE](ADMIN-REVIEW-QUEUE.md).
 
-
 ## CAT-22 — Giờ/giá từ nguồn
 
 Đã triển khai places.visitSearch (embedded observation bounded, lease/revision fence) và places.visitInfo (editorial hours/price snapshots với sourceUrl/observedAt/reviewed). Field lock/provenance thêm visitInfo; worker không sửa referencePrice/public/revision. Không thêm collection/index. Registry đã phản ánh hai trường; dictionary/contracts/giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
-
 
 CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa độ), HTML giờ/giá có nhãn và liên kết cùng origin; visitSearch.providerVersion=3 xếp tìm lại observation cũ, context bổ sung tọa độ. Giữ nội dung đã duyệt/public, không thay giá ngân sách. Phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
