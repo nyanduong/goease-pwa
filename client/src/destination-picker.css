@@ -1,0 +1,207 @@
+/* A bounded destination list shared by discovery and the trip form. */
+.journey-sheet.destination-picker {
+  width: min(100%, 480px);
+  height: min(640px, calc(100dvh - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 16px;
+  overflow: hidden;
+}
+.journey-sheet.destination-picker[open] {
+  display: flex;
+  flex-direction: column;
+}
+.journey-sheet.destination-picker > header {
+  position: static;
+  flex-shrink: 0;
+  padding: 0 0 12px;
+}
+.journey-sheet.destination-picker > header h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+.destination-picker-search {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 10px;
+  padding: 0 12px;
+  min-height: 46px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--teal-dark);
+}
+.destination-picker-search:focus-within {
+  outline: 2px solid var(--teal-dark);
+  outline-offset: 2px;
+}
+.destination-picker-search input {
+  min-width: 0;
+  width: 100%;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  outline: 0;
+  box-shadow: none;
+}
+.destination-picker .destination-region-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex-shrink: 0;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+.destination-picker .destination-region-filters label {
+  min-width: 0;
+  font-size: 14px;
+}
+.destination-picker .destination-region-filters select {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px;
+  font-size: 14px;
+}
+.destination-picker-count {
+  flex-shrink: 0;
+  margin: 12px 0 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.destination-picker-results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.destination-picker-results ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.destination-picker-results li + li {
+  border-top: 1px solid var(--line);
+}
+.destination-picker-results li > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 13px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+.destination-picker-results li > button > span {
+  min-width: 0;
+}
+.destination-picker-results strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 500;
+}
+.destination-picker-results small {
+  display: block;
+  margin-top: 3px;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.destination-picker-results li > button > svg {
+  flex-shrink: 0;
+  color: var(--teal-dark);
+}
+.destination-picker-results li > button:hover,
+.destination-picker-results li > button[aria-pressed='true'] {
+  background: var(--soft);
+}
+.destination-picker-empty {
+  padding: 20px 8px;
+  font-size: 15px;
+  color: var(--muted);
+}
+.destination-picker-empty button {
+  color: var(--teal-dark);
+  padding: 10px 0;
+  background: transparent;
+  text-decoration: underline;
+}
+.quick-destination-field {
+  margin-bottom: 22px;
+}
+.quick-destination-field > span {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.quick-fields .quick-destination-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper-card);
+  color: var(--ink);
+  text-align: left;
+  font-size: 16px;
+}
+.quick-destination-select > span {
+  flex: 1;
+  min-width: 0;
+}
+.quick-destination-select > svg {
+  flex-shrink: 0;
+  color: var(--teal-dark);
+}
+.quick-destination-field > small {
+  display: block;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.discovery-all-destinations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.discovery-all-destinations > span {
+  font-size: 14px;
+  color: var(--muted);
+}
+.discovery-all-destinations > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper-card);
+  color: var(--teal-dark);
+  font-size: 15px;
+  font-weight: 500;
+}
+@media (max-width: 480px) {
+  .discovery-all-destinations > button {
+    width: 100%;
+  }
+}

@@ -3,7 +3,8 @@ import { useState } from 'react';
 import type { DestinationDto, TripInput } from '@goease/contracts';
 import { withDays } from '../trip-draft';
 import { AiPlanner } from './ai-planner';
-import { DestinationRegions, matchesRegion } from './destination-regions';
+import { MapPin, ChevronDown } from 'lucide-react';
+import { DestinationPicker } from './destination-picker';
 
 export function QuickTripSetup({
   draft,
@@ -25,11 +26,7 @@ export function QuickTripSetup({
     draft.travelers.totalCount > 2,
   );
   const [customDays, setCustomDays] = useState(false);
-  const [region, setRegion] = useState(''),
-    [subregion, setSubregion] = useState('');
-  const visibleDestinations = destinations.filter((d) =>
-    matchesRegion(d, region, subregion),
-  );
+  const [choosingDestination, setChoosingDestination] = useState(false);
   const duration =
     Math.round(
       (Date.parse(draft.endDate) - Date.parse(draft.startDate)) / 86400000,
@@ -69,49 +66,25 @@ export function QuickTripSetup({
       </div>
       <fieldset className="quick-fields" disabled={generating}>
         <legend className="sr-only">Thông tin để lên lịch</legend>
-        <DestinationRegions
-          region={region}
-          subregion={subregion}
-          onChange={(r, s) => {
-            setRegion(r);
-            setSubregion(s);
-          }}
-        />
-        {destination && !matchesRegion(destination, region, subregion) && (
-          <p role="status">
-            Đang chọn {destination.name}. Bộ lọc chỉ đổi danh sách gợi ý; chọn
-            điểm đến khác để thay đổi chuyến.
-          </p>
-        )}
-        <div className="quick-destinations" role="group" aria-label="Điểm đến">
-          {visibleDestinations.map((d) => (
-            <button
-              key={d.id}
-              aria-pressed={destination?.id === d.id}
-              onClick={() =>
-                onChange(
-                  withDays({
-                    ...draft,
-                    destinations: [{ destinationId: d.id, order: 0 }],
-                    days: [],
-                  }),
-                )
-              }
-            >
-              <strong>{d.name}</strong>
-              {!!d.tourismAreas?.length && (
-                <small>Khu vực: {d.tourismAreas.join(', ')}</small>
-              )}
-              <small>Goe kiểm tra dữ liệu khi lập lịch</small>
-            </button>
-          ))}
+        <div className="quick-destination-field">
+          <span id="quick-destination-label">Điểm đến</span>
+          <button
+            type="button"
+            className="quick-destination-select"
+            aria-labelledby="quick-destination-label quick-destination-value"
+            aria-haspopup="dialog"
+            aria-expanded={choosingDestination}
+            disabled={!destinations.length}
+            onClick={() => setChoosingDestination(true)}
+          >
+            <MapPin size={20} aria-hidden="true" />
+            <span id="quick-destination-value">
+              {destination?.name ?? 'Chọn tỉnh/thành'}
+            </span>
+            <ChevronDown size={18} aria-hidden="true" />
+          </button>
+          <small>Goe kiểm tra dữ liệu điểm đến khi lập lịch.</small>
         </div>
-        {!!destinations.length && !visibleDestinations.length && (
-          <p role="status">
-            Vùng này chưa có điểm đến được xuất bản. Bạn có thể đổi vùng hoặc
-            giữ lựa chọn hiện tại.
-          </p>
-        )}
         {!destinations.length && (
           <p role="status">
             Chưa có tỉnh/thành được bật để chọn. Nếu trang báo lỗi tải dữ liệu,
@@ -289,6 +262,22 @@ export function QuickTripSetup({
           </label>
         </details>
       </fieldset>
+      {choosingDestination && (
+        <DestinationPicker
+          destinations={destinations}
+          selectedId={destination?.id}
+          onClose={() => setChoosingDestination(false)}
+          onSelect={(d) =>
+            onChange(
+              withDays({
+                ...draft,
+                destinations: [{ destinationId: d.id, order: 0 }],
+                days: [],
+              }),
+            )
+          }
+        />
+      )}
       {destination && !supported && (
         <p className="journey-notice">
           Goe hiện xếp lịch 1–7 ngày tại một điểm đến có đủ dữ liệu. Chuyến dài

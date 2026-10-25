@@ -1,5 +1,6 @@
 import { images } from '@goease/media';
 import { useState, type ReactNode } from 'react';
+import { ImageOff } from 'lucide-react';
 import type { AdminPlaceDto } from '@goease/contracts';
 
 export function PhotoSearchStatus({ place }: { place: AdminPlaceDto }) {
@@ -77,7 +78,8 @@ export function AdminPlaceImage({
     >
       {illustrated ? (
         <span role="img" aria-label={missingLabel}>
-          {missingLabel}
+          <ImageOff size={large ? 28 : 18} aria-hidden="true" />
+          {large && <span>{missingLabel}</span>}
         </span>
       ) : (
         <img
@@ -97,22 +99,34 @@ export function AdminPageHeader({
   illustrated = true,
   greeting = false,
   actions,
+  meta,
 }: {
   title: string;
-  description: string;
+  description?: string;
   region?: string;
   illustrated?: boolean;
   greeting?: boolean;
   actions?: ReactNode;
+  meta?: ReactNode;
 }) {
   void illustrated;
   void greeting;
   return (
     <header className="admin-page-heading admin-reference-heading">
       <div className="admin-heading-copy">
-        <span className="admin-eyebrow">VẬN HÀNH DỮ LIỆU · {region}</span>
-        <h1>{title}</h1>
-        <p>{description}</p>
+        {![
+          'Việt Nam',
+          'Tất cả khu vực',
+          'tất cả khu vực',
+          'Toàn hệ thống',
+        ].includes(region) && (
+          <span className="admin-scope-caption">{region}</span>
+        )}
+        <div className="admin-title-line">
+          <h1>{title}</h1>
+          {meta && <span className="admin-title-meta">{meta}</span>}
+        </div>
+        {description && <p>{description}</p>}
       </div>
       {actions}
     </header>

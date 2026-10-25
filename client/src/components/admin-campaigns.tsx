@@ -106,8 +106,8 @@ export function AdminSourceConnection({
             {sourceState[value.connectionState]}
           </span>
           <p>
-            Đã cấu hình khóa: {value.configured ? 'Có' : 'Chưa'} · Lần nhận dữ
-            liệu: {time(value.lastFetchAt)}
+            Kết nối: {value.configured ? 'Đã thiết lập' : 'Chưa thiết lập'} ·
+            Lần nhận dữ liệu: {time(value.lastFetchAt)}
           </p>
           {value.lastErrorCode && (
             <p className="admin-alert">
@@ -135,37 +135,40 @@ export function AdminSourceConnection({
                   <strong>{value.usage24h.failed}</strong>
                 </div>
               </div>
-              <div className="admin-two-column">
-                <div>
-                  <h3>Giới hạn bảo vệ nội bộ</h3>
-                  <p>
-                    {value.quota.requestsPerHour} lượt tìm/giờ toàn hệ thống ·{' '}
-                    {value.quota.requestsPerActorHour} lượt/người/giờ ·{' '}
-                    {value.quota.concurrentSearches} lượt đồng thời · tối đa{' '}
-                    {value.maxResultsPerRun} kết quả/lượt.
-                  </p>
-                  <p>
-                    Đây là giới hạn lượt tìm nội bộ. Credits, số dư và chi phí
-                    nhà cung cấp: <strong>chưa có dữ liệu đối soát</strong>.
-                    Không quy đổi lượt tìm thành credits.
-                  </p>
+              <details className="admin-detail-note">
+                <summary>Giới hạn sử dụng & bản quyền</summary>
+                <div className="admin-two-column">
+                  <div>
+                    <h3>Giới hạn lượt sử dụng</h3>
+                    <p>
+                      {value.quota.requestsPerHour} lượt tìm/giờ toàn hệ thống ·{' '}
+                      {value.quota.requestsPerActorHour} lượt/người/giờ ·{' '}
+                      {value.quota.concurrentSearches} lượt đồng thời · tối đa{' '}
+                      {value.maxResultsPerRun} kết quả/lượt.
+                    </p>
+                    <p>
+                      Đây là giới hạn lượt tìm nội bộ. Credits, số dư và chi phí
+                      nhà cung cấp: <strong>chưa có dữ liệu đối soát</strong>.
+                      Không quy đổi lượt tìm thành credits.
+                    </p>
+                  </div>
+                  <div>
+                    <h3>Quyền sử dụng</h3>
+                    <p>
+                      Dữ kiện: OpenStreetMap / ODbL-1.0, phải ghi nguồn. Kết nối
+                      chưa cấp ảnh có quyền sử dụng. Quyền ảnh cần bằng chứng
+                      riêng cho từng ảnh.
+                    </p>
+                    <p>
+                      Dữ liệu gốc:{' '}
+                      {value.rights.rawPayloadStored
+                        ? 'có lưu theo chính sách nguồn'
+                        : 'không lưu'}
+                      .
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3>Quyền sử dụng</h3>
-                  <p>
-                    Dữ kiện: OpenStreetMap / ODbL-1.0, phải ghi nguồn. Connector
-                    chưa cấp ảnh có quyền sử dụng. Quyền ảnh cần bằng chứng
-                    riêng cho từng ảnh.
-                  </p>
-                  <p>
-                    Raw payload:{' '}
-                    {value.rights.rawPayloadStored
-                      ? 'có lưu theo chính sách nguồn'
-                      : 'không lưu'}
-                    .
-                  </p>
-                </div>
-              </div>
+              </details>
             </>
           )}
           {!value.configured && (
@@ -373,7 +376,7 @@ export function AdminCampaigns({
       setCreating(false);
       request.current = { body: '', key: '' };
       setNotice(
-        'Đã tạo đợt. Phạm vi, nguồn và phiên bản quy tắc được lưu riêng; đổi bộ lọc trang không đổi đợt.',
+        'Đã tạo đợt. Đã lưu khu vực và cách xử lý cho đợt này. Đổi bộ lọc không làm thay đổi đợt.',
       );
       await load();
       await onRefresh();
@@ -575,13 +578,13 @@ export function AdminCampaigns({
                     </select>
                   </label>
                   <label>
-                    Phiên bản quy tắc
+                    Cách xử lý thay đổi
                     <select
                       value={policyId}
                       onChange={(e) => setPolicyId(e.target.value)}
                     >
                       <option value="">
-                        An toàn mặc định · đưa thay đổi vào ngoại lệ
+                        An toàn mặc định · đưa thay đổi vào mục cần kiểm tra
                       </option>
                       {policies.map((p) => (
                         <option key={p.id} value={p.id}>
@@ -624,8 +627,8 @@ export function AdminCampaigns({
                     <dd>Tắt</dd>
                   </dl>
                   <p>
-                    Mỗi điểm đến là một tác vụ bền vững. Nguồn trả rỗng hoặc
-                    timeout không được hiểu là địa điểm đóng cửa.
+                    Tiến độ được lưu riêng cho từng điểm đến. Nguồn trả rỗng
+                    hoặc không phản hồi không có nghĩa địa điểm đã đóng cửa.
                   </p>
                   {invalidScopes.length > 0 && (
                     <div className="admin-alert">
@@ -636,8 +639,8 @@ export function AdminCampaigns({
                     </div>
                   )}
                   <div className="admin-soft-notice">
-                    Phạm vi, nguồn và quy tắc được chụp tại thời điểm bắt đầu.
-                    Quy tắc mới không đổi đợt đang chạy.
+                    Khu vực, nguồn và cách xử lý được giữ theo lúc bắt đầu. Quy
+                    tắc mới không đổi đợt đang chạy.
                   </div>
                 </>
               )}
@@ -684,13 +687,12 @@ export function AdminCampaigns({
               <section className="admin-panel">
                 <h2>Luồng xử lý</h2>
                 <p>
-                  <MapPin size={15} /> Phạm vi rõ ràng → nhận dữ liệu → liên kết
-                  và chuẩn hóa → kiểm tra chất lượng → ngoại lệ → xem trước →
-                  xuất bản.
+                  <MapPin size={15} /> Chọn khu vực → lấy dữ liệu → kiểm tra →
+                  xem trước → đăng cho khách.
                 </p>
                 <p>
-                  Giá, giờ và quyền ảnh chưa rõ được giữ là chưa rõ. Thêm dữ
-                  liệu không tự tăng số địa điểm nếu nguồn đã có liên kết.
+                  Thông tin chưa rõ sẽ chờ bạn kiểm tra. Dữ liệu mới không tự
+                  đăng cho khách.
                 </p>
               </section>
             </aside>
@@ -781,8 +783,8 @@ export function AdminCampaigns({
                   <small>
                     {task.counts.created} mới · {task.counts.updated ?? 0} cập
                     nhật an toàn · {task.counts.unchanged} không đổi ·{' '}
-                    {task.counts.review} ngoại lệ · {task.counts.skipped} bỏ qua
-                    · {task.counts.errors} lỗi
+                    {task.counts.review} mục cần kiểm tra ·{' '}
+                    {task.counts.skipped} bỏ qua · {task.counts.errors} lỗi
                   </small>
                   {task.state === 'retry' && (
                     <small>Thử lại từ {time(task.nextAttemptAt)}</small>
@@ -805,9 +807,9 @@ export function AdminCampaigns({
           </section>
           <div className="admin-actions">
             <a href="#work" className="journey-primary">
-              Xem ngoại lệ cần quyết định
+              Xem các mục cần kiểm tra
             </a>
-            <a href="#places">Mở catalog kết quả →</a>
+            <a href="#places">Xem địa điểm đã lấy →</a>
           </div>
         </>
       ) : (
@@ -832,15 +834,11 @@ export function AdminCampaigns({
                   AlertTriangle,
                 ],
               ] as const
-            ).map(([key, label, hint, Icon]) => (
+            ).map(([key, label]) => (
               <div key={key} className={`admin-campaign-stat is-${key}`}>
-                <span className="admin-campaign-stat-icon">
-                  <Icon size={25} />
-                </span>
                 <div>
                   <h2>{label}</h2>
                   <strong>{summary?.[key] ?? '—'}</strong>
-                  <small>{hint}</small>
                 </div>
               </div>
             ))}

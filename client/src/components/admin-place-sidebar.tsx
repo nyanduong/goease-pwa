@@ -1,10 +1,4 @@
-import {
-  CheckCircle2,
-  CircleAlert,
-  ClipboardCheck,
-  MapPin,
-  NotebookPen,
-} from 'lucide-react';
+import { CheckCircle2, CircleAlert, MapPin, NotebookPen } from 'lucide-react';
 import {
   adminPlaceInputSchema,
   catalogToday,
@@ -68,65 +62,14 @@ export function AdminPlaceSidebar({
     });
   }
   return (
-    <aside className="place-editor-sidebar">
-      <section
-        className="place-editor-card place-publish-checklist"
-        aria-label="Trước khi xuất bản"
-      >
-        <header>
-          <ClipboardCheck size={22} />
-          <h2>Trước khi xuất bản</h2>
-        </header>
-        <p>Kiểm tra và hoàn thiện các thông tin quan trọng.</p>
-        <strong
-          className={`place-readiness ${issues.size ? 'needs-review' : ''}`}
-        >
-          {issues.size
-            ? `Cần kiểm tra ${issues.size} mục`
-            : 'Đủ điều kiện kiểm tra xuất bản'}
-        </strong>
-        {!!form.name.trim() && !!form.locationQuery.trim() && (
-          <div className="place-check-ok">
-            <CheckCircle2 size={21} />
-            Đã có tên và địa chỉ
-          </div>
-        )}
-        {[...issues].map(([field, label]) => (
-          <button
-            type="button"
-            key={field}
-            className="place-check-action"
-            onClick={() => onField(field)}
-          >
-            <CircleAlert size={20} />
-            <span>{label}</span>
-            <span aria-hidden="true">→</span>
-          </button>
-        ))}
-        <div className="place-extra-checks">
-          <h3>Bổ sung khi có thông tin</h3>
-          {!form.visitInfo?.price?.reviewed && !form.referencePrice && (
-            <button type="button" onClick={() => onField('displayPrice')}>
-              Bổ sung giá tham khảo →
-            </button>
-          )}
-          {!form.openingHoursNote && !form.visitInfo?.hours && (
-            <button type="button" onClick={() => onField('openingHoursNote')}>
-              Bổ sung giờ mở cửa →
-            </button>
-          )}
-          <small>
-            Giá và giờ chưa rõ không đồng nghĩa miễn phí hoặc mở cả ngày.
-          </small>
-        </div>
-      </section>
+    <>
       <section className="place-editor-card place-editor-map">
         <header>
           <MapPin size={21} />
           <h2>Vị trí tham khảo</h2>
         </header>
         <AdminMap places={[mapPlace]} />
-        <small>Chưa xác minh lối vào</small>
+        <small>Vị trí tham khảo; cần kiểm tra lối vào</small>
         <details>
           <summary>Kiểm tra vị trí →</summary>
           <fieldset disabled={busy}>
@@ -177,6 +120,56 @@ export function AdminPlaceSidebar({
           </fieldset>
         </details>
       </section>
+      <section
+        className="place-editor-card place-publish-checklist"
+        aria-label="Trước khi xuất bản"
+      >
+        <header>
+          <h2>Trước khi xuất bản</h2>
+        </header>
+        <strong
+          className={`place-readiness ${issues.size ? 'needs-review' : ''}`}
+        >
+          {issues.size
+            ? `Cần kiểm tra ${issues.size} mục`
+            : 'Sẵn sàng xem trước'}
+        </strong>
+        {!!form.name.trim() && !!form.locationQuery.trim() && (
+          <div className="place-check-ok">
+            <CheckCircle2 size={21} />
+            Đã có tên và địa chỉ
+          </div>
+        )}
+        {[...issues].map(([field, label]) => (
+          <button
+            type="button"
+            key={field}
+            className="place-check-action"
+            onClick={() => onField(field)}
+          >
+            <CircleAlert size={20} />
+            <span>{label}</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        ))}
+        <details className="place-extra-checks">
+          <summary>Bổ sung khi có thông tin</summary>
+          {!form.visitInfo?.price?.reviewed && !form.referencePrice && (
+            <button type="button" onClick={() => onField('displayPrice')}>
+              Bổ sung giá tham khảo →
+            </button>
+          )}
+          {!form.openingHoursNote && !form.visitInfo?.hours && (
+            <button type="button" onClick={() => onField('openingHoursNote')}>
+              Bổ sung giờ mở cửa →
+            </button>
+          )}
+          <small>
+            Giá và giờ chưa rõ không đồng nghĩa miễn phí hoặc mở cả ngày.
+          </small>
+        </details>
+      </section>
+
       <details className="place-editor-card place-editor-notes">
         <summary>
           <NotebookPen size={20} />
@@ -193,6 +186,6 @@ export function AdminPlaceSidebar({
           />
         </label>
       </details>
-    </aside>
+    </>
   );
 }

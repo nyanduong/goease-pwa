@@ -164,7 +164,7 @@ export function AdminCatalogMap({
   return (
     <section
       className="admin-map-full admin-panel"
-      aria-label="Bản đồ toàn bộ catalog theo bộ lọc"
+      aria-label="Bản đồ địa điểm theo bộ lọc"
     >
       <div className="admin-panel-title">
         <h2>Phân bố địa điểm</h2>

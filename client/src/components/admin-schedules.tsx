@@ -3,7 +3,6 @@ import {
   CalendarClock,
   ChevronLeft,
   ChevronRight,
-  Info,
   Pencil,
   Plus,
   Search,
@@ -167,7 +166,7 @@ export function AdminSchedules({
           <h1>Tự động cập nhật</h1>
           <p>Quản lý lịch lấy dữ liệu cho từng khu vực.</p>
         </div>
-        {tab === 'schedules' && (
+        {tab === 'schedules' && items.length > 0 && (
           <button
             className="journey-primary"
             disabled={loading || busy || !!error}
@@ -219,12 +218,14 @@ export function AdminSchedules({
         </>
       ) : (
         <>
-          <div className="schedule-explainer">
-            <Info size={20} />
-            <span>
-              Dữ liệu mới vào bản nháp. Bạn duyệt trước khi hiển thị cho khách.
-            </span>
-          </div>
+          {items.length > 0 && (
+            <div className="schedule-explainer">
+              <span>
+                Dữ liệu mới vào bản nháp. Bạn duyệt trước khi hiển thị cho
+                khách.
+              </span>
+            </div>
+          )}
           {notice && (
             <p className="admin-success" role="status">
               {notice}
@@ -244,32 +245,34 @@ export function AdminSchedules({
               <a href="#sources">Kiểm tra nguồn dữ liệu →</a>
             </p>
           )}
-          <div className="schedule-toolbar">
-            <label>
-              <Search size={18} />
-              <input
-                aria-label="Tìm khu vực có lịch"
-                placeholder="Tìm khu vực..."
-                value={query}
+          {items.length > 0 && (
+            <div className="schedule-toolbar">
+              <label>
+                <Search size={18} />
+                <input
+                  aria-label="Tìm khu vực có lịch"
+                  placeholder="Tìm khu vực..."
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </label>
+              <select
+                aria-label="Trạng thái lịch"
+                value={status}
                 onChange={(e) => {
-                  setQuery(e.target.value);
+                  setStatus(e.target.value);
                   setPage(1);
                 }}
-              />
-            </label>
-            <select
-              aria-label="Trạng thái lịch"
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="enabled">Đang bật</option>
-              <option value="paused">Tạm dừng</option>
-            </select>
-          </div>
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="enabled">Đang bật</option>
+                <option value="paused">Tạm dừng</option>
+              </select>
+            </div>
+          )}
           {loading ? (
             <p role="status" className="admin-empty">
               Đang tải lịch cập nhật…
@@ -342,8 +345,9 @@ export function AdminSchedules({
                 ))}
               </div>
               {!visible.length && !error && (
-                <div className="admin-empty">
-                  <CalendarClock size={32} />
+                <div
+                  className={`admin-empty${!items.length ? ' schedule-empty-start' : ''}`}
+                >
                   <h2>
                     {items.length
                       ? 'Không tìm thấy lịch phù hợp'
@@ -352,7 +356,7 @@ export function AdminSchedules({
                   <p>
                     {items.length
                       ? 'Thử tên khu vực khác hoặc bỏ bộ lọc.'
-                      : 'Tạo lịch để GoEase tự lấy dữ liệu theo thời gian bạn chọn.'}
+                      : 'Chọn khu vực và thời gian lấy dữ liệu. Kết quả được lưu thành bản nháp để bạn kiểm tra.'}
                   </p>
                   {items.length ? (
                     <button
@@ -365,20 +369,50 @@ export function AdminSchedules({
                       Xóa bộ lọc
                     </button>
                   ) : (
-                    <button
-                      className="journey-primary"
-                      onClick={() => setEditor('new')}
-                    >
-                      Tạo lịch đầu tiên
-                    </button>
+                    <>
+                      <button
+                        className="journey-primary"
+                        onClick={() => setEditor('new')}
+                      >
+                        Tạo lịch đầu tiên
+                      </button>
+                      <ol
+                        className="schedule-start-guide"
+                        aria-label="Các bước tạo lịch"
+                      >
+                        <li>
+                          <span>01</span>
+                          <div>
+                            <strong>Chọn khu vực</strong>
+                            <small>Nơi bạn muốn cập nhật địa điểm.</small>
+                          </div>
+                        </li>
+                        <li>
+                          <span>02</span>
+                          <div>
+                            <strong>Đặt thời gian</strong>
+                            <small>Chạy hằng ngày hoặc hằng tuần.</small>
+                          </div>
+                        </li>
+                        <li>
+                          <span>03</span>
+                          <div>
+                            <strong>Kiểm tra kết quả</strong>
+                            <small>Duyệt bản nháp trước khi xuất bản.</small>
+                          </div>
+                        </li>
+                      </ol>
+                    </>
                   )}
                 </div>
               )}
               <footer className="schedule-list-footer">
-                <span aria-live="polite">
-                  {filtered.length} lịch cập nhật
-                  {pages > 1 ? ` · Trang ${currentPage}/${pages}` : ''}
-                </span>
+                {items.length > 0 && (
+                  <span aria-live="polite">
+                    {filtered.length} lịch cập nhật
+                    {pages > 1 ? ` · Trang ${currentPage}/${pages}` : ''}
+                  </span>
+                )}
                 {pages > 1 && (
                   <div>
                     <button
@@ -402,7 +436,7 @@ export function AdminSchedules({
             </>
           )}
           <p className="schedule-footnote">
-            Giờ Việt Nam · Mỗi khu vực có một lịch. Máy chủ cần hoạt động để
+            Giờ Việt Nam · Mỗi khu vực có một lịch. Hệ thống cần hoạt động để
             lịch chạy.
           </p>
         </>

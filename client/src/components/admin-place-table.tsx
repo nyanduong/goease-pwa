@@ -1,14 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { AdminPlaceImage } from './admin-visuals';
 import type { AdminPlaceDto } from '@goease/contracts';
-import {
-  ArrowUpRight,
-  CheckCircle2,
-  CircleAlert,
-  MapPin,
-  Pencil,
-  MinusCircle,
-} from 'lucide-react';
 export function AdminPlaceTable({
   items,
   selected,
@@ -53,7 +45,7 @@ export function AdminPlaceTable({
             </th>
             <th>Địa điểm</th>
             <th>Loại</th>
-            <th>Sẵn sàng xuất bản</th>
+            <th>Cần hoàn thiện</th>
             <th>Trạng thái</th>
             <th>Cập nhật</th>
             <th>
@@ -68,7 +60,6 @@ export function AdminPlaceTable({
             const readiness = p.publicationReadiness;
             const published =
               p.publicationStatus === 'published' && p.proposalRevision == null;
-            const count = p.photoSearch?.count || p.images?.length || 0;
             return (
               <tr key={p.id} className={isSelected ? 'is-selected' : ''}>
                 <td className="catalog-select-cell">
@@ -89,9 +80,6 @@ export function AdminPlaceTable({
                   >
                     <span className="catalog-place-cover">
                       <AdminPlaceImage place={p} />
-                      {!!count && !!p.imageUrl && (
-                        <span className="catalog-photo-count">{count} ảnh</span>
-                      )}
                     </span>
                     <span className="catalog-place-copy">
                       <h2>{p.name}</h2>
@@ -99,7 +87,6 @@ export function AdminPlaceTable({
                         className="catalog-place-address"
                         title={p.locationQuery}
                       >
-                        <MapPin size={13} />
                         <span>{p.locationQuery}</span>
                       </span>
                     </span>
@@ -112,18 +99,11 @@ export function AdminPlaceTable({
                       ? 'Văn hóa'
                       : 'Thiên nhiên'}
                 </td>
-                <td data-label="Sẵn sàng">
+                <td data-label="Cần hoàn thiện">
                   <span
                     className={`catalog-readiness ${readiness?.ready ? 'is-ready' : published ? 'is-neutral' : 'is-missing'}`}
                     title="Máy chủ sẽ kiểm tra lại điều kiện và phiên bản khi xem trước/xuất bản."
                   >
-                    {readiness?.ready ? (
-                      <CheckCircle2 size={18} />
-                    ) : published ? (
-                      <MinusCircle size={18} />
-                    ) : (
-                      <CircleAlert size={18} />
-                    )}
                     <span>{readiness?.label ?? 'Xem trước để kiểm tra'}</span>
                   </span>
                 </td>
@@ -152,9 +132,7 @@ export function AdminPlaceTable({
                     aria-label={`Chỉnh sửa ${p.name}`}
                     onClick={() => onOpen(p.id)}
                   >
-                    <Pencil size={14} />
                     <span>Chỉnh sửa</span>
-                    <ArrowUpRight size={13} />
                   </button>
                 </td>
               </tr>

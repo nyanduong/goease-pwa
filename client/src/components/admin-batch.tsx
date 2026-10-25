@@ -157,7 +157,7 @@ export function AdminBatch({
   const count = allMatching ? total : selected.length;
   const frozenScope =
     job?.selection?.mode === 'page'
-      ? `${job.selection.items.length} địa điểm trong tập ID và revision đã chốt`
+      ? `${job.selection.items.length} địa điểm đã chọn`
       : job?.selection?.mode === 'filter'
         ? [
             job.destinationName ||
@@ -171,7 +171,7 @@ export function AdminBatch({
             `nguồn: ${job.selection.filter.source === 'all' ? 'tất cả' : job.selection.filter.source === 'manual' ? 'biên tập' : 'Geoapify / OSM'}`,
             `chất lượng: ${{ all: 'tất cả', price: 'giá cần bổ sung', hours: 'thiếu giờ', location: 'thiếu tọa độ' }[job.selection.filter.quality]}`,
           ].join(' · ')
-        : 'Máy chủ chưa trả thông tin phạm vi của lô này. Tập ID và revision giữ theo bản xem trước đã lưu.';
+        : 'Máy chủ chưa trả thông tin phạm vi của lô này. Danh sách vẫn giữ theo bản xem trước đã lưu.';
 
   return (
     <section
@@ -267,8 +267,7 @@ export function AdminBatch({
             {job.snapshotAt
               ? ` · Chốt lúc ${new Date(job.snapshotAt).toLocaleString('vi-VN')}`
               : ''}
-            . Tập địa điểm và revision đã được đóng băng; thay đổi bộ lọc không
-            đổi lô này.
+            . Danh sách đã được lưu; thay đổi bộ lọc không đổi lô này.
           </p>
           <div className="admin-metrics">
             <div>
@@ -293,8 +292,8 @@ export function AdminBatch({
             </div>
           </div>
           <div className="admin-soft-notice">
-            Máy chủ kiểm tra lại quyền, điều kiện và revision của từng mục khi
-            thực thi. Chuyến khách đã lưu giữ snapshot hiện tại.
+            Hệ thống kiểm tra lại từng địa điểm trước khi áp dụng. Chuyến khách
+            đã lưu giữ nguyên nội dung.
           </div>
           <div className="admin-table-scroll">
             <table className="admin-data-table">
@@ -316,7 +315,7 @@ export function AdminBatch({
                         {p.state === 'succeeded'
                           ? 'Đã áp dụng'
                           : p.state === 'conflict'
-                            ? 'Xung đột revision'
+                            ? 'Địa điểm đã được sửa; cần tải lại'
                             : p.state === 'failed'
                               ? 'Lỗi'
                               : p.eligible

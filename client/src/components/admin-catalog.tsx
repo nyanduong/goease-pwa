@@ -34,16 +34,12 @@ import { AdminWikimediaImages } from './admin-wikimedia-images';
 import { AdminImageGallery } from './admin-image-gallery';
 import {
   CheckCircle2,
-  Info,
-  ShieldCheck,
   Search,
   SlidersHorizontal,
   List,
   Map,
   ChevronLeft,
   ChevronRight,
-  PlusCircle,
-  Download,
 } from 'lucide-react';
 const AdminPlaceImport = lazy(() =>
   import('./admin-place-import').then((v) => ({ default: v.AdminPlaceImport })),
@@ -119,10 +115,8 @@ export function AdminCatalog({
   scope = '',
   locationKey = '',
   refreshKey = 0,
-  adminName = 'Quản trị viên',
 }: {
   destinations: DestinationDto[];
-  adminName?: string;
   scope?: string;
   locationKey?: string;
   refreshKey?: number;
@@ -534,7 +528,7 @@ export function AdminCatalog({
           ? 'Đã áp dụng bản công khai. Khả năng khám phá, xếp lịch và ngân sách được kiểm tra riêng.'
           : publicationStatus === 'archived'
             ? 'Đã ngừng hiển thị. Lịch khách đã lưu vẫn được giữ.'
-            : 'Đã lưu đề xuất. Bản khách đang xem được giữ nguyên; xuất bản là bước riêng.',
+            : 'Đã lưu bản chỉnh sửa. Bản khách đang xem được giữ nguyên; xuất bản là bước riêng.',
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Chưa lưu được. Hãy thử lại.');
@@ -554,26 +548,26 @@ export function AdminCatalog({
               ? saved
                 ? 'Chỉnh sửa địa điểm'
                 : 'Thêm địa điểm / quán ăn'
-              : 'Quản lý địa điểm'
+              : 'Địa điểm'
           }
-          description={
-            form
-              ? 'Cập nhật thông tin địa điểm để khách hàng nhận được lịch trình và dự toán chính xác hơn.'
-              : 'Chuẩn bị và quản lý nội dung khách hàng sẽ thấy.'
+          meta={
+            overview
+              ? `${overview.total.toLocaleString('vi-VN')} địa điểm`
+              : undefined
           }
           illustrated={false}
           actions={
             !form && !importing ? (
               <div className="admin-actions admin-catalog-actions">
                 <button
-                  className="journey-primary catalog-import-action"
+                  className="journey-outline catalog-import-action"
                   disabled={busy}
                   onClick={() => setImporting(true)}
                 >
-                  <Download size={17} /> Lấy địa điểm
+                  Lấy từ nguồn
                 </button>
                 <button
-                  className="journey-outline catalog-create-action"
+                  className="journey-primary catalog-create-action"
                   disabled={busy || !destinations.length}
                   onClick={() => {
                     setSaved(null);
@@ -586,7 +580,7 @@ export function AdminCatalog({
                     setSuccess('');
                   }}
                 >
-                  <PlusCircle size={17} /> Thêm thủ công
+                  Thêm địa điểm
                 </button>
               </div>
             ) : undefined
@@ -994,45 +988,35 @@ export function AdminCatalog({
             setPreview(true);
           }}
         >
-          <div className="place-editor-masthead">
-            <strong>GoEase</strong>
-            <span>
-              Địa điểm <i>/</i> {destinationName} <i>/</i> Chỉnh sửa
-            </span>
-            <span className="place-editor-account">
-              <ShieldCheck size={18} />
-              {adminName}
-            </span>
-          </div>
-          <button
-            type="button"
-            className="admin-back"
-            disabled={busy}
-            onClick={async () => {
-              if (
-                success ||
-                (saved &&
-                  JSON.stringify(form) ===
-                    JSON.stringify(formFromDto(saved))) ||
-                (await confirmAction(
-                  'Về danh sách? Thay đổi chưa lưu sẽ bị bỏ.',
-                  {
-                    title: 'Bỏ thay đổi chưa lưu?',
-                    confirmLabel: 'Bỏ thay đổi',
-                    cancelLabel: 'Ở lại',
-                    tone: 'warning',
-                  },
-                ))
-              ) {
-                setForm(null);
-                setSuccess('');
-                setError('');
-              }
-            }}
-          >
-            ← Về danh sách
-          </button>
           <header className="place-editor-heading">
+            <button
+              type="button"
+              className="admin-back"
+              disabled={busy}
+              onClick={async () => {
+                if (
+                  success ||
+                  (saved &&
+                    JSON.stringify(form) ===
+                      JSON.stringify(formFromDto(saved))) ||
+                  (await confirmAction(
+                    'Về danh sách? Thay đổi chưa lưu sẽ bị bỏ.',
+                    {
+                      title: 'Bỏ thay đổi chưa lưu?',
+                      confirmLabel: 'Bỏ thay đổi',
+                      cancelLabel: 'Ở lại',
+                      tone: 'warning',
+                    },
+                  ))
+                ) {
+                  setForm(null);
+                  setSuccess('');
+                  setError('');
+                }
+              }}
+            >
+              ← Về danh sách
+            </button>
             <div>
               <div className="place-title-row">
                 <h1>{form.name || 'Thêm địa điểm mới'}</h1>
@@ -1067,64 +1051,60 @@ export function AdminCatalog({
                   ? 'Đang lưu…'
                   : isDirty
                     ? 'Có thay đổi chưa lưu'
-                    : 'Đã lưu đề xuất'}
+                    : 'Đã lưu bản chỉnh sửa'}
               </span>
             </div>
           </header>
+          <div
+            className="place-editor-tabs"
+            role="tablist"
+            aria-label="Các phần chỉnh sửa"
+          >
+            {(
+              [
+                ['overview', 'Tổng quan'],
+                ['photos', 'Ảnh địa điểm'],
+                ['practical', 'Giá & giờ mở cửa'],
+                ['sources', 'Nguồn & lịch sử'],
+              ] as const
+            ).map(([id, label], index, tabs) => (
+              <button
+                type="button"
+                role="tab"
+                id={'place-tab-' + id}
+                aria-controls={'place-panel-' + id}
+                aria-selected={editorTab === id}
+                tabIndex={editorTab === id ? 0 : -1}
+                key={id}
+                onClick={() => setEditorTab(id)}
+                onKeyDown={(e) => {
+                  const delta =
+                    e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+                  if (delta || e.key === 'Home' || e.key === 'End') {
+                    e.preventDefault();
+                    const target =
+                      tabs[
+                        e.key === 'Home'
+                          ? 0
+                          : e.key === 'End'
+                            ? tabs.length - 1
+                            : (index + delta + tabs.length) % tabs.length
+                      ]![0];
+                    setEditorTab(target);
+                    document.getElementById('place-tab-' + target)?.focus();
+                  }
+                }}
+              >
+                {label}
+                {id === 'photos' && <span>{photoCount}</span>}
+              </button>
+            ))}
+          </div>
           <div className="place-editor-layout">
             <div className="place-editor-main">
-              <div
-                className="place-editor-tabs"
-                role="tablist"
-                aria-label="Các phần chỉnh sửa"
-              >
-                {(
-                  [
-                    ['overview', 'Tổng quan'],
-                    ['photos', 'Ảnh địa điểm'],
-                    ['practical', 'Giá & giờ mở cửa'],
-                    ['sources', 'Nguồn & lịch sử'],
-                  ] as const
-                ).map(([id, label], index, tabs) => (
-                  <button
-                    type="button"
-                    role="tab"
-                    id={'place-tab-' + id}
-                    aria-controls={'place-panel-' + id}
-                    aria-selected={editorTab === id}
-                    tabIndex={editorTab === id ? 0 : -1}
-                    key={id}
-                    onClick={() => setEditorTab(id)}
-                    onKeyDown={(e) => {
-                      const delta =
-                        e.key === 'ArrowRight'
-                          ? 1
-                          : e.key === 'ArrowLeft'
-                            ? -1
-                            : 0;
-                      if (delta || e.key === 'Home' || e.key === 'End') {
-                        e.preventDefault();
-                        const target =
-                          tabs[
-                            e.key === 'Home'
-                              ? 0
-                              : e.key === 'End'
-                                ? tabs.length - 1
-                                : (index + delta + tabs.length) % tabs.length
-                          ]![0];
-                        setEditorTab(target);
-                        document.getElementById('place-tab-' + target)?.focus();
-                      }
-                    }}
-                  >
-                    {label}
-                    {id === 'photos' && <span>{photoCount}</span>}
-                  </button>
-                ))}
-              </div>
               <section
                 className="place-editor-photos"
-                hidden={!['overview', 'photos'].includes(editorTab)}
+                hidden={editorTab !== 'photos'}
                 data-editor-field="images"
               >
                 <AdminWikimediaImages
@@ -1160,13 +1140,7 @@ export function AdminCatalog({
                   className="admin-form-fields"
                   id="admin-section-basic"
                 >
-                  <legend>
-                    <Info size={21} />
-                    Thông tin cơ bản
-                  </legend>
-                  <p className="place-card-description">
-                    Nội dung khách sẽ thấy sau khi xuất bản.
-                  </p>
+                  <legend>Thông tin cơ bản</legend>
                   <label data-editor-field="name">
                     Tên địa điểm / quán ăn
                     <input
@@ -1397,7 +1371,7 @@ export function AdminCatalog({
                         checked={autosave}
                         onChange={(e) => setAutosave(e.target.checked)}
                       />
-                      Tự lưu bản nháp hợp lệ sau 2 giây
+                      Tự lưu khi thông tin hợp lệ
                     </label>
                   )}
 
@@ -1415,7 +1389,7 @@ export function AdminCatalog({
                   </label>
 
                   <details>
-                    <summary>Khóa biên tập theo trường</summary>
+                    <summary>Bảo vệ thông tin đã chỉnh sửa</summary>
                     <p>
                       Trường khóa được bảo vệ khi nguồn cập nhật, xuất bản và
                       phục hồi. Khóa không tự xác minh dữ kiện.
@@ -1458,7 +1432,7 @@ export function AdminCatalog({
                   </details>
                   {saved?.fieldProvenance?.length ? (
                     <details>
-                      <summary>Lịch sử nguồn theo trường</summary>
+                      <summary>Nguồn của từng thông tin</summary>
                       {saved.fieldProvenance.map((p) => (
                         <div key={p.field} className="admin-version">
                           <strong>{p.field}</strong>
@@ -1615,11 +1589,11 @@ export function AdminCatalog({
                 ? 'Đang lưu…'
                 : isDirty
                   ? 'Có thay đổi chưa lưu'
-                  : 'Đã lưu đề xuất'}{' '}
+                  : 'Đã lưu bản chỉnh sửa'}{' '}
               ·{' '}
               {saved?.publicRevision
-                ? 'Bản công khai giữ nguyên khi lưu'
-                : 'Chưa công khai'}
+                ? 'Chưa thay đổi nội dung khách đang xem'
+                : 'Chưa hiển thị cho khách'}
             </span>
             <button
               type="button"

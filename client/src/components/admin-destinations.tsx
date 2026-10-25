@@ -186,7 +186,7 @@ export function AdminDestinations() {
       >
         <header className="settings-province-heading">
           <div>
-            <h2>Khách có thể chọn những tỉnh/thành nào?</h2>
+            <h2>Hiển thị tỉnh/thành</h2>
             <p>
               Bật để khách chọn khi tạo chuyến và xem các địa điểm đã xuất bản.
             </p>

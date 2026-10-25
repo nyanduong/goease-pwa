@@ -1,21 +1,6 @@
-import {
-  AdminPageHeader,
-  AdminPlaceImage,
-  PhotoSearchStatus,
-} from './admin-visuals';
+import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
 import { catalogQuality } from '@goease/contracts';
 import { useEffect, useState } from 'react';
-import {
-  ArrowUpRight,
-  MapPin,
-  FileText,
-  CheckCircle2,
-  AlertTriangle,
-  Database,
-  RefreshCw,
-  Plus,
-  Clock,
-} from 'lucide-react';
 import type {
   AdminOverview,
   AdminSettings,
@@ -74,13 +59,20 @@ export function AdminDashboard({
   return (
     <section className="admin-v2-content">
       <AdminPageHeader
-        title="Tổng quan dữ liệu"
+        title="Tổng quan"
         region={region}
-        illustrated
-        greeting
-        description={`Đây là tổng quan hoạt động của GoEase tại ${region} hôm nay.`}
+        description="Theo dõi địa điểm và những việc cần xử lý."
+        actions={
+          <div className="admin-actions">
+            <a className="journey-outline" href="#places?create=1">
+              Thêm địa điểm
+            </a>
+            <a className="journey-primary" href="#work">
+              Xem việc cần kiểm tra
+            </a>
+          </div>
+        }
       />
-
       {error && (
         <div className="admin-alert" role="alert">
           {error}{' '}
@@ -92,233 +84,204 @@ export function AdminDashboard({
       )}
       {data && settings && (
         <>
-          <>
-            <div className="admin-kpi-grid">
-              {[
-                {
-                  title: 'Tổng địa điểm',
-                  value: data.total,
-                  icon: MapPin,
-                  link: href('status=all'),
-                  tone: 'blue',
-                  note: 'Trong khu vực đã chọn',
-                },
-                {
-                  title: 'Địa điểm nháp',
-                  value: data.draft,
-                  icon: FileText,
-                  link: href('status=draft'),
-                  tone: 'amber',
-                  note: 'Chưa hiển thị cho khách',
-                },
-                {
-                  title: 'Cần kiểm tra',
-                  value: data.needsAttention,
-                  icon: AlertTriangle,
-                  link: '#work',
-                  tone: 'orange',
-                  note: 'Có ít nhất một vấn đề chất lượng',
-                },
-                {
-                  title: 'Đã xuất bản',
-                  value: data.published,
-                  icon: CheckCircle2,
-                  link: href('status=published'),
-                  tone: 'green',
-                  note: 'Đang hiển thị trong danh mục',
-                },
-              ].map((k) => (
-                <a
-                  className={`admin-kpi ${k.tone}`}
-                  href={k.link}
-                  key={k.title}
-                >
-                  <span className="admin-kpi-icon">
-                    <k.icon size={25} />
-                  </span>
-                  <div>
-                    <span>{k.title}</span>
-                    <strong>{k.value.toLocaleString('vi-VN')}</strong>
-                    <small>{k.note}</small>
-                  </div>
-                  <ArrowUpRight size={17} />
-                </a>
-              ))}
+          <div className="admin-kpi-grid" aria-label="Số liệu danh mục">
+            {[
+              {
+                title: 'Tổng địa điểm',
+                value: data.total,
+
+                link: href('status=all'),
+                tone: 'blue',
+              },
+              {
+                title: 'Địa điểm nháp',
+                value: data.draft,
+
+                link: href('status=draft'),
+                tone: 'amber',
+              },
+              {
+                title: 'Cần kiểm tra',
+                value: data.needsAttention,
+
+                link: '#work',
+                tone: 'orange',
+              },
+              {
+                title: 'Đã xuất bản',
+                value: data.published,
+
+                link: href('status=published'),
+                tone: 'green',
+              },
+            ].map((k) => (
+              <a className={`admin-kpi ${k.tone}`} href={k.link} key={k.title}>
+                <div>
+                  <span>{k.title}</span>
+                  <strong>{k.value.toLocaleString('vi-VN')}</strong>
+                </div>
+              </a>
+            ))}
+          </div>
+          {!data.total && (
+            <div className="admin-empty">
+              <h2>Bắt đầu xây dựng danh mục</h2>
+              <p>
+                Thêm một địa điểm có nguồn hoặc chạy thử nguồn đã kết nối. Dữ
+                liệu mới được giữ ở bản nháp.
+              </p>
+              <a href="#places?create=1">Thêm địa điểm đầu tiên →</a>
             </div>
-            {!data.total && (
-              <div className="admin-empty">
-                <h2>Bắt đầu xây dựng danh mục</h2>
-                <p>
-                  Thêm một địa điểm có nguồn hoặc chạy thử nguồn đã kết nối. Dữ
-                  liệu mới được giữ ở bản nháp.
-                </p>
-                <a href="#places?create=1">Thêm địa điểm đầu tiên →</a>
-              </div>
-            )}
-            <>
-              <div className="admin-dashboard-grid">
-                <section className="admin-panel">
-                  <div className="admin-panel-title">
-                    <h2>Việc cần quan tâm ({data.needsAttention})</h2>
-                    <a href="#work">Xem việc cần làm →</a>
-                  </div>
-                  {settings.showQualityAlerts ? (
-                    data.issues.length ? (
-                      [...data.places]
-                        .filter(
-                          (p) =>
-                            p.publicationStatus !== 'archived' &&
-                            catalogQuality(p, settings.freshnessDays).issues
-                              .length,
-                        )
-                        .sort(
-                          (a, b) =>
-                            Number(b.publicationStatus === 'published') -
-                            Number(a.publicationStatus === 'published'),
-                        )
-                        .slice(0, 4)
-                        .map((p) => (
-                          <button
-                            className="admin-task-preview"
-                            key={p.id}
-                            onClick={() => onOpen(p.id)}
-                          >
-                            <AdminPlaceImage place={p} />
-                            <span>
-                              <strong>{p.name}</strong>
-                              <PhotoSearchStatus place={p} />
-                              <small>
-                                {
-                                  catalogQuality(p, settings.freshnessDays)
-                                    .issues[0]?.label
-                                }
-                              </small>
-                              <small>
-                                {p.publicationStatus === 'published'
-                                  ? 'Đang ảnh hưởng nội dung công khai'
-                                  : 'Hoàn thiện trước khi xuất bản'}
-                              </small>
-                            </span>
-                            <ArrowUpRight size={16} />
-                          </button>
-                        ))
-                    ) : (
-                      <p>
-                        Chưa phát hiện khoảng trống theo các quy tắc đang kiểm
-                        tra.
-                      </p>
-                    )
+          )}
+          <>
+            <div className="admin-dashboard-grid">
+              <section className="admin-panel admin-work-panel">
+                <div className="admin-panel-title">
+                  <h2>Cần xử lý ({data.needsAttention})</h2>
+                  <a href="#work">Xem việc cần làm →</a>
+                </div>
+                {settings.showQualityAlerts ? (
+                  data.issues.length ? (
+                    [...data.places]
+                      .filter(
+                        (p) =>
+                          p.publicationStatus !== 'archived' &&
+                          catalogQuality(p, settings.freshnessDays).issues
+                            .length,
+                      )
+                      .sort(
+                        (a, b) =>
+                          Number(b.publicationStatus === 'published') -
+                          Number(a.publicationStatus === 'published'),
+                      )
+                      .slice(0, 4)
+                      .map((p) => (
+                        <button
+                          className="admin-task-preview"
+                          key={p.id}
+                          onClick={() => onOpen(p.id)}
+                        >
+                          <AdminPlaceImage place={p} />
+                          <span>
+                            <strong>{p.name}</strong>
+                            <small>
+                              {
+                                catalogQuality(p, settings.freshnessDays)
+                                  .issues[0]?.label
+                              }
+                            </small>
+                          </span>
+                        </button>
+                      ))
                   ) : (
                     <p>
-                      Cảnh báo tổng quan đang tắt.{' '}
-                      <a href="#settings">Mở cài đặt</a>
+                      Chưa phát hiện khoảng trống theo các quy tắc đang kiểm
+                      tra.
                     </p>
-                  )}
-                </section>
-                <section className="admin-panel">
-                  <div className="admin-panel-title">
-                    <h2>Bản đồ phân bố địa điểm</h2>
-                    <a href="#places?view=map">Mở bản đồ →</a>
-                  </div>
-                  <AdminMap places={data.places} onOpen={onOpen} />
-                  {data.mapTruncated && (
-                    <small>
-                      Bản đồ tổng quan giới hạn 500 địa điểm. Chọn khu vực để
-                      thu hẹp.
-                    </small>
-                  )}
-                </section>
-                <aside className="admin-panel admin-quick">
-                  <h2>Thao tác nhanh</h2>
-                  {[
-                    {
-                      icon: Plus,
-                      title: 'Thêm địa điểm mới',
-                      note: 'Tạo bản nháp có nguồn',
-                      link: '#places?create=1',
-                    },
-                    {
-                      icon: Database,
-                      title: 'Nhập địa điểm',
-                      note: 'Xem trước dữ liệu nguồn',
-                      link: '#places?import=1',
-                    },
-                    {
-                      icon: RefreshCw,
-                      title: 'Cập nhật tự động',
-                      note: 'Chạy ngay hoặc đặt lịch',
-                      link: '#automatic',
-                    },
-                    {
-                      icon: Clock,
-                      title: 'Xem lịch sử',
-                      note: 'Theo dõi thay đổi và kết quả',
-                      link: '#history',
-                    },
-                  ].map((a) => (
-                    <a key={a.title} href={a.link}>
-                      <a.icon size={23} />
-                      <div>
-                        <strong>{a.title}</strong>
-                        <small>{a.note}</small>
-                      </div>
-                    </a>
-                  ))}
-                </aside>
-              </div>
-              <div className="admin-bottom-grid">
-                <section className="admin-panel">
-                  <h2>Lần chạy tự động gần nhất</h2>
+                  )
+                ) : (
                   <p>
-                    {data.jobs.active} lượt đang xử lý · {data.jobs.succeeded}{' '}
-                    thành công · {data.jobs.failed} thất bại
+                    Cảnh báo tổng quan đang tắt.{' '}
+                    <a href="#settings">Mở cài đặt</a>
                   </p>
-                  {operations?.runs.slice(0, 3).map((r) => (
-                    <a key={r.id} href="#history" className="admin-run-summary">
-                      <span
-                        className={`admin-status status-${r.state === 'succeeded' ? 'published' : 'draft'}`}
-                      >
-                        {r.state === 'succeeded'
-                          ? 'Hoàn tất'
-                          : r.state === 'failed'
-                            ? 'Cần xử lý'
-                            : 'Đang xử lý'}
-                      </span>
-                      <div>
-                        <strong>{date(r.createdAt)}</strong>
-                        <small>
-                          {r.counts.created} mới · {r.counts.review} cần đối
-                          chiếu
-                        </small>
-                      </div>
-                    </a>
-                  ))}
-                  {!operations?.runs.length && (
-                    <p>
-                      Chưa có lượt cập nhật.{' '}
-                      <a href="#automatic">Thiết lập nguồn và lịch</a>
-                    </p>
-                  )}
-                </section>
-                <Quality data={data} />
-                <section className="admin-panel">
-                  <h2>Nguồn & cảnh báo</h2>
+                )}
+              </section>
+              <details className="admin-panel admin-overview-map">
+                <summary>Xem địa điểm trên bản đồ</summary>
+                <div className="admin-panel-title">
+                  <a href="#places?view=map">Mở bản đồ →</a>
+                </div>
+                <AdminMap places={data.places} onOpen={onOpen} />
+                {data.mapTruncated && (
+                  <small>
+                    Bản đồ tổng quan giới hạn 500 địa điểm. Chọn khu vực để thu
+                    hẹp.
+                  </small>
+                )}
+              </details>
+              <aside className="admin-panel admin-quick">
+                <h2>Thao tác nhanh</h2>
+                {[
+                  {
+                    title: 'Thêm địa điểm mới',
+                    note: 'Tạo bản nháp có nguồn',
+                    link: '#places?create=1',
+                  },
+                  {
+                    title: 'Nhập địa điểm',
+                    note: 'Xem trước dữ liệu nguồn',
+                    link: '#places?import=1',
+                  },
+                  {
+                    title: 'Cập nhật tự động',
+                    note: 'Chạy ngay hoặc đặt lịch',
+                    link: '#automatic',
+                  },
+                  {
+                    title: 'Xem lịch sử',
+                    note: 'Theo dõi thay đổi và kết quả',
+                    link: '#history',
+                  },
+                ].map((a) => (
+                  <a key={a.title} href={a.link}>
+                    <div>
+                      <strong>{a.title}</strong>
+                      <small>{a.note}</small>
+                    </div>
+                  </a>
+                ))}
+              </aside>
+            </div>
+            <div className="admin-bottom-grid">
+              <section className="admin-panel">
+                <h2>Lần chạy tự động gần nhất</h2>
+                <p>
+                  {data.jobs.active} lượt đang xử lý · {data.jobs.succeeded}{' '}
+                  thành công · {data.jobs.failed} thất bại
+                </p>
+                {operations?.runs.slice(0, 3).map((r) => (
+                  <a key={r.id} href="#history" className="admin-run-summary">
+                    <span
+                      className={`admin-status status-${r.state === 'succeeded' ? 'published' : 'draft'}`}
+                    >
+                      {r.state === 'succeeded'
+                        ? 'Hoàn tất'
+                        : r.state === 'failed'
+                          ? 'Cần xử lý'
+                          : 'Đang xử lý'}
+                    </span>
+                    <div>
+                      <strong>{date(r.createdAt)}</strong>
+                      <small>
+                        {r.counts.created} mới · {r.counts.review} cần đối chiếu
+                      </small>
+                    </div>
+                  </a>
+                ))}
+                {!operations?.runs.length && (
                   <p>
-                    {operations?.connected
-                      ? 'Geoapify đã cấu hình khóa'
-                      : 'Geoapify chưa kết nối'}
+                    Chưa có lượt cập nhật.{' '}
+                    <a href="#automatic">Thiết lập nguồn và lịch</a>
                   </p>
-                  <p>
-                    Đồng bộ thành công gần nhất:{' '}
-                    {date(data.sources.lastSuccess)}
-                  </p>
-                  {data.sources.lastError && (
-                    <p className="admin-warning">{data.sources.lastError}</p>
-                  )}
-                  <a href="#sources">Kiểm tra chi tiết nguồn →</a>
-                </section>
-              </div>
-            </>
+                )}
+              </section>
+              <Quality data={data} />
+              <section className="admin-panel">
+                <h2>Nguồn & cảnh báo</h2>
+                <p>
+                  {operations?.connected
+                    ? 'Geoapify đã cấu hình khóa'
+                    : 'Geoapify chưa kết nối'}
+                </p>
+                <p>
+                  Đồng bộ thành công gần nhất: {date(data.sources.lastSuccess)}
+                </p>
+                {data.sources.lastError && (
+                  <p className="admin-warning">{data.sources.lastError}</p>
+                )}
+                <a href="#sources">Kiểm tra chi tiết nguồn →</a>
+              </section>
+            </div>
           </>
         </>
       )}
@@ -332,16 +295,18 @@ function Quality({ data }: { data: AdminOverview }) {
     <section className="admin-panel">
       <h2>Độ đầy đủ thông tin</h2>
       <div className="admin-quality-wrap">
+        <strong className="admin-quality-number">
+          {active ? `${percent}%` : '—'}
+        </strong>
         <div
-          className="admin-quality-ring"
-          style={{
-            background: `conic-gradient(#39ad7c ${percent}%, #eaf0ea 0)`,
-          }}
+          className="admin-quality-track"
+          role="progressbar"
+          aria-label="Độ đầy đủ thông tin"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={active ? percent : undefined}
         >
-          <div>
-            <strong>{active ? `${percent}%` : '—'}</strong>
-            <small>Đủ 6 tiêu chí</small>
-          </div>
+          <span style={{ width: `${percent}%` }} />
         </div>
         <div>
           <p>
@@ -353,11 +318,14 @@ function Quality({ data }: { data: AdminOverview }) {
           <a href="#sources">Xem chất lượng →</a>
         </div>
       </div>
-      <small>
-        6 nhóm trường: tên, giới thiệu, địa chỉ, thời lượng, nguồn và giá. Độ
-        đầy đủ không đồng nghĩa dữ liệu hợp lệ, còn hiệu lực hoặc đã xác minh;
-        khả năng khám phá, Goe và ngân sách được kiểm tra riêng.
-      </small>
+      <details className="admin-detail-note">
+        <summary>Cách tính</summary>
+        <p>
+          6 nhóm trường: tên, giới thiệu, địa chỉ, thời lượng, nguồn và giá. Độ
+          đầy đủ không đồng nghĩa dữ liệu hợp lệ, còn hiệu lực hoặc đã xác minh;
+          khả năng khám phá, Goe và ngân sách được kiểm tra riêng.
+        </p>
+      </details>
     </section>
   );
 }

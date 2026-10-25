@@ -121,25 +121,25 @@
   margin: 0 0 6px;
 }
 .schedule-location p {
-  font-size: 12px;
+  font-size: 14px;
 }
 .schedule-timing {
   flex: 1;
   min-width: 175px;
 }
 .schedule-timing strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 .schedule-timing small {
   display: block;
-  font-size: 11px;
+  font-size: 14px;
   color: #7b8b92;
   margin-top: 6px;
 }
 .schedule-status {
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 14px;
   padding: 7px 10px;
   border-radius: 8px;
   background: #f2f4f7;
@@ -196,7 +196,7 @@
   background: transparent;
   color: #008c95;
   padding: 8px 0;
-  font-size: 12px;
+  font-size: 14px;
   white-space: nowrap;
 }
 .journey-sheet:has(.schedule-run-body) {
@@ -227,7 +227,7 @@
   border: 1px solid #e2e7e7;
   border-radius: 10px;
   background: white;
-  font-size: 13px;
+  font-size: 14px;
 }
 .schedule-list-footer > a {
   margin-left: auto;
@@ -238,7 +238,7 @@
   gap: 8px;
 }
 .schedule-footnote {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.65;
   color: #7b8e96;
   margin: 17px 0;
@@ -304,7 +304,7 @@
   margin: 0;
   line-height: 1.6;
   color: #7b8b96;
-  font-size: 13px;
+  font-size: 14px;
 }
 .schedule-sheet header > button {
   padding: 4px;
@@ -381,7 +381,7 @@
 }
 .schedule-sheet small {
   color: #7d8e96;
-  font-size: 12px;
+  font-size: 14px;
 }
 .schedule-preview {
   display: flex;
@@ -399,7 +399,7 @@
   font-size: 14px;
 }
 .schedule-preview p {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   margin: 10px 0 0;
   color: #6d858f;
@@ -411,14 +411,14 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  font-size: 13px;
+  font-size: 14px;
 }
 .schedule-sheet footer {
   border-top: 1px solid #e9eeee;
   padding: 14px 26px 22px;
 }
 .schedule-sheet footer p {
-  font-size: 12px;
+  font-size: 14px;
   color: #7d8d96;
   margin: 0 0 12px;
 }
@@ -470,7 +470,7 @@
     gap: 20px;
   }
   .schedule-tabs button {
-    font-size: 13px;
+    font-size: 14px;
   }
   .schedule-toolbar {
     flex-direction: column;
@@ -490,10 +490,10 @@
     flex-basis: 100%;
   }
   .schedule-status {
-    font-size: 11px;
+    font-size: 14px;
   }
   .schedule-edit {
-    font-size: 12px;
+    font-size: 14px;
     padding: 8px;
   }
   .schedule-list-footer {

@@ -45,7 +45,6 @@ export function AdminTopbar({
             <ChevronRight size={13} aria-hidden="true" />
             <span aria-current="page">{pageLabel}</span>
           </nav>
-          <small>Không gian vận hành GoEase</small>
         </div>
       </div>
       <div className="admin-header-context">

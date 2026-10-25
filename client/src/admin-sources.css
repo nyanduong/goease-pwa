@@ -50,7 +50,7 @@
   padding: 2px 8px;
   background: #fff0d9;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 14px;
   color: #92500b;
 }
 .sources-intro {
@@ -72,7 +72,7 @@
 }
 .sources-intro small {
   display: block;
-  font-size: 12px;
+  font-size: 14px;
   margin-top: 4px;
   color: #6b818a;
 }
@@ -133,7 +133,7 @@
 .sources-provider-card header p {
   margin: 0;
   color: #6a7d86;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sources-state {
   display: flex;
@@ -141,7 +141,7 @@
   gap: 8px;
   margin: 0 0 10px;
   font-weight: 650;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sources-state > span {
   width: 8px;
@@ -163,7 +163,7 @@
   color: #086a9b;
 }
 .sources-provider-description {
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   color: #657c85;
   margin: 0 0 18px;
@@ -180,7 +180,7 @@
   gap: 12px;
   padding: 12px 0;
   border-top: 1px solid #e9edef;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sources-explainer h3 {
   margin-top: 0;
@@ -219,7 +219,7 @@
 }
 .sources-detail .sources-detail-caption {
   color: #657c85;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sources-explained-metrics dt {
   color: #234b56;
@@ -293,7 +293,7 @@
 }
 .sources-add-card p {
   max-width: 300px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
   margin: 5px 0 16px;
 }
@@ -320,7 +320,7 @@
 .sources-store-title p {
   color: #758790;
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sources-store dl {
   display: flex;
@@ -336,7 +336,7 @@
 }
 .sources-store dt {
   color: #69818b;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sources-store dd {
   margin: 0;
@@ -348,11 +348,11 @@
 }
 .sources-store-link {
   color: #007e89;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sources-store > small {
   grid-column: 1 / -1;
-  font-size: 12px;
+  font-size: 14px;
   color: #758790;
 }
 .sources-attention {
@@ -375,12 +375,12 @@
 .sources-attention small {
   display: block;
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 14px;
   color: #7d786e;
 }
 .sources-attention-action {
   margin-left: auto;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sources-attention.is-clear {
   color: #16775c;
@@ -389,7 +389,7 @@
 }
 .sources-quality-list > p {
   color: #68808a;
-  font-size: 13px;
+  font-size: 14px;
   margin: 0 0 15px;
 }
 .sources-quality-empty {
@@ -421,7 +421,7 @@
 }
 .sources-detail .admin-soft-notice {
   padding: 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 .sources-detail details {
   padding: 14px 0;
@@ -476,13 +476,13 @@
     gap: 14px;
   }
   .admin-sources-page .sources-tabs button {
-    font-size: 12px;
+    font-size: 14px;
     gap: 6px;
   }
   .sources-intro {
     padding: 14px;
     align-items: flex-start;
-    font-size: 13px;
+    font-size: 14px;
   }
   .sources-card-grid {
     grid-template-columns: minmax(0, 1fr);
