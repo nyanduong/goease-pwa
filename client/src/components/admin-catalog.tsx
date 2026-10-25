@@ -33,16 +33,12 @@ import { AdminWikimediaImages } from './admin-wikimedia-images';
 import { AdminImageGallery } from './admin-image-gallery';
 import {
   CheckCircle2,
-  Info,
-  ShieldCheck,
   Search,
   SlidersHorizontal,
   List,
   Map,
   ChevronLeft,
   ChevronRight,
-  PlusCircle,
-  Download,
 } from 'lucide-react';
 const AdminPlaceImport = lazy(() =>
   import('./admin-place-import').then((v) => ({ default: v.AdminPlaceImport })),
@@ -539,12 +535,12 @@ export function AdminCatalog({
               ? saved
                 ? 'Chỉnh sửa địa điểm'
                 : 'Thêm địa điểm / quán ăn'
-              : 'Quản lý địa điểm'
+              : 'Địa điểm'
           }
-          description={
-            form
-              ? 'Cập nhật thông tin địa điểm để khách hàng nhận được lịch trình và dự toán chính xác hơn.'
-              : 'Chuẩn bị và quản lý nội dung khách hàng sẽ thấy.'
+          meta={
+            overview
+              ? `${overview.total.toLocaleString('vi-VN')} địa điểm`
+              : undefined
           }
           illustrated={false}
           actions={
@@ -555,7 +551,7 @@ export function AdminCatalog({
                   disabled={busy}
                   onClick={() => setImporting(true)}
                 >
-                  <Download size={17} /> Lấy từ nguồn
+                  Lấy từ nguồn
                 </button>
                 <button
                   className="journey-primary catalog-create-action"
@@ -571,7 +567,7 @@ export function AdminCatalog({
                     setSuccess('');
                   }}
                 >
-                  <PlusCircle size={17} /> Thêm địa điểm
+                  Thêm địa điểm
                 </button>
               </div>
             ) : undefined
@@ -984,10 +980,7 @@ export function AdminCatalog({
             <span>
               Địa điểm <i>/</i> {destinationName} <i>/</i> Chỉnh sửa
             </span>
-            <span className="place-editor-account">
-              <ShieldCheck size={18} />
-              {adminName}
-            </span>
+            <span className="place-editor-account">{adminName}</span>
           </div>
           <button
             type="button"
@@ -1133,13 +1126,7 @@ export function AdminCatalog({
                   className="admin-form-fields"
                   id="admin-section-basic"
                 >
-                  <legend>
-                    <Info size={21} />
-                    Thông tin cơ bản
-                  </legend>
-                  <p className="place-card-description">
-                    Nội dung khách sẽ thấy sau khi xuất bản.
-                  </p>
+                  <legend>Thông tin cơ bản</legend>
                   <label data-editor-field="name">
                     Tên địa điểm / quán ăn
                     <input

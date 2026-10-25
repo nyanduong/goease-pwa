@@ -827,15 +827,11 @@ export function AdminCampaigns({
                   AlertTriangle,
                 ],
               ] as const
-            ).map(([key, label, hint, Icon]) => (
+            ).map(([key, label]) => (
               <div key={key} className={`admin-campaign-stat is-${key}`}>
-                <span className="admin-campaign-stat-icon">
-                  <Icon size={25} />
-                </span>
                 <div>
                   <h2>{label}</h2>
                   <strong>{summary?.[key] ?? '—'}</strong>
-                  <small>{hint}</small>
                 </div>
               </div>
             ))}

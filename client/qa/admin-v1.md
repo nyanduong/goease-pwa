@@ -1,45 +1,53 @@
-# Admin UI V1
+# Admin UI V1 — restrained working interface
 
-Branch: `V1-ui-admin` · 25/10/2026.
+Branch: `V1-ui-admin`. Updated 25/10/2026 after review of the first UI trial.
 
 ## Scope
 
-Frontend admin presentation only. Sidebar entries and their order remain intact.
-The original Expo repository, API, contracts, database configuration and business
-rules are unchanged. No new dependencies.
+Frontend admin only. Sidebar destinations and order, API, contracts, permissions,
+database configuration and publication rules remain unchanged. No new dependencies.
+The original Expo project is untouched.
 
-## Design
+## Current design
 
-- Logo palette: teal `#007e89`, deeper teal `#00636e`, orange `#f69b24`.
-- White working surfaces on a quiet light background. Smaller headings and muted
-  supporting copy keep primary actions and issues easy to find.
-- Solid teal primary actions, outlined secondary actions, orange attention states.
-- Less-used geographical filters live in an expandable control with an active
-  filter indicator. Filtering and search still use the existing handlers.
-- Overview highlights work requiring attention. Photo-processing details no
-  longer crowd the task previews.
-- Editor starts with core information; image suggestions remain in the Images
-  tab. The save bar distinguishes saved edits from public content.
-- Review filters have their own toolbar. A compact photo leaves the checklist
-  visible sooner; full-image viewing is still available.
-- Source limits and licensing details remain available in an expandable section.
-- User-facing copy replaces terms such as raw payload, revision and exceptions
-  where they appeared in the edited components. Implementation identifiers stay
-  unchanged.
+- White working area, neutral sidebar, restrained teal from the GoEase logo.
+  Orange is reserved for items requiring attention. No coloured KPI tiles.
+- Segoe UI / system typography, moderate weights, 4px corners, minimal shadows.
+- A compact page title and count replace repeated descriptive headings in Places.
+- Places has compact photos, simple status labels, text row actions and no repeated
+  decorative icons in table cells. Search/filter/map/batch actions remain available.
+- Overview has an unboxed numerical strip, a prioritised task list and plain quick
+  links. The map is expandable; its existing ResizeObserver handles opening it.
+- Editor uses a flat form, separate checklist and persistent save bar. Images,
+  price/hours and source history remain in their existing tabs.
+- Campaign summaries use plain numbers. Quality completeness uses a horizontal
+  progress indicator instead of a decorative ring; its explanation is expandable.
+- Hover and focus feedback is restrained; reduced-motion preferences are respected.
+
+## References
+
+- [Carbon data table guidance](https://carbondesignsystem.com/components/data-table/usage/):
+  hierarchy of title, toolbar, table and pagination.
+- [Atlassian icon usage](https://atlassian.design/components/icon/usage):
+  use recognizable icons sparingly to avoid visual noise.
+- [React Bits](https://reactbits.dev/) was reviewed for interaction references.
+  No animation library or decorative effect was added to this working interface.
 
 ## Verification
 
-- Client TypeScript, client ESLint, client production build and changed-file
-  formatting checked. Vite still reports its large-bundle advisory.
-- Local app inspected through the browser with the existing admin test account.
-- All nine admin destinations opened at desktop width 1366. Narrow layouts
-  inspected at width 390. No document-level horizontal overflow observed.
-- Manually checked overview, place table/editor, review checklist, campaign list
-  and setup form, province settings and history table. Checked all editor tabs.
-- Region filter tested with Miền Nam, then reset. Place search tested and cleared.
-- No publishing, province toggles, configuration saves, campaign execution or
-  bulk changes were performed for UI verification.
-- This is UI verification, not renewed acceptance of backend/provider flows.
-  External map tiles and source lookups can still fail independently of layout.
+- Client ESLint, TypeScript, production build and changed-file formatting checked.
+  Vite still reports the existing large-bundle advisory.
+- Nine admin destinations opened at 1366px and 390px. No page-level horizontal
+  overflow observed. Mobile category and sort controls retain readable widths.
+- Opened all editor tabs without saving. Opened/collapsed the overview map and
+  checked its rendered dimensions.
+- Filtered Places to Văn hóa, searched Điện Quang Minh and observed one matching
+  row. Selected/unselected the row and checked the batch preview action appears;
+  filters and search were then reset.
+- No publishing, settings saves, province toggles, batch execution or new collection
+  campaigns were performed as part of UI verification.
+- These are frontend/build/layout checks, not renewed backend/provider acceptance.
+  External map tiles and source lookups can still fail independently of the UI.
 
-Screenshots are kept locally under `.local/ui-admin-v1/`, outside Git.
+Local screenshots and layout measurements:
+`.local/ui-admin-v1/professional/` (ignored by Git).

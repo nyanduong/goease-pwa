@@ -8,13 +8,7 @@ import { useEffect, useState } from 'react';
 import {
   ArrowUpRight,
   MapPin,
-  FileText,
-  CheckCircle2,
-  AlertTriangle,
   Database,
-  RefreshCw,
-  Plus,
-  Clock,
   Search,
   Bell,
   SlidersHorizontal,
@@ -232,10 +226,10 @@ export function AdminDashboard({
           screen === 'overview' ? (
             <div className="admin-actions">
               <a className="journey-outline" href="#places?create=1">
-                <Plus size={16} /> Thêm địa điểm
+                Thêm địa điểm
               </a>
               <a className="journey-primary" href="#work">
-                Xem việc cần kiểm tra <ArrowUpRight size={16} />
+                Xem việc cần kiểm tra
               </a>
             </div>
           ) : undefined
@@ -360,34 +354,30 @@ export function AdminDashboard({
                   {
                     title: 'Tổng địa điểm',
                     value: data.total,
-                    icon: MapPin,
+
                     link: href('status=all'),
                     tone: 'blue',
-                    note: 'Trong khu vực đang xem',
                   },
                   {
                     title: 'Địa điểm nháp',
                     value: data.draft,
-                    icon: FileText,
+
                     link: href('status=draft'),
                     tone: 'amber',
-                    note: 'Chưa hiển thị cho khách',
                   },
                   {
                     title: 'Cần kiểm tra',
                     value: data.needsAttention,
-                    icon: AlertTriangle,
+
                     link: '#work',
                     tone: 'orange',
-                    note: 'Cần bổ sung hoặc đối chiếu',
                   },
                   {
                     title: 'Đã xuất bản',
                     value: data.published,
-                    icon: CheckCircle2,
+
                     link: href('status=published'),
                     tone: 'green',
-                    note: 'Khách có thể tìm thấy',
                   },
                 ].map((k) => (
                   <a
@@ -395,15 +385,10 @@ export function AdminDashboard({
                     href={k.link}
                     key={k.title}
                   >
-                    <span className="admin-kpi-icon">
-                      <k.icon size={25} />
-                    </span>
                     <div>
                       <span>{k.title}</span>
                       <strong>{k.value.toLocaleString('vi-VN')}</strong>
-                      <small>{k.note}</small>
                     </div>
-                    <ArrowUpRight size={17} />
                   </a>
                 ))}
               </div>
@@ -420,7 +405,7 @@ export function AdminDashboard({
               {screen === 'overview' ? (
                 <>
                   <div className="admin-dashboard-grid">
-                    <section className="admin-panel">
+                    <section className="admin-panel admin-work-panel">
                       <div className="admin-panel-title">
                         <h2>Cần xử lý ({data.needsAttention})</h2>
                         <a href="#work">Xem việc cần làm →</a>
@@ -456,7 +441,6 @@ export function AdminDashboard({
                                     }
                                   </small>
                                 </span>
-                                <ArrowUpRight size={16} />
                               </button>
                             ))
                         ) : (
@@ -472,9 +456,9 @@ export function AdminDashboard({
                         </p>
                       )}
                     </section>
-                    <section className="admin-panel">
+                    <details className="admin-panel admin-overview-map">
+                      <summary>Xem địa điểm trên bản đồ</summary>
                       <div className="admin-panel-title">
-                        <h2>Địa điểm trên bản đồ</h2>
                         <a href="#places?view=map">Mở bản đồ →</a>
                       </div>
                       <AdminMap places={data.places} onOpen={onOpen} />
@@ -484,37 +468,32 @@ export function AdminDashboard({
                           để thu hẹp.
                         </small>
                       )}
-                    </section>
+                    </details>
                     <aside className="admin-panel admin-quick">
                       <h2>Thao tác nhanh</h2>
                       {[
                         {
-                          icon: Plus,
                           title: 'Thêm địa điểm mới',
                           note: 'Tạo bản nháp có nguồn',
                           link: '#places?create=1',
                         },
                         {
-                          icon: Database,
                           title: 'Nhập địa điểm',
                           note: 'Xem trước dữ liệu nguồn',
                           link: '#places?import=1',
                         },
                         {
-                          icon: RefreshCw,
                           title: 'Cập nhật tự động',
                           note: 'Chạy ngay hoặc đặt lịch',
                           link: '#automatic',
                         },
                         {
-                          icon: Clock,
                           title: 'Xem lịch sử',
                           note: 'Theo dõi thay đổi và kết quả',
                           link: '#history',
                         },
                       ].map((a) => (
                         <a key={a.title} href={a.link}>
-                          <a.icon size={23} />
                           <div>
                             <strong>{a.title}</strong>
                             <small>{a.note}</small>
@@ -680,16 +659,18 @@ function Quality({ data }: { data: AdminOverview }) {
     <section className="admin-panel">
       <h2>Độ đầy đủ thông tin</h2>
       <div className="admin-quality-wrap">
+        <strong className="admin-quality-number">
+          {active ? `${percent}%` : '—'}
+        </strong>
         <div
-          className="admin-quality-ring"
-          style={{
-            background: `conic-gradient(#39ad7c ${percent}%, #eaf0ea 0)`,
-          }}
+          className="admin-quality-track"
+          role="progressbar"
+          aria-label="Độ đầy đủ thông tin"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={active ? percent : undefined}
         >
-          <div>
-            <strong>{active ? `${percent}%` : '—'}</strong>
-            <small>Đủ 6 tiêu chí</small>
-          </div>
+          <span style={{ width: `${percent}%` }} />
         </div>
         <div>
           <p>
@@ -701,11 +682,14 @@ function Quality({ data }: { data: AdminOverview }) {
           <a href="#sources">Xem chất lượng →</a>
         </div>
       </div>
-      <small>
-        6 nhóm trường: tên, giới thiệu, địa chỉ, thời lượng, nguồn và giá. Độ
-        đầy đủ không đồng nghĩa dữ liệu hợp lệ, còn hiệu lực hoặc đã xác minh;
-        khả năng khám phá, Goe và ngân sách được kiểm tra riêng.
-      </small>
+      <details className="admin-detail-note">
+        <summary>Cách tính</summary>
+        <p>
+          6 nhóm trường: tên, giới thiệu, địa chỉ, thời lượng, nguồn và giá. Độ
+          đầy đủ không đồng nghĩa dữ liệu hợp lệ, còn hiệu lực hoặc đã xác minh;
+          khả năng khám phá, Goe và ngân sách được kiểm tra riêng.
+        </p>
+      </details>
     </section>
   );
 }

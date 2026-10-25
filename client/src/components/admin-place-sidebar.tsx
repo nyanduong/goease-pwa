@@ -1,10 +1,4 @@
-import {
-  CheckCircle2,
-  CircleAlert,
-  ClipboardCheck,
-  MapPin,
-  NotebookPen,
-} from 'lucide-react';
+import { CheckCircle2, CircleAlert, MapPin, NotebookPen } from 'lucide-react';
 import {
   adminPlaceInputSchema,
   catalogToday,
@@ -74,10 +68,8 @@ export function AdminPlaceSidebar({
         aria-label="Trước khi xuất bản"
       >
         <header>
-          <ClipboardCheck size={22} />
           <h2>Trước khi xuất bản</h2>
         </header>
-        <p>Kiểm tra và hoàn thiện các thông tin quan trọng.</p>
         <strong
           className={`place-readiness ${issues.size ? 'needs-review' : ''}`}
         >

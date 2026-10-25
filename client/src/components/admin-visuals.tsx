@@ -1,5 +1,4 @@
 import { images } from '@goease/media';
-import { MapPin } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import type { AdminPlaceDto } from '@goease/contracts';
 
@@ -86,24 +85,34 @@ export function AdminPageHeader({
   illustrated = true,
   greeting = false,
   actions,
+  meta,
 }: {
   title: string;
-  description: string;
+  description?: string;
   region?: string;
   illustrated?: boolean;
   greeting?: boolean;
   actions?: ReactNode;
+  meta?: ReactNode;
 }) {
   void illustrated;
   void greeting;
   return (
     <header className="admin-page-heading admin-reference-heading">
       <div className="admin-heading-copy">
-        <span className="admin-scope-caption">
-          <MapPin size={13} aria-hidden="true" /> {region}
-        </span>
-        <h1>{title}</h1>
-        <p>{description}</p>
+        {![
+          'Việt Nam',
+          'Tất cả khu vực',
+          'tất cả khu vực',
+          'Toàn hệ thống',
+        ].includes(region) && (
+          <span className="admin-scope-caption">{region}</span>
+        )}
+        <div className="admin-title-line">
+          <h1>{title}</h1>
+          {meta && <span className="admin-title-meta">{meta}</span>}
+        </div>
+        {description && <p>{description}</p>}
       </div>
       {actions}
     </header>
