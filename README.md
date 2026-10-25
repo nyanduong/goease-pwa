@@ -20,7 +20,7 @@ GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, 
 
 Ảnh giao diện và tài liệu được lưu trên Cloudinary trong `goease/app` và `goease/docs`, không còn binary ảnh trong checkout. Package `@goease/media` chứa URL công khai; key/secret chỉ nằm trong `server/.env` cho công cụ upload. Xem [quản lý ảnh và kiểm tra CDN](docs/CLOUDINARY-MEDIA.md); chạy `npm run media:verify` để đối chiếu lại toàn bộ bản gốc.
 
-Đã có trang chủ sản phẩm, đăng ký/đăng nhập email-mật khẩu, đăng xuất bằng phiên cookie và lịch trình lưu MongoDB theo tài khoản. Đăng ký mới có [OTP email](docs/EMAIL-REGISTRATION.md) khi bật `REGISTRATION_OTP_REQUIRED=true` và cấu hình SMTP; trước xác nhận chưa tạo tài khoản. Flag mặc định false để tương thích cài đặt cũ; account cũ vẫn đăng nhập được, email chưa xác minh được ghi nhận riêng. Giao thư OTP thật chưa nghiệm thu do chưa có SMTP. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. Có AI xếp/chỉnh lịch theo catalog của điểm đến, bản lịch tải xuống chỉ đọc offline và quản trị danh mục/giá tham khảo; booking/payment, CMS nội dung rộng hơn và native mobile chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
+Đã có trang chủ sản phẩm, đăng ký/đăng nhập email-mật khẩu, đăng xuất bằng phiên cookie và lịch trình lưu MongoDB theo tài khoản. Đăng ký mới có [OTP email](docs/EMAIL-REGISTRATION.md) khi bật `REGISTRATION_OTP_REQUIRED=true` và cấu hình SMTP; trước xác nhận chưa tạo tài khoản. Flag mặc định false để tương thích cài đặt cũ; account cũ vẫn đăng nhập được, email chưa xác minh được ghi nhận riêng. Gửi/nhận OTP thật đã được kiểm chứng trên cấu hình local ngày25/10/2026; mỗi máy triển khai vẫn cần cấu hình SMTP riêng. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. Có AI xếp/chỉnh lịch theo catalog của điểm đến, bản lịch tải xuống chỉ đọc offline và quản trị danh mục/giá tham khảo; booking/payment, CMS nội dung rộng hơn và native mobile chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
 
 Luồng Hội An: 7 gợi ý trong catalog có nguồn, thêm địa điểm vào chuyến/ngày, chỉnh lịch và ngân sách server tính theo nhóm hoặc mỗi người. Các gợi ý Hội An trước đây là dữ liệu nền cũ; từ CAT-18 admin chuẩn bị POI dưới tỉnh/thành. Giá chưa xác minh giữ Chưa rõ. `/budget` là bản minh họa UI; chi phí thật mở từ tab Chi phí trong chuyến đã tạo. [Goe](docs/AI-PLANNER.md) dùng Gemini qua server khi được cấu hình, cho xem đề xuất trước khi áp dụng.
 
@@ -259,6 +259,5 @@ Admin đã có tìm/xem trước/nhập bản nháp từ Geoapify cho Hội An. 
 ## Ảnh địa điểm CAT-20
 
 Địa điểm mới tự nhận ứng viên Wikimedia vào nháp. Admin chọn ảnh thật, lưu đề xuất rồi xuất bản; thiếu cover đã duyệt bị chặn ở server, không có AI fallback. Hướng dẫn: [WIKIMEDIA-PHOTOS](docs/WIKIMEDIA-PHOTOS.md).
-
 
 Admin có trang **Tiến trình lấy dữ liệu** để theo dõi hàng đợi giờ/giá, lọc tỉnh/trạng thái/dữ liệu thiếu và mở editor; tự cập nhật mỗi 5 giây. Xem [hướng dẫn](docs/ADMIN-VISIT-PROGRESS.md).

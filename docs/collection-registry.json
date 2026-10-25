@@ -289,7 +289,7 @@
       "rules": "Kiểm tra purpose, expiry, consumed và user binding. Không tin returnTo tùy ý. PKCE verifier nếu cần phải encrypt để dùng lại, không chỉ hash rồi mất khả năng đổi code.",
       "retention": "Thời gian ngắn theo purpose; không dùng challenge collection làm lịch sử bảo mật.",
       "brRefs": ["AUTH-02", "AUTH-03", "AUTH-07", "AUTH-10"],
-      "implementationStatus": "OAuth, reset_password and opt-in verify_email registration implemented. SMTP live delivery not verified. Link/change_email remain design-only. See EMAIL-REGISTRATION.md and PASSWORD-RECOVERY.md.",
+      "implementationStatus": "OAuth, reset_password and opt-in verify_email registration implemented. Registration Gmail SMTP delivery, receipt and OTP consume verified on the owner local setup2026-10-25. Recovery live delivery remains unverified. Link/change_email remain design-only. See EMAIL-REGISTRATION.md and PASSWORD-RECOVERY.md.",
       "runtimeFields": [
         [
           "context.identityId; context.securityVersionAtIssue",
