@@ -1,5 +1,6 @@
 import { images } from '@goease/media';
 import { useState, type ReactNode } from 'react';
+import { ImageOff } from 'lucide-react';
 import type { AdminPlaceDto } from '@goease/contracts';
 
 export function PhotoSearchStatus({ place }: { place: AdminPlaceDto }) {
@@ -77,7 +78,8 @@ export function AdminPlaceImage({
     >
       {illustrated ? (
         <span role="img" aria-label={missingLabel}>
-          {missingLabel}
+          <ImageOff size={large ? 28 : 18} aria-hidden="true" />
+          {large && <span>{missingLabel}</span>}
         </span>
       ) : (
         <img

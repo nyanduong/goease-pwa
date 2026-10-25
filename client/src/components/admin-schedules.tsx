@@ -369,12 +369,40 @@ export function AdminSchedules({
                       Xóa bộ lọc
                     </button>
                   ) : (
-                    <button
-                      className="journey-primary"
-                      onClick={() => setEditor('new')}
-                    >
-                      Tạo lịch đầu tiên
-                    </button>
+                    <>
+                      <button
+                        className="journey-primary"
+                        onClick={() => setEditor('new')}
+                      >
+                        Tạo lịch đầu tiên
+                      </button>
+                      <ol
+                        className="schedule-start-guide"
+                        aria-label="Các bước tạo lịch"
+                      >
+                        <li>
+                          <span>01</span>
+                          <div>
+                            <strong>Chọn khu vực</strong>
+                            <small>Nơi bạn muốn cập nhật địa điểm.</small>
+                          </div>
+                        </li>
+                        <li>
+                          <span>02</span>
+                          <div>
+                            <strong>Đặt thời gian</strong>
+                            <small>Chạy hằng ngày hoặc hằng tuần.</small>
+                          </div>
+                        </li>
+                        <li>
+                          <span>03</span>
+                          <div>
+                            <strong>Kiểm tra kết quả</strong>
+                            <small>Duyệt bản nháp trước khi xuất bản.</small>
+                          </div>
+                        </li>
+                      </ol>
+                    </>
                   )}
                 </div>
               )}

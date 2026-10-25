@@ -84,7 +84,7 @@ export function AdminDashboard({
       )}
       {data && settings && (
         <>
-          <div className="admin-kpi-grid">
+          <div className="admin-kpi-grid" aria-label="Số liệu danh mục">
             {[
               {
                 title: 'Tổng địa điểm',
@@ -133,7 +133,6 @@ export function AdminDashboard({
               <a href="#places?create=1">Thêm địa điểm đầu tiên →</a>
             </div>
           )}
-          (
           <>
             <div className="admin-dashboard-grid">
               <section className="admin-panel admin-work-panel">
@@ -284,7 +283,6 @@ export function AdminDashboard({
               </section>
             </div>
           </>
-          )
         </>
       )}
     </section>

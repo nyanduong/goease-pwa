@@ -1,4 +1,4 @@
-# Admin UI V1 — restrained working interface
+# Admin UI V1 — structured working interface
 
 Branch: `V1-ui-admin`. Updated 25/10/2026 after review of the first UI trial.
 
@@ -10,20 +10,22 @@ The original Expo project is untouched.
 
 ## Current design
 
-- White working area, neutral sidebar, brighter teal from the GoEase logo.
-  Orange highlights the main page action; supporting actions use teal or neutral
-  outlines. No coloured KPI tiles.
-- Segoe UI / system typography, moderate weights, 4px corners, minimal shadows.
+- Light neutral page canvas, white work surfaces and sidebar. Teal from the
+  GoEase logo identifies the active section and primary actions. Amber is
+  reserved for attention states; supporting actions are neutral outlines.
+- Segoe UI / system typography, moderate weights, 8px controls and 12px panels,
+  minimal shadows. The sidebar's destinations and order are preserved.
 - A 32px page title and quiet count replace repeated descriptive headings in Places.
 - Places has compact photos, simple status labels, text row actions and no repeated
   decorative icons in table cells. Search/filter/map/batch actions remain available.
-- Overview has an unboxed numerical strip, a prioritised task list and plain quick
+- Overview has four quiet metric cards, a dominant task panel and separate quick
   links. The map is expandable; its existing ResizeObserver handles opening it.
-- Editor uses a flat form, separate checklist and persistent save bar. Images,
+- Editor uses separate form and checklist surfaces and a persistent save bar. Images,
   price/hours and source history remain in their existing tabs.
 - Campaign summaries use plain numbers. Quality completeness uses a horizontal
   progress indicator instead of a decorative ring; its explanation is expandable.
-- Hover and focus feedback is restrained; reduced-motion preferences are respected.
+- Hover, press, 180ms content entrance and 220ms drawer entrance feedback share
+  one motion scale. Reduced-motion preferences disable these transitions.
 
 ## References
 
@@ -33,6 +35,31 @@ The original Expo project is untouched.
   use recognizable icons sparingly to avoid visual noise.
 - [React Bits](https://reactbits.dev/) was reviewed for interaction references.
   No animation library or decorative effect was added to this working interface.
+
+## Composition and colour revision — 26/10/2026
+
+Supersedes the earlier orange primary buttons and flat white canvas. The same
+data and actions now share a neutral canvas / white panel / teal action hierarchy.
+Places combines tabs, toolbar and table into one surface. The editor separates
+the form from the publication checklist. Empty schedules use a short three-step
+guide, one creation action and a subordinate collection-history link.
+
+Small missing-photo tiles use a neutral placeholder instead of unreadable text;
+the original status stays available through its accessible name and tooltip.
+Large placeholders retain the visible explanation. No photo is fabricated.
+
+Only frontend presentation and the QA note changed. Removed stray parentheses
+that had been rendered around the overview content. No handlers, API requests,
+publication checks, quotas or database configuration were changed.
+
+Current revision checks: client ESLint, TypeScript/production build and diff
+whitespace validation passed. Visited all nine routes at 1440px and 390px with
+no page-level horizontal overflow. Visually inspected overview, Places, review,
+sources, settings, editor and schedules. The schedule drawer fits 390px; Tab
+moves from Close to the area selector with a visible 2px focus outline. Opened
+and closed it without saving. Mobile Places filters fit paired columns.
+Screenshots and measurements: `.local/ui-admin-v1/studio/` (ignored by Git).
+Backend/provider suites were not repeated for this presentation-only revision.
 
 ## Verification
 
