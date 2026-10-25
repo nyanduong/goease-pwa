@@ -8,7 +8,7 @@ import {
 import type { exploreService } from './explore.service.js';
 import type { adminCatalog } from './admin-catalog.js';
 import type { FindImages } from './wikimedia.js';
-import { matchesPlaceImage } from './wikimedia.js';
+import { matchesPlaceImage, imageSourceContext } from './wikimedia.js';
 import {
   PhotoSourceCooldown,
   photoSourceCooldownMessage,
@@ -142,14 +142,29 @@ export function placeImages(
     try {
       if ((place.imageSearch?.attempts ?? 0) > 3)
         throw new Error('Retries exceeded');
+      const effective = await catalog.proposal(place, undefined, false);
       const candidates = (
         await find({
-          name: place.name,
-          destinationName: place.destinationName,
-          ...(place.mapLocation
+          name: effective.name,
+          destinationName: effective.destinationName,
+          ...(place.imageSearch?.preferredCandidatesUntil &&
+          place.imageSearch.preferredCandidatesUntil.getTime() > Date.now() &&
+          place.imageSearch.preferredCandidatesContext ===
+            imageSourceContext(effective)
             ? {
-                latitude: place.mapLocation.latitude,
-                longitude: place.mapLocation.longitude,
+                preferredCandidates: place.imageSearch.candidates
+                  .map((candidate) =>
+                    imageCandidateSchema.parse(candidate.toObject()),
+                  )
+                  .filter((candidate) =>
+                    matchesPlaceImage(effective.name, candidate),
+                  ),
+              }
+            : {}),
+          ...(effective.mapLocation
+            ? {
+                latitude: effective.mapLocation.latitude,
+                longitude: effective.mapLocation.longitude,
               }
             : {}),
         })

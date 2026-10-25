@@ -118,6 +118,49 @@ test('Commons accepts explicit open rights, strips markup and never marks candid
   }
 });
 
+test('fresh prepared Commons metadata avoids repeated searches but still rejects mismatched or unsupported rights', async () => {
+  const candidate = parseCommons(
+    response(page({ title: 'File:Chua Cau Hoi An.jpg' })),
+    'name',
+  )[0]!;
+  let calls = 0;
+  const find = wikimediaImages(async () => {
+    calls++;
+    return Response.json({ query: { pages: [] } });
+  });
+  const result = await find({
+    name: 'Chùa Cầu',
+    destinationName: 'Đà Nẵng',
+    preferredCandidates: [candidate],
+  });
+  assert.equal(calls, 0);
+  assert.equal(result.length, 1);
+  assert.equal(result[0]!.image.reviewed, false);
+  assert.equal(
+    (
+      await find({
+        name: 'Chùa Cầu',
+        destinationName: 'Đà Nẵng',
+        preferredCandidates: [{ ...candidate, title: 'File:Airport.jpg' }],
+      })
+    ).length,
+    0,
+  );
+  assert.equal(calls, 2);
+  assert.equal(
+    (
+      await find({
+        name: 'Chùa Cầu',
+        destinationName: 'Đà Nẵng',
+        preferredCandidates: [
+          { ...candidate, image: { ...candidate.image, license: 'owned' } },
+        ],
+      })
+    ).length,
+    0,
+  );
+});
+
 test('Commons rejects missing rights, noncommercial licenses, nonphotos and external image hosts', () => {
   for (const changes of [
     { extmetadata: {} },

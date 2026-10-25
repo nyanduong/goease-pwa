@@ -8,6 +8,7 @@ import { startTestReplicaSet } from './support/replica-set.js';
 import { storedFixtureCandidate } from './support/photo.js';
 import { PhotoSourceCooldown } from '../src/features/explore/place-photo-storage.js';
 import { placeImages } from '../src/features/explore/place-images.js';
+import { imageSourceContext } from '../src/features/explore/wikimedia.js';
 
 test(
   'photo pool overlaps bounded jobs, prioritizes the selected province, drains stop and never claims a place twice',
@@ -21,6 +22,7 @@ test(
     let active = 0,
       peak = 0;
     const seen: string[] = [];
+    const preferredCounts = new Map<string, number>();
     let limited = false,
       limitedCalls = 0;
     const p = createProduct(
@@ -39,6 +41,10 @@ test(
             throw new PhotoSourceCooldown(600000);
           }
           seen.push(query.name);
+          preferredCounts.set(
+            query.name,
+            query.preferredCandidates?.length ?? 0,
+          );
           active++;
           peak = Math.max(peak, active);
           try {
@@ -95,12 +101,39 @@ test(
       const urgent = (await p.explore.models.Place.findOne({
         name: 'Priority fixture 4',
       }))!;
+      const prepared = {
+        ...storedFixtureCandidate,
+        title: 'File:Priority fixture 4.jpg',
+        image: {
+          ...storedFixtureCandidate.image,
+          url: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/fixture.jpg',
+          storage: 'source' as const,
+        },
+      };
+      await p.explore.models.Place.updateOne(
+        { _id: urgent._id },
+        {
+          $set: {
+            'imageSearch.candidates': [prepared],
+            'imageSearch.preferredCandidatesUntil': new Date(
+              Date.now() + 60000,
+            ),
+            'imageSearch.preferredCandidatesContext':
+              imageSourceContext(urgent),
+          },
+        },
+      );
       await p.imageSearch.enqueue(actor, String(urgent._id));
       p.imageSearch.start();
       for (let i = 0; i < 100 && seen.length < 3; i++) await delay(20);
       assert.equal(seen.length, 3);
       assert.equal(peak, 3);
       assert.equal(new Set(seen).size, 3);
+      assert.equal(
+        preferredCounts.get('Priority fixture 4'),
+        1,
+        'fresh context-bound metadata reaches the existing storage pipeline',
+      );
       assert.ok(
         seen.includes('Priority fixture 4'),
         'explicit admin lookup moves ahead within the preferred province',
@@ -143,6 +176,74 @@ test(
         }),
         2,
         'unmatched automatic draft suggestions are withdrawn',
+      );
+      const hintTarget = (await p.explore.models.Place.findOne({
+        name: seen[1]!,
+      }))!;
+      const hintCandidate = {
+        ...prepared,
+        title: `File:${hintTarget.name}.jpg`,
+      };
+      for (const [context, until, expected] of [
+        ['stale-context', new Date(Date.now() + 60000), 0],
+        [imageSourceContext(hintTarget), new Date(0), 0],
+        [imageSourceContext(hintTarget), new Date(Date.now() + 60000), 1],
+      ] as const) {
+        await p.explore.models.Place.updateOne(
+          { _id: hintTarget._id },
+          {
+            $set: {
+              'imageSearch.state': 'pending',
+              'imageSearch.attempts': 0,
+              'imageSearch.nextAttemptAt': new Date(0),
+              'imageSearch.priority': 100,
+              'imageSearch.candidates': [hintCandidate],
+              'imageSearch.preferredCandidatesContext': context,
+              'imageSearch.preferredCandidatesUntil': until,
+            },
+          },
+        );
+        await p.imageSearch.tick();
+        assert.equal(preferredCounts.get(hintTarget.name), expected);
+      }
+      const editedInput = p.catalog.input(
+        await p.catalog.proposal(
+          (await p.explore.models.Place.findById(hintTarget._id))!,
+        ),
+      );
+      editedInput.name = `Renamed ${hintTarget.name}`;
+      const beforeEdit = (await p.explore.models.Place.findById(
+        hintTarget._id,
+      ))!;
+      await p.catalog.write(
+        actor,
+        editedInput,
+        randomUUID(),
+        String(hintTarget._id),
+        beforeEdit.revision,
+      );
+      await p.explore.models.Place.updateOne(
+        { _id: hintTarget._id },
+        {
+          $set: {
+            'imageSearch.state': 'pending',
+            'imageSearch.attempts': 0,
+            'imageSearch.nextAttemptAt': new Date(0),
+            'imageSearch.priority': 100,
+            'imageSearch.candidates': [hintCandidate],
+            'imageSearch.preferredCandidatesUntil': new Date(
+              Date.now() + 60000,
+            ),
+            'imageSearch.preferredCandidatesContext':
+              imageSourceContext(hintTarget),
+          },
+        },
+      );
+      await p.imageSearch.tick();
+      assert.equal(
+        preferredCounts.get(editedInput.name),
+        0,
+        'renamed proposals cannot reuse source metadata from the previous identity',
       );
       limited = true;
       const stale = (await p.explore.models.Place.findOne({

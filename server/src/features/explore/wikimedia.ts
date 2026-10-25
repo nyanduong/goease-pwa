@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { catalogImageSchema, type ImageCandidate } from '@goease/contracts';
+import {
+  catalogImageSchema,
+  imageCandidateSchema,
+  type ImageCandidate,
+} from '@goease/contracts';
 import { HttpError } from '../../http-error.js';
 
 export type ImageQuery = {
@@ -7,8 +11,22 @@ export type ImageQuery = {
   destinationName: string;
   latitude?: number;
   longitude?: number;
+  preferredCandidates?: ImageCandidate[];
 };
 export type FindImages = (query: ImageQuery) => Promise<ImageCandidate[]>;
+export const imageSourceContext = (place: {
+  name: string;
+  destinationId: unknown;
+  sourceUrl: string;
+  mapLocation?: { latitude: number; longitude: number } | null;
+}) =>
+  JSON.stringify([
+    place.name,
+    String(place.destinationId),
+    place.sourceUrl,
+    place.mapLocation?.latitude ?? null,
+    place.mapLocation?.longitude ?? null,
+  ]);
 const normalizedName = (value: string) =>
   value
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -231,6 +249,25 @@ export function wikimediaImages(request: typeof fetch = fetch): FindImages {
     }
   }
   return async (input) => {
+    // Fresh source metadata may be prepared in a bulk lookup; still require the same name guard.
+    const preferred = (input.preferredCandidates ?? [])
+      .slice(0, 5)
+      .flatMap((value) => {
+        const parsed = imageCandidateSchema.safeParse(value);
+        return parsed.success &&
+          matchesPlaceImage(input.name, parsed.data) &&
+          safeUrl(parsed.data.image.url, 'upload.wikimedia.org') &&
+          safeUrl(parsed.data.image.sourceUrl, 'commons.wikimedia.org') &&
+          (parsed.data.image.license.startsWith('CC') ||
+            parsed.data.image.license === 'Public-domain') &&
+          parsed.data.image.kind !== 'ai_illustration' &&
+          !/generated|illustration|logo|render|\bmap\b|\bAI\b/i.test(
+            parsed.data.title + ' ' + parsed.data.image.credit,
+          )
+          ? [parsed.data]
+          : [];
+      });
+    if (preferred.length) return preferred;
     // Strip search operators; the external text is search data, never an instruction.
     const name = input.name.replace(/["|:{}<>]/g, ' ').slice(0, 120);
     const named = (

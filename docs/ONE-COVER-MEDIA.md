@@ -31,3 +31,7 @@ Theo yêu cầu rà toàn bộ26.566 mục, cấu hình local đã bỏ ưu tiê
 Kiểm tra một nhóm nhỏ trước khi mở rộng toàn quốc: đúng địa điểm, bìa mở được, đủ nguồn/quyền, nội dung/giờ/giá được kiểm tra riêng. Không coi bộ 26.566 địa điểm đã hoàn chỉnh vì có ảnh. Xuất file dữ liệu cuối sau khi customer test; URL + metadata không phải bản sao binary độc lập với Cloudinary. Chưa clear database, chưa xuất bản hàng loạt.
 
 Sau khi owner giải phóng ổ C, kiểm thử MongoDB (metadata, idempotency, lỗi provider), regression nhập tỉnh/xuất bản lô (13 kiểm tra) và hai browser tests đã đạt. Browser xác nhận AI ở desktop/mobile và gallery mất link vẫn giữ bìa. Kết quả chi tiết trong DATA-PREPARATION-2026-10-25.md; không coi kiểm thử provider giả lập là upload Cloudinary thật hoặc dữ liệu toàn quốc đã hoàn chỉnh.
+# Metadata Commons đã chuẩn bị — 26/10/2026
+
+CAT-24 cho phép worker tái sử dụng ứng viên Commons trong24giờ qua hai field private preferredCandidatesUntil/preferredCandidatesContext. Context gồm tên, destinationId, sourceUrl và tọa độ của proposal hiện hành. Đổi tên hoặc vị trí sẽ bỏ cache metadata này và tìm lại. Tái sử dụng không bỏ kiểm tên/giấy phép, không bỏ cooldown tải ảnh, không giả rằng source URL đã lưu lên Cloudinary; ảnh tự động vẫn reviewed=false. Bulk dùng priority80 dưới admin100. Test unit kiểm reuse và từ chối tên/quyền không phù hợp; integration kiểm hết hạn, sai context và proposal đã đổi tên.
+

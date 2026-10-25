@@ -49,6 +49,8 @@ export const imageSearchSchema = new Schema(
     leaseToken: { type: String, default: null },
     leaseUntil: { type: Date, default: null },
     checkedAt: { type: Date, default: null },
+    preferredCandidatesUntil: { type: Date, default: null },
+    preferredCandidatesContext: { type: String, maxlength: 2000, default: '' },
     message: { type: String, default: '', maxlength: 300 },
   },
   { _id: false, strict: 'throw', versionKey: false },
