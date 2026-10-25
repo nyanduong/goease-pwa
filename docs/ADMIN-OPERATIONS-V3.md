@@ -39,6 +39,16 @@ Danh sách đọc lại mỗi5 giây khi đang mở; tìm kiếm chờ300ms, đ�
 
 Kiểm chứng thay đổi: integration MongoDB riêng trong `server/test/campaign-list.integration.ts` kiểm kết quả persisted, đối chiếu list/detail, tìm literal, bộ lọc, phân trang25 đợt, tổng toàn tập, mốc ngày Việt Nam và quyền admin. Browser `tests/admin-campaigns.spec.ts` dùng dữ liệu minh họa có nhãn, kiểm desktop/mobile, không tràn trang, lọc/rỗng/lỗi/thử lại, mở tiến trình và form tạo; không là bằng chứng gọi provider thật. Ảnh kiểm tra ở `.local/campaigns/desktop.png` và `mobile.png` (không commit). Build/typecheck/lint và kết quả kiểm tra được báo ở bàn giao; không chạy thu thập nguồn thật cho thay đổi giao diện này.
 
+## Giao diện Lịch sử & phê duyệt — 25/10/2026
+
+Màn hình tách **Hoạt động đã thực hiện** và **Việc chờ duyệt**, với giải thích ngắn về ý nghĩa mỗi phần. Nhật ký dùng một dòng thời gian theo ngày/giờ Việt Nam, mới nhất trước. Mỗi hoạt động có mô tả vận hành, địa điểm/đối tượng liên quan, người thực hiện, kết quả và ghi chú nếu có. Ví dụ `catalog.published` hiển thị “Đã xuất bản thông tin địa điểm”, `catalog.review_later` là “Đã hẹn kiểm tra lại địa điểm”. Tên địa điểm mở editor hiện có. Mã sự kiện, ID và số phiên bản nằm trong **Thông tin hỗ trợ** đóng mặc định; không còn nhãn “revision”, “Dấu vết thay đổi”, “Áp dụng bản công khai” ở nội dung chính.
+
+Không coi lưu chỉnh sửa/nhận nguồn là xuất bản. Lượt lấy dữ liệu thất bại hiển thị **Cần xử lý** và liên kết sang Đợt thu thập; loại hoạt động chưa có mô tả dùng thông báo trung tính, không lộ mã kỹ thuật hoặc bịa chi tiết. Không dựng diff trước/sau hay ngày hẹn khi API không cung cấp. Lịch sử cũ có thể thiếu mô tả đầy đủ. Bỏ danh sách lượt cập nhật bị lặp khỏi nhật ký; tiến trình/kết quả đầy đủ vẫn ở màn thu thập riêng.
+
+API lịch sử hiện trả toàn hệ thống, nên nhật ký ghi rõ phạm vi và ẩn bộ chọn địa phương ở phần này. Chuyển sang việc chờ duyệt hiện lại bộ chọn và hàng chờ theo phạm vi hiện có. Nhật ký tải độc lập với trạng thái nguồn/lịch thu thập, giữ phân trang30 hoạt động và polling15 giây hiện có, có tải/rỗng/lỗi/thử lại; lỗi tải không bị diễn giải thành chưa có lịch sử. Không đổi API, schema, audit đã lưu, quy tắc duyệt hoặc quyền; DB dictionary và registry không đổi.
+
+Kiểm tra giao diện bằng `tests/admin-history.spec.ts` qua catalog Playwright config với fixture có nhãn: ngôn ngữ/kết quả, thông tin hỗ trợ thu gọn, ngày Việt Nam, phân trang, mở hàng chờ, lỗi/thử lại/rỗng và desktop1600/mobile390/320 không tràn ngang. Ảnh tại `.local/history/desktop.png` và `mobile-390.png` (không commit); fixture không chứng minh provider thật. Kết quả build/typecheck/lint và kiểm tra được báo tại bàn giao.
+
 ## Theo lô và quy mô
 
 `POST /admin/v3/bulk/preview` nhận action publish/archive/archive_destination và selection page (ID/revision tối đa50) hoặc filter (predicate server). Preview lưu mỗi ID/revision thành item riêng, không nhét cả catalog trong document. Bulk query, list/count và map dùng chung predicate; không lấy toàn bộ catalog xuống browser.

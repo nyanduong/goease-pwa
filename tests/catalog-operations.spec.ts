@@ -290,7 +290,7 @@ test('V3 operator preserves public content through proposals, publishes a frozen
           await expect(page.getByLabel('Tần suất')).toBeVisible();
         if (tab === 'Lịch sử & phê duyệt')
           await expect(
-            page.getByRole('heading', { name: 'Quyết định và thay đổi' }),
+            page.getByRole('heading', { name: 'Hoạt động gần đây' }),
           ).toBeVisible();
         expect(
           await page.evaluate(

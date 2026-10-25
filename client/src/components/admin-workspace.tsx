@@ -1,6 +1,7 @@
 import { AdminVisitProgress } from './admin-visit-progress';
 import { AdminScopeSummary } from './admin-scope-summary';
 import { AdminCampaigns } from './admin-campaigns';
+import { AdminHistory, type HistoryEntry } from './admin-history';
 import { AdminPolicies } from './admin-policies';
 import { AdminPageHeader } from './admin-visuals';
 import { AdminReviewQueue } from './admin-review-queue';
@@ -89,49 +90,6 @@ const runLabels = {
   succeeded: 'Đã hoàn tất',
   failed: 'Cần can thiệp',
 };
-const actionLabels: Record<string, string> = {
-  'catalog.created': 'Thêm địa điểm',
-  'catalog.restored': 'Chuẩn bị đề xuất phục hồi',
-  'catalog.proposal_saved': 'Lưu đề xuất biên tập',
-  'catalog.proposal_restored': 'Chuẩn bị đề xuất phục hồi',
-  'catalog.restore_prepared': 'Chuẩn bị đề xuất phục hồi',
-  'catalog.published': 'Áp dụng bản công khai',
-  'catalog.imported': 'Nhập bản nháp từ nguồn',
-  'catalog.source_changed': 'Nguồn có thông tin mới, chờ đối chiếu',
-  'catalog.updated': 'Lưu nội dung (sự kiện cũ)',
-  'catalog.publication_changed': 'Đổi trạng thái hiển thị',
-  'catalog.review_keep': 'Giữ thông tin hiện tại',
-  'catalog.review_revise': 'Yêu cầu chỉnh sửa',
-  'catalog.review_reject': 'Từ chối đề xuất, giữ nguyên nội dung',
-  'catalog.settings_saved': 'Lưu cài đặt vận hành',
-  'catalog.review_apply': 'Chuẩn bị đề xuất từ nguồn',
-  'catalog.review_ignore': 'Bỏ qua việc có lý do',
-  'catalog.review_later': 'Hẹn xem lại',
-  'catalog.review_distinct': 'Xác nhận hai địa điểm riêng',
-  'catalog.schedule_saved': 'Lưu cấu hình cập nhật',
-  'catalog.campaign_paused': 'Tạm dừng đợt thu thập',
-  'catalog.campaign_resumed': 'Tiếp tục đợt thu thập',
-  'catalog.policy_created': 'Tạo phiên bản quy tắc',
-  'catalog.run_requested': 'Yêu cầu cập nhật',
-  'catalog.run_succeeded': 'Hoàn tất cập nhật',
-  'catalog.run_failed': 'Cập nhật cần can thiệp',
-};
-type History = {
-  id: string;
-  action: string;
-  actor: string;
-  placeId: string | null;
-  name: string;
-  occurredAt: string;
-  outcome: string;
-  note?: string;
-  campaignId?: string | null;
-  batchId?: string | null;
-  runId?: string | null;
-  entityRevision?: number | null;
-  previousRevision?: number | null;
-};
-
 export function AdminWorkspace({
   destinations: initialDestinations,
   name = 'Admin',
@@ -210,7 +168,7 @@ export function AdminWorkspace({
   const [offset, setOffset] = useState(0);
   const [more, setMore] = useState(false);
   const [detail, setDetail] = useState<CatalogReviewDto | null>(null);
-  const [history, setHistory] = useState<History[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyOffset, setHistoryOffset] = useState(0);
   const [historyMore, setHistoryMore] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -244,6 +202,16 @@ export function AdminWorkspace({
         setError('');
       }
       try {
+        if (tab === 'history' && historyView === 'events') {
+          const value = await api<{ items: HistoryEntry[]; hasMore: boolean }>(
+            `/admin/catalog/history?offset=${historyOffset}`,
+          );
+          if (generation !== refreshGeneration.current) return;
+          setHistory(value.items);
+          setHistoryMore(value.hasMore);
+          setError('');
+          return;
+        }
         const state = await api<CatalogOperationsDto>(
           `/admin/catalog/operations${scope ? `?destinationId=${scope}` : ''}`,
         );
@@ -260,14 +228,6 @@ export function AdminWorkspace({
           setReviewCounts(work.counts);
           setPublishedCount(work.publishedCount);
         }
-        if (tab === 'history') {
-          const value = await api<{ items: History[]; hasMore: boolean }>(
-            `/admin/catalog/history?offset=${historyOffset}`,
-          );
-          if (generation !== refreshGeneration.current) return;
-          setHistory(value.items);
-          setHistoryMore(value.hasMore);
-        }
       } catch (e) {
         if (generation !== refreshGeneration.current) return;
         setError(
@@ -279,7 +239,16 @@ export function AdminWorkspace({
         if (generation === refreshGeneration.current) setLoading(false);
       }
     },
-    [tab, offset, historyOffset, scope, workQuery, workKind, workSort],
+    [
+      tab,
+      offset,
+      historyOffset,
+      historyView,
+      scope,
+      workQuery,
+      workKind,
+      workSort,
+    ],
   );
   useEffect(() => {
     void refresh();
@@ -302,7 +271,10 @@ export function AdminWorkspace({
         scope={scope}
         onScope={setScope}
         name={name}
-        showScope={tab !== 'automatic'}
+        showScope={
+          tab !== 'automatic' &&
+          !(tab === 'history' && historyView === 'events')
+        }
       />
       {destinationError && (
         <div className="admin-alert" role="alert">
@@ -384,14 +356,19 @@ export function AdminWorkspace({
           <AdminPageHeader
             title={tabs[tab]}
             region={
-              destinations.find((d) => d.id === scope)?.name ?? 'Tất cả khu vực'
+              tab === 'history' && historyView === 'events'
+                ? 'Toàn hệ thống'
+                : (destinations.find((d) => d.id === scope)?.name ??
+                  'Tất cả khu vực')
             }
             description={
               tab === 'work'
                 ? 'Kiểm tra dữ liệu trước khi đưa đến khách hàng.'
                 : tab === 'automatic'
                   ? 'Thiết lập và chạy tự động thu thập, cập nhật địa điểm từ các nguồn dữ liệu bên ngoài.'
-                  : 'Theo dõi và quyết định các thay đổi đang chờ phê duyệt.'
+                  : historyView === 'events'
+                    ? 'Xem ai đã thay đổi thông tin, thay đổi gì và khi nào.'
+                    : 'Kiểm tra và quyết định những việc đang chờ xử lý.'
             }
             actions={
               tab === 'work' ? (
@@ -414,21 +391,27 @@ export function AdminWorkspace({
           {loading && !data ? (
             <p role="status">Đang tải dữ liệu…</p>
           ) : (
-            data && (
+            (data || (tab === 'history' && historyView === 'events')) && (
               <>
                 {tab === 'history' && (
-                  <div className="admin-history-tabs">
+                  <div
+                    className="admin-history-tabs"
+                    role="group"
+                    aria-label="Xem lịch sử hoặc việc chờ duyệt"
+                  >
                     <button
                       aria-pressed={historyView === 'events'}
                       onClick={() => setHistoryView('events')}
                     >
-                      Nhật ký thay đổi
+                      Hoạt động đã thực hiện
+                      <small>Những gì đã xảy ra</small>
                     </button>
                     <button
                       aria-pressed={historyView === 'reviews'}
                       onClick={() => setHistoryView('reviews')}
                     >
-                      Chờ phê duyệt ({total})
+                      Việc chờ duyệt
+                      <small>Những việc cần quyết định</small>
                     </button>
                   </div>
                 )}
@@ -481,7 +464,7 @@ export function AdminWorkspace({
                       setOffset(value);
                       setDetail(null);
                     }}
-                    run={data.runs[0]}
+                    run={data?.runs[0]}
                   >
                     {(() => {
                       const selected =
@@ -526,7 +509,7 @@ export function AdminWorkspace({
                     onOpen={edit}
                   />
                 )}
-                {tab === 'automatic' && (
+                {tab === 'automatic' && data && (
                   <Automatic
                     key={scope}
                     data={data}
@@ -535,67 +518,17 @@ export function AdminWorkspace({
                   />
                 )}
                 {tab === 'history' && historyView === 'events' && (
-                  <>
-                    <div className="admin-soft-notice">
-                      Quyết định đang chờ được quản lý riêng với nhật ký.{' '}
-                      <a href="#work">Mở hàng đợi phê duyệt →</a>
-                    </div>
-                    <h2>Kết quả các lượt cập nhật</h2>
-                    <RunList data={data} />
-                    <h2>Quyết định và thay đổi</h2>
-                    {!history.length && (
-                      <p>Chưa có thao tác nào được ghi nhận.</p>
-                    )}
-                    {history.map((h) => (
-                      <article key={h.id} className="admin-work-row">
-                        <div>
-                          <h3>{actionLabels[h.action] ?? h.action}</h3>
-                          <p>
-                            {h.actor} · {catalogTime(h.occurredAt)}
-                          </p>
-                          <p>{h.name}</p>
-                          {h.note && <p>Ghi chú: {h.note}</p>}
-                          <details>
-                            <summary>Dấu vết thay đổi</summary>
-                            <p>
-                              Sự kiện: {h.action} · revision:{' '}
-                              {h.previousRevision ?? 'chưa ghi nhận'} →{' '}
-                              {h.entityRevision ?? 'chưa ghi nhận'}
-                            </p>
-                            {h.campaignId && <p>Đợt: {h.campaignId}</p>}
-                            {h.runId && <p>Tác vụ: {h.runId}</p>}
-                            {h.batchId && <p>Lô: {h.batchId}</p>}
-                          </details>
-                          <small>
-                            {h.action === 'catalog.run_failed'
-                              ? 'Cần xử lý'
-                              : 'Đã ghi nhận'}
-                          </small>
-                        </div>
-                        {h.placeId && (
-                          <button onClick={() => edit(h.placeId!)}>
-                            Mở địa điểm
-                          </button>
-                        )}
-                      </article>
-                    ))}
-                    <div className="admin-actions">
-                      <button
-                        disabled={!historyOffset || loading}
-                        onClick={() =>
-                          setHistoryOffset((v) => Math.max(0, v - 30))
-                        }
-                      >
-                        Lịch sử trước
-                      </button>
-                      <button
-                        disabled={!historyMore || loading}
-                        onClick={() => setHistoryOffset((v) => v + 30)}
-                      >
-                        Xem tiếp lịch sử
-                      </button>
-                    </div>
-                  </>
+                  <AdminHistory
+                    items={history}
+                    offset={historyOffset}
+                    hasMore={historyMore}
+                    loading={loading}
+                    failedToLoad={!!error}
+                    onPage={setHistoryOffset}
+                    onOpen={edit}
+                    onRefresh={() => void refresh()}
+                    onReviews={() => setHistoryView('reviews')}
+                  />
                 )}
               </>
             )

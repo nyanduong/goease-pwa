@@ -125,14 +125,31 @@ export type CatalogHistoryDto = {
   id: string;
   action: string;
   actor: string;
+  actorType?: 'user' | 'system';
   placeId: string | null;
   name: string;
+  destinationName?: string | null;
   occurredAt: string;
   outcome: string;
   note: string;
-  entityRevision?: number;
-  previousRevision?: number;
-  campaignId?: string;
-  batchId?: string;
-  runId?: string;
+  entityRevision?: number | null;
+  previousRevision?: number | null;
+  campaignId?: string | null;
+  batchId?: string | null;
+  runId?: string | null;
 };
+export const catalogHistoryActionGroups = {
+  publication: ['catalog.published', 'catalog.publication_changed'],
+  editing: ['catalog.created', 'catalog.updated', 'catalog.proposal_saved', 'catalog.restored', 'catalog.proposal_restored', 'catalog.restore_prepared'],
+  review: ['catalog.review_keep', 'catalog.review_reject', 'catalog.review_revise', 'catalog.review_apply', 'catalog.review_ignore', 'catalog.review_later', 'catalog.review_distinct'],
+  collection: ['catalog.imported', 'catalog.source_changed', 'catalog.run_requested', 'catalog.run_succeeded', 'catalog.run_failed', 'catalog.campaign_paused', 'catalog.campaign_resumed'],
+  settings: ['catalog.settings_saved', 'catalog.schedule_saved', 'catalog.policy_created', 'catalog.destination_created', 'catalog.destination_catalogued', 'catalog.destination_updated'],
+} as const;
+export const catalogHistoryQuerySchema = z.strictObject({
+  offset: z.coerce.number().int().min(0).max(100000).default(0),
+  q: z.string().trim().max(100).default(''),
+  kind: z.enum(['all', 'publication', 'editing', 'review', 'collection', 'settings']).default('all'),
+  period: z.enum(['all', 'today', '7days', '30days']).default('all'),
+});
+export type CatalogHistoryQuery = z.infer<typeof catalogHistoryQuerySchema>;
+export type CatalogHistoryListDto = { items: CatalogHistoryDto[]; total: number; hasMore: boolean };
