@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { useRef, useState } from 'react';
 import {
   CheckCircle2,
@@ -444,10 +445,15 @@ export function ReviewDetail({
             {['source', 'draft'].includes(r.kind) && capabilities.discovery && (
               <button
                 disabled={busy}
-                onClick={() => {
+                onClick={async () => {
                   if (
-                    confirm(
+                    await confirmAction(
                       'Chấp thuận nội dung và xuất bản cho khách? Server sẽ kiểm tra lại các điều kiện bắt buộc.',
+                      {
+                        title: 'Xuất bản địa điểm?',
+                        confirmLabel: 'Chấp thuận và xuất bản',
+                        tone: 'warning',
+                      },
                     )
                   )
                     void decide(r.kind === 'source' ? 'apply' : 'keep', true);

@@ -1,4 +1,5 @@
 import { e2eWebOrigin } from './ports.js';
+import { respondToConfirmation } from './support/confirmation';
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
@@ -143,11 +144,11 @@ test('settings provinces filter and paginate, persist toggles, import drafts and
   expect(href).toContain('destinationId=');
   await page.getByRole('link', { name: 'Cài đặt', exact: true }).click();
   await search.fill('Cao Bằng');
-  page.once('dialog', (dialog) => dialog.dismiss());
   await toggle.click();
+  await respondToConfirmation(page, false);
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
-  page.once('dialog', (dialog) => dialog.accept());
   await toggle.click();
+  await respondToConfirmation(page);
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
   expect(imports).toBe(1);
   await expect(

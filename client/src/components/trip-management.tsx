@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { TripOffline } from './trip-offline';
 import { removeOffline } from '../offline';
 import { TripSharing } from './trip-sharing';
@@ -111,13 +112,19 @@ export function TripManagement({
           title={
             action === 'duplicate' ? 'Nhân bản chuyến đi' : 'Xóa chuyến đi'
           }
-          onClose={() => {
+          onClose={async () => {
             if (busy) return;
             if (
               uncertain &&
-              !confirm(
+              !(await confirmAction(
                 'Kết quả chưa rõ. Đóng và tải lại chuyến đi để kiểm tra?',
-              )
+                {
+                  title: 'Kiểm tra kết quả trước khi tiếp tục',
+                  confirmLabel: 'Đóng và tải lại',
+                  cancelLabel: 'Ở lại',
+                  tone: 'warning',
+                },
+              ))
             )
               return;
             setAction(null);

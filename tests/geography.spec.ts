@@ -1,3 +1,4 @@
+import { respondToConfirmation } from './support/confirmation';
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
@@ -124,10 +125,10 @@ test('operator enables a province; customer filters it and gets a truthful empty
       path: '.local/national-planner/customer-empty-catalog.png',
       fullPage: true,
     });
-    page.once('dialog', (dialog) => dialog.accept());
     await manager
       .getByRole('switch', { name: `Hiển thị ${name}`, exact: true })
       .click();
+    await respondToConfirmation(page);
     await expect(manager.getByRole('status')).toContainText('Đã tắt Lào Cai');
     await mobile.reload();
     await expect(mobile.getByRole('button', { name: /Lào Cai/ })).toHaveCount(

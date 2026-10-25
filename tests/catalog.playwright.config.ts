@@ -13,6 +13,7 @@ export default defineConfig({
     'admin-settings.spec.ts',
     'admin-topbar.spec.ts',
     'admin-schedules.spec.ts',
+    'confirmation.spec.ts',
   ],
   workers: 1,
   outputDir: '../test-results/catalog-browser',

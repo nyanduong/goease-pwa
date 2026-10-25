@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   travelRegions,
@@ -359,16 +360,21 @@ export function AdminDestinations() {
                             aria-checked={d.publicationStatus === 'published'}
                             aria-label={'Hiển thị ' + d.name}
                             disabled={busy || !!pending || !d.provinceCode}
-                            onClick={() => {
+                            onClick={async () => {
                               const enabled =
                                 d.publicationStatus !== 'published';
                               if (
                                 !enabled &&
-                                !confirm(
+                                !(await confirmAction(
                                   'Tắt ' +
                                     d.name +
                                     '? Khách sẽ không thấy tỉnh/thành và các địa điểm bên trong. Chuyến đã lưu được giữ nguyên; lịch thu thập không thay đổi.',
-                                )
+                                  {
+                                    title: 'Ẩn tỉnh/thành với khách?',
+                                    confirmLabel: 'Tắt hiển thị',
+                                    tone: 'warning',
+                                  },
+                                ))
                               )
                                 return;
                               void toggle({

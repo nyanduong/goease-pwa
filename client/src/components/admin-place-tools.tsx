@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { useEffect, useRef, useState } from 'react';
 import type { AdminPlaceDto } from '@goease/contracts';
 import { api } from '../api';
@@ -72,9 +73,14 @@ export function AdminPlaceTools({
   async function restore(revision: number) {
     if (
       !saved ||
-      !confirm(
+      !(await confirmAction(
         'Chuẩn bị đề xuất phục hồi từ phiên bản này? Bản công khai được giữ nguyên cho tới khi bạn xuất bản đề xuất.',
-      )
+        {
+          title: 'Chuẩn bị đề xuất phục hồi?',
+          confirmLabel: 'Chuẩn bị phục hồi',
+          tone: 'warning',
+        },
+      ))
     )
       return;
     setRestoring(true);

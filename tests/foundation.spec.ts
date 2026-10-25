@@ -1,3 +1,4 @@
+import { respondToConfirmation } from './support/confirmation';
 import { publishFixturePhotos } from '../server/test/support/photo.js';
 import { images } from '@goease/media';
 import { createHash, randomBytes } from 'node:crypto';
@@ -890,13 +891,12 @@ test('Hoi An catalog journey and server budget stay connected across save and re
     .getByLabel('Chuyến đi tại Đà Nẵng')
     .selectOption({ label: 'Hội An nối dữ liệu thật' });
   await page.getByLabel('Ngày ghé thăm').selectOption({ label: '2026-11-13' });
-  const duplicatePrompt = page.waitForEvent('dialog');
-  page.once('dialog', (dialog) => dialog.dismiss());
   await page
     .getByRole('dialog')
     .getByRole('button', { name: 'Thêm vào chuyến đi', exact: true })
     .click();
-  expect((await duplicatePrompt).message()).toContain('đã có trong ngày');
+  await expect(page.getByRole('alertdialog')).toContainText('đã có trong ngày');
+  await respondToConfirmation(page, false);
   await expect(
     page
       .getByRole('dialog')
@@ -1179,17 +1179,17 @@ test('real expenses create retry edit conflict delete and persist independently 
   await expect(
     page.getByLabel('Số tiền đã chi (VND)', { exact: true }),
   ).toHaveValue('1100000');
-  page.once('dialog', (d) => d.accept());
   await page.getByRole('button', { name: 'Đóng', exact: true }).click();
+  await respondToConfirmation(page);
   await expect(page.locator('.expense-total')).toContainText('1.100.000');
-  page.once('dialog', (d) => d.dismiss());
   await page.getByRole('button', { name: 'Xóa Taxi', exact: true }).click();
+  await respondToConfirmation(page, false);
   await expect(page.locator('.expense-list li')).toHaveCount(2);
   for (const title of ['Taxi', 'Ăn trưa cả nhóm']) {
-    page.once('dialog', (d) => d.accept());
     await page
       .getByRole('button', { name: `Xóa ${title}`, exact: true })
       .click();
+    await respondToConfirmation(page);
     await expect(
       page.getByText('Đã xóa khoản chi.', { exact: true }),
     ).toBeVisible();
@@ -1654,10 +1654,10 @@ test('customer profile and password persist and revoke other browser sessions', 
     await expect(page.getByLabel('Tên hiển thị', { exact: true })).toHaveValue(
       'Bản chưa lưu',
     );
-    page.once('dialog', (d) => d.accept());
     await page
       .getByRole('button', { name: 'Tải lại hồ sơ', exact: true })
       .click();
+    await respondToConfirmation(page);
     await expect(page.getByLabel('Tên hiển thị', { exact: true })).toHaveValue(
       'Tên từ phiên khác',
     );
@@ -2149,10 +2149,10 @@ test('share link creation retry guest view map and revocation', async ({
         fullPage: true,
       });
     }
-    page.once('dialog', (dialog) => dialog.accept());
     await page
       .getByRole('button', { name: 'Thu hồi link 1', exact: true })
       .click();
+    await respondToConfirmation(page);
     await expect(
       page.getByText('Đã thu hồi link.', { exact: true }),
     ).toBeVisible();
@@ -3326,10 +3326,10 @@ test('admin publishes reference prices and mobile customer gets automatic estima
             `/api/v1/admin/places/${original.days[0]!.activities[0]!.placeId}`,
           ) && response.request().method() === 'PATCH',
     );
-    page.once('dialog', (dialog) => dialog.accept());
     await page
       .getByRole('button', { name: 'Ngừng hiển thị', exact: true })
       .click();
+    await respondToConfirmation(page);
     const archived = await archiveResponse;
     expect(archived.status()).toBe(200);
     expect((await archived.json()).data.place.publicationStatus).toBe(

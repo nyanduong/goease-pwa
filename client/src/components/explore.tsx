@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { PlacePhoto } from './place-photo';
 import { images } from '@goease/media';
 import { useEffect, useRef, useState } from 'react';
@@ -496,8 +497,17 @@ export function PlaceDetail({
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [dirty]);
-  function back() {
-    if (dirty && !confirm('Ghi chú chưa lưu. Bạn muốn rời trang?')) return;
+  async function back() {
+    if (
+      dirty &&
+      !(await confirmAction('Ghi chú chưa lưu. Bạn muốn rời trang?', {
+        title: 'Bỏ thay đổi chưa lưu?',
+        confirmLabel: 'Bỏ thay đổi',
+        cancelLabel: 'Ở lại',
+        tone: 'warning',
+      }))
+    )
+      return;
     onNavigate(fromSaved ? '/saved' : '/explore');
   }
   async function update(saved?: boolean) {
@@ -586,9 +596,14 @@ export function PlaceDetail({
           );
         if (
           day.activities.some((a) => a.placeId === place.id) &&
-          !confirm(
+          !(await confirmAction(
             'Địa điểm này đã có trong ngày đã chọn. Bạn vẫn muốn thêm một lần nữa?',
-          )
+            {
+              title: 'Địa điểm đã có trong lịch',
+              confirmLabel: 'Vẫn thêm địa điểm',
+              tone: 'warning',
+            },
+          ))
         )
           return;
         const input = inputFromTrip(trip);
@@ -791,12 +806,18 @@ export function PlaceDetail({
           <div className="explore-status" role="alert">
             {error}
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (
                   !dirty ||
-                  confirm(
+                  (await confirmAction(
                     'Tải lại sẽ thay phần ghi chú đang nhập bằng bản trên tài khoản. Tiếp tục?',
-                  )
+                    {
+                      title: 'Tải lại dữ liệu đã lưu?',
+                      confirmLabel: 'Tải lại dữ liệu',
+                      cancelLabel: 'Giữ nội dung đang nhập',
+                      tone: 'warning',
+                    },
+                  ))
                 )
                   setRetry((v) => v + 1);
               }}

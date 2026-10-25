@@ -1,3 +1,4 @@
+import { confirmAction } from '../confirmation';
 import { useState, useRef, type KeyboardEvent } from 'react';
 import type { DestinationDto, TripInput } from '@goease/contracts';
 import { interests, moneyText, withDays } from '../trip-draft';
@@ -19,15 +20,21 @@ export function TripEditor({
   const dayIndex = Math.min(selectedDay, Math.max(0, draft.days.length - 1));
   const day = draft.days[dayIndex];
 
-  const update = (value: Partial<TripInput>) => {
+  const update = async (value: Partial<TripInput>) => {
     const next = withDays({ ...draft, ...value });
     if (
       draft.days.some(
         (d) => d.activities.length && !next.days.some((n) => n.date === d.date),
       ) &&
-      !confirm(
+      !(await confirmAction(
         'Đổi khoảng ngày sẽ bỏ hoạt động của ngày không còn trong chuyến. Tiếp tục?',
-      )
+        {
+          title: 'Thay đổi lịch trình?',
+          confirmLabel: 'Áp dụng thay đổi',
+          cancelLabel: 'Giữ lịch hiện tại',
+          tone: 'warning',
+        },
+      ))
     )
       return;
     onChange(next);

@@ -1,5 +1,7 @@
 # GoEase
 
+Hộp xác nhận trong ứng dụng dùng modal GoEase cho thao tác bỏ thay đổi, xóa, xuất bản và thu hồi chia sẻ. Xem [phạm vi rà soát và hành vi bàn phím](docs/CONFIRMATION-MODALS.md).
+
 **Giờ mở cửa và giá từ nguồn (CAT-22):** draft nhập mới/cũ tự xếp hàng đọc OSM và website liên kết có dữ liệu cấu trúc. Admin → địa điểm → Giá & giờ mở cửa → kiểm tra từng mục → lưu/xuất bản. Admin nhập giá một lần; cùng giá đã xác nhận được dùng hiển thị và tính ngân sách khi đủ điều kiện (CAT-23). Xem [VISIT-INFORMATION](docs/VISIT-INFORMATION.md) và [giá dùng chung](docs/SHARED-PLACE-PRICE.md).
 
 **Lấy địa điểm tự động (CAT-19):** Admin → Cài đặt → bật tỉnh sẽ mở đợt lấy địa điểm tham quan từ Geoapify vào nháp; tỉnh đã bật dùng “Lấy địa điểm / xem tiến trình”. Admin kiểm tra rồi xuất bản theo lô. Lượt đầu tối đa 50 kết quả trong vùng tìm, không phải toàn tỉnh; nguồn lỗi có thể thử lại. Xem [hướng dẫn demo](docs/PROVINCE-IMPORT.md).

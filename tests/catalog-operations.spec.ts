@@ -1,3 +1,4 @@
+import { respondToConfirmation } from './support/confirmation';
 import { fixturePhoto } from '../server/test/support/photo.js';
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
@@ -763,11 +764,6 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
     path: 'test-results/catalog-evidence/v3-history-restore-preview.png',
     fullPage: false,
   });
-  page.once('dialog', async (dialog) => {
-    expect(dialog.type()).toBe('confirm');
-    expect(dialog.message()).toContain('Bản công khai được giữ nguyên');
-    await dialog.accept();
-  });
   const restorePromise = page.waitForResponse(
     (response) =>
       response.url().endsWith(`/api/v1/admin/places/${initial.id}/restore`) &&
@@ -776,6 +772,10 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
   await page
     .getByRole('button', { name: 'Chuẩn bị đề xuất phục hồi', exact: true })
     .click();
+  await expect(page.getByRole('alertdialog')).toContainText(
+    'Bản công khai được giữ nguyên',
+  );
+  await respondToConfirmation(page);
   const restoreResponse = await restorePromise;
   expect(restoreResponse.ok()).toBe(true);
   await expect(page.getByLabel('Giới thiệu ngắn')).toHaveValue(
