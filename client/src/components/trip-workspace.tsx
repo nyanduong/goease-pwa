@@ -1,3 +1,4 @@
+import { PlacePhoto } from './place-photo';
 import { images } from '@goease/media';
 import { TripManagement } from './trip-management';
 import { TripOffline } from './trip-offline';
@@ -1871,7 +1872,7 @@ export function TripWorkspace({
             <div className="journey-place-options">
               {(replacing ? replacements : candidates).map((p) => (
                 <article key={p.id}>
-                  <img src={p.imageUrl} alt="Ảnh minh họa AI" />
+                  <PlacePhoto place={p} compact />
                   <div>
                     <strong>{p.name}</strong>
                     <small>{p.subtitle}</small>

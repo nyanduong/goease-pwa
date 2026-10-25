@@ -4,6 +4,7 @@ import { performance } from 'node:perf_hooks';
 import { test } from 'node:test';
 import { Types } from 'mongoose';
 import { type AdminPlaceInput } from '@goease/contracts';
+import { fixturePhoto } from './support/photo.js';
 import { startTestReplicaSet } from './support/replica-set.js';
 import { authModels } from '../src/features/auth/auth.models.js';
 import { businessAudit } from '../src/features/audit/business-audit.js';
@@ -78,6 +79,7 @@ test(
         sourceUrl: 'https://example.invalid/place',
         referencePrice: null,
         publicationStatus: 'published',
+        images: [fixturePhoto],
         fieldLocks: ['name'],
       };
       const created = (await catalog.write(user._id, input, randomUUID()))

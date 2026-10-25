@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { tourismRegions, type AdminDestinationDto } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
 import { DestinationRegions } from './destination-regions';
+import { AdminProvinceImport } from './admin-province-import';
 
 type Pending = {
   id: string;
@@ -12,6 +13,10 @@ type Pending = {
 };
 export function AdminDestinations() {
   const generation = useRef(0);
+  const [importTarget, setImportTarget] = useState<{
+    destination: AdminDestinationDto;
+    autoKey?: string;
+  } | null>(null);
   const [rows, setRows] = useState<AdminDestinationDto[]>([]);
   const [region, setRegion] = useState(''),
     [subregion, setSubregion] = useState('');
@@ -71,6 +76,16 @@ export function AdminDestinations() {
         ),
       );
       setPending(null);
+      if (
+        request.enabled &&
+        result.destination.publicationStatus === 'published'
+      )
+        setImportTarget({
+          destination: result.destination,
+          autoKey: request.key,
+        });
+      else if (importTarget?.destination.id === result.destination.id)
+        setImportTarget(null);
       setNotice(
         `${result.destination.publicationStatus === 'published' ? 'Đã bật' : 'Đã tắt'} ${request.name}.`,
       );
@@ -97,8 +112,8 @@ export function AdminDestinations() {
       </p>
       <p>
         Hội An là khu vực bên trong Đà Nẵng; Sa Pa thuộc Lào Cai. Bật hiển thị
-        chưa có nghĩa đủ dữ liệu cho Goe. Lịch thu thập được quản lý riêng trong
-        Quy tắc &amp; lịch.
+        sẽ bắt đầu lấy địa điểm tham quan vào nháp; chưa có nghĩa đủ dữ liệu cho
+        Goe. Lịch thu thập được quản lý riêng trong Quy tắc &amp; lịch.
       </p>
       <details>
         <summary>Nguồn danh mục và phân vùng</summary>
@@ -152,6 +167,12 @@ export function AdminDestinations() {
         </div>
       )}
       {notice && <p role="status">{notice}</p>}
+      {importTarget && (
+        <AdminProvinceImport
+          key={`${importTarget.destination.id}-${importTarget.autoKey ?? 'resume'}`}
+          {...importTarget}
+        />
+      )}
       {loading ? (
         <p role="status">Đang tải tỉnh/thành…</p>
       ) : !rows.length ? (
@@ -170,6 +191,7 @@ export function AdminDestinations() {
                   <th>Tỉnh/thành</th>
                   <th>Vùng du lịch</th>
                   <th>Hiển thị cho khách</th>
+                  <th>Địa điểm bên trong</th>
                 </tr>
               </thead>
               <tbody>
@@ -219,6 +241,18 @@ export function AdminDestinations() {
                           : d.publicationStatus === 'published'
                             ? 'Đang bật · Tắt'
                             : 'Đang tắt · Bật'}
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        disabled={
+                          busy ||
+                          !!pending ||
+                          d.publicationStatus !== 'published'
+                        }
+                        onClick={() => setImportTarget({ destination: d })}
+                      >
+                        Lấy địa điểm / xem tiến trình
                       </button>
                     </td>
                   </tr>

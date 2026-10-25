@@ -1,3 +1,4 @@
+import { PlacePhoto } from './place-photo';
 import { images } from '@goease/media';
 import { useEffect, useRef, useState } from 'react';
 import { catalogCost } from '@goease/contracts';
@@ -344,7 +345,7 @@ export function ExplorePage({
                     )
                   }
                 >
-                  <img src={p.imageUrl} alt={`${p.name} — ${p.imageCredit}`} />
+                  <PlacePhoto place={p} compact />
                   <span className="explore-category">
                     <Icon size={13} />
                     {labels[p.category]}
@@ -647,10 +648,7 @@ export function PlaceDetail({
   return (
     <article className="place-detail">
       <div className="place-hero">
-        <img
-          src={place.imageUrl}
-          alt={`${place.name} — ${place.imageCredit}`}
-        />
+        <PlacePhoto place={place} />
         <button
           className="place-back"
           aria-label={fromSaved ? 'Về Đã lưu' : 'Về Khám phá'}

@@ -1,5 +1,7 @@
 # GoEase — F1-A review và bàn giao F1 v0.2
 
+CAT-19 (25/10/2026): đã nối bật tỉnh trong UI với đợt thu thập tham quan vào draft, phục hồi request sau reload và deep link danh sách nháp đúng tỉnh để duyệt/xuất bản theo lô. Không tự publish; phạm vi lấy ban đầu không đại diện cả tỉnh. Xem PROVINCE-IMPORT.md cho demo và kiểm chứng.
+
 CAT-18 (25/10/2026): owner chốt destination cấp tỉnh/thành, danh mục tự động và admin chỉ bật/tắt; supersede các hướng dẫn tạo destination thủ công trong handoff lịch sử. Phạm vi/giới hạn/kiểm chứng tại PROVINCE-CATALOG.md.
 
 Ngày review: **22/10/2026**. Baseline thiết kế được chủ dự án chấp thuận; **F1-B đã triển khai/kiểm chứng local; ưu tiên sản phẩm tiếp theo đã triển khai tài khoản local và manual trips**. [Handoff sản phẩm](PRODUCT-VERIFICATION.md) ghi phạm vi hiện tại; các kết quả F1-A bên dưới là lịch sử review. F1-A chỉ chỉnh tài liệu, không thay source, dependencies, scripts, secrets hoặc MongoDB.
@@ -114,3 +116,7 @@ Không chạy application tests, migration, syncIndexes, db:check, provider ho�
 Đã kiểm chứng unit/HTTP, scan stdout/stderr, concurrency, index thật, commit/rollback/audit write failure, sequential/concurrent dedupe và conflict; chi tiết lệnh/môi trường ở verification. F1-B không ghi audit lúc app startup, không HTTP audit API, không auth/trip/analytics/outbox/migration/purge. Fixture và probe chỉ nằm trong DB test riêng, cleanup không đụng rs0 ứng dụng.
 
 Email/password register/login/session và chuyến riêng cho account chưa xác minh đã triển khai theo task 2026-10-22. Còn Q-06/R-04/R-05 cho Google OAuth live, identity link/re-auth/recovery và challenge binding khi có flow xác minh thật. Q-02 không còn chặn chuyến riêng cho account email chưa xác minh; quyền đặc biệt, linking và commerce vẫn không được suy ra. Q-07 còn áp dụng policy/notice trước rollout public. Không coi email chưa xác minh là bằng chứng ownership ngoài credential đã đăng nhập.
+
+## CAT-20 — ảnh thật Wikimedia (25/10/2026)
+
+Implemented auto candidate worker, admin selection, mandatory approved cover for publication, no AI fallback on POI surfaces. New sample seed is draft. No destructive migration or automatic approval of existing images. Live read-only Commons Chùa Cầu lookup returned 6 candidates with source/credit/licenses. Follow WIKIMEDIA-PHOTOS.md for demo and runtime limits. Verified 71 unit tests, 49 targeted integration tests across final runs, 5 catalog browser tests, typecheck/lint/build and local API DB health. Full integration stress archive run was interrupted; no full-suite success claim. Existing large client bundle warning remains.

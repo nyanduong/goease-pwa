@@ -1,5 +1,6 @@
 import { AdminPlaceImage } from './admin-visuals';
 import { AdminImageGallery } from './admin-image-gallery';
+import { AdminWikimediaImages } from './admin-wikimedia-images';
 import { useEffect, useRef, useState } from 'react';
 import {
   catalogQuality,
@@ -110,7 +111,7 @@ export function AdminPlaceTools({
   const quality = catalogQuality({
     ...form,
     updatedAt: saved?.updatedAt ?? new Date().toISOString(),
-    imageCredit: saved?.imageCredit ?? 'Ảnh minh họa AI',
+    imageCredit: saved?.imageCredit ?? 'Chưa có ảnh thật',
   });
   const mapPlace: AdminPlaceDto = {
     ...form,
@@ -218,8 +219,9 @@ export function AdminPlaceTools({
         <AdminPlaceImage
           place={{
             ...form,
-            imageUrl: form.images?.[0]?.url ?? saved?.imageUrl,
-            imageCredit: form.images?.[0]?.credit ?? saved?.imageCredit,
+            imageUrl: form.images?.[0]?.url ?? '',
+            imageCredit:
+              form.images?.[0]?.credit ?? 'Chưa có ảnh thật được duyệt',
           }}
           large
         />
@@ -228,9 +230,7 @@ export function AdminPlaceTools({
           <p>{form.locationQuery || 'Địa chỉ đang bổ sung'}</p>
           <p>{form.openingHoursNote || 'Chưa có giờ mở cửa'}</p>
         </div>
-        <small>
-          {saved?.imageCredit ?? 'Ảnh minh họa AI, không phải ảnh cơ sở'}
-        </small>
+        <small>{saved?.imageCredit ?? 'Chưa có ảnh thật được duyệt'}</small>
         <p>
           {saved?.source
             ? `Nguồn nhập: ${saved.source.provider} · ${saved.source.license}`
@@ -243,6 +243,7 @@ export function AdminPlaceTools({
         )}
       </section>
       <section className="admin-panel" id="admin-section-images">
+        <AdminWikimediaImages id={saved?.id} form={form} update={update} />
         <AdminImageGallery form={form} update={update} />
       </section>
       <section className="admin-panel" id="admin-section-notes">

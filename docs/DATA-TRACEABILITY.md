@@ -1,5 +1,7 @@
 # GoEase — Truy vết, Analytics và Vòng đời dữ liệu v0.2
 
+CAT-19: admin UI bật tỉnh → province-imports → geocode/configured area → catalog_campaigns + catalog_runs.scopeSnapshot (areaLabel/areaSource) + audit → catalog_source_usage → places draft + catalog_reviews → bulk preview/execute theo CAT-17. Lookup geocode ghi usage riêng, không phải POI; không có raw payload hay provider key trong DTO. Xem PROVINCE-IMPORT.md.
+
 CAT-18: bootstrap/adoption/legacy classification ghi catalog.destination_catalogued với actor system; toggle ghi catalog.destination_updated với actor admin, previousRevision/entityRevision và receipt destination.toggle cùng transaction. Không có audit nội dung tên/giá riêng tư. Legacy IDs, POI/trip references và snapshots giữ nguyên; không purge. Xem PROVINCE-CATALOG.md.
 
 ## Đăng ký OTP — AUTH-10, 25/10/2026
@@ -350,3 +352,7 @@ Admin session → strict request/intent/role → catalog proposal/version + audi
 Configured destination (draft/published/archived admin) → immutable campaign/run scope+source+policy → existing Mongo worker lease/fence/retry → normalized stable OSM ID → draft hoặc ngoại lệ/low-risk proposal → server frozen bulk item revisions → per-item atomic publish/results → history/version diff/restore proposal. Source usage ledger chỉ đếm lời gọi nội bộ; provider quota/credits chưa biết hiển thị unknown, không giả kết nối thành công.
 
 Verification liên kết: catalog-publication.test/integration (public isolation, locks, migration/rollback,13200 aggregate); admin-v3.test/integration (scope snapshot, policy dry-run, pause fence, retry, frozen-all scale/bulk/role/map); catalog.integration (public price snapshot trip save); catalog-operations.integration (worker crash/fence/retry/audit rollback); tests/catalog-operations.spec.ts và ảnh UI thật. Trạng thái thực tế cuối cùng tại ADMIN-V3-VERIFICATION.md.
+
+## CAT-20 photo provenance
+
+Commons imageinfo → bounded imageSearch.candidates (unreviewed) → explicit admin selection → catalog proposal/version/audit → published images/cover. Retain sourceUrl, credit, license and optional licenseUrl; observed/checkedAt is not verified. Publish and restore preserve current imageSearch. Old AI URLs/history are not projected as POI photos. Manual approved photos retain owner-provided attribution. No auto-publication or fabricated rights. Details: WIKIMEDIA-PHOTOS.md.

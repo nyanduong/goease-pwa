@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import {
   campaignInputSchema,
+  provinceImportSchema,
   campaignControlSchema,
   catalogPolicyInputSchema,
   bulkPreviewSchema,
@@ -25,6 +26,16 @@ function parse<T>(schema: z.ZodType<T>, input: unknown) {
 /** Mount after the existing authenticated admin middleware at /admin/v3. */
 export function adminV3Router(service: ReturnType<typeof adminV3Service>) {
   const router = Router();
+  router.post('/province-imports', async (req, res) =>
+    res.status(201).json({
+      ok: true,
+      data: await service.startProvinceImport(
+        res.locals.authUser._id,
+        parse(provinceImportSchema, req.body),
+        parse(key, req.get('Idempotency-Key')),
+      ),
+    }),
+  );
   router.get('/campaigns', async (req, res) =>
     res.json({
       ok: true,

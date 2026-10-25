@@ -1,3 +1,4 @@
+import { publishFixturePhotos } from './support/photo.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
@@ -39,6 +40,7 @@ test(
     await product.initialize();
     await seedDestinations(product.trips.models.Destination);
     await seedPlaces(product.explore.models.Place);
+    await publishFixturePhotos(product.explore.models.Place);
     const app = createApp(
       config,
       async () => {},

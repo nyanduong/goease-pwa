@@ -14,6 +14,7 @@ import {
   preserveCatalogLocks,
 } from '../src/features/explore/catalog-provenance.js';
 import { validatePublicationMigrationUri } from '../src/features/explore/catalog-publication-migration.js';
+import { fixturePhoto } from './support/photo.js';
 
 test('publication migration refuses application, remote, credentialed and production targets', () => {
   const safe =
@@ -43,8 +44,28 @@ test('discovery accepts unknown price without turning it into a free or schedula
     sourceUrl: 'https://example.invalid/place',
     referencePrice: null,
     publicationStatus: 'published',
+    images: [fixturePhoto],
   };
   assert.ok(adminPlaceInputSchema.safeParse(place).success);
+  for (const images of [
+    [],
+    [{ ...fixturePhoto, reviewed: false }],
+    [{ ...fixturePhoto, credit: 'AI generated illustration' }],
+  ]) {
+    assert.equal(
+      adminPlaceInputSchema.safeParse({ ...place, images }).success,
+      false,
+    );
+    assert.equal(
+      adminPlaceInputSchema.safeParse({
+        ...place,
+        images,
+        publicationStatus: 'draft',
+      }).success,
+      true,
+    );
+    assert.equal(catalogCapabilities({ ...place, images }).discovery, false);
+  }
   assert.deepEqual(catalogCapabilities(place), {
     discovery: true,
     scheduling: false,

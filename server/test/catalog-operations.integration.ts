@@ -1,3 +1,4 @@
+import { fixturePhoto } from './support/photo.js';
 import {
   configureFixtureScope,
   fixtureDestinationId,
@@ -338,6 +339,7 @@ test(
                     reviewAfter: '2099-12-31',
                   },
                   publicationStatus: 'published',
+                  images: [fixturePhoto],
                 },
                 expectedRevision: revision,
                 intent: 'publish',
@@ -460,6 +462,10 @@ test(
             status: 'published',
           });
           assert.ok(blockedPrice.items.every((item) => !item.eligible));
+          await Place.updateMany(
+            { _id: { $in: selected.map((item) => item.id) } },
+            { $set: { images: [fixturePhoto] } },
+          );
           await Place.updateOne(
             { _id: selected[0]!.id },
             {
@@ -716,6 +722,7 @@ test(
           );
           const before = await Place.countDocuments({
             publicationStatus: 'published',
+            images: [fixturePhoto],
           });
           source = [];
           await run();

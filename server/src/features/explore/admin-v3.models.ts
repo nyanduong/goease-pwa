@@ -26,6 +26,8 @@ export const scopeSnapshotSchema = new Schema(
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true },
     radiusMeters: { type: Number, required: true },
+    areaLabel: { type: String, maxlength: 100 },
+    areaSource: { type: String, enum: ['geoapify', 'configured'] },
   },
   { _id: false, strict: 'throw', versionKey: false },
 );

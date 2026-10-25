@@ -1,5 +1,7 @@
 # GoEase — kiến trúc v0.2
 
+CAT-19: sau toggle UI gọi POST /admin/v3/province-imports riêng. Server tái kiểm admin/tỉnh bật, dùng phạm vi đã cấu hình hoặc provinceGeocoder (Geoapify fixed origin, quota, bounded response) trước transaction tạo campaign/run/audit. Snapshot thêm areaLabel/areaSource; một lần thu thập không sửa settings/lịch. Worker nhập draft và bulk publication hiện có được tái sử dụng. Xem PROVINCE-IMPORT.md.
+
 CAT-18: startup bootstrap danh mục tỉnh/thành có phiên bản sau initialize model/index/audit và trước ready/worker. GET chỉ đọc. Bootstrap giữ ID/trạng thái, danh mục không lấy trực tiếp từ mạng lúc chạy. tourismAreas là mảng tên hữu hạn; POI/trip dùng destinationId hiện có. Admin PATCH chỉ enabled/expectedRevision; customer đọc tỉnh đang bật. Xem PROVINCE-CATALOG.md.
 
 ## Catalog operations runtime — 23/10/2026
@@ -162,3 +164,7 @@ Existing explore feature adds a fixed-origin server adapter and admin import ser
 ## Tự phục hồi kết nối giao diện — 24/10/2026
 
 `useAutomaticRetry` chỉ được nối vào các lượt đọc lỗi: phiên ban đầu, danh mục điểm đến, danh sách chuyến, mở chi tiết chuyến và tải hồ sơ. Chờ 2/4/8/16/30 giây (cap30), không request chồng nhau; offline/tab ẩn tạm dừng, online/focus/visibility trở lại thử ngay. Dừng/reset backoff sau thành công, cleanup timer/listener theo trạng thái/unmount. Không polling dữ liệu đã tải, không reload trang, không phát lại lưu/profile/password/upload/AI. Hoàn tất đăng xuất offline vẫn dùng hàng đợi đăng xuất đã được người dùng yêu cầu trước đó. Chi tiết chuyến chỉ retry lỗi mạng/5xx/408/429 khi còn phiên hợp lệ, không lặp 401/403/404 hoặc ghi đè bản nháp đang sửa. Các module khác giữ retry hiện có; chưa áp dụng tự động cho toàn bộ admin hoặc provider.
+
+## CAT-20 Wikimedia photo observations
+
+Place image worker starts/stops with API; fixed Commons adapter with timeout/body limits and allowlisted media hosts. Atomic lease + revision fence writes bounded places.imageSearch independently from editorial images. Shared publish schema gates approved cover across single/review/bulk paths. Candidates are admin-only; public DTO emits approved real photos with attribution or neutral placeholder. No collection or storage service added. See WIKIMEDIA-PHOTOS.md.

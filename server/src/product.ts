@@ -7,7 +7,16 @@ import {
 import { registrationOtpSchema } from '@goease/contracts';
 import { adminCatalog } from './features/explore/admin-catalog.js';
 import { placeImportService } from './features/explore/place-import.js';
+import { placeImages } from './features/explore/place-images.js';
+import {
+  wikimediaImages,
+  type FindImages,
+} from './features/explore/wikimedia.js';
 import { geoapifyProvider } from './features/explore/geoapify.js';
+import {
+  provinceGeocoder,
+  type ResolveProvinceArea,
+} from './features/explore/province-geocoder.js';
 import { catalogOperations } from './features/explore/catalog-operations.js';
 import { adminInsights } from './features/explore/admin-insights.js';
 import { adminV3Service } from './features/explore/admin-v3.js';
@@ -95,6 +104,8 @@ export function createProduct(
     registrationEmail?: RegistrationEmailSender;
     logger?: Logger;
     geoapify?: ReturnType<typeof geoapifyProvider>;
+    resolveProvinceArea?: ResolveProvinceArea;
+    findImages?: FindImages;
     generate?: Generate;
     avatarUpload?: (bytes: Buffer) => Promise<string>;
   } = {},
@@ -137,6 +148,11 @@ export function createProduct(
     explore,
     dependencies.generate,
   );
+  const imageSearch = placeImages(
+    explore,
+    catalog,
+    dependencies.findImages ?? wikimediaImages(),
+  );
   const destinations = destinationCatalog(
     connection,
     trips.models,
@@ -173,6 +189,8 @@ export function createProduct(
     trips,
     audit,
     Boolean(dependencies.geoapify || config.GEOAPIFY_API_KEY),
+    dependencies.resolveProvinceArea ??
+      provinceGeocoder(config.GEOAPIFY_API_KEY),
   );
   const router = Router();
   let ready = false;
@@ -495,6 +513,24 @@ export function createProduct(
             .optional(),
           req.query.destinationId,
         ),
+      ),
+    }),
+  );
+  router.get('/admin/places/:id/images', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await imageSearch.read(
+        res.locals.authUser._id,
+        parse(z.string().regex(/^[a-f0-9]{24}$/), req.params.id),
+      ),
+    }),
+  );
+  router.post('/admin/places/:id/images/search', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await imageSearch.enqueue(
+        res.locals.authUser._id,
+        parse(z.string().regex(/^[a-f0-9]{24}$/), req.params.id),
       ),
     }),
   );
@@ -1021,6 +1057,8 @@ export function createProduct(
     sharing,
     operations,
     v3,
+    catalog,
+    imageSearch,
     async initialize(withProvinceCatalog = false) {
       ready = false;
       const all = [

@@ -474,3 +474,28 @@ Thay phần tự tạo điểm đến của CAT-16/V3-BR-06: destination mới l
 - Phân vùng3miền/8vùng là biên tập GoEase. Tỉnh mới có thể trải qua nhiều vùng cũ; một nhãn vùng chỉ phục vụ bộ lọc, không xác nhận ranh giới. Phạm vi Geoapify vẫn cấu hình riêng bằng vòng tròn, không đại diện toàn tỉnh.
 
 Nguồn danh mục: [Quyết định19/2025/QĐ-TTg](https://chinhphu.vn/?classid=1&docid=214409&orggroupid=3&pageid=27160). Hướng dẫn và kiểm chứng: [PROVINCE-CATALOG](PROVINCE-CATALOG.md).
+
+## CAT-19 — Bật tỉnh → thu thập nháp → duyệt và xuất bản theo lô (25/10/2026)
+
+Owner yêu cầu tự động lấy địa điểm sau khi bật tỉnh. Thay phần CAT-18 nói bật không gọi provider: UI sau toggle thành công gửi yêu cầu thu thập riêng, có idempotency và tiến trình. Toggle không bị rollback vì nguồn lỗi; thông báo nêu rõ tỉnh vẫn bật và có nút thử lại. Nếu đóng trang giữa hai bước, mở “Lấy địa điểm / xem tiến trình” để tiếp tục. API toggle đơn lẻ vẫn chỉ đổi trạng thái hiển thị.
+
+- Đợt một lần lấy nhóm tham quan (`sights`), tối đa 50 kết quả Geoapify/OSM. Dùng phạm vi đã bật trong cấu hình nếu có; nếu chưa có, server tra tên tỉnh qua Geoapify Geocoding và chụp tâm/bán kính 10 km. Không nhập tọa độ thủ công cho luồng mặc định. Tên không rõ/không khớp/nguồn lỗi phải báo lỗi, không đoán tọa độ. Đây là vùng tìm ban đầu, không cam kết ranh giới hoặc bao phủ toàn tỉnh.
+- Có thể lấy lượt tiếp theo theo tên tỉnh, Hội An trong Đà Nẵng hoặc Sa Pa trong Lào Cai từ danh mục server. Các khu vực khác vẫn cấu hình phạm vi riêng. Không ghi đè settings hoặc bật lịch định kỳ khi lấy một lần.
+- Server tái kiểm admin và tỉnh đang bật khi tạo đợt. Một đợt hoạt động trên mỗi tỉnh; retry cùng key/payload trả đợt cũ, thay payload bị chặn. Mỗi run chụp tọa độ, nguồn xác định vùng và tên vùng; dùng worker, quota, audit và transaction hiện có.
+- Địa điểm mới luôn draft, giữ OSM identity và provenance; không tự xuất bản. Lấy lại không ghi đè nội dung đã biên tập; thay đổi nguồn vào cơ chế đề xuất/ngoại lệ hiện có. Giá/giờ chưa rõ không thành miễn phí/mở cả ngày; ảnh minh họa hiện có phải giữ nhãn minh họa, không giả ảnh nguồn.
+- Nút kiểm tra mở đúng tỉnh và bộ lọc nháp. Admin xem nội dung, chọn các mục đạt, xem trước rồi thực thi lô. Tái kiểm quyền/revision/ngoại lệ theo CAT-17; không có đường auto-publish hoặc bỏ qua blocker.
+
+Chi tiết và bằng chứng: [PROVINCE-IMPORT](PROVINCE-IMPORT.md).
+
+## CAT-20 — Ảnh thật Wikimedia, duyệt ảnh và chặn xuất bản (25/10/2026)
+
+Owner chốt tự lấy ảnh thật vào draft cho admin chọn; thiếu ảnh không xuất bản và bỏ ảnh AI của địa điểm. Quy tắc này thay phần ảnh minh họa trong CAT-19 và bổ sung CAT-15/17.
+
+- Mỗi POI mới có lượt tìm Wikimedia Commons tự động. Gợi ý theo tên + tỉnh; không có kết quả hợp lệ thì thử ảnh trong 500 m nếu có tọa độ. Tối đa 6 ứng viên, chưa phải ảnh đã xác minh. Không cam kết mọi địa điểm đều có ảnh hoặc kết quả cùng tên là đúng địa điểm.
+- Chỉ nhận JPEG/PNG/WebP từ host Wikimedia được phép, có ghi công và giấy phép mở được hỗ trợ. Không nhận AI/illustration/map/logo nhận biết được từ metadata. Bộ lọc không thay kiểm tra của con người. Admin mở trang nguồn, kiểm tra ảnh thật đúng địa điểm và điều kiện giấy phép rồi chọn làm bìa, lưu đề xuất.
+- Xuất bản từng mục, duyệt xuất bản và theo lô đều yêu cầu ảnh đầu tiên có `reviewed=true`, URL HTTPS, ghi công, nguồn và giấy phép hợp lệ. Thiếu/chưa duyệt ảnh là blocker phía server. Chọn ảnh không tự lưu, không tự xuất bản. Ảnh thủ công vẫn được dùng nếu admin xác nhận ảnh thật/quyền sử dụng và đủ metadata.
+- Lượt tìm ảnh là quan sát nguồn, không sửa ảnh biên tập, public revision hoặc chuyến cũ. Lỗi/không tìm thấy ảnh giữ nội dung nguyên trạng và báo rõ; không sinh ảnh AI thay thế. Retry tự động tối đa 3 lần; có nút thử lại với khoảng nghỉ 60 giây.
+- UI địa điểm dùng placeholder trung tính khi chưa có ảnh được duyệt hoặc ảnh không tải được. Không sử dụng `imageUrl` AI cũ làm fallback. Không tự xác nhận quyền/duyệt ảnh cũ và không tự archive nội dung đã published trước quy tắc này; lần xuất bản tiếp theo phải qua gate mới. Seed mẫu tạo POI mới ở draft, không tự xuất bản thiếu ảnh.
+- Public hiển thị ghi công/giấy phép và nguồn ảnh; ứng viên và trạng thái thu thập chỉ admin xem. Hiện dùng URL Wikimedia, chưa tải lại lên Cloudinary hay triển khai kiểm tra ảnh hỏng định kỳ.
+
+Hợp đồng, hướng dẫn demo và giới hạn: [WIKIMEDIA-PHOTOS](WIKIMEDIA-PHOTOS.md).

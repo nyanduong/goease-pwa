@@ -1,3 +1,4 @@
+import { publishFixturePhotos } from '../server/test/support/photo.js';
 import { images } from '@goease/media';
 import { createHash, randomBytes } from 'node:crypto';
 import { test as base, expect } from '@playwright/test';
@@ -213,6 +214,7 @@ test.beforeAll(async () => {
     await product.initialize();
     await seedDestinations(product.trips.models.Destination);
     await seedPlaces(product.explore.models.Place);
+    await publishFixturePhotos(product.explore.models.Place);
   } finally {
     await connection.close();
   }

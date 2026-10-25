@@ -1,3 +1,4 @@
+import { fixturePhoto } from '../server/test/support/photo.js';
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -588,6 +589,7 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
         sourceUrl: 'https://example.com/history-fixture',
         referencePrice: null,
         publicationStatus: 'published',
+        images: [fixturePhoto],
         fieldLocks: ['name'],
       },
     },

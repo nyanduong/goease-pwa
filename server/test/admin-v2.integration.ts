@@ -1,3 +1,4 @@
+import { fixturePhoto } from './support/photo.js';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
@@ -108,6 +109,7 @@ test(
         { $set: { roles: ['traveler', 'admin'] } },
       );
       let input: AdminPlaceInput = {
+        images: [fixturePhoto],
         destinationId: '000000000000000000000004',
         name: 'Điểm kiểm thử V2',
         category: 'culture',
@@ -323,6 +325,7 @@ test(
               {
                 url: 'https://example.com/photo.jpg',
                 credit: 'Ảnh fixture có phép',
+                reviewed: true,
                 license: 'permission',
                 sourceUrl: 'https://example.com/permission',
               },

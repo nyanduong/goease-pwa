@@ -1,4 +1,4 @@
-import { images, resolveLegacyImageUrl } from '@goease/media';
+import { catalogPhotoCover } from '@goease/contracts';
 import mongoose, {
   type Connection,
   type Types,
@@ -60,8 +60,10 @@ export function adminCatalog(
     id: String(doc._id),
     revision: doc.revision,
     updatedAt: doc.updatedAt.toISOString(),
-    imageUrl: resolveLegacyImageUrl(doc.imageUrl),
-    imageCredit: doc.imageCredit,
+    imageUrl: catalogPhotoCover(doc.toObject().images)?.url ?? '',
+    imageCredit:
+      catalogPhotoCover(doc.toObject().images)?.credit ??
+      'Chưa có ảnh thật được duyệt',
     internalNote: doc.internalNote ?? '',
     images: doc.images.map((i) => catalogImageSchema.parse(i.toObject())),
     mapLocation:
@@ -91,6 +93,7 @@ export function adminCatalog(
       fieldProvenanceSchema.parse(p),
     ),
     capabilities: catalogCapabilities({
+      images: doc.images.map((i) => catalogImageSchema.parse(i.toObject())),
       name: doc.name,
       description: doc.description,
       locationQuery: doc.planning?.locationQuery ?? '',
@@ -155,6 +158,7 @@ export function adminCatalog(
       source: doc.toObject().source,
       sourceSnapshot: doc.toObject().sourceSnapshot,
       sourceCheckedAt: doc.sourceCheckedAt,
+      imageSearch: doc.toObject().imageSearch,
       deletedAt: doc.deletedAt,
     });
   }
@@ -196,6 +200,7 @@ export function adminCatalog(
     );
     const revision = current.revision + 1;
     snapshot.revision = revision;
+    delete snapshot.imageSearch;
     await Version.create(
       [
         {
@@ -389,6 +394,7 @@ export function adminCatalog(
             'source',
             'sourceSnapshot',
             'sourceCheckedAt',
+            'imageSearch',
             'destinationId',
             'destinationName',
             'deletedAt',
@@ -631,9 +637,8 @@ export function adminCatalog(
                         }
                       : editable?.images.length
                         ? {
-                            imageUrl: images.exploreHoian,
-                            imageCredit:
-                              'Ảnh minh họa AI, không phải ảnh cơ sở',
+                            imageUrl: '',
+                            imageCredit: 'Chưa có ảnh thật được duyệt',
                           }
                         : {}),
                   }
@@ -710,10 +715,9 @@ export function adminCatalog(
                   revision: 1,
                   createdBy: actor,
                   createdByType: 'user',
-                  imageUrl: input.images?.[0]?.url ?? images.exploreHoian,
+                  imageUrl: input.images?.[0]?.url ?? '',
                   imageCredit:
-                    input.images?.[0]?.credit ??
-                    'Ảnh minh họa AI, không phải ảnh cơ sở',
+                    input.images?.[0]?.credit ?? 'Chưa có ảnh thật được duyệt',
                   travelLabel: 'Kiểm tra đường đi',
                   bestTimeLabel: 'Kiểm tra giờ mở cửa',
                   tip: 'Thông tin tham khảo; liên hệ cơ sở để xác nhận.',

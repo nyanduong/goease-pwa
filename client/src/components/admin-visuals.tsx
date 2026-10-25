@@ -41,27 +41,23 @@ export function AdminPlaceImage({
     /minh họa|\bAI\b/i.test(place.imageCredit ?? '') ||
     place.imageUrl === images.exploreHoian ||
     failed === place.imageUrl;
-  const src = illustrated ? adminIllustration(place) : place.imageUrl;
   return (
     <span
       className={`admin-place-photo${large ? ' is-large' : ''}`}
-      title={
-        illustrated
-          ? 'Ảnh minh họa AI — không phải ảnh xác minh của cơ sở'
-          : place.imageCredit
-      }
+      title={illustrated ? 'Chưa có ảnh thật được duyệt' : place.imageCredit}
     >
-      <img
-        src={src}
-        alt={
-          illustrated
-            ? `Minh họa AI cho nhóm ${place.category === 'food' ? 'ăn uống' : place.category === 'nature' ? 'thiên nhiên' : 'văn hóa'}`
-            : place.name
-        }
-        loading="lazy"
-        onError={() => setFailed(src ?? '')}
-      />
-      {illustrated && <small className="admin-ai-label">AI</small>}
+      {illustrated ? (
+        <span role="img" aria-label="Chưa có ảnh thật">
+          Chưa có ảnh
+        </span>
+      ) : (
+        <img
+          src={place.imageUrl}
+          alt={place.name}
+          loading="lazy"
+          onError={() => setFailed(place.imageUrl ?? '')}
+        />
+      )}
     </span>
   );
 }

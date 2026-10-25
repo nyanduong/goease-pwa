@@ -1,4 +1,3 @@
-import { images } from '@goease/media';
 import {
   ingestionScope,
   scopeKey,
@@ -8,6 +7,7 @@ import mongoose, { Types, type ClientSession, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import {
   adminPlaceInputSchema,
+  approvedPhoto,
   catalogToday,
   catalogQuality,
   sourceSnapshotSchema,
@@ -233,7 +233,22 @@ export function catalogOperations(
       if (own) own.count = (own.count ?? 0) + 1;
       else doc.actorSearches.push({ actor, count: 1 });
       doc.slots.push({ token, until: new Date(Date.now() + 120000) });
-      await doc.save({ session });
+      // A concurrent reservation retries the transaction. Save plain arrays
+      // atomically so Mongoose does not reset embedded document version keys
+      // (the strict quota schema intentionally has no __v) during retry.
+      const snapshot = doc.toObject();
+      await Schedule.updateOne(
+        { _id: doc._id },
+        {
+          $set: {
+            quotaHour: doc.quotaHour,
+            searches: doc.searches,
+            actorSearches: snapshot.actorSearches,
+            slots: snapshot.slots,
+          },
+        },
+        { session, runValidators: true },
+      );
     });
     return async () => {
       await Schedule.updateOne(
@@ -789,6 +804,10 @@ export function catalogOperations(
       )
         return blocked('Cần quyết định thông tin nguồn hoặc nghi trùng trước.');
       const form = catalog.input(await catalog.proposal(p, session));
+      if (!approvedPhoto(form.images?.[0]))
+        return blocked(
+          'Thiếu ảnh bìa thật đã được admin duyệt và đủ nguồn/quyền sử dụng.',
+        );
       if (
         !adminPlaceInputSchema.safeParse({ ...form, publicationStatus: status })
           .success
@@ -1452,8 +1471,8 @@ export function catalogOperations(
             },
             referencePrice: null,
             publicationStatus: 'draft',
-            imageUrl: images.exploreHoian,
-            imageCredit: 'Ảnh minh họa AI, không phải ảnh cơ sở',
+            imageUrl: '',
+            imageCredit: 'Chưa có ảnh thật được duyệt',
             durationLabel: 'Ước tính 60 phút',
             travelLabel: 'Kiểm tra đường đi',
             bestTimeLabel: 'Kiểm tra giờ mở cửa',

@@ -167,6 +167,12 @@ export function AdminCatalog({
     setForm(null);
     setImporting(false);
     setQ(params.get('q') ?? '');
+    if (params.has('destinationId')) {
+      setCategory('all');
+      setSourceFilter('all');
+      setSelected([]);
+      setAllMatching(false);
+    }
     setStatus(
       ['all', 'draft', 'published', 'archived'].includes(
         params.get('status') ?? '',

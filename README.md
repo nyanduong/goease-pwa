@@ -1,5 +1,7 @@
 # GoEase
 
+**Lấy địa điểm tự động (CAT-19):** Admin → Cài đặt → bật tỉnh sẽ mở đợt lấy địa điểm tham quan từ Geoapify vào nháp; tỉnh đã bật dùng “Lấy địa điểm / xem tiến trình”. Admin kiểm tra rồi xuất bản theo lô. Lượt đầu tối đa 50 kết quả trong vùng tìm, không phải toàn tỉnh; nguồn lỗi có thể thử lại. Xem [hướng dẫn demo](docs/PROVINCE-IMPORT.md).
+
 **Danh mục tỉnh/thành (25/10/2026):** API tự nạp34 tỉnh/thành; vào Admin → Cài đặt → Danh mục tỉnh/thành Việt Nam để bật/tắt. Mới mặc định tắt. Hội An là khu vực trong Đà Nẵng, Sa Pa trong Lào Cai. `npm run db:seed` hiện chỉ đồng bộ danh mục tỉnh/thành, không thêm POI mẫu hoặc tự bật. Xem [quy tắc và kiểm thử](docs/PROVINCE-CATALOG.md).
 
 Mất kết nối khi mở ứng dụng: tự kiểm tra lại phiên và các lượt tải lỗi (điểm đến, danh sách/chi tiết chuyến, hồ sơ), chờ 2/4/8/16/30 giây; thử ngay khi có mạng hoặc quay lại tab. Dừng khi đã tải thành công, không tải lại toàn trang hay tự gửi lại thao tác lưu/đổi mật khẩu/upload/AI.
@@ -251,3 +253,7 @@ Admin đã có tìm/xem trước/nhập bản nháp từ Geoapify cho Hội An. 
 ### FULLDICHVU API cho Goe
 
 Đặt `AI_PROVIDER=fulldichvu`, điền `FULLDICHVU_API_KEY` trong `server/.env`, giữ `FULLDICHVU_MODEL=fulldichvu/haiku-4.5` rồi khởi động lại API. Không dùng key này cho `GEMINI_API_KEY` hoặc biến `VITE_*`. Đổi `AI_PROVIDER=gemini` để quay lại Google trực tiếp. Xem [cấu hình và phạm vi kiểm chứng](docs/AI-PLANNER.md#fulldichvu-provider--2026-10-24); Haiku đã vượt qua thử API thật cho lịch Hội An 2 và 3 ngày (khoảng 8–10 giây), giá thiếu vẫn giữ chưa rõ. Model Gemini 2.0 của bên trung gian trước đó bị cắt phản hồi nên không còn là lựa chọn mặc định.
+
+## Ảnh địa điểm CAT-20
+
+Địa điểm mới tự nhận ứng viên Wikimedia vào nháp. Admin chọn ảnh thật, lưu đề xuất rồi xuất bản; thiếu cover đã duyệt bị chặn ở server, không có AI fallback. Hướng dẫn: [WIKIMEDIA-PHOTOS](docs/WIKIMEDIA-PHOTOS.md).

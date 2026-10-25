@@ -30,7 +30,7 @@ test('quality is a defined completeness measure, not fabricated confidence; opti
   assert.equal(catalogQuality(place).completeness, 83);
   assert.deepEqual(
     catalogQuality(place).issues.map((i) => i.code),
-    ['price', 'location', 'hours'],
+    ['price', 'location', 'hours', 'image'],
   );
   const price = {
     label: 'Vé',

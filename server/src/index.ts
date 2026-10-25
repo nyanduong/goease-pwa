@@ -13,7 +13,10 @@ async function main() {
   database.connection.on('connected', () => {
     void product
       .initialize(true)
-      .then(() => product.operations.start())
+      .then(() => {
+        product.operations.start();
+        product.imageSearch.start();
+      })
       .catch(() => logger.write('product.init_failed'));
   });
   const app = createApp(config, database.ping, logger, product.router);
@@ -32,6 +35,7 @@ async function main() {
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await product.recovery.drain();
     await product.operations.stop();
+    await product.imageSearch.stop();
     await database.close();
     clearTimeout(deadline);
   }

@@ -35,7 +35,9 @@ test('operator enables a province; customer filters it and gets a truthful empty
   await manager
     .getByRole('switch', { name: `Hiển thị ${name}`, exact: true })
     .click();
-  await expect(manager.getByRole('status')).toContainText('Đã bật Lào Cai');
+  await expect(
+    manager.getByText('Đã bật Lào Cai.', { exact: true }),
+  ).toBeVisible();
   await expect(
     manager.getByRole('switch', { name: `Hiển thị ${name}`, exact: true }),
   ).toHaveAttribute('aria-checked', 'true');

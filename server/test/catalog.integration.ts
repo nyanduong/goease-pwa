@@ -1,3 +1,4 @@
+import { fixturePhoto } from './support/photo.js';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
@@ -90,6 +91,7 @@ test(
       );
       const destinationId = '000000000000000000000004';
       const input: AdminPlaceInput = {
+        images: [fixturePhoto],
         destinationId,
         name: 'Quán thử nghiệm có nguồn',
         category: 'food',

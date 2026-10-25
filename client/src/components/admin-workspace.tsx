@@ -159,7 +159,12 @@ export function AdminWorkspace({
       window.removeEventListener('goease-admin-destinations-changed', changed);
   }, []);
   const [scope, setScope] = useState(
-    () => localStorage.getItem('goease-admin-view-scope') ?? '',
+    () =>
+      new URLSearchParams(location.hash.split('?')[1] ?? '').get(
+        'destinationId',
+      ) ??
+      localStorage.getItem('goease-admin-view-scope') ??
+      '',
   );
   const [catalogRevision, setCatalogRevision] = useState(0);
   useEffect(() => {
@@ -223,6 +228,10 @@ export function AdminWorkspace({
   useEffect(() => {
     const changed = () => {
       setTab(currentTab());
+      const target = new URLSearchParams(location.hash.split('?')[1] ?? '').get(
+        'destinationId',
+      );
+      if (target && /^[a-f0-9]{24}$/.test(target)) setScope(target);
       setLocationKey(location.hash);
       setNotice('');
       setError('');

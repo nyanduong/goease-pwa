@@ -1,5 +1,5 @@
+import { publishFixturePhotos, fixturePhoto } from './support/photo.js';
 import assert from 'node:assert/strict';
-import { images } from '@goease/media';
 import type { PlaceStateDto } from '@goease/contracts';
 async function readPayload(response: Response) {
   return (await response.json()) as {
@@ -37,6 +37,7 @@ test(
     await product.initialize();
     await seedDestinations(product.trips.models.Destination);
     await seedPlaces(product.explore.models.Place);
+    await publishFixturePhotos(product.explore.models.Place);
     const app = createApp(
       config,
       async () => {},
@@ -76,7 +77,7 @@ test(
       const cookieA = await register('explore-a@example.invalid');
       const cookieB = await register('explore-b@example.invalid');
       const id = '100000000000000000000001';
-      // Old persisted paths must survive removal of public/images without rewriting history.
+      // Legacy AI paths remain historical data, never the public fallback.
       await product.explore.models.Place.updateOne(
         { _id: id },
         { $set: { imageUrl: '/images/explore-hoian.png' } },
@@ -86,7 +87,21 @@ test(
       let payload = await readPayload(r);
       assert.equal(payload.data.items.length, 1);
       assert.equal(payload.data.items[0]?.id, id);
-      assert.equal(payload.data.items[0]?.imageUrl, images.exploreHoian);
+      assert.equal(payload.data.items[0]?.imageUrl, fixturePhoto.url);
+      assert.equal('imageSearch' in payload.data.items[0]!, false);
+      await product.explore.models.Place.updateOne(
+        { _id: id },
+        { $set: { images: [] } },
+      );
+      assert.equal(
+        (await readPayload(await call('/places?q=pho%20co%20hoi%20an'))).data
+          .items[0]?.imageUrl,
+        '',
+      );
+      await product.explore.models.Place.updateOne(
+        { _id: id },
+        { $set: { images: [fixturePhoto] } },
+      );
       assert.equal(
         (await product.explore.models.Place.findById(id))?.imageUrl,
         '/images/explore-hoian.png',

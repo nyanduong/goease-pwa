@@ -14,6 +14,10 @@ import { seedDestinations } from '../server/src/features/trips/destination-seed.
 import { HttpError } from '../server/src/http-error.js';
 import type { GeoapifyCandidate } from '../server/src/features/explore/geoapify.js';
 import { e2eApiPort, e2eWebOrigin } from './ports.js';
+import {
+  fixtureCandidate,
+  fixturePhoto,
+} from '../server/test/support/photo.js';
 
 async function main() {
   const harness = await startTestReplicaSet();
@@ -43,7 +47,27 @@ async function main() {
     flags: [],
   });
   let phase = 0;
-  const provider = async (group: 'sights' | 'restaurant' | 'cafe') => {
+  const provider = async (
+    group: 'sights' | 'restaurant' | 'cafe',
+    _limit: number,
+    area?: { latitude: number },
+  ) => {
+    if (area?.latitude === 22.66)
+      return {
+        group,
+        received: 1,
+        rejected: 0,
+        items: [
+          {
+            ...candidate(990001, 'Tham quan Cao Bằng · dữ liệu thử', 22.66),
+            longitude: 106.26,
+            category: 'culture' as const,
+            venueType: 'place' as const,
+            categories: ['tourism.attraction'],
+            address: 'Địa chỉ Cao Bằng · dữ liệu thử',
+          },
+        ],
+      };
     if (phase >= 2)
       throw new HttpError(429, 'GEOAPIFY_REJECTED', 'Provider fixture 429');
     const items = [
@@ -57,7 +81,17 @@ async function main() {
     return { group, received: items.length, rejected: 0, items };
   };
   const product = createProduct(harness.connection, config, {
+    findImages: async () => [fixtureCandidate],
     geoapify: provider,
+    resolveProvinceArea: async (name) => {
+      if (name !== 'Cao Bằng')
+        throw new HttpError(
+          502,
+          'AREA_LOOKUP_FAILED',
+          'Vùng này chưa có trong fixture browser.',
+        );
+      return { latitude: 22.66, longitude: 106.26, radiusMeters: 10000 };
+    },
     generate: async () => {
       throw new Error('No eligible planner catalog in this browser fixture');
     },
@@ -121,6 +155,11 @@ async function main() {
     fixtureDestinationId,
   );
   await product.operations.tick();
+  // Older operational scenarios start with reviewed photos before any proposal snapshots.
+  await product.explore.models.Place.updateMany(
+    {},
+    { $set: { images: [fixturePhoto] } },
+  );
   await product.explore.models.Place.updateOne(
     { 'source.externalId': 'osm:node:8001' },
     {
@@ -159,8 +198,10 @@ async function main() {
   );
   phase = 2;
   product.operations.start();
+  product.imageSearch.start();
   const stop = async () => {
     await product.operations.stop();
+    await product.imageSearch.stop();
     server.close();
     await harness.stop();
     process.exit(0);

@@ -33,6 +33,23 @@ export function AdminImageGallery({
             <figcaption>
               {im.credit} · {im.license}
             </figcaption>
+            <a href={im.sourceUrl} target="_blank" rel="noreferrer">
+              Nguồn / quyền sử dụng
+            </a>
+            {!im.reviewed && (
+              <button
+                type="button"
+                onClick={() =>
+                  update({
+                    images: form.images!.map((image, n) =>
+                      n === i ? { ...image, reviewed: true } : image,
+                    ),
+                  })
+                }
+              >
+                Xác nhận ảnh thật đúng địa điểm {i + 1}
+              </button>
+            )}
             <button
               type="button"
               onClick={() =>
@@ -55,7 +72,7 @@ export function AdminImageGallery({
       <label>
         Tác giả / ghi công
         <input
-          maxLength={100}
+          maxLength={1000}
           value={credit}
           onChange={(e) => setCredit(e.target.value)}
         />
@@ -84,7 +101,8 @@ export function AdminImageGallery({
           checked={confirmed}
           onChange={(e) => setConfirmed(e.target.checked)}
         />
-        Tôi đã kiểm tra quyền sử dụng và thông tin ghi công
+        Tôi xác nhận ảnh thật đúng địa điểm, đã kiểm tra quyền sử dụng và ghi
+        công
       </label>
       {error && <p role="alert">{error}</p>}
       <button
@@ -96,6 +114,7 @@ export function AdminImageGallery({
             credit,
             sourceUrl,
             license,
+            reviewed: true,
           });
           if (!parsed.success) {
             setError(

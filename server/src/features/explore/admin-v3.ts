@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Types, type Connection, type ClientSession } from 'mongoose';
 import {
   adminPlaceInputSchema,
+  approvedPhoto,
   adminPlaceQuerySchema,
   sourceSnapshotSchema,
   type CampaignInput,
@@ -11,6 +12,7 @@ import {
   type AdminMapQuery,
   type BulkJobDto,
   type CampaignSummary,
+  type ProvinceImportInput,
 } from '@goease/contracts';
 import { adminV3Models } from './admin-v3.models.js';
 import {
@@ -28,6 +30,10 @@ import type { businessAudit } from '../audit/business-audit.js';
 import { requestId } from '../auth/auth.service.js';
 import { tokenHash } from '../auth/security.js';
 import { HttpError } from '../../http-error.js';
+import type { ResolveProvinceArea } from './province-geocoder.js';
+import { adminOperationsModels } from './admin-operations.models.js';
+import { provinces } from '../trips/province-data.js';
+import type { IngestionArea } from './ingestion-scope.js';
 
 const notFound = () =>
   new HttpError(404, 'OPERATION_NOT_FOUND', 'Không tìm thấy đợt hoặc lô này.');
@@ -45,6 +51,7 @@ export function adminV3Service(
   trips: ReturnType<typeof tripService>,
   audit: ReturnType<typeof businessAudit>,
   connected: boolean,
+  resolveArea?: ResolveProvinceArea,
 ) {
   const models = adminV3Models(connection);
   const { Campaign, Policy, Bulk, Item, Usage } = models;
@@ -199,6 +206,12 @@ export function adminV3Service(
     actor: Types.ObjectId,
     input: CampaignInput,
     key: string,
+    quick?: {
+      hash: string;
+      area: IngestionArea;
+      label: string;
+      source: 'geoapify' | 'configured';
+    },
   ) {
     await catalog.requireAdmin(actor);
     if (!connected)
@@ -207,7 +220,7 @@ export function adminV3Service(
         'GEOAPIFY_NOT_CONFIGURED',
         'Chưa cấu hình khóa Geoapify trên máy chủ.',
       );
-    const hash = tokenHash(JSON.stringify(input));
+    const hash = quick?.hash ?? tokenHash(JSON.stringify(input));
     const id = await transaction(async (session) => {
       await catalog.requireAdmin(actor, session);
       const old = await Campaign.findOne({
@@ -240,7 +253,19 @@ export function adminV3Service(
           destinationId,
           session,
         );
-        const area = await ingestionScope(connection, destinationId, session);
+        if (
+          quick &&
+          (destination.catalogKind !== 'province' ||
+            destination.publicationStatus !== 'published')
+        )
+          throw new HttpError(
+            409,
+            'PROVINCE_DISABLED',
+            'Bật tỉnh/thành trước khi lấy địa điểm.',
+          );
+        const area =
+          quick?.area ??
+          (await ingestionScope(connection, destinationId, session));
         if (await Run.exists({ scope, active: true }).session(session))
           throw new HttpError(
             409,
@@ -256,6 +281,9 @@ export function adminV3Service(
             ...area,
             destinationId,
             destinationName: destination.name,
+            ...(quick
+              ? { areaLabel: quick.label, areaSource: quick.source }
+              : {}),
           },
           policySnapshot: capturedPolicy,
         }).save({ session });
@@ -275,6 +303,110 @@ export function adminV3Service(
       return String(campaign._id);
     });
     return campaignDetail(actor, id);
+  }
+  async function startProvinceImport(
+    actor: Types.ObjectId,
+    input: ProvinceImportInput,
+    key: string,
+  ) {
+    await catalog.requireAdmin(actor);
+    const hash = tokenHash(JSON.stringify({ provinceImport: input }));
+    const old = await Campaign.findOne({ actorId: actor, requestKey: key });
+    if (old) {
+      if (old.requestHash !== hash) throw changed();
+      return campaignDetail(actor, String(old._id));
+    }
+    if (!connected || !resolveArea)
+      throw new HttpError(
+        503,
+        'GEOAPIFY_NOT_CONFIGURED',
+        'Chưa kết nối nguồn Geoapify. Tỉnh vẫn bật; cấu hình nguồn rồi nhấn Lấy địa điểm để thử lại.',
+      );
+    const destination = await Destination.findOne({
+      _id: input.destinationId,
+      deletedAt: null,
+      catalogKind: 'province',
+      publicationStatus: 'published',
+    });
+    const province = provinces.find(
+      (p) => p.code === destination?.provinceCode,
+    );
+    if (!destination || !province)
+      throw new HttpError(
+        409,
+        'PROVINCE_DISABLED',
+        'Bật tỉnh/thành trước khi lấy địa điểm.',
+      );
+    if (
+      input.areaName &&
+      ![province.name, ...province.areas].includes(input.areaName)
+    )
+      throw new HttpError(
+        400,
+        'INVALID_AREA',
+        'Chọn khu vực trong danh mục của tỉnh/thành.',
+      );
+    if (
+      await Run.exists({ scope: scopeKey(input.destinationId), active: true })
+    )
+      throw new HttpError(
+        409,
+        'SCOPE_RUN_ACTIVE',
+        'Tỉnh đang có đợt thu thập. Mở Đợt thu thập để xem tiến trình hoặc tiếp tục đợt đã tạm dừng.',
+      );
+    const configured = !input.areaName
+      ? (
+          await adminOperationsModels(connection).Settings.findOne({
+            scope: 'global',
+          })
+        )?.regions.find(
+          (r) => r.destinationId === input.destinationId && r.enabled,
+        )
+      : undefined;
+    let area: IngestionArea;
+    const label = input.areaName ?? province.name;
+    if (
+      configured?.latitude != null &&
+      configured.longitude != null &&
+      configured.radiusMeters != null
+    ) {
+      area = {
+        latitude: configured.latitude,
+        longitude: configured.longitude,
+        radiusMeters: configured.radiusMeters,
+      };
+    } else {
+      const release = await operations.reserveSearch(String(actor));
+      const usage = new Usage({ group: 'geocode', requestedLimit: 5 });
+      try {
+        await usage.save();
+        area = await resolveArea(label, province.name);
+        await Usage.updateOne(
+          { _id: usage._id },
+          { $set: { state: 'fetched', received: 1 } },
+        );
+      } catch (error) {
+        await Usage.updateOne(
+          { _id: usage._id },
+          {
+            $set: {
+              state: 'failed',
+              errorCode:
+                error instanceof HttpError ? error.code : 'AREA_LOOKUP_FAILED',
+            },
+          },
+        );
+        throw error;
+      } finally {
+        await release();
+      }
+    }
+    return createCampaign(
+      actor,
+      { destinationIds: [input.destinationId], group: 'sights' },
+      key,
+      { hash, area, label, source: configured ? 'configured' : 'geoapify' },
+    );
   }
   async function controlCampaign(
     actor: Types.ObjectId,
@@ -621,6 +753,9 @@ export function adminV3Service(
               place.proposalRevision == null
             )
               reason = 'Đã đăng địa điểm này.';
+            else if (!approvedPhoto(catalog.input(effective).images?.[0]))
+              reason =
+                'Thiếu ảnh bìa thật đã duyệt. Mở địa điểm để chọn ảnh Wikimedia hoặc bổ sung ảnh có quyền sử dụng.';
             else if (
               !adminPlaceInputSchema.safeParse({
                 ...catalog.input(effective),
@@ -885,6 +1020,7 @@ export function adminV3Service(
     models,
     campaignDetail,
     createCampaign,
+    startProvinceImport,
     controlCampaign,
     previewBulk,
     executeBulk,

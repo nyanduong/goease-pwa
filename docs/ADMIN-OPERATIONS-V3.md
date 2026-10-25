@@ -1,6 +1,6 @@
 # GoEase Admin V3 — vận hành và nghiệm thu
 
-CAT-18 (25/10/2026): Cài đặt dùng danh mục tỉnh/thành tự nạp và toggle hiển thị; không còn form tự tạo điểm đến. Tắt hiển thị giữ địa điểm con và lịch thu thập; archive phạm vi vẫn là thao tác phụ thuộc riêng. Xem PROVINCE-CATALOG.md.
+CAT-18/19 (25/10/2026): Cài đặt dùng danh mục tỉnh/thành tự nạp và toggle hiển thị; không còn form tự tạo điểm đến. UI bật tỉnh tiếp tục tạo đợt lấy tham quan vào draft theo phạm vi đã cấu hình hoặc tâm tra tự động. Không tự xuất bản; admin mở danh sách nháp đúng tỉnh và duyệt lô. Xem PROVINCE-IMPORT.md. Tắt hiển thị giữ địa điểm con và lịch thu thập; archive phạm vi vẫn là thao tác phụ thuộc riêng. Xem PROVINCE-CATALOG.md.
 
 Ngày triển khai: 24/10/2026. Authority: CAT-17 / V3-BR-01…12 tại BR.md. Bộ 15 màn hình là hướng thiết kế; số liệu trên ứng dụng lấy từ API, không lấy số demo từ ảnh.
 

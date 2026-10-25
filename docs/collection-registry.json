@@ -711,8 +711,8 @@
         [
           "imageUrl; sourceUrl; imageCredit",
           "string",
-          "required",
-          "max2048; max2048; max100. Local AI illustration and reference URL, no provider image cache."
+          "imageUrl default empty; sourceUrl/imageCredit required",
+          "CAT-20: max2048; max2048; max1000. Public cover projects first reviewed real photo; legacy AI imageUrl never used as fallback. No provider file cache."
         ],
         [
           "durationLabel; travelLabel; bestTimeLabel; tip",
@@ -754,7 +754,13 @@
           "images",
           "object[]",
           "[]",
-          "Max8 HTTPS url/credit/license/sourceUrl; first image projects hero; no upload or server rights verification. CAT-15."
+          "CAT-20: max8 HTTPS url/sourceUrl<=2048,credit1..1000,license owned/permission/CC0/Public-domain/CC-BY[-SA]-2.0|2.5|3.0|4.0,licenseUrl? HTTPS,reviewed defaultfalse. First approved photo projects hero; published writes require approved cover. No AI fallback/upload/server rights verification."
+        ],
+        [
+          "imageSearch",
+          "bounded embedded object",
+          "state=pending; candidates=[]; attempts=0; nextAttemptAt=now; leaseToken/leaseUntil/checkedAt=null; message=empty",
+          "CAT-20 implemented: state pending/searching/ready/empty/failed; <=6 candidates(id<=40,title<=300,match name|nearby,image same photo schema); message<=300. Index state+nextAttemptAt+leaseUntil. Independent source observation; no editorial revision/updatedAt change, publish/restore preserve current state."
         ]
       ]
     },
@@ -2647,13 +2653,13 @@
           "campaignId; scopeSnapshot; policySnapshot; source",
           "ObjectId|null; strict object|null; strict object; enum",
           "null; null for legacy; disabled v0; geoapify",
-          "Captured destinationID/name/lat/lon/radius and policyID/version/autoApplyDraftHours/autoPublish=false; paused state; existing lease/fence/retry reused."
+          "Captured destinationID/name/lat/lon/radius; CAT-19 optional areaLabel string<=100 and areaSource geoapify|configured. PolicyID/version/autoApplyDraftHours/autoPublish=false; paused state; existing lease/fence/retry reused."
         ]
       ],
       "indexes": "Unique partial {scope:1,active:1} where active=true; {active:1,nextAttemptAt:1,leaseUntil:1}; {createdAt:-1}.",
       "rules": "Một active Hội An; source fetch ngoài transaction, tất cả place/review/result/audit commit nguyên tử với fence; pause không hủy lượt đã nhận. CAT-15: per-region schedules/runs; shared provider quota remains global.",
       "retention": "Chưa TTL/purge; API30lượt gần nhất, audit phân trang.",
-      "brRefs": ["CAT-11", "CAT-13", "DATA-02", "DATA-03"],
+      "brRefs": ["CAT-11", "CAT-13", "CAT-19", "DATA-02", "DATA-03"],
       "implementationStatus": "implemented-local"
     },
     {
@@ -2896,9 +2902,9 @@
       "fields": [
         [
           "runId; provider; group; requestedLimit; state",
-          "ObjectId|null; geoapify; enum; integer; requested|fetched|failed",
+          "ObjectId|null; geoapify; string (sights|restaurant|cafe|geocode); integer; requested|fetched|failed",
           "null; geoapify; required; required; requested",
-          "Worker/manual preview, no raw request URL/key/payload."
+          "Worker/manual preview; CAT-19 group=geocode and runId=null for area lookup (received counts centres, not POIs). No raw request URL/key/payload."
         ],
         [
           "received; errorCode; internalRequests; providerCredits",

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { priceReady, type AdminPlaceDto } from './catalog.js';
+import { priceReady, approvedPhoto, type AdminPlaceDto } from './catalog.js';
 
 export const adminSettingsSchema = z.strictObject({
   expectedRevision: z.number().int().nonnegative(),
@@ -46,6 +46,7 @@ export function catalogQuality(
     | 'mapLocation'
     | 'updatedAt'
     | 'imageCredit'
+    | 'images'
   >,
   freshnessDays = 90,
   now = Date.now(),
@@ -93,10 +94,10 @@ export function catalogQuality(
       label: 'Chưa có giờ mở cửa',
       severity: 'medium',
     });
-  if (!p.imageCredit)
+  if (!approvedPhoto(p.images?.[0]))
     issues.push({
       code: 'image',
-      label: 'Thiếu thông tin quyền sử dụng ảnh',
+      label: 'Thiếu ảnh bìa thật đã duyệt và thông tin quyền sử dụng',
       severity: 'high',
     });
   if (now - new Date(p.updatedAt).getTime() > freshnessDays * 86400000)

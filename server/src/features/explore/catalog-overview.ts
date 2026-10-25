@@ -108,8 +108,8 @@ export async function catalogOverview(
     },
     {
       code: 'image',
-      label: 'Thiếu thông tin quyền sử dụng ảnh',
-      ready: text('imageCredit'),
+      label: 'Thiếu ảnh thật đã duyệt và quyền sử dụng',
+      ready: { $eq: [{ $arrayElemAt: ['$images.reviewed', 0] }, true] },
       required: false,
     },
     {

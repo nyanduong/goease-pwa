@@ -1,4 +1,5 @@
-import { resolveLegacyImageUrl } from '@goease/media';
+import { photoSchema, imageSearchSchema } from './place-images.model.js';
+
 import mongoose, {
   Schema,
   Types,
@@ -14,7 +15,12 @@ import {
   placeStateInputSchema,
 } from '@goease/contracts';
 import { HttpError } from '../../http-error.js';
-import { referencePriceSchema, catalogImageSchema } from '@goease/contracts';
+import {
+  referencePriceSchema,
+  catalogImageSchema,
+  catalogPhotoCover,
+  approvedPhoto,
+} from '@goease/contracts';
 import { referencePriceModelSchema } from './reference-price.js';
 import { mutableFields } from '../auth/auth.models.js';
 import { sourceSnapshotModel } from './catalog-operations.models.js';
@@ -38,21 +44,11 @@ export function exploreService(connection: Connection) {
       sourceSnapshot: { type: sourceSnapshotModel, default: null },
       internalNote: { type: String, maxlength: 1000, default: '' },
       images: {
-        type: [
-          {
-            _id: false,
-            url: { type: String, maxlength: 2048 },
-            credit: { type: String, maxlength: 100 },
-            license: {
-              type: String,
-              enum: ['owned', 'permission', 'CC0', 'CC-BY-4.0', 'CC-BY-SA-4.0'],
-            },
-            sourceUrl: { type: String, maxlength: 2048 },
-          },
-        ],
+        type: [photoSchema],
         default: [],
         validate: (v: unknown[]) => v.length <= 8,
       },
+      imageSearch: { type: imageSearchSchema, default: () => ({}) },
       sourceCheckedAt: { type: Date, default: null },
       venueType: { type: String, enum: ['place', 'restaurant', 'food_idea'] },
       openingHoursNote: { type: String, maxlength: 400, default: '' },
@@ -86,7 +82,7 @@ export function exploreService(connection: Connection) {
       subtitle: { type: String, required: true, maxlength: 150 },
       description: { type: String, required: true, maxlength: 2000 },
       searchText: { type: String, required: true, maxlength: 2500 },
-      imageUrl: { type: String, required: true, maxlength: 2048 },
+      imageUrl: { type: String, default: '', maxlength: 2048 },
       durationLabel: { type: String, required: true, maxlength: 60 },
       travelLabel: { type: String, required: true, maxlength: 60 },
       bestTimeLabel: { type: String, required: true, maxlength: 60 },
@@ -162,7 +158,7 @@ export function exploreService(connection: Connection) {
         ),
         required: false,
       },
-      imageCredit: { type: String, required: true, maxlength: 100 },
+      imageCredit: { type: String, required: true, maxlength: 1000 },
       publicationStatus: {
         type: String,
         enum: ['draft', 'published', 'archived'],
@@ -180,6 +176,11 @@ export function exploreService(connection: Connection) {
     },
   );
   placeSchema.index({ destinationId: 1, publicationStatus: 1, deletedAt: 1 });
+  placeSchema.index({
+    'imageSearch.state': 1,
+    'imageSearch.nextAttemptAt': 1,
+    'imageSearch.leaseUntil': 1,
+  });
   placeSchema.index(
     { 'source.provider': 1, 'source.externalId': 1 },
     {
@@ -262,7 +263,12 @@ export function exploreService(connection: Connection) {
     category: doc.category as PlaceDto['category'],
     subtitle: doc.subtitle,
     description: doc.description,
-    imageUrl: resolveLegacyImageUrl(doc.imageUrl),
+    imageUrl:
+      catalogPhotoCover(
+        doc.images.map((i) =>
+          i instanceof mongoose.Document ? i.toObject() : i,
+        ),
+      )?.url ?? '',
     durationLabel: doc.durationLabel,
     travelLabel: doc.travelLabel,
     bestTimeLabel: doc.bestTimeLabel,
@@ -272,12 +278,19 @@ export function exploreService(connection: Connection) {
       query: h.query,
     })),
     sourceUrl: doc.sourceUrl,
-    imageCredit: doc.imageCredit,
-    images: doc.images.map((i) =>
-      catalogImageSchema.parse(
-        i instanceof mongoose.Document ? i.toObject() : i,
-      ),
-    ),
+    imageCredit:
+      catalogPhotoCover(
+        doc.images.map((i) =>
+          i instanceof mongoose.Document ? i.toObject() : i,
+        ),
+      )?.credit ?? 'Chưa có ảnh thật được duyệt',
+    images: doc.images
+      .map((i) =>
+        catalogImageSchema.parse(
+          i instanceof mongoose.Document ? i.toObject() : i,
+        ),
+      )
+      .filter(approvedPhoto),
     ...(parseMapLocation(doc.mapLocation).success
       ? { mapLocation: parseMapLocation(doc.mapLocation).data! }
       : {}),

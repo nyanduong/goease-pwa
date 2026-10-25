@@ -49,10 +49,48 @@ export const referencePriceSchema = z
 export type ReferencePrice = z.infer<typeof referencePriceSchema>;
 export const catalogImageSchema = z.strictObject({
   url: publicSourceSchema,
-  credit: z.string().trim().min(1).max(100),
-  license: z.enum(['owned', 'permission', 'CC0', 'CC-BY-4.0', 'CC-BY-SA-4.0']),
+  credit: z.string().trim().min(1).max(1000),
+  license: z.enum([
+    'owned',
+    'permission',
+    'CC0',
+    'Public-domain',
+    'CC-BY-2.0',
+    'CC-BY-2.5',
+    'CC-BY-3.0',
+    'CC-BY-4.0',
+    'CC-BY-SA-2.0',
+    'CC-BY-SA-2.5',
+    'CC-BY-SA-3.0',
+    'CC-BY-SA-4.0',
+  ]),
   sourceUrl: publicSourceSchema,
+  licenseUrl: publicSourceSchema.optional(),
+  reviewed: z.boolean().optional(),
 });
+export type CatalogImage = z.infer<typeof catalogImageSchema>;
+export const approvedPhoto = (image: CatalogImage | undefined) =>
+  !!image &&
+  image.reviewed === true &&
+  !/minh họa|\bAI\b|generated|illustration/i.test(image.credit) &&
+  catalogImageSchema.safeParse(image).success;
+export function catalogPhotoCover(images: unknown[]) {
+  const parsed = catalogImageSchema.safeParse(images[0]);
+  return parsed.success && approvedPhoto(parsed.data) ? parsed.data : undefined;
+}
+export const imageCandidateSchema = z.strictObject({
+  id: z.string().max(40),
+  title: z.string().max(300),
+  match: z.enum(['name', 'nearby']),
+  image: catalogImageSchema,
+});
+export type ImageCandidate = z.infer<typeof imageCandidateSchema>;
+export type PlaceImageSearchDto = {
+  state: string;
+  candidates: ImageCandidate[];
+  message: string;
+  checkedAt: string | null;
+};
 export const priceSnapshotSchema = referencePriceSchema.safeExtend({
   placeRevision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 });
@@ -108,6 +146,13 @@ export const adminPlaceInputSchema = z
       .optional(),
   })
   .superRefine((v, ctx) => {
+    if (v.publicationStatus === 'published' && !approvedPhoto(v.images?.[0]))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['images'],
+        message:
+          'Cần ảnh bìa thật đã được admin duyệt và đủ nguồn/quyền sử dụng trước khi xuất bản.',
+      });
     if (
       v.publicationStatus === 'published' &&
       /cần đối chiếu|đang rà soát|cần xác minh/i.test(
@@ -184,10 +229,12 @@ export function catalogCapabilities(
     | 'openingHoursNote'
     | 'referencePrice'
     | 'venueType'
+    | 'images'
   >,
   travelers = 1,
 ) {
   const discovery =
+    approvedPhoto(place.images?.[0]) &&
     !!place.name.trim() &&
     !!place.description.trim() &&
     !!place.locationQuery.trim() &&

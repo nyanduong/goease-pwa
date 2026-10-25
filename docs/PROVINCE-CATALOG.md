@@ -8,7 +8,7 @@ Owner chốt ngày 25/10/2026: điểm đến là tỉnh/thành, Hội An và Sa
 2. Admin → Cài đặt → Danh mục tỉnh/thành Việt Nam: có 34 dòng, mục mới đang tắt. Tìm `Hà Nội`, `hoi an` hoặc `Sa Pa`; tìm tên khu vực trả tỉnh chứa khu vực đó.
 3. Bật một tỉnh. Reload vẫn bật. Customer chỉ thấy tỉnh đã bật; nếu chưa có POI đủ dữ liệu, Goe báo thiếu dữ liệu trước khi gọi provider.
 4. Tắt có xác nhận: ẩn tỉnh và POI bên trong khỏi customer. Bản đã lưu, đề xuất, giá, ảnh và lịch thu thập giữ nguyên. Bật lại hiện POI vẫn published; không tự publish draft.
-5. Phạm vi lấy nguồn vẫn ở cấu hình riêng. Bật hiển thị không gọi Geoapify, không tạo POI hoặc xác minh giá/giờ.
+5. CAT-19 nối UI bật tỉnh với đợt lấy địa điểm tham quan vào nháp. Nguồn lỗi không tắt lại tỉnh; bấm thử lại hoặc “Lấy địa điểm / xem tiến trình”. Không tự xuất bản/xác minh giá/giờ. Xem [luồng lấy nguồn và duyệt lô](PROVINCE-IMPORT.md).
 
 ## Nguồn và phiên bản
 

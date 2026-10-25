@@ -1,4 +1,3 @@
-import { images } from '@goease/media';
 import { ingestionScope, scopeKey } from './ingestion-scope.js';
 import mongoose, { Types, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
@@ -418,8 +417,8 @@ export function placeImportService(
                 },
                 referencePrice: null,
                 publicationStatus: 'draft',
-                imageUrl: images.exploreHoian,
-                imageCredit: 'Ảnh minh họa AI, không phải ảnh cơ sở',
+                imageUrl: '',
+                imageCredit: 'Chưa có ảnh thật được duyệt',
                 durationLabel: 'Ước tính 60 phút',
                 travelLabel: 'Kiểm tra đường đi',
                 bestTimeLabel: 'Kiểm tra giờ mở cửa',

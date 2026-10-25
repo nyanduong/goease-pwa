@@ -3,6 +3,11 @@ import { adminPlaceQuerySchema } from './catalog.js';
 import type { CatalogRunDto } from './catalog-operations.js';
 
 const id = z.string().regex(/^[a-f0-9]{24}$/);
+export const provinceImportSchema = z.strictObject({
+  destinationId: id,
+  areaName: z.string().trim().min(1).max(100).optional(),
+});
+export type ProvinceImportInput = z.infer<typeof provinceImportSchema>;
 export const campaignInputSchema = z.strictObject({
   destinationIds: z
     .array(id)
@@ -116,7 +121,17 @@ export type CampaignDetail = {
       autoPublish: false;
     };
   };
-  tasks: (CatalogRunDto & { destinationId: string; destinationName: string })[];
+  tasks: (CatalogRunDto & {
+    destinationId: string;
+    destinationName: string;
+    scope?: {
+      latitude: number;
+      longitude: number;
+      radiusMeters: number;
+      areaLabel?: string | null;
+      areaSource?: string | null;
+    } | null;
+  })[];
   totalTasks: number;
 };
 export type PolicySimulation = {
