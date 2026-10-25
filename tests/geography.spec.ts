@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
-test('operator prepares a Northern destination; customer filters it and gets a truthful empty-catalog response without losing input', async ({
+test('operator enables a province; customer filters it and gets a truthful empty-catalog response without losing input', async ({
   page,
   browser,
 }) => {
@@ -16,38 +16,35 @@ test('operator prepares a Northern destination; customer filters it and gets a t
   await page.getByRole('button', { name: 'Đăng nhập', exact: false }).click();
   await expect(page).toHaveURL(/\/admin/);
   await page.getByRole('link', { name: 'Cài đặt', exact: true }).click();
-  const manager = page.getByRole('region', { name: 'Điểm đến và phân vùng' });
+  const manager = page.getByRole('region', { name: 'Danh mục tỉnh thành' });
   await expect(
-    manager.getByRole('heading', { name: 'Điểm đến & phân vùng Việt Nam' }),
+    manager.getByRole('heading', { name: 'Danh mục tỉnh/thành Việt Nam' }),
   ).toBeVisible();
-  const name = `Fixture Tây Bắc ${Date.now()}`;
-  await manager.getByLabel('Tên điểm đến', { exact: true }).fill(name);
-  await manager
-    .getByLabel('Đường dẫn điểm đến')
-    .fill(`fixture-northwest-${Date.now()}`);
-  await manager.getByLabel('Vùng của điểm đến').selectOption('northwest');
-  await manager.getByLabel('Trạng thái điểm đến').selectOption('published');
-  await manager
-    .getByRole('button', { name: 'Lưu điểm đến', exact: true })
-    .click();
+  await expect(manager.locator('tbody tr')).toHaveCount(34);
   await expect(
-    manager.getByText('Đã lưu điểm đến và phân vùng.', { exact: false }),
-  ).toBeVisible();
-  await manager
-    .getByLabel('Miền du lịch', { exact: true })
-    .selectOption('north');
-  await manager
-    .getByLabel('Vùng du lịch', { exact: true })
-    .selectOption('northwest');
-  await expect(
-    manager.getByRole('button', { name: `Sửa ${name}`, exact: true }),
-  ).toBeVisible();
-  await expect(
-    manager.getByRole('button', { name: 'Sửa Hội An', exact: true }),
+    manager.getByRole('switch', { name: 'Hiển thị Hội An', exact: true }),
   ).toHaveCount(0);
+  await expect(
+    manager.getByRole('textbox', { name: 'Tên điểm đến', exact: true }),
+  ).toHaveCount(0);
+  const name = 'Lào Cai';
+  await manager.getByLabel('Tìm tỉnh/thành hoặc khu vực').fill('Sa Pa');
+  await expect(
+    manager.getByRole('switch', { name: `Hiển thị ${name}`, exact: true }),
+  ).toHaveAttribute('aria-checked', 'false');
+  await manager
+    .getByRole('switch', { name: `Hiển thị ${name}`, exact: true })
+    .click();
+  await expect(manager.getByRole('status')).toContainText('Đã bật Lào Cai');
+  await expect(
+    manager.getByRole('switch', { name: `Hiển thị ${name}`, exact: true }),
+  ).toHaveAttribute('aria-checked', 'true');
   await page.reload();
   await expect(
-    manager.getByRole('button', { name: `Sửa ${name}`, exact: true }),
+    manager.getByRole('switch', { name: `Hiển thị ${name}`, exact: true }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await expect(
+    manager.getByRole('switch', { name: `Hiển thị ${name}`, exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -119,6 +116,25 @@ test('operator prepares a Northern destination; customer filters it and gets a t
       path: '.local/national-planner/customer-empty-catalog.png',
       fullPage: true,
     });
+    page.once('dialog', (dialog) => dialog.accept());
+    await manager
+      .getByRole('switch', { name: `Hiển thị ${name}`, exact: true })
+      .click();
+    await expect(manager.getByRole('status')).toContainText('Đã tắt Lào Cai');
+    await mobile.reload();
+    await expect(mobile.getByRole('button', { name: /Lào Cai/ })).toHaveCount(
+      0,
+    );
+    for (const width of [320, 390, 1366]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        )
+        .toBe(true);
+    }
   } finally {
     await customer.close();
   }

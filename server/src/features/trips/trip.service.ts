@@ -194,6 +194,7 @@ export function tripService(
             const destination = await Destination.findOne({
               _id: value.destinations[0]!.destinationId,
               publicationStatus: 'published',
+              catalogKind: { $ne: 'legacy' },
               deletedAt: null,
             }).session(session);
             if (!destination)
@@ -327,6 +328,7 @@ export function tripService(
                       $in: newLinks.map((a) => new Types.ObjectId(a.placeId)),
                     },
                     publicationStatus: 'published',
+                    catalogKind: { $ne: 'legacy' },
                     deletedAt: null,
                   },
                   { session },

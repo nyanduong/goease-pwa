@@ -69,8 +69,20 @@ export type DestinationInput = z.infer<typeof destinationInputSchema>;
 export type AdminDestinationDto = Omit<DestinationInput, 'tourismRegion'> & {
   tourismRegion: TourismRegion | null;
   id: string;
+  provinceCode?: string | null;
+  catalogVersion?: string | null;
+  catalogSourceUrl?: string | null;
+  catalogEffectiveFrom?: string | null;
+  tourismAreas?: string[];
   revision: number;
   countryCode: 'VN';
   timezone: string;
   region: TravelRegion | null;
 };
+
+/** The administrative catalog is immutable through the admin API. */
+export const destinationToggleSchema = z.strictObject({
+  enabled: z.boolean(),
+  expectedRevision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+});
+export type DestinationToggleInput = z.infer<typeof destinationToggleSchema>;

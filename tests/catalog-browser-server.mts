@@ -62,7 +62,7 @@ async function main() {
       throw new Error('No eligible planner catalog in this browser fixture');
     },
   });
-  await product.initialize();
+  await product.initialize(true);
   await seedDestinations(product.trips.models.Destination);
   await configureFixtureScope(harness.connection);
   const app = createApp(

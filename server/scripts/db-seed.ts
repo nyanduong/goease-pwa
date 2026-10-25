@@ -1,9 +1,8 @@
-import { exploreService } from '../src/features/explore/explore.service.js';
-import { seedPlaces } from '../src/features/explore/explore.seed.js';
 import mongoose from 'mongoose';
 import { parseConfig } from '../src/config.js';
 import { tripModels } from '../src/features/trips/trip.models.js';
-import { seedDestinations } from '../src/features/trips/destination-seed.js';
+import { syncProvinceCatalog } from '../src/features/trips/province-catalog.js';
+import { businessAudit } from '../src/features/audit/business-audit.js';
 const connection = mongoose.createConnection();
 try {
   const config = parseConfig(process.env);
@@ -22,14 +21,10 @@ try {
   const { Destination } = tripModels(connection);
   await Destination.createCollection();
   await Destination.createIndexes();
-  await seedDestinations(Destination);
-  const { Place } = exploreService(connection).models;
-  await Place.createCollection();
-  await Place.createIndexes();
-  await seedPlaces(Place);
-  console.info(
-    'PASS: GoEase-authored destination and place catalogs ready; existing records preserved.',
-  );
+  const audit = businessAudit(connection, 'development');
+  await audit.initialize();
+  const result = await syncProvinceCatalog(connection, Destination, audit);
+  console.info(JSON.stringify({ status: 'Province catalog ready', ...result }));
 } catch {
   console.error(
     'FAIL: destination seed. Only development GoEase on loopback 27017/rs0 is allowed; check database availability.',

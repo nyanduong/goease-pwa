@@ -403,7 +403,9 @@ test('real browser account, manual trip, failed save preservation, reload and re
     page.getByRole('button', { name: 'Lên lịch giúp mình' }),
   ).toBeDisabled();
   await page
-    .getByRole('button', { name: 'Hội An Goe kiểm tra dữ liệu khi lập lịch' })
+    .getByRole('button', {
+      name: 'Đà Nẵng Khu vực: Hội An Goe kiểm tra dữ liệu khi lập lịch',
+    })
     .click();
   await page.getByRole('button', { name: 'Khác', exact: true }).click();
   await page
@@ -564,7 +566,7 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
   await page.getByRole('button', { name: /Muốn đổi nhịp/ }).click();
   await expect(page.locator('.goe-context-chip')).toContainText(
-    'Hội An · Ngày 2',
+    'Đà Nẵng · Ngày 2',
   );
   await expect(
     page.getByLabel('Hỏi Goe về chuyến đi', { exact: true }),
@@ -687,7 +689,7 @@ test('Hoi An catalog journey and server budget stay connected across save and re
     .click();
   await expect(page).toHaveURL(/\/$/);
   await page
-    .getByRole('button', { name: 'Lên kế hoạch đến Hội An', exact: true })
+    .getByRole('button', { name: 'Lên kế hoạch đến Đà Nẵng', exact: true })
     .click();
   await page.getByRole('button', { name: '3 ngày', exact: true }).click();
   await page.getByRole('button', { name: 'Nhóm / gia đình' }).click();
@@ -842,7 +844,7 @@ test('Hoi An catalog journey and server budget stay connected across save and re
     .click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page
-    .getByLabel('Chuyến đi tại Hội An')
+    .getByLabel('Chuyến đi tại Đà Nẵng')
     .selectOption({ label: 'Hội An nối dữ liệu thật' });
   await page.getByLabel('Ngày ghé thăm').selectOption({ label: '2026-11-13' });
   await page
@@ -883,7 +885,7 @@ test('Hoi An catalog journey and server budget stay connected across save and re
     })
     .click();
   await page
-    .getByLabel('Chuyến đi tại Hội An')
+    .getByLabel('Chuyến đi tại Đà Nẵng')
     .selectOption({ label: 'Hội An nối dữ liệu thật' });
   await page.getByLabel('Ngày ghé thăm').selectOption({ label: '2026-11-13' });
   const duplicatePrompt = page.waitForEvent('dialog');
@@ -1769,7 +1771,7 @@ test('live Gemini proposal applies saves reloads and preserves AI provenance', a
     .click();
   await expect(page).toHaveURL(/\/$/);
   await page
-    .getByRole('button', { name: 'Lên kế hoạch đến Hội An', exact: true })
+    .getByRole('button', { name: 'Lên kế hoạch đến Đà Nẵng', exact: true })
     .click();
   await page.getByRole('button', { name: '3 ngày', exact: true }).click();
   const generated = page.waitForResponse('**/api/v1/trips/ai-proposal', {
@@ -2639,9 +2641,9 @@ test('mobile newcomer resumes setup, sees unknown costs and recovers from failed
   await page.getByRole('button', { name: 'Bắt đầu hành trình' }).click();
   await expect(
     page.getByRole('button', { name: 'Sa Pa · Chưa hỗ trợ lập lịch' }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
   await page
-    .getByRole('button', { name: 'Lên kế hoạch đến Hội An', exact: true })
+    .getByRole('button', { name: 'Lên kế hoạch đến Đà Nẵng', exact: true })
     .click();
   await expect(page).toHaveURL(/login\?next=\/trips\/new&destination=/);
   await expect(page.locator('.auth-card-sub')).toContainText(
@@ -2663,7 +2665,7 @@ test('mobile newcomer resumes setup, sees unknown costs and recovers from failed
   await expect(page).toHaveURL(/\/trips\/new$/);
   await expect(
     page.getByRole('button', {
-      name: 'Hội An Goe kiểm tra dữ liệu khi lập lịch',
+      name: 'Đà Nẵng Khu vực: Hội An Goe kiểm tra dữ liệu khi lập lịch',
       exact: true,
     }),
   ).toBeVisible();
@@ -2811,7 +2813,9 @@ test('quick mobile plan: recover proposal, swap or undo a stop, choose dates onl
     page.getByRole('button', { name: 'Lên lịch giúp mình' }),
   ).toBeEnabled();
   await page
-    .getByRole('button', { name: 'Hội An Goe kiểm tra dữ liệu khi lập lịch' })
+    .getByRole('button', {
+      name: 'Đà Nẵng Khu vực: Hội An Goe kiểm tra dữ liệu khi lập lịch',
+    })
     .click();
   await expect(
     page.getByRole('button', { name: '2 ngày', exact: true }),

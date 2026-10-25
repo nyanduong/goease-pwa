@@ -493,6 +493,7 @@ export function plannerService(
       const destination = await trips.models.Destination.findOne({
         _id: input.trip.destinations[0]!.destinationId,
         publicationStatus: 'published',
+        catalogKind: { $ne: 'legacy' },
         deletedAt: null,
         $or: [{ countryCode: 'VN' }, { countryCode: { $exists: false } }],
       });

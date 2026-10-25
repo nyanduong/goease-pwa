@@ -2885,3 +2885,20 @@
   padding: 12px 0;
   border-top: 1px solid #e0e8ee;
 }
+
+/* Keep the province catalog usable alongside the other settings. */
+.admin-destination-manager .admin-table-wrap {
+  max-height: 34rem;
+  overflow: auto;
+}
+.admin-destination-manager th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+.admin-destination-manager [role='switch'][aria-checked='true'] {
+  background: #087f80;
+  color: #fff;
+  border-color: #087f80;
+}

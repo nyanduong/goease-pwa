@@ -1,5 +1,7 @@
 # Planner Việt Nam và phân vùng — 24/10/2026
 
+CAT-18 (25/10/2026) thay phần thêm điểm đến thủ công:34 tỉnh/thành được bootstrap, admin bật/tắt trong Cài đặt. Hội An/Sa Pa chỉ là khu vực bên trong Đà Nẵng/Lào Cai. Lập lịch theo tỉnh vẫn cần dữ liệu đủ điều kiện; một vòng tròn thu thập không bao phủ tỉnh. Xem PROVINCE-CATALOG.md.
+
 Owner yêu cầu mở rộng planner toàn Việt Nam và chuẩn bị phân vùng trước khi reset/import từ Bắc xuống Nam. Task chạy trực tiếp trên main. Dữ liệu ứng dụng hiện tại được giữ; không chạy clear, seed lại catalog hay import nguồn thật trong task này.
 
 ## Phạm vi thực thi

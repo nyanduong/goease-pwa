@@ -92,23 +92,19 @@ export function HomeDiscovery({
       );
     }
   };
-  const cards = [
-    ...destinations.map((d) => {
-      const known = suggestions.find((s) => fold(s.name) === fold(d.name));
-      return {
-        ...known,
-        slug: known?.slug ?? d.id,
-        name: d.name,
-        subtitle: d.summary || 'Khám phá theo cách của bạn',
-        category: known?.category ?? 'Khám phá',
-        image: known?.image ?? images.goeMascot,
-        destination: d,
-      };
-    }),
-    ...suggestions
-      .filter((s) => !destinations.some((d) => fold(s.name) === fold(d.name)))
-      .map((d) => ({ ...d, destination: undefined })),
-  ];
+  const cards = destinations.map((d) => {
+    const known = suggestions.find(
+      (s) => d.tourismAreas?.includes(s.name) || fold(s.name) === fold(d.name),
+    );
+    return {
+      slug: d.slug ?? d.id,
+      name: d.name,
+      subtitle: d.summary || 'Khám phá theo cách của bạn',
+      category: known?.category ?? 'Khám phá',
+      image: known?.image ?? images.goeMascot,
+      destination: d,
+    };
+  });
   const visible = cards.filter(
     (d) =>
       (mode !== 'saved' || saved.includes(d.slug)) &&
@@ -116,7 +112,9 @@ export function HomeDiscovery({
         ? matchesRegion(d.destination, region, subregion)
         : !region && !subregion) &&
       (category === 'Tất cả' || category === d.category) &&
-      fold(d.name).includes(fold(query)),
+      fold([d.name, ...(d.destination?.tourismAreas ?? [])].join(' ')).includes(
+        fold(query),
+      ),
   );
   const IntroHeading = mode === 'home' ? 'h2' : 'h1';
 

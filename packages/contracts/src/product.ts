@@ -151,6 +151,8 @@ export const tripInputSchema = z
 export type TripInput = z.infer<typeof tripInputSchema>;
 export type ActivityInput = z.infer<typeof activityInputSchema>;
 export type DestinationDto = {
+  provinceCode?: string | null;
+  tourismAreas?: string[];
   id: string;
   name: string;
   timezone: string;

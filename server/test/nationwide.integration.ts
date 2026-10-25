@@ -89,7 +89,12 @@ test(
         };
       },
     });
-    await product.initialize();
+    try {
+      await product.initialize(true);
+    } catch (error) {
+      await harness.stop();
+      throw error;
+    }
     const server = createApp(
       config,
       async () => {},
@@ -154,15 +159,6 @@ test(
       })),
     });
     const targets: AdminDestinationDto[] = [];
-    const payload = (code: string) => ({
-      destination: {
-        name: `Fixture ${code}`,
-        slug: `fixture-${code}`,
-        tourismRegion: code,
-        summary: 'Synthetic integration destination',
-        publicationStatus: 'published',
-      },
-    });
     try {
       const registered = await call('/auth/register', 'POST', {
         email: 'national-admin@example.invalid',
@@ -185,8 +181,19 @@ test(
         401,
       );
       await t.test(
-        'all eight areas create stable destination IDs; retry, validation, filtering and publication boundaries hold',
+        'the fixed province catalog enables one destination per travel region with authorization, revision and retry guards',
         async () => {
+          const all = await read<{ items: AdminDestinationDto[] }>(
+            await call('/admin/destinations'),
+          );
+          assert.equal(all.items.length, 34);
+          assert.equal(new Set(all.items.map((d) => d.provinceCode)).size, 34);
+          assert.ok(all.items.every((d) => d.publicationStatus === 'draft'));
+          assert.equal(
+            (await read<{ items: unknown[] }>(await call('/destinations')))
+              .items.length,
+            0,
+          );
           const geography = await read<{
             regions: unknown[];
             tourismRegions: unknown[];
@@ -194,27 +201,27 @@ test(
           assert.equal(geography.regions.length, 3);
           assert.equal(geography.tourismRegions.length, 8);
           for (const r of tourismRegions) {
-            const key = randomUUID(),
-              body = payload(r.code);
-            const saved = await read<{ destination: AdminDestinationDto }>(
-              await call('/admin/destinations', 'POST', body, key),
+            const item = all.items.find((d) => d.tourismRegion === r.code)!;
+            const key = randomUUID();
+            const body = { enabled: true, expectedRevision: item.revision };
+            const response = await read<{ destination: AdminDestinationDto }>(
+              await call(`/admin/destinations/${item.id}`, 'PATCH', body, key),
             );
-            targets.push(saved.destination);
-            assert.equal(saved.destination.region, r.region);
+            targets.push(response.destination);
+            assert.equal(response.destination.region, r.region);
+            const replay = await read<{ destination: AdminDestinationDto }>(
+              await call(`/admin/destinations/${item.id}`, 'PATCH', body, key),
+            );
             assert.equal(
-              (
-                await read<{ destination: AdminDestinationDto }>(
-                  await call('/admin/destinations', 'POST', body, key),
-                )
-              ).destination.id,
-              saved.destination.id,
+              replay.destination.revision,
+              response.destination.revision,
             );
             assert.equal(
               await errorCode(
                 await call(
-                  '/admin/destinations',
-                  'POST',
-                  { destination: { ...body.destination, name: 'Changed' } },
+                  `/admin/destinations/${item.id}`,
+                  'PATCH',
+                  { ...body, enabled: false },
                   key,
                 ),
                 409,
@@ -224,7 +231,7 @@ test(
           }
           assert.equal(
             await product.trips.models.Destination.countDocuments(),
-            8,
+            34,
           );
           assert.equal(
             (
@@ -263,36 +270,30 @@ test(
           assert.equal(
             (
               await call('/admin/destinations', 'POST', {
-                destination: {
-                  ...payload('northwest').destination,
-                  countryCode: 'TH',
-                },
+                destination: { name: 'Custom' },
+              })
+            ).status,
+            405,
+          );
+          const first = targets[0]!;
+          assert.equal(
+            (
+              await call(`/admin/destinations/${first.id}`, 'PATCH', {
+                enabled: true,
+                expectedRevision: first.revision,
+                name: 'Changed',
               })
             ).status,
             400,
           );
-          assert.equal(
-            await errorCode(
-              await call('/admin/destinations', 'POST', payload('northwest')),
-              409,
+          const changes = await Promise.all(
+            [0, 1].map(() =>
+              call(`/admin/destinations/${first.id}`, 'PATCH', {
+                enabled: true,
+                expectedRevision: first.revision,
+              }),
             ),
-            'DESTINATION_SLUG_CONFLICT',
           );
-          const first = targets[0]!,
-            destination = {
-              ...payload('northwest').destination,
-              name: first.name,
-            };
-          const changes = await Promise.all([
-            call(`/admin/destinations/${first.id}`, 'PATCH', {
-              destination,
-              expectedRevision: first.revision,
-            }),
-            call(`/admin/destinations/${first.id}`, 'PATCH', {
-              destination,
-              expectedRevision: first.revision,
-            }),
-          ]);
           assert.deepEqual(changes.map((r) => r.status).sort(), [200, 409]);
           const firstPage = await read<{
             items: AdminDestinationDto[];
@@ -307,6 +308,21 @@ test(
               firstPage.items.some((f) => f.id === d.id),
             ),
           );
+          const alias = await read<{ items: AdminDestinationDto[] }>(
+            await call('/admin/destinations?q=hoi%20an'),
+          );
+          assert.deepEqual(
+            alias.items.map((d) => d.provinceCode),
+            ['48'],
+          );
+          const before = await product.trips.models.Destination.find()
+            .sort({ _id: 1 })
+            .lean();
+          await product.initialize(true);
+          const after = await product.trips.models.Destination.find()
+            .sort({ _id: 1 })
+            .lean();
+          assert.deepEqual(after, before);
         },
       );
       await t.test(
@@ -572,9 +588,35 @@ test(
             'AI_UNKNOWN_SELECTION',
           );
           foreignOutput = false;
-          await product.trips.models.Destination.updateOne(
-            { _id: targets[0]!.id },
-            { $set: { publicationStatus: 'archived' } },
+          const current = (await product.trips.models.Destination.findById(
+            targets[0]!.id,
+          ))!;
+          const tripBefore = await product.trips.models.Trip.find({
+            'destinations.destinationId': current._id,
+          }).lean();
+          const placesBefore = await product.explore.models.Place.find({
+            destinationId: current._id,
+          }).lean();
+          assert.equal(
+            (
+              await call(`/admin/destinations/${current._id}`, 'PATCH', {
+                enabled: false,
+                expectedRevision: current.revision,
+              })
+            ).status,
+            200,
+          );
+          assert.deepEqual(
+            await product.trips.models.Trip.find({
+              'destinations.destinationId': current._id,
+            }).lean(),
+            tripBefore,
+          );
+          assert.deepEqual(
+            await product.explore.models.Place.find({
+              destinationId: current._id,
+            }).lean(),
+            placesBefore,
           );
           const hiddenPlace = await product.explore.models.Place.findOne({
             destinationId: targets[0]!.id,
@@ -601,32 +643,29 @@ test(
         },
       );
       await t.test(
-        'destination audit failure rolls back the new destination and idempotency receipt',
+        'destination audit failure rolls back toggle and idempotency receipt',
         async () => {
           const Audit = harness.connection.models.AuditLog!;
           const stub = t.mock.method(Audit.prototype, 'save', async () => {
             throw new Error('Injected audit failure');
           });
           const key = randomUUID();
+          const current = (await product.trips.models.Destination.findById(
+            targets[0]!.id,
+          ))!;
           const response = await call(
-            '/admin/destinations',
-            'POST',
-            {
-              destination: {
-                ...payload('northwest').destination,
-                slug: 'rollback-fixture',
-              },
-            },
+            `/admin/destinations/${current._id}`,
+            'PATCH',
+            { enabled: true, expectedRevision: current.revision },
             key,
           );
           stub.mock.restore();
           assert.equal(response.status, 500);
-          assert.equal(
-            await product.trips.models.Destination.countDocuments({
-              slug: 'rollback-fixture',
-            }),
-            0,
-          );
+          const unchanged = (await product.trips.models.Destination.findById(
+            current._id,
+          ))!;
+          assert.equal(unchanged.revision, current.revision);
+          assert.equal(unchanged.publicationStatus, current.publicationStatus);
           assert.equal(
             await product.trips.models.Key.countDocuments({ key }),
             0,

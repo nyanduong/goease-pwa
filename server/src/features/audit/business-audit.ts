@@ -16,6 +16,7 @@ const input = z.strictObject({
     'catalog.campaign_resumed',
     'catalog.policy_created',
     'catalog.destination_created',
+    'catalog.destination_catalogued',
     'catalog.destination_updated',
     'catalog.restored',
     'catalog.settings_saved',
@@ -121,11 +122,14 @@ export function businessAudit(
           ? { type: 'user', userId: v.actorUserId }
           : {
               type: 'system',
-              serviceName: catalog
-                ? 'catalog-worker'
-                : v.action.startsWith('admin.')
-                  ? 'admin-bootstrap'
-                  : 'auth',
+              serviceName:
+                v.action === 'catalog.destination_catalogued'
+                  ? 'province-catalog'
+                  : catalog
+                    ? 'catalog-worker'
+                    : v.action.startsWith('admin.')
+                      ? 'admin-bootstrap'
+                      : 'auth',
             },
         entityType: v.action.startsWith('catalog.campaign_')
           ? 'catalog_campaign'

@@ -1,4 +1,4 @@
-import type { Connection, ClientSession } from 'mongoose';
+import { Types, type Connection, type ClientSession } from 'mongoose';
 import { adminOperationsModels } from './admin-operations.models.js';
 import { HttpError } from '../../http-error.js';
 export const initialDestinationId = '000000000000000000000004';
@@ -24,6 +24,20 @@ export async function ingestionScope(
   session?: ClientSession,
 ): Promise<IngestionArea> {
   scopeKey(destinationId);
+  const destination = await connection.collection('destinations').findOne(
+    {
+      _id: new Types.ObjectId(destinationId),
+      deletedAt: null,
+      catalogKind: { $ne: 'legacy' },
+    },
+    { ...(session ? { session } : {}) },
+  );
+  if (!destination)
+    throw new HttpError(
+      400,
+      'INVALID_DESTINATION',
+      'Chọn tỉnh/thành trong danh mục hiện tại trước khi thu thập.',
+    );
   const settings = await adminOperationsModels(connection)
     .Settings.findOne({ scope: 'global' })
     .session(session ?? null);

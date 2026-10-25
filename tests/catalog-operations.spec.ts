@@ -797,7 +797,7 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
   await expect(page.getByLabel('Tìm trong danh mục')).toHaveValue('');
   const recovered = page.locator('.admin-bulk-preview');
   await expect(recovered).toContainText(`tìm “${name}”`);
-  await expect(recovered).toContainText('Hội An');
+  await expect(recovered).toContainText('Đà Nẵng');
   await expect(recovered).toContainText('Chốt lúc');
   const persisted = (
     await (await page.request.get(`/api/v1/admin/v3/bulk/${frozen.id}`)).json()

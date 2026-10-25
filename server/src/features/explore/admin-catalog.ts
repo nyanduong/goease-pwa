@@ -294,6 +294,7 @@ export function adminCatalog(
       if (
         !(await Destination.exists({
           _id: current.destinationId,
+          catalogKind: { $ne: 'legacy' },
           publicationStatus: 'published',
           deletedAt: null,
         }).session(session))
@@ -323,6 +324,7 @@ export function adminCatalog(
       const destinationFence = await Destination.updateOne(
         {
           _id: current.destinationId,
+          catalogKind: { $ne: 'legacy' },
           publicationStatus: 'published',
           deletedAt: null,
         },
@@ -582,6 +584,7 @@ export function adminCatalog(
             }
             const destination = await Destination.findOne({
               _id: input.destinationId,
+              catalogKind: { $ne: 'legacy' },
               deletedAt: null,
             }).session(session);
             if (!destination)

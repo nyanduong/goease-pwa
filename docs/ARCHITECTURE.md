@@ -1,5 +1,7 @@
 # GoEase — kiến trúc v0.2
 
+CAT-18: startup bootstrap danh mục tỉnh/thành có phiên bản sau initialize model/index/audit và trước ready/worker. GET chỉ đọc. Bootstrap giữ ID/trạng thái, danh mục không lấy trực tiếp từ mạng lúc chạy. tourismAreas là mảng tên hữu hạn; POI/trip dùng destinationId hiện có. Admin PATCH chỉ enabled/expectedRevision; customer đọc tỉnh đang bật. Xem PROVINCE-CATALOG.md.
+
 ## Catalog operations runtime — 23/10/2026
 
 CAT-11–13: module explore thêm catalog-operations +3model có consumer thật. Express index khởi worker sau initialize; poll5s nhận lịch/lượt MongoDB, heartbeat20s/lease120s. Provider chạy ngoài transaction; catalog/review/result/audit cùng transaction ghi vào run có token còn hạn. Transaction write conflict ngăn stale worker; không dựa riêng vào kiểm token trước fetch. Một active run Hội An và source unique index chống tác dụng trùng. Quota chia sẻ với preview thủ công trong singleton schedule. Không Redis/queue package mới. Shutdown chờ worker trong deadline hiện có; khi force-kill, worker mới nhận lại lease hết hạn. Không cần trang admin mở hoặc phiên cấu hình còn sống. Tách snapshot nguồn khỏi nội dung biên tập; không có đường worker xuất bản hay sửa trip. Xem ADMIN-CATALOG.md và DB runtime ở cuối DB-BASELINE.md. Mô tả adapter không scheduler ở mục lịch sử phía dưới đã được mở rộng bằng runtime này.

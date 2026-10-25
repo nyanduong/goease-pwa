@@ -78,48 +78,48 @@ AuditActor: `type`, `userId?`, `roleSnapshot?`, `serviceName?`; actor thực t�
 
 Phân kỳ trong bảng là đề xuất **khi module tương ứng được bật**, không phải danh sách tạo tất cả trong một task.
 
-| #   | Collection              | Lớp      | Mục đích                                                                                               |
-| --- | ----------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
-| 1   | `users`                 | F1       | Hồ sơ nội bộ ổn định, không chứa mọi hoạt động người dùng.                                             |
-| 2   | `auth_identities`       | F1       | Thông tin đăng nhập tách khỏi hồ sơ, cho phép một user liên kết Google và password.                    |
-| 3   | `auth_sessions`         | F1       | Phiên ứng dụng và thu hồi từng thiết bị; web có thể dùng opaque HttpOnly cookie.                       |
-| 4   | `auth_challenges`       | F1       | Token một lần cho xác minh email/reset/link/OAuth state.                                               |
-| 5   | `consent_events`        | F1       | Bằng chứng thông báo/chọn/rút lại từng mục đích xử lý.                                                 |
-| 6   | `privacy_requests`      | PLATFORM | Theo dõi yêu cầu truy cập, xuất, sửa, rút consent hoặc xóa dữ liệu.                                    |
-| 7   | `media_assets`          | CORE     | Metadata media; binary để file/object storage, không nhúng document.                                   |
-| 8   | `destinations`          | CORE     | Khu vực du lịch/chặng, phân biệt địa điểm cụ thể.                                                      |
-| 9   | `places`                | CORE     | POI dùng discovery/planner; provider ref và dữ liệu chất lượng rõ ràng.                                |
-| 10  | `trips`                 | CORE     | Aggregate chuyến đi: ngày/hoạt động hữu hạn nhúng; không nhúng audit/reviews/events.                   |
-| 11  | `trip_revisions`        | CORE     | Bản lịch đã lưu có thể phục hồi; dữ liệu riêng không phải analytics.                                   |
-| 12  | `trip_access`           | PLATFORM | Quyền collaborator có account; không thay public share token.                                          |
-| 13  | `trip_share_links`      | PLATFORM | Liên kết chỉ đọc có thể thu hồi, không để private trip trở thành public ngẫu nhiên.                    |
-| 14  | `trip_expenses`         | PLATFORM | Thực chi du lịch, tách ước tính planner và giao dịch tiền trên GoEase.                                 |
-| 15  | `favorites`             | PLATFORM | Quan hệ yêu thích, không mảng không giới hạn trên user.                                                |
-| 16  | `ai_runs`               | CORE     | Metadata thực thi planner có thể đối soát chi phí/quota/chất lượng.                                    |
-| 17  | `usage_buckets`         | CORE     | Counter quota theo user/feature/time window; không nguồn bằng chứng thanh toán.                        |
-| 18  | `posts`                 | PLATFORM | Cẩm nang và bài chia sẻ với vòng đời xuất bản.                                                         |
-| 19  | `reviews`               | PLATFORM | Review nền tảng với provenance khác external ratings.                                                  |
-| 20  | `moderation_reports`    | PLATFORM | Báo cáo nội dung và quyết định kiểm duyệt.                                                             |
-| 21  | `partners`              | PLATFORM | Đối tác địa phương/công ty hoặc hướng dẫn viên, không phải identity login riêng.                       |
-| 22  | `partner_memberships`   | PLATFORM | Quyền user trong một đối tác.                                                                          |
-| 23  | `service_listings`      | PLATFORM | Danh mục local guide/experience/hotel/flight referral và dịch vụ có adapter thực.                      |
-| 24  | `service_inquiries`     | PLATFORM | Yêu cầu liên hệ/báo giá có định danh, chưa phải booking.                                               |
-| 25  | `bookings`              | COMMERCE | Thực thi dịch vụ, tách khỏi order/payment và trip chỉnh sửa.                                           |
-| 26  | `products`              | COMMERCE | Sản phẩm GoEase bán: gói planner hoặc item dịch vụ được phép thu phí.                                  |
-| 27  | `orders`                | COMMERCE | Đơn hàng/quote đã chấp nhận, tách quyền sử dụng và payment attempts.                                   |
-| 28  | `payments`              | COMMERCE | Một lần thử thanh toán/charge qua nhà cung cấp.                                                        |
-| 29  | `webhook_events`        | COMMERCE | Inbox bền vững cho event provider; envelope bất biến, processing state được cập nhật.                  |
-| 30  | `refunds`               | COMMERCE | Yêu cầu hoàn tiền và kết quả đối soát, không sửa payment thành chưa từng tồn tại.                      |
-| 31  | `entitlements`          | COMMERCE | Quyền sử dụng được cấp từ mua hàng hoặc admin grant có căn cứ.                                         |
-| 32  | `promotions`            | COMMERCE | Chiến dịch ưu đãi versioned, không sửa lịch sử giảm giá của đơn đã mua.                                |
-| 33  | `promotion_redemptions` | COMMERCE | Giữ lượt/ghi nhận dùng ưu đãi và chống vượt hạn mức.                                                   |
-| 34  | `notifications`         | PLATFORM | Thông báo theo user; không mảng lịch sử vô hạn.                                                        |
-| 35  | `support_tickets`       | PLATFORM | Yêu cầu hỗ trợ có quyền, tránh thu PII qua log chung.                                                  |
-| 36  | `audit_logs`            | F1       | Ai đã làm gì, trên đối tượng nào, kết quả và lý do; không là hồ sơ marketing.                          |
-| 37  | `analytics_events`      | CORE     | Hành vi tối thiểu để đo funnel/cá nhân hóa theo mục đích được phép.                                    |
-| 38  | `outbox_events`         | F1       | Outbox trong cùng DB transaction để chuyển audit/notification/analytics có retry mà không mất sự kiện. |
-| 39  | `idempotency_keys`      | CORE     | Chống tạo bản sao do retry khi client mất phản hồi.                                                    |
-| 40  | `schema_migrations`     | F1       | Phiên bản thay đổi dữ liệu/index có thể truy vết và tiếp tục sau lỗi.                                  |
+| #   | Collection              | Lớp      | Mục đích                                                                                                                  |
+| --- | ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `users`                 | F1       | Hồ sơ nội bộ ổn định, không chứa mọi hoạt động người dùng.                                                                |
+| 2   | `auth_identities`       | F1       | Thông tin đăng nhập tách khỏi hồ sơ, cho phép một user liên kết Google và password.                                       |
+| 3   | `auth_sessions`         | F1       | Phiên ứng dụng và thu hồi từng thiết bị; web có thể dùng opaque HttpOnly cookie.                                          |
+| 4   | `auth_challenges`       | F1       | Token một lần cho xác minh email/reset/link/OAuth state.                                                                  |
+| 5   | `consent_events`        | F1       | Bằng chứng thông báo/chọn/rút lại từng mục đích xử lý.                                                                    |
+| 6   | `privacy_requests`      | PLATFORM | Theo dõi yêu cầu truy cập, xuất, sửa, rút consent hoặc xóa dữ liệu.                                                       |
+| 7   | `media_assets`          | CORE     | Metadata media; binary để file/object storage, không nhúng document.                                                      |
+| 8   | `destinations`          | CORE     | Điểm đến cấp tỉnh/thành Việt Nam; địa điểm tham quan/quán ăn thuộc tỉnh/thành. Bản khu vực cũ chỉ giữ tham chiếu lịch sử. |
+| 9   | `places`                | CORE     | POI dùng discovery/planner; provider ref và dữ liệu chất lượng rõ ràng.                                                   |
+| 10  | `trips`                 | CORE     | Aggregate chuyến đi: ngày/hoạt động hữu hạn nhúng; không nhúng audit/reviews/events.                                      |
+| 11  | `trip_revisions`        | CORE     | Bản lịch đã lưu có thể phục hồi; dữ liệu riêng không phải analytics.                                                      |
+| 12  | `trip_access`           | PLATFORM | Quyền collaborator có account; không thay public share token.                                                             |
+| 13  | `trip_share_links`      | PLATFORM | Liên kết chỉ đọc có thể thu hồi, không để private trip trở thành public ngẫu nhiên.                                       |
+| 14  | `trip_expenses`         | PLATFORM | Thực chi du lịch, tách ước tính planner và giao dịch tiền trên GoEase.                                                    |
+| 15  | `favorites`             | PLATFORM | Quan hệ yêu thích, không mảng không giới hạn trên user.                                                                   |
+| 16  | `ai_runs`               | CORE     | Metadata thực thi planner có thể đối soát chi phí/quota/chất lượng.                                                       |
+| 17  | `usage_buckets`         | CORE     | Counter quota theo user/feature/time window; không nguồn bằng chứng thanh toán.                                           |
+| 18  | `posts`                 | PLATFORM | Cẩm nang và bài chia sẻ với vòng đời xuất bản.                                                                            |
+| 19  | `reviews`               | PLATFORM | Review nền tảng với provenance khác external ratings.                                                                     |
+| 20  | `moderation_reports`    | PLATFORM | Báo cáo nội dung và quyết định kiểm duyệt.                                                                                |
+| 21  | `partners`              | PLATFORM | Đối tác địa phương/công ty hoặc hướng dẫn viên, không phải identity login riêng.                                          |
+| 22  | `partner_memberships`   | PLATFORM | Quyền user trong một đối tác.                                                                                             |
+| 23  | `service_listings`      | PLATFORM | Danh mục local guide/experience/hotel/flight referral và dịch vụ có adapter thực.                                         |
+| 24  | `service_inquiries`     | PLATFORM | Yêu cầu liên hệ/báo giá có định danh, chưa phải booking.                                                                  |
+| 25  | `bookings`              | COMMERCE | Thực thi dịch vụ, tách khỏi order/payment và trip chỉnh sửa.                                                              |
+| 26  | `products`              | COMMERCE | Sản phẩm GoEase bán: gói planner hoặc item dịch vụ được phép thu phí.                                                     |
+| 27  | `orders`                | COMMERCE | Đơn hàng/quote đã chấp nhận, tách quyền sử dụng và payment attempts.                                                      |
+| 28  | `payments`              | COMMERCE | Một lần thử thanh toán/charge qua nhà cung cấp.                                                                           |
+| 29  | `webhook_events`        | COMMERCE | Inbox bền vững cho event provider; envelope bất biến, processing state được cập nhật.                                     |
+| 30  | `refunds`               | COMMERCE | Yêu cầu hoàn tiền và kết quả đối soát, không sửa payment thành chưa từng tồn tại.                                         |
+| 31  | `entitlements`          | COMMERCE | Quyền sử dụng được cấp từ mua hàng hoặc admin grant có căn cứ.                                                            |
+| 32  | `promotions`            | COMMERCE | Chiến dịch ưu đãi versioned, không sửa lịch sử giảm giá của đơn đã mua.                                                   |
+| 33  | `promotion_redemptions` | COMMERCE | Giữ lượt/ghi nhận dùng ưu đãi và chống vượt hạn mức.                                                                      |
+| 34  | `notifications`         | PLATFORM | Thông báo theo user; không mảng lịch sử vô hạn.                                                                           |
+| 35  | `support_tickets`       | PLATFORM | Yêu cầu hỗ trợ có quyền, tránh thu PII qua log chung.                                                                     |
+| 36  | `audit_logs`            | F1       | Ai đã làm gì, trên đối tượng nào, kết quả và lý do; không là hồ sơ marketing.                                             |
+| 37  | `analytics_events`      | CORE     | Hành vi tối thiểu để đo funnel/cá nhân hóa theo mục đích được phép.                                                       |
+| 38  | `outbox_events`         | F1       | Outbox trong cùng DB transaction để chuyển audit/notification/analytics có retry mà không mất sự kiện.                    |
+| 39  | `idempotency_keys`      | CORE     | Chống tạo bản sao do retry khi client mất phản hồi.                                                                       |
+| 40  | `schema_migrations`     | F1       | Phiên bản thay đổi dữ liệu/index có thể truy vết và tiếp tục sau lỗi.                                                     |
 
 ## 5. Data dictionary chi tiết
 
@@ -305,24 +305,28 @@ Metadata media; binary để file/object storage, không nhúng document.
 
 **Lớp:** CORE · **Bộ metadata:** `MUTABLE_SOFT`
 
-Khu vực du lịch/chặng, phân biệt địa điểm cụ thể.
+Điểm đến cấp tỉnh/thành Việt Nam; địa điểm tham quan/quán ăn thuộc tỉnh/thành. Bản khu vực cũ chỉ giữ tham chiếu lịch sử.
 
-| Field                            | Kiểu               | Required/default | Ý nghĩa và ràng buộc                                                                                                                                                                             |
-| -------------------------------- | ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| slug; name                       | string; string     | Bắt buộc         | Slug nội bộ; tên có dấu.                                                                                                                                                                         |
-| countryCode; administrativeCodes | string; object?    | VN; optional     | Code có source/version, không hardcode vĩnh viễn đơn vị hành chính.                                                                                                                              |
-| tourismRegion                    | enum?              | null cho legacy  | IMPLEMENTED CAT-16: northwest/northeast/northern-delta/north-central/south-central-coast/central-highlands/southeast/mekong-delta. Miền north/central/south suy ra từ taxonomy, không lưu riêng. |
-| parentDestinationId              | ObjectId?          | null             | Quan hệ cha nếu cần; không cycle.                                                                                                                                                                |
-| summary; coverAssetId            | string?; ObjectId? | null             | Nội dung tuyển chọn.                                                                                                                                                                             |
-| center                           | GeoJSON Point?     | null             | Coordinates [longitude,latitude].                                                                                                                                                                |
-| timezone                         | IANA timezone      | Bắt buộc         | Múi giờ lịch tại điểm đến.                                                                                                                                                                       |
-| interestCodes                    | string[]           | []               | Taxonomy kiểm soát, giới hạn số phần tử.                                                                                                                                                         |
-| publicationStatus                | enum               | draft            | draft/published/archived.                                                                                                                                                                        |
-| source                           | SourceRef          | Bắt buộc         | GoEase curated hoặc provider, provenance và rights.                                                                                                                                              |
+| Field                                                  | Kiểu                     | Required/default       | Ý nghĩa và ràng buộc                                                                                                                                                                             |
+| ------------------------------------------------------ | ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| slug; name                                             | string; string           | Bắt buộc               | Slug nội bộ; tên có dấu.                                                                                                                                                                         |
+| countryCode; administrativeCodes                       | string; object?          | VN; optional           | Code có source/version, không hardcode vĩnh viễn đơn vị hành chính.                                                                                                                              |
+| tourismRegion                                          | enum?                    | null cho legacy        | IMPLEMENTED CAT-16: northwest/northeast/northern-delta/north-central/south-central-coast/central-highlands/southeast/mekong-delta. Miền north/central/south suy ra từ taxonomy, không lưu riêng. |
+| parentDestinationId                                    | ObjectId?                | null                   | Quan hệ cha nếu cần; không cycle.                                                                                                                                                                |
+| summary; coverAssetId                                  | string?; ObjectId?       | null                   | Nội dung tuyển chọn.                                                                                                                                                                             |
+| center                                                 | GeoJSON Point?           | null                   | Coordinates [longitude,latitude].                                                                                                                                                                |
+| timezone                                               | IANA timezone            | Bắt buộc               | Múi giờ lịch tại điểm đến.                                                                                                                                                                       |
+| interestCodes                                          | string[]                 | []                     | Taxonomy kiểm soát, giới hạn số phần tử.                                                                                                                                                         |
+| publicationStatus                                      | enum                     | draft                  | draft/published/archived.                                                                                                                                                                        |
+| source                                                 | SourceRef                | Bắt buộc               | GoEase curated hoặc provider, provenance và rights.                                                                                                                                              |
+| provinceCode                                           | string?                  | null cho legacy        | IMPLEMENTED CAT-18: mã hành chính 2 chữ số từ danh mục có phiên bản; unique khi là string; không đổi qua API admin.                                                                              |
+| catalogKind                                            | enum?                    | absent trước bootstrap | IMPLEMENTED CAT-18: province/legacy; bootstrap đánh dấu bản cũ không khớp tỉnh/thành là legacy, giữ ID/tham chiếu nhưng không đưa vào lựa chọn mới.                                              |
+| catalogVersion; catalogSourceUrl; catalogEffectiveFrom | string?; URL?; ISO date? | null cho legacy        | IMPLEMENTED CAT-18: phiên bản vn-19-2025-07-01-v1, nguồn Quyết định 19/2025/QĐ-TTg, hiệu lực 2025-07-01.                                                                                         |
+| tourismAreas                                           | string[]                 | []                     | IMPLEMENTED CAT-18: tên khu vực du lịch nhúng, tối đa50 tên, mỗi tên<=100 ký tự; hiện Hội An thuộc Đà Nẵng và Sa Pa thuộc Lào Cai. Không phải danh mục xã/phường đầy đủ.                         |
 
-**Indexes:** Unique active slug; {publicationStatus,deletedAt}; runtime CAT-16 thêm {tourismRegion,publicationStatus,deletedAt,name,_id}; optional 2dsphere center nếu có query gần.
+**Indexes:** Unique active slug; {publicationStatus,deletedAt}; runtime CAT-16 thêm {tourismRegion,publicationStatus,deletedAt,name,_id}; optional 2dsphere center nếu có query gần. CAT-18 bổ sung unique {provinceCode:1}, partial provinceCode BSON string; giữ unique cả tombstone.
 
-**Runtime CAT-16:** destination admin nhận name<=100, slug ASCII kebab<=100, summary<=1000, tourismRegion trong 8 code, publicationStatus draft/published/archived. countryCode=VN và timezone=Asia/Ho_Chi_Minh do server đặt. Create revision1, update CAS và tăng1; createdBy/updatedBy từ admin session. Cả mutation + audit catalog.destination_created/updated (entityType destination) + idempotency receipt cùng transaction. Key resourceType thêm destination, operation destination.write, TTL/expiry24h kế thừa; retry reauthorize và hash cùng thao tác. Không xóa/đổi ID, không sửa trip snapshot. Legacy tourismRegion null được phép đọc, chỉnh sửa mới phải chọn vùng. Chưa tự backfill dữ liệu ứng dụng. Giới hạn cấu hình catalog_settings.regions tăng20→100, payload HTTP16KB và provider quota/radius giữ nguyên. `media_assets`/các schema baseline còn lại không được triển khai thêm bởi CAT-16.
+**Runtime CAT-18 (25/10/2026, thay phần quản lý tự nhập CAT-16):** API startup bootstrap34 tỉnh/thành trong transaction cùng audit `catalog.destination_catalogued`; mới draft/tắt. Khớp slug+tên tỉnh/thành cũ thì giữ ID, summary, publicationStatus và gắn mã/nguồn; record khác giữ nguyên tham chiếu, đánh dấu legacy và loại khỏi lựa chọn/public parent gates. Slug collision không tự ghi đè. Không xóa/đổi places/trips/source references. GET không ghi. PATCH `/admin/destinations/:id` chỉ nhận enabled boolean + expectedRevision, dùng session admin/CAS/fence, audit `catalog.destination_updated` và receipt `destination.toggle` TTL24h; replay reauthorize và kiểm hash. Tắt đặt draft, không archive con, giữ source schedules và trip snapshots; list/detail public kiểm parent. POST tạo thủ công trả405. Bootstrap chạy lại không tự bật hoặc thay nội dung đã lưu. `parentDestinationId`, `administrativeCodes`, center/coverAssetId/interestCodes là thiết kế chưa triển khai; runtime khu vực du lịch dùng tourismAreas nhúng hữu hạn. Xem PROVINCE-CATALOG.md.
 
 **Invariant/quyền:** Không suy ra cả vùng là một POI. Không để đổi tên/codes làm đổi ID trip cũ.
 

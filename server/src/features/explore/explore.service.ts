@@ -225,6 +225,7 @@ export function exploreService(connection: Connection) {
     deletedAt: null,
   };
   const publishedDestination = {
+    catalogKind: { $ne: 'legacy' },
     publicationStatus: 'published',
     deletedAt: null,
     $or: [{ countryCode: 'VN' }, { countryCode: { $exists: false } }],

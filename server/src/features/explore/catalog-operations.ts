@@ -774,6 +774,7 @@ export function catalogOperations(
       if (
         !(await trips.models.Destination.exists({
           _id: p.destinationId,
+          catalogKind: { $ne: 'legacy' },
           publicationStatus: 'published',
           deletedAt: null,
         }).session(session ?? null))

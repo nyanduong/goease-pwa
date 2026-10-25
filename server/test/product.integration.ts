@@ -326,7 +326,7 @@ test(
             1,
           );
           const stored = await product.trips.models.Trip.findById(trip.id);
-          assert.equal(stored?.destinations[0]?.nameSnapshot, 'Đà Nẵng');
+          assert.equal(stored?.destinations[0]?.nameSnapshot, 'Huế');
           assert.equal(
             (
               await call(

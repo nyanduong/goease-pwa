@@ -218,7 +218,7 @@ export async function seedPlaces(
       planning,
       _id: new Types.ObjectId(id),
       destinationId: new Types.ObjectId('000000000000000000000004'),
-      destinationName: 'Hội An',
+      destinationName: 'Đà Nẵng',
       searchText: normalizeSearch(
         `${entry.name} ${entry.subtitle} ${entry.description}`,
       ),

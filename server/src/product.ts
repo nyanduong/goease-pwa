@@ -68,11 +68,12 @@ import { HttpError } from './http-error.js';
 import { uuidPattern } from './observability/context.js';
 import { calculateBudget } from './features/trips/budget.js';
 import { plannerService } from './features/ai/planner.js';
+import { syncProvinceCatalog } from './features/trips/province-catalog.js';
 import { destinationCatalog } from './features/trips/destination-catalog.js';
 import {
   travelRegions,
   tourismRegions,
-  destinationWriteSchema,
+  destinationToggleSchema,
 } from '@goease/contracts';
 import type { Generate } from './features/ai/gemini.js';
 
@@ -460,28 +461,28 @@ export function createProduct(
       data: await destinations.list(res.locals.authUser._id, req.query),
     }),
   );
-  for (const method of ['post', 'patch'] as const) {
-    router[method](
-      method === 'post' ? '/admin/destinations' : '/admin/destinations/:id',
-      async (req, res) => {
-        const value = parse(destinationWriteSchema, req.body);
-        const key = parse(
-          z.string().regex(uuidPattern),
-          req.get('Idempotency-Key'),
-        );
-        const data = await destinations.write(
-          res.locals.authUser._id,
-          value.destination,
-          key,
-          method === 'patch'
-            ? String('id' in req.params ? req.params.id : '')
-            : undefined,
-          value.expectedRevision,
-        );
-        res.status(method === 'post' ? 201 : 200).json({ ok: true, data });
-      },
+  router.post('/admin/destinations', async (_req, res) => {
+    await catalog.requireAdmin(res.locals.authUser._id);
+    throw new HttpError(
+      405,
+      'DESTINATION_CATALOG_MANAGED',
+      'Danh mục tỉnh/thành được nạp tự động. Chỉ bật hoặc tắt hiển thị.',
     );
-  }
+  });
+  router.patch('/admin/destinations/:id', async (req, res) => {
+    const value = parse(destinationToggleSchema, req.body);
+    const key = parse(
+      z.string().regex(uuidPattern),
+      req.get('Idempotency-Key'),
+    );
+    const data = await destinations.toggle(
+      res.locals.authUser._id,
+      String(req.params.id),
+      value,
+      key,
+    );
+    res.json({ ok: true, data });
+  });
   router.get('/admin/catalog/overview', async (req, res) =>
     res.json({
       ok: true,
@@ -1020,7 +1021,7 @@ export function createProduct(
     sharing,
     operations,
     v3,
-    async initialize() {
+    async initialize(withProvinceCatalog = false) {
       ready = false;
       const all = [
         ...Object.values(auth.models),
@@ -1037,6 +1038,8 @@ export function createProduct(
         await model.createIndexes();
       }
       await audit.initialize();
+      if (withProvinceCatalog)
+        await syncProvinceCatalog(connection, trips.models.Destination, audit);
       await planner.reconcile();
       ready = true;
     },

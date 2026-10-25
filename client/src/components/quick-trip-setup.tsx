@@ -65,7 +65,7 @@ export function QuickTripSetup({
       <div className="quick-intro">
         <img src={images.goeMascot} alt="" />
         <h1>Bạn muốn đi đâu?</h1>
-        <p>Chọn nơi đến, số ngày và số người. Goe xếp lịch giúp bạn.</p>
+        <p>Chọn tỉnh/thành, số ngày và số người. Goe xếp lịch giúp bạn.</p>
       </div>
       <fieldset className="quick-fields" disabled={generating}>
         <legend className="sr-only">Thông tin để lên lịch</legend>
@@ -99,6 +99,9 @@ export function QuickTripSetup({
               }
             >
               <strong>{d.name}</strong>
+              {!!d.tourismAreas?.length && (
+                <small>Khu vực: {d.tourismAreas.join(', ')}</small>
+              )}
               <small>Goe kiểm tra dữ liệu khi lập lịch</small>
             </button>
           ))}
@@ -111,8 +114,8 @@ export function QuickTripSetup({
         )}
         {!destinations.length && (
           <p role="status">
-            Chưa có điểm đến được xuất bản để chọn. Nếu trang báo lỗi tải dữ
-            liệu, dùng thao tác thử lại trước khi lập lịch.
+            Chưa có tỉnh/thành được bật để chọn. Nếu trang báo lỗi tải dữ liệu,
+            dùng thao tác thử lại trước khi lập lịch.
           </p>
         )}
         <div className="quick-question">

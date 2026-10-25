@@ -6,12 +6,14 @@ import {
   tourismRegionSchema,
   travelRegionOf,
   type DestinationInput,
+  type DestinationToggleInput,
 } from '@goease/contracts';
 import type { tripModels } from './trip.models.js';
 import type { adminCatalog } from '../explore/admin-catalog.js';
 import type { businessAudit } from '../audit/business-audit.js';
 import { HttpError } from '../../http-error.js';
 import { tokenHash } from '../auth/security.js';
+import { foldDestination, provinces } from './province-data.js';
 import { requestId } from '../auth/auth.service.js';
 
 type Models = ReturnType<typeof tripModels>;
@@ -25,9 +27,19 @@ type Destination = Pick<
   | 'tourismRegion'
   | 'publicationStatus'
   | 'revision'
+  | 'provinceCode'
+  | 'catalogVersion'
+  | 'catalogSourceUrl'
+  | 'catalogEffectiveFrom'
+  | 'tourismAreas'
 >;
 export const destinationDto = (d: Destination) => ({
   id: String(d._id),
+  provinceCode: d.provinceCode ?? null,
+  catalogVersion: d.catalogVersion ?? null,
+  catalogSourceUrl: d.catalogSourceUrl ?? null,
+  catalogEffectiveFrom: d.catalogEffectiveFrom ?? null,
+  tourismAreas: d.tourismAreas ?? [],
   name: d.name,
   slug: d.slug,
   summary: d.summary ?? '',
@@ -55,17 +67,34 @@ export async function listDestinations(
   const codes = q.tourismRegion
     ? [q.tourismRegion]
     : tourismRegions.filter((r) => r.region === q.region).map((r) => r.code);
+  const matchingCodes = provinces
+    .filter((p) =>
+      foldDestination([p.name, ...p.areas, p.code].join(' ')).includes(
+        foldDestination(q.q),
+      ),
+    )
+    .map((p) => p.code);
   const filter = {
+    catalogKind: { $ne: 'legacy' as const },
     deletedAt: null,
     $or: [{ countryCode: 'VN' as const }, { countryCode: { $exists: false } }],
     ...(!admin ? { publicationStatus: 'published' as const } : {}),
     ...(q.region || q.tourismRegion ? { tourismRegion: { $in: codes } } : {}),
     ...(q.q
       ? {
-          name: {
-            $regex: q.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-            $options: 'i',
-          },
+          $and: [
+            {
+              $or: [
+                { provinceCode: { $in: matchingCodes } },
+                {
+                  name: {
+                    $regex: q.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+                    $options: 'i',
+                  },
+                },
+              ],
+            },
+          ],
         }
       : {}),
   };
@@ -90,25 +119,23 @@ export function destinationCatalog(
       await catalog.requireAdmin(actor);
       return listDestinations(Destination, query, true);
     },
-    async write(
+    async toggle(
       actor: Types.ObjectId,
-      input: DestinationInput,
+      id: string,
+      input: DestinationToggleInput,
       key: string,
-      id?: string,
-      revision?: number,
     ) {
       await catalog.requireAdmin(actor);
-      if (id && !/^[a-f0-9]{24}$/.test(id))
+      if (!/^[a-f0-9]{24}$/.test(id))
         throw new HttpError(
           404,
           'DESTINATION_NOT_FOUND',
-          'Không tìm thấy điểm đến.',
+          'Không tìm thấy tỉnh/thành.',
         );
-      const operation = 'destination.write',
-        hash = tokenHash(JSON.stringify({ id, input, revision }));
+      const operation = 'destination.toggle';
+      const hash = tokenHash(JSON.stringify({ id, input }));
       const operationId = randomUUID(),
-        reqId = requestId(),
-        newId = new Types.ObjectId();
+        reqId = requestId();
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           return await connection.transaction(async (session) => {
@@ -118,115 +145,61 @@ export function destinationCatalog(
               operation,
               key,
             }).session(session);
-            if (receipt) {
-              if (receipt.requestHash !== hash)
-                throw new HttpError(
-                  409,
-                  'IDEMPOTENCY_CONFLICT',
-                  'Nội dung thao tác đã đổi. Hãy lưu bằng thao tác mới.',
-                );
-              const saved = await Destination.findOne({
-                _id: receipt.resourceId,
-                deletedAt: null,
-              }).session(session);
-              if (!saved)
-                throw new HttpError(
-                  404,
-                  'DESTINATION_NOT_FOUND',
-                  'Không tìm thấy điểm đến.',
-                );
-              return { destination: destinationDto(saved) };
-            }
-            let saved: Destination | null;
-            if (id) {
-              if (
-                input.publicationStatus === 'archived' &&
-                (await connection.collection('places').findOne(
-                  {
-                    destinationId: new Types.ObjectId(id),
-                    deletedAt: null,
-                    publicationStatus: { $ne: 'archived' },
-                  },
-                  { session, projection: { _id: 1 } },
-                ))
-              )
-                throw new HttpError(
-                  409,
-                  'ARCHIVE_PLAN_REQUIRED',
-                  'Điểm đến còn địa điểm đang hoạt động. Dùng kế hoạch lưu trữ phạm vi để xem trước và xử lý các địa điểm phụ thuộc.',
-                );
-              if (
-                input.publicationStatus !== 'published' &&
-                (await connection.collection('places').findOne(
-                  {
-                    destinationId: new Types.ObjectId(id),
-                    publicationStatus: 'published',
-                    deletedAt: null,
-                  },
-                  { session, projection: { _id: 1 } },
-                ))
-              ) {
-                throw new HttpError(
-                  409,
-                  'DESTINATION_HAS_PUBLISHED_PLACES',
-                  'Điểm đến đang có địa điểm công khai. Hãy ngừng hiển thị các địa điểm đó trước khi ẩn điểm đến.',
-                );
-              }
-              if (revision === undefined)
-                throw new HttpError(
-                  400,
-                  'INVALID_INPUT',
-                  'Cần phiên bản hiện tại của điểm đến.',
-                );
-              saved = await Destination.findOneAndUpdate(
-                { _id: id, deletedAt: null, revision },
-                {
-                  $set: { ...input, updatedBy: actor, updatedByType: 'user' },
-                  $inc: { revision: 1 },
-                },
-                { session, returnDocument: 'after', runValidators: true },
+            if (receipt && receipt.requestHash !== hash)
+              throw new HttpError(
+                409,
+                'IDEMPOTENCY_CONFLICT',
+                'Nội dung thao tác đã đổi. Tải lại trước khi thử lại.',
               );
-              if (!saved)
-                throw new HttpError(
-                  409,
-                  'REVISION_CONFLICT',
-                  'Điểm đến đã thay đổi. Tải lại danh sách trước khi lưu; nội dung bạn nhập vẫn được giữ.',
-                );
-            } else {
-              if (revision !== undefined)
-                throw new HttpError(
-                  400,
-                  'INVALID_INPUT',
-                  'Điểm đến mới không nhận phiên bản cũ.',
-                );
-              saved = await new Destination({
-                _id: newId,
-                ...input,
-                revision: 1,
-                createdBy: actor,
-                updatedBy: actor,
-                createdByType: 'user',
-                updatedByType: 'user',
-                source: {
-                  provider: 'goease_curated',
-                  fetchedAt: new Date(),
-                  rights: {
-                    policyRef: 'goease-authored-catalog-v1',
-                    cacheAllowed: true,
-                    persistentSnapshotAllowed: true,
-                    attributionRequired: false,
-                  },
+            const current = await Destination.findOne({
+              _id: id,
+              deletedAt: null,
+              catalogKind: 'province',
+            }).session(session);
+            if (
+              !current ||
+              !provinces.some((p) => p.code === current.provinceCode)
+            )
+              throw new HttpError(
+                404,
+                'DESTINATION_NOT_FOUND',
+                'Không tìm thấy tỉnh/thành trong danh mục.',
+              );
+            if (receipt) return { destination: destinationDto(current) };
+            if (
+              await connection.collection('catalog_bulk_jobs').findOne(
+                {
+                  destinationId: current._id,
+                  action: 'archive_destination',
+                  state: 'running',
                 },
-              }).save({ session });
-            }
+                { session, projection: { _id: 1 } },
+              )
+            )
+              throw new HttpError(
+                409,
+                'REGION_ARCHIVING',
+                'Tỉnh/thành đang có lô lưu trữ. Hoàn tất lô trước khi bật/tắt.',
+              );
+            if (current.revision !== input.expectedRevision)
+              throw new HttpError(
+                409,
+                'REVISION_CONFLICT',
+                'Tỉnh/thành đã thay đổi. Tải lại danh sách trước khi bật/tắt.',
+              );
+            current.publicationStatus = input.enabled ? 'published' : 'draft';
+            current.revision += 1;
+            current.catalogWriteFence += 1;
+            current.updatedBy = actor;
+            current.updatedByType = 'user';
+            await current.save({ session });
             await audit.append(
               {
-                action: id
-                  ? 'catalog.destination_updated'
-                  : 'catalog.destination_created',
+                action: 'catalog.destination_updated',
                 actorUserId: String(actor),
-                entityId: String(saved._id),
-                entityRevision: saved.revision,
+                entityId: id,
+                entityRevision: current.revision,
+                previousRevision: input.expectedRevision,
                 requestId: reqId,
                 operationId,
               },
@@ -239,29 +212,25 @@ export function destinationCatalog(
               requestHash: hash,
               status: 'completed',
               resourceType: 'destination',
-              resourceId: String(saved._id),
-              responseStatus: id ? 200 : 201,
+              resourceId: id,
+              responseStatus: 200,
               expiresAt: new Date(Date.now() + 86400000),
             }).save({ session });
-            return { destination: destinationDto(saved) };
+            return { destination: destinationDto(current) };
           });
         } catch (e) {
-          if (e instanceof Error && 'code' in e && e.code === 11000) {
-            if (
-              attempt < 2 &&
-              (await Key.exists({ actorId: actor, operation, key }))
-            )
-              continue;
-            throw new HttpError(
-              409,
-              'DESTINATION_SLUG_CONFLICT',
-              'Đường dẫn điểm đến đã được dùng. Chọn đường dẫn khác.',
-            );
-          }
+          if (
+            e instanceof Error &&
+            'code' in e &&
+            e.code === 11000 &&
+            attempt < 2 &&
+            (await Key.exists({ actorId: actor, operation, key }))
+          )
+            continue;
           throw e;
         }
       }
-      throw new Error('Destination write unavailable');
+      throw new Error('Destination toggle unavailable');
     },
   };
 }

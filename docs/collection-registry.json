@@ -511,7 +511,7 @@
       "name": "destinations",
       "phase": "CORE",
       "base": "MUTABLE_SOFT",
-      "purpose": "Khu vực du lịch/chặng, phân biệt địa điểm cụ thể.",
+      "purpose": "Điểm đến cấp tỉnh/thành Việt Nam; địa điểm tham quan/quán ăn thuộc tỉnh/thành. Bản khu vực cũ chỉ giữ tham chiếu lịch sử.",
       "fields": [
         [
           "slug; name",
@@ -568,13 +568,37 @@
           "number",
           "0",
           "CAT-17 operational CAS fence shared by source/import/publish and dependent archive; not editorial/public revision."
+        ],
+        [
+          "provinceCode",
+          "string?",
+          "null cho legacy",
+          "IMPLEMENTED CAT-18: mã hành chính 2 chữ số từ danh mục có phiên bản; unique khi là string; không đổi qua API admin."
+        ],
+        [
+          "catalogKind",
+          "enum?",
+          "absent trước bootstrap",
+          "IMPLEMENTED CAT-18: province/legacy; bootstrap đánh dấu bản cũ không khớp tỉnh/thành là legacy, giữ ID/tham chiếu nhưng không đưa vào lựa chọn mới."
+        ],
+        [
+          "catalogVersion; catalogSourceUrl; catalogEffectiveFrom",
+          "string?; URL?; ISO date?",
+          "null cho legacy",
+          "IMPLEMENTED CAT-18: phiên bản vn-19-2025-07-01-v1, nguồn Quyết định 19/2025/QĐ-TTg, hiệu lực 2025-07-01."
+        ],
+        [
+          "tourismAreas",
+          "string[]",
+          "[]",
+          "IMPLEMENTED CAT-18: tên khu vực du lịch nhúng, tối đa50 tên, mỗi tên<=100 ký tự; hiện Hội An thuộc Đà Nẵng và Sa Pa thuộc Lào Cai. Không phải danh mục xã/phường đầy đủ."
         ]
       ],
-      "indexes": "Unique active slug; {publicationStatus,deletedAt}; implemented {tourismRegion,publicationStatus,deletedAt,name,_id}; optional 2dsphere center is planned.",
+      "indexes": "Unique active slug; {publicationStatus,deletedAt}; implemented {tourismRegion,publicationStatus,deletedAt,name,_id}; optional 2dsphere center is planned. CAT-18 unique {provinceCode:1}, partial provinceCode BSON string (bao gồm tombstone).",
       "rules": "Không suy ra cả vùng là một POI. Không để đổi tên/codes làm đổi ID trip cũ.",
       "retention": "Nội dung nội bộ theo lifecycle; nguồn ngoài theo license.",
-      "brRefs": ["CAT-01", "CAT-02", "CAT-05", "CAT-16"],
-      "implementationStatus": "Runtime destination admin/region query implemented; countryCode VN, name/slug max100, summary max1000, tourismRegion nullable legacy; new writes require a region. Mutation + audit destination entity + idempotency receipt atomic; no automatic backfill. See VIETNAM-PLANNER.md."
+      "brRefs": ["CAT-01", "CAT-02", "CAT-05", "CAT-16", "CAT-18"],
+      "implementationStatus": "CAT-18: runtime startup đồng bộ danh mục34 tỉnh/thành; mới mặc định tắt, chạy lại giữ ID/trạng thái; API admin chỉ toggle enabled + expectedRevision. Bootstrap/adoption/legacy classification có audit transaction; không tự chuyển places/trips cũ sang tỉnh. parentDestinationId/administrativeCodes vẫn planned; tourismAreas bounded strings phục vụ hiển thị/tìm tên khu vực."
     },
     {
       "name": "places",

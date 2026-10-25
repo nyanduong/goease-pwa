@@ -1,5 +1,7 @@
 # GoEase
 
+**Danh mục tỉnh/thành (25/10/2026):** API tự nạp34 tỉnh/thành; vào Admin → Cài đặt → Danh mục tỉnh/thành Việt Nam để bật/tắt. Mới mặc định tắt. Hội An là khu vực trong Đà Nẵng, Sa Pa trong Lào Cai. `npm run db:seed` hiện chỉ đồng bộ danh mục tỉnh/thành, không thêm POI mẫu hoặc tự bật. Xem [quy tắc và kiểm thử](docs/PROVINCE-CATALOG.md).
+
 Mất kết nối khi mở ứng dụng: tự kiểm tra lại phiên và các lượt tải lỗi (điểm đến, danh sách/chi tiết chuyến, hồ sơ), chờ 2/4/8/16/30 giây; thử ngay khi có mạng hoặc quay lại tab. Dừng khi đã tải thành công, không tải lại toàn trang hay tự gửi lại thao tác lưu/đổi mật khẩu/upload/AI.
 
 Trung tâm cá nhân `/account`: thẻ hồ sơ và bảo mật riêng, chọn ảnh từ thiết bị qua nút camera, kéo/căn/phóng trước khi lưu. Server kiểm và chuẩn hóa ảnh lên Cloudinary; cần credentials server trong `.env.example`. Xem [hồ sơ và upload avatar](docs/ACCOUNT-PROFILE.md).
@@ -16,13 +18,13 @@ GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, 
 
 Đã có trang chủ sản phẩm, đăng ký/đăng nhập email-mật khẩu, đăng xuất bằng phiên cookie và lịch trình lưu MongoDB theo tài khoản. Đăng ký mới có [OTP email](docs/EMAIL-REGISTRATION.md) khi bật `REGISTRATION_OTP_REQUIRED=true` và cấu hình SMTP; trước xác nhận chưa tạo tài khoản. Flag mặc định false để tương thích cài đặt cũ; account cũ vẫn đăng nhập được, email chưa xác minh được ghi nhận riêng. Giao thư OTP thật chưa nghiệm thu do chưa có SMTP. Google OIDC đã có nhánh tích hợp nhưng chưa kiểm thử live vì thiếu cấu hình. Có AI xếp/chỉnh lịch theo catalog của điểm đến, bản lịch tải xuống chỉ đọc offline và quản trị danh mục/giá tham khảo; booking/payment, CMS nội dung rộng hơn và native mobile chưa triển khai. Màn kỹ thuật chỉ ở `/dev/foundation` trong development. Xem [nghiệm thu sản phẩm](docs/PRODUCT-VERIFICATION.md).
 
-Luồng Hội An: 7 gợi ý trong catalog có nguồn, thêm địa điểm vào chuyến/ngày, chỉnh lịch và ngân sách server tính theo nhóm hoặc mỗi người. Chạy `npm run db:seed` sau khi cập nhật để bổ sung catalog/metadata còn thiếu (không ghi đè bản đã chỉnh). Giá chưa xác minh giữ Chưa rõ. `/budget` là bản minh họa UI; chi phí thật mở từ tab Chi phí trong chuyến đã tạo. [Goe](docs/AI-PLANNER.md) dùng Gemini qua server khi được cấu hình, cho xem đề xuất trước khi áp dụng.
+Luồng Hội An: 7 gợi ý trong catalog có nguồn, thêm địa điểm vào chuyến/ngày, chỉnh lịch và ngân sách server tính theo nhóm hoặc mỗi người. Các gợi ý Hội An trước đây là dữ liệu nền cũ; từ CAT-18 admin chuẩn bị POI dưới tỉnh/thành. Giá chưa xác minh giữ Chưa rõ. `/budget` là bản minh họa UI; chi phí thật mở từ tab Chi phí trong chuyến đã tạo. [Goe](docs/AI-PLANNER.md) dùng Gemini qua server khi được cấu hình, cho xem đề xuất trước khi áp dụng.
 
 Luồng mobile giữ lựa chọn bắt đầu chuyến qua đăng nhập/đăng ký, phân biệt Goe xếp lịch với tự chọn điểm dừng và cảnh báo rõ khi dự toán chưa đủ. Trong lịch đã lưu, mở **Chuẩn bị trước khi đi** để bổ sung chỗ ở/di chuyển, kiểm tra giá/vị trí và tải [bản đọc offline](docs/OFFLINE-ITINERARY.md). Lịch đã lưu không phải xác nhận đặt dịch vụ.
 
 **Tạo chuyến trên mobile:** chọn điểm đến → số ngày và số người (mặc định hiển thị 2 ngày/2 người) → **Lên lịch giúp mình** → xem và đổi/bỏ từng điểm → **Giữ lịch này**, chọn ngày khởi hành rồi lưu. Sở thích/ngân sách là tùy chọn; ngày cụ thể được hỏi sau khi có lịch. Goe tự xếp 1–7 ngày tại điểm đến Việt Nam có đủ catalog. Điểm đến thiếu dữ liệu giữ thông tin và cho tự chọn điểm dừng. Chưa có lưu chuyến không ngày hoặc đặt dịch vụ tự động.
 
-Bản đồ lịch trình Hội An: mở chuyến → tab **Bản đồ** → chọn ngày/điểm dừng. Có vị trí khu vực tham khảo cho5địa điểm, nút mở chỉ đường và trạng thái thiếu tọa độ/lỗi mạng. `npm run db:seed` bổ sung vị trí còn thiếu, không ghi đè catalog đã chỉnh. Xem [nguồn tọa độ và giới hạn](docs/TRIP-MAP.md).
+Bản đồ lịch trình Hội An: mở chuyến → tab **Bản đồ** → chọn ngày/điểm dừng. Có vị trí khu vực tham khảo cho5địa điểm, nút mở chỉ đường và trạng thái thiếu tọa độ/lỗi mạng. `npm run db:seed` không còn bổ sung POI hoặc tọa độ mẫu. Xem [nguồn tọa độ và giới hạn](docs/TRIP-MAP.md).
 
 ## Yêu cầu môi trường
 

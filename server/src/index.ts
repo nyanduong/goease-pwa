@@ -12,7 +12,7 @@ async function main() {
   const product = createProduct(database.connection, config, { logger });
   database.connection.on('connected', () => {
     void product
-      .initialize()
+      .initialize(true)
       .then(() => product.operations.start())
       .catch(() => logger.write('product.init_failed'));
   });

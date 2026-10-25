@@ -263,6 +263,21 @@ export function tripModels(connection: Connection) {
   );
   const destinations = new Schema(
     {
+      provinceCode: { type: String, match: /^\d{2}$/, default: null },
+      catalogKind: {
+        type: String,
+        enum: ['province', 'legacy'],
+        default: undefined,
+      },
+      catalogVersion: { type: String, maxlength: 80, default: null },
+      catalogSourceUrl: { type: String, maxlength: 2048, default: null },
+      catalogEffectiveFrom: { type: String, default: null },
+      tourismAreas: {
+        type: [String],
+        default: [],
+        validate: (v: string[]) =>
+          v.length <= 50 && v.every((x) => x.length <= 100),
+      },
       catalogWriteFence: { type: Number, default: 0 },
       ...mutableFields,
       slug: { type: String, required: true, maxlength: 100 },
@@ -297,6 +312,13 @@ export function tripModels(connection: Connection) {
   destinations.index(
     { slug: 1 },
     { unique: true, partialFilterExpression: { deletedAt: null } },
+  );
+  destinations.index(
+    { provinceCode: 1 },
+    {
+      unique: true,
+      partialFilterExpression: { provinceCode: { $type: 'string' } },
+    },
   );
   destinations.index({ publicationStatus: 1, deletedAt: 1 });
   destinations.index({
