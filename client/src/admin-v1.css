@@ -1,0 +1,770 @@
+/* Admin V1: logo colours, clear actions, quiet supporting information.
+   Scoped to admin so the traveller experience keeps its existing design. */
+.admin-desktop-shell {
+  --admin-teal: #007e89;
+  --admin-teal-dark: #00636e;
+  --admin-orange: #f69b24;
+  --admin-ink: #163b46;
+  --admin-muted: #58707a;
+  --admin-line: #dfe8eb;
+  --admin-soft: #edf7f8;
+  --primary-fill: var(--admin-teal);
+  --teal-fill: var(--admin-teal);
+  background: #f4f7f8;
+  color: var(--admin-ink);
+  font-size: 14px;
+  line-height: 1.55;
+  min-width: 0;
+  color-scheme: light;
+}
+
+.admin-desktop-shell *,
+.admin-desktop-shell *::before,
+.admin-desktop-shell *::after {
+  box-sizing: border-box;
+}
+
+.admin-desktop-shell .admin-sidebar {
+  background: #fff;
+  border-right: 1px solid var(--admin-line);
+  gap: 22px;
+}
+
+.admin-desktop-shell .admin-navigation a {
+  color: #516a73;
+  font-size: 13px;
+  font-weight: 550;
+  padding: 12px;
+  border-radius: 9px;
+  line-height: 1.4;
+  transition:
+    background-color 160ms,
+    color 160ms;
+}
+
+.admin-desktop-shell .admin-navigation a:hover {
+  background: #f3f8f9;
+  color: var(--admin-teal-dark);
+}
+
+.admin-desktop-shell .admin-navigation a[aria-current='page'] {
+  color: var(--admin-teal-dark);
+  background: #e7f4f5;
+  box-shadow: inset 3px 0 var(--admin-teal);
+  font-weight: 700;
+}
+
+.admin-desktop-shell .admin-nav-section,
+.admin-desktop-shell .admin-sidebar > p {
+  color: #778a91;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+}
+
+.admin-desktop-shell .admin-topbar {
+  height: auto;
+  min-height: 76px;
+  background: #fff;
+  border-color: var(--admin-line);
+  padding: 12px 28px;
+  gap: 16px;
+}
+
+.admin-desktop-shell .admin-topbar label {
+  color: var(--admin-muted);
+  font-size: 11px;
+  gap: 4px;
+}
+
+.admin-desktop-shell .admin-region,
+.admin-desktop-shell .admin-global-search {
+  background: #f7f9fa;
+  border: 1px solid var(--admin-line);
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+.admin-desktop-shell .admin-global-search kbd {
+  color: #7a8c93;
+  background: #eef2f4;
+}
+
+.admin-desktop-shell .admin-profile > span {
+  color: var(--admin-teal-dark);
+  background: var(--admin-soft);
+}
+
+.admin-desktop-shell .admin-region-filters {
+  position: relative;
+  flex-shrink: 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+.admin-desktop-shell .admin-region-filters > summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.admin-desktop-shell .admin-region-filters > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-desktop-shell .admin-region-filters[open] > summary {
+  color: var(--admin-teal-dark);
+  background: var(--admin-soft);
+}
+
+.admin-desktop-shell .admin-region-filters .destination-region-filters {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 0;
+  z-index: 50;
+  display: grid;
+  gap: 12px;
+  width: 260px;
+  max-width: 80vw;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px #163b461a;
+}
+
+.admin-desktop-shell .admin-filter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--admin-orange);
+}
+
+.admin-desktop-shell
+  .admin-desktop-main
+  :is(.admin-catalog, .admin-v2-content) {
+  padding: 28px 32px 48px;
+  max-width: 1560px;
+}
+
+.admin-desktop-shell .admin-page-heading {
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.admin-desktop-shell
+  :is(.admin-page-heading, .admin-heading, .place-editor-heading)
+  h1 {
+  font-size: clamp(24px, 2.1vw, 30px);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.25;
+  margin: 0 0 7px;
+  color: var(--admin-ink);
+}
+
+.admin-desktop-shell .admin-heading-copy > p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--admin-muted);
+  margin: 0;
+  max-width: 70ch;
+}
+
+.admin-desktop-shell .admin-scope-caption {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--admin-muted);
+  font-size: 12px;
+  margin-bottom: 9px;
+}
+
+.admin-desktop-shell .admin-scope-caption svg {
+  color: var(--admin-teal);
+}
+
+.admin-desktop-shell :is(h2, .admin-panel h2, .admin-operations h2) {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  color: var(--admin-ink);
+}
+
+.admin-desktop-shell h3 {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--admin-ink);
+}
+
+.admin-desktop-shell
+  :is(.admin-panel p, .place-editor-card > p, .admin-soft-notice) {
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.admin-desktop-shell small {
+  line-height: 1.55;
+}
+
+.admin-desktop-shell button,
+.admin-desktop-shell .journey-outline,
+.admin-desktop-shell .journey-primary {
+  min-height: 40px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: none;
+  overflow-wrap: normal;
+  word-break: normal;
+  transition:
+    background-color 160ms,
+    border-color 160ms,
+    box-shadow 160ms;
+}
+
+.admin-desktop-shell button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.admin-desktop-shell
+  :is(.journey-primary, button[type='submit'].button-primary) {
+  background: var(--admin-teal);
+  border: 1px solid var(--admin-teal);
+  color: #fff;
+  padding: 10px 17px;
+  white-space: normal;
+  box-shadow: 0 2px 3px #00636e12;
+}
+
+.admin-desktop-shell .journey-primary:not(:disabled):hover {
+  background: var(--admin-teal-dark);
+  border-color: var(--admin-teal-dark);
+  box-shadow: 0 3px 8px #00636e20;
+}
+
+.admin-desktop-shell .journey-outline {
+  background: #fff;
+  border: 1px solid #cbdce1;
+  color: var(--admin-teal-dark);
+  padding: 9px 15px;
+}
+
+.admin-desktop-shell .journey-outline:not(:disabled):hover {
+  background: var(--admin-soft);
+  border-color: #a2c9ce;
+}
+
+.admin-desktop-shell
+  :is(.admin-actions, .admin-page-heading > button, .admin-page-heading > a) {
+  flex-shrink: 0;
+}
+
+.admin-desktop-shell .admin-actions {
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-desktop-shell .admin-catalog-actions .catalog-import-action {
+  order: 0;
+}
+
+.admin-desktop-shell .admin-catalog-actions .catalog-create-action {
+  order: 1;
+}
+
+.admin-desktop-shell
+  :is(
+    .admin-panel,
+    .place-editor-card,
+    .admin-source-connection,
+    .admin-history-browser
+  ) {
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  box-shadow: 0 2px 4px #173e4803;
+}
+
+.admin-desktop-shell .admin-panel {
+  padding: 22px;
+}
+
+.admin-desktop-shell .admin-kpis {
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-desktop-shell .admin-kpi {
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 124px;
+  box-shadow: none;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.admin-desktop-shell .admin-kpi strong {
+  font-size: 32px;
+  line-height: 1.2;
+  margin: 8px 0 4px;
+  color: var(--admin-ink);
+}
+
+.admin-desktop-shell .admin-kpi small {
+  color: var(--admin-muted);
+  font-size: 11px;
+}
+
+.admin-desktop-shell .admin-kpi-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--admin-soft);
+  color: var(--admin-teal);
+}
+
+.admin-desktop-shell .admin-kpi.orange {
+  border-color: #efcca1;
+  background: #fffdf9;
+}
+
+.admin-desktop-shell .admin-kpi.orange :is(strong, .admin-kpi-icon) {
+  color: #a85a0c;
+}
+
+.admin-desktop-shell .admin-kpi.orange .admin-kpi-icon {
+  background: #fff0dc;
+}
+
+.admin-desktop-shell .admin-dashboard-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.admin-desktop-shell .admin-dashboard-grid .admin-quick {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-desktop-shell .admin-quick > h2 {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+.admin-desktop-shell .admin-quick a {
+  margin-top: 0;
+  background: #f8fbfb;
+  border-color: var(--admin-line);
+  border-radius: 9px;
+}
+
+.admin-desktop-shell .admin-panel-title {
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.admin-desktop-shell .admin-panel-title h2 {
+  margin: 0;
+}
+
+.admin-desktop-shell .admin-panel-title a {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-teal);
+}
+
+.admin-desktop-shell .admin-task-preview {
+  padding: 15px 0;
+  min-height: 82px;
+  border-color: var(--admin-line);
+  border-radius: 0;
+}
+
+.admin-desktop-shell .admin-task-preview strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.admin-desktop-shell .admin-task-preview small {
+  color: var(--admin-muted);
+  font-size: 11px;
+}
+
+.admin-desktop-shell .admin-bottom-grid {
+  gap: 20px;
+}
+
+.admin-desktop-shell
+  :is(input, select, textarea):not([type='checkbox']):not([type='radio']) {
+  border-color: #d4e0e4;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--admin-ink);
+  font-size: 13px;
+  min-height: 40px;
+  box-shadow: none;
+}
+
+.admin-desktop-shell textarea {
+  line-height: 1.7;
+}
+
+.admin-desktop-shell :is(input, textarea)::placeholder {
+  color: #87969d;
+}
+
+.admin-desktop-shell :is(input[type='checkbox'], input[type='radio']) {
+  accent-color: var(--admin-teal);
+}
+
+.admin-desktop-shell
+  :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 3px solid #007e8940;
+  outline-offset: 3px;
+}
+
+.admin-desktop-shell :is(.admin-data-table, .history-browser-table) th {
+  background: #f6f9fa;
+  color: #607780;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  border-color: var(--admin-line);
+}
+
+.admin-desktop-shell .admin-data-table td {
+  border-color: #eaf0f2;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  font-size: 13px;
+}
+
+.admin-desktop-shell .admin-data-table tbody tr:hover {
+  background: #f7fbfc;
+}
+
+.admin-desktop-shell .admin-data-table tr.is-selected {
+  background: #edf8f9;
+}
+
+.admin-desktop-shell .catalog-place-link {
+  min-height: 48px;
+  border-radius: 0;
+}
+
+.admin-desktop-shell .catalog-edit-button {
+  border-color: #d2e1e4;
+  background: #fff;
+  color: var(--admin-teal-dark);
+}
+
+.admin-desktop-shell :is(.admin-soft-notice, .admin-preview) {
+  border-radius: 9px;
+  background: #f0f7f8;
+  border: 1px solid #d9e9ec;
+  padding: 14px 16px;
+}
+
+.admin-desktop-shell .admin-alert {
+  background: #fff5ef;
+  border: 1px solid #f1d3c4;
+  border-left: 3px solid #d76b35;
+  border-radius: 8px;
+  color: #873d21;
+  padding: 14px 16px;
+  font-size: 13px;
+}
+
+.admin-desktop-shell .admin-success {
+  background: #eaf7f4;
+  border: 1px solid #c5e6dd;
+  border-radius: 8px;
+  color: #17654f;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+
+.admin-desktop-shell .admin-save-bar {
+  background: #ffffffef;
+  border: 1px solid var(--admin-line);
+  box-shadow: 0 -4px 18px #163b4608;
+  border-radius: 12px;
+  padding: 14px 18px;
+  gap: 12px;
+  backdrop-filter: blur(12px);
+}
+
+.admin-desktop-shell .place-save-caption {
+  color: var(--admin-muted);
+  font-size: 12px;
+  margin-right: auto;
+}
+
+.admin-desktop-shell .place-editor-tabs {
+  gap: 24px;
+  border-color: var(--admin-line);
+}
+
+.admin-desktop-shell .admin-desktop-main .admin-catalog.is-editing {
+  padding: 0 32px 104px;
+}
+
+.admin-desktop-shell .place-editor-masthead {
+  padding: 14px 0;
+  margin-bottom: 14px;
+}
+
+.admin-desktop-shell .place-editor-heading {
+  margin: 14px 0 20px;
+}
+
+.admin-desktop-shell .place-editor-tabs button {
+  border-radius: 0;
+  font-size: 13px;
+}
+
+.admin-desktop-shell .place-editor-tabs button[aria-selected='true'] {
+  color: var(--admin-teal);
+  border-bottom-color: var(--admin-teal);
+}
+
+.admin-desktop-shell .place-readiness.needs-review {
+  background: #fff3e4;
+  color: #9d590e;
+}
+
+.admin-desktop-shell .admin-detail-note {
+  margin: 12px 0;
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+.admin-desktop-shell .admin-detail-note > summary {
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.admin-desktop-shell .admin-check-tools,
+.admin-desktop-shell .history-browser-toolbar {
+  background: #fff;
+  border-color: var(--admin-line);
+}
+
+.admin-desktop-shell .admin-check-tabs button[aria-pressed='true'] {
+  background: var(--admin-soft);
+  border-color: #b6d9de;
+  color: var(--admin-teal-dark);
+}
+
+.admin-desktop-shell .admin-check-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  padding: 16px;
+  gap: 12px;
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+}
+
+.admin-desktop-shell .admin-check-tabs {
+  grid-column: 1 / -1;
+}
+
+.admin-desktop-shell .admin-check-tabs button {
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.admin-desktop-shell .admin-check-search {
+  max-width: none;
+  width: auto;
+}
+
+.admin-desktop-shell .admin-check-detail.admin-review-detail {
+  position: relative;
+}
+
+.admin-desktop-shell .admin-check-detail-heading {
+  margin-right: 126px;
+  min-height: 100px;
+}
+
+.admin-desktop-shell .admin-check-hero {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 108px;
+}
+
+.admin-desktop-shell .admin-check-hero .admin-place-photo.is-large {
+  height: 100px;
+}
+
+.admin-desktop-shell
+  .admin-check-hero
+  > span:last-child:not(.admin-place-photo) {
+  font-size: 0;
+  padding: 5px;
+  right: 5px;
+  bottom: 5px;
+  gap: 0;
+}
+
+.admin-desktop-shell .admin-check-checklist {
+  border-top: 1px solid var(--admin-line);
+}
+
+@media (max-width: 1200px) {
+  .admin-desktop-shell .admin-topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .admin-desktop-shell .admin-profile {
+    margin-left: auto;
+  }
+
+  .admin-desktop-shell
+    .admin-desktop-main
+    :is(.admin-catalog, .admin-v2-content) {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-desktop-shell .admin-dashboard-grid,
+  .admin-desktop-shell .admin-bottom-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-desktop-shell .admin-dashboard-grid .admin-quick {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-desktop-shell .admin-page-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-desktop-shell .admin-page-heading > .admin-actions {
+    flex-shrink: 1;
+  }
+}
+
+@media (max-width: 650px) {
+  .admin-desktop-shell .admin-sidebar {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .admin-desktop-shell .admin-topbar {
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  .admin-desktop-shell .admin-topbar :is(.admin-bell, .admin-profile) {
+    display: none;
+  }
+
+  .admin-desktop-shell .admin-region {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .admin-desktop-shell .admin-region select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .admin-desktop-shell .admin-check-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    min-width: 0;
+    padding: 3px;
+  }
+
+  .admin-desktop-shell .admin-check-tabs button {
+    flex-shrink: 0;
+  }
+
+  .admin-desktop-shell
+    .admin-desktop-main
+    :is(.admin-catalog, .admin-v2-content) {
+    padding: 22px 16px 32px;
+  }
+
+  .admin-desktop-shell .admin-kpi {
+    padding: 15px;
+    min-height: 114px;
+    gap: 10px;
+  }
+
+  .admin-desktop-shell .admin-kpi strong {
+    font-size: 27px;
+  }
+
+  .admin-desktop-shell .admin-panel {
+    padding: 18px;
+  }
+
+  .admin-desktop-shell .admin-save-bar {
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+
+  .admin-desktop-shell .place-save-caption {
+    flex-basis: 100%;
+  }
+
+  .admin-desktop-shell .admin-catalog-actions {
+    width: 100%;
+  }
+
+  .admin-desktop-shell .admin-catalog-actions button {
+    flex: 1 1 130px;
+  }
+
+  .admin-desktop-shell .admin-check-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-desktop-shell .admin-desktop-main .admin-catalog.is-editing {
+    padding: 0 16px 150px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-desktop-shell *,
+  .admin-desktop-shell *::before,
+  .admin-desktop-shell *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,8 +1,4 @@
-import {
-  AdminPageHeader,
-  AdminPlaceImage,
-  PhotoSearchStatus,
-} from './admin-visuals';
+import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
 import { AdminSourceConnection } from './admin-campaigns';
 import { catalogQuality } from '@goease/contracts';
 import { AdminRegionSettings } from './admin-region-settings';
@@ -21,6 +17,7 @@ import {
   Clock,
   Search,
   Bell,
+  SlidersHorizontal,
 } from 'lucide-react';
 import type {
   AdminOverview,
@@ -65,14 +62,23 @@ export function AdminTopbar({
     <header className="admin-topbar">
       {showScope && (
         <>
-          <DestinationRegions
-            region={region}
-            subregion={subregion}
-            onChange={(r, s) => {
-              setRegion(r);
-              setSubregion(s);
-            }}
-          />
+          <details className="admin-region-filters">
+            <summary>
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              Lọc miền / vùng
+              {(region || subregion) && (
+                <span className="admin-filter-dot" aria-label="Đang lọc" />
+              )}
+            </summary>
+            <DestinationRegions
+              region={region}
+              subregion={subregion}
+              onChange={(r, s) => {
+                setRegion(r);
+                setSubregion(s);
+              }}
+            />
+          </details>
           <label className="admin-region">
             <MapPin size={19} />
             <select
@@ -197,9 +203,9 @@ export function AdminDashboard({
     }
   }
   const title = {
-    overview: 'Tổng quan dữ liệu',
-    sources: 'Nguồn dữ liệu & chất lượng',
-    settings: 'Cài đặt vận hành',
+    overview: 'Tổng quan',
+    sources: 'Nguồn dữ liệu',
+    settings: 'Cài đặt',
   }[screen];
   const region =
     destinations.find((d) => d.id === scope)?.name ?? 'tất cả khu vực';
@@ -217,10 +223,22 @@ export function AdminDashboard({
         greeting={screen === 'overview'}
         description={
           screen === 'overview'
-            ? `Đây là tổng quan hoạt động của GoEase tại ${region} hôm nay.`
+            ? 'Theo dõi địa điểm và những việc cần xử lý.'
             : screen === 'sources'
               ? 'Quản lý nguồn dữ liệu, theo dõi chất lượng và xử lý thông tin cần kiểm tra.'
-              : 'Quy tắc vận hành được lưu trên máy chủ và áp dụng cho những lần cập nhật tiếp theo.'
+              : 'Quản lý khu vực hiển thị và cách cập nhật dữ liệu.'
+        }
+        actions={
+          screen === 'overview' ? (
+            <div className="admin-actions">
+              <a className="journey-outline" href="#places?create=1">
+                <Plus size={16} /> Thêm địa điểm
+              </a>
+              <a className="journey-primary" href="#work">
+                Xem việc cần kiểm tra <ArrowUpRight size={16} />
+              </a>
+            </div>
+          ) : undefined
         }
       />
 
@@ -345,7 +363,7 @@ export function AdminDashboard({
                     icon: MapPin,
                     link: href('status=all'),
                     tone: 'blue',
-                    note: 'Trong khu vực đã chọn',
+                    note: 'Trong khu vực đang xem',
                   },
                   {
                     title: 'Địa điểm nháp',
@@ -361,7 +379,7 @@ export function AdminDashboard({
                     icon: AlertTriangle,
                     link: '#work',
                     tone: 'orange',
-                    note: 'Có ít nhất một vấn đề chất lượng',
+                    note: 'Cần bổ sung hoặc đối chiếu',
                   },
                   {
                     title: 'Đã xuất bản',
@@ -369,7 +387,7 @@ export function AdminDashboard({
                     icon: CheckCircle2,
                     link: href('status=published'),
                     tone: 'green',
-                    note: 'Đang hiển thị trong danh mục',
+                    note: 'Khách có thể tìm thấy',
                   },
                 ].map((k) => (
                   <a
@@ -404,7 +422,7 @@ export function AdminDashboard({
                   <div className="admin-dashboard-grid">
                     <section className="admin-panel">
                       <div className="admin-panel-title">
-                        <h2>Việc cần quan tâm ({data.needsAttention})</h2>
+                        <h2>Cần xử lý ({data.needsAttention})</h2>
                         <a href="#work">Xem việc cần làm →</a>
                       </div>
                       {settings.showQualityAlerts ? (
@@ -431,17 +449,11 @@ export function AdminDashboard({
                                 <AdminPlaceImage place={p} />
                                 <span>
                                   <strong>{p.name}</strong>
-                                  <PhotoSearchStatus place={p} />
                                   <small>
                                     {
                                       catalogQuality(p, settings.freshnessDays)
                                         .issues[0]?.label
                                     }
-                                  </small>
-                                  <small>
-                                    {p.publicationStatus === 'published'
-                                      ? 'Đang ảnh hưởng nội dung công khai'
-                                      : 'Hoàn thiện trước khi xuất bản'}
                                   </small>
                                 </span>
                                 <ArrowUpRight size={16} />
@@ -462,7 +474,7 @@ export function AdminDashboard({
                     </section>
                     <section className="admin-panel">
                       <div className="admin-panel-title">
-                        <h2>Bản đồ phân bố địa điểm</h2>
+                        <h2>Địa điểm trên bản đồ</h2>
                         <a href="#places?view=map">Mở bản đồ →</a>
                       </div>
                       <AdminMap places={data.places} onOpen={onOpen} />
@@ -584,7 +596,7 @@ export function AdminDashboard({
                         .{' '}
                         {data.sources.lastSuccess
                           ? 'Đã có lượt đồng bộ thành công.'
-                          : 'Chưa có bằng chứng đồng bộ thành công.'}
+                          : 'Chưa có lần lấy dữ liệu thành công.'}
                       </p>
                       <small>
                         Powered by Geoapify · © OpenStreetMap contributors ·
@@ -600,7 +612,7 @@ export function AdminDashboard({
                     <section className="admin-panel">
                       <h2>Hoạt động nguồn</h2>
                       <dl>
-                        <dt>Bản ghi Geoapify</dt>
+                        <dt>Địa điểm từ Geoapify</dt>
                         <dd>{data.sources.geoapify}</dd>
                         <dt>Biên tập / nguồn thủ công</dt>
                         <dd>{data.sources.manual}</dd>
@@ -619,8 +631,8 @@ export function AdminDashboard({
                         <li>Nội dung admin đã biên tập được giữ lại.</li>
                         <li>Nguồn mới lưu bằng chứng để đối chiếu.</li>
                         <li>
-                          Thay đổi tên, vị trí, loại hình hoặc đóng cửa phải
-                          review.
+                          Thay đổi tên, vị trí, loại hình hoặc đóng cửa cần được
+                          kiểm tra.
                         </li>
                         <li>
                           Chỉ giờ của bản nháp chưa biên tập được tự áp dụng khi

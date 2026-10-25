@@ -519,7 +519,7 @@ export function AdminCatalog({
           ? 'Đã áp dụng bản công khai. Khả năng khám phá, xếp lịch và ngân sách được kiểm tra riêng.'
           : publicationStatus === 'archived'
             ? 'Đã ngừng hiển thị. Lịch khách đã lưu vẫn được giữ.'
-            : 'Đã lưu đề xuất. Bản khách đang xem được giữ nguyên; xuất bản là bước riêng.',
+            : 'Đã lưu bản chỉnh sửa. Bản khách đang xem được giữ nguyên; xuất bản là bước riêng.',
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Chưa lưu được. Hãy thử lại.');
@@ -551,14 +551,14 @@ export function AdminCatalog({
             !form && !importing ? (
               <div className="admin-actions admin-catalog-actions">
                 <button
-                  className="journey-primary catalog-import-action"
+                  className="journey-outline catalog-import-action"
                   disabled={busy}
                   onClick={() => setImporting(true)}
                 >
-                  <Download size={17} /> Lấy địa điểm
+                  <Download size={17} /> Lấy từ nguồn
                 </button>
                 <button
-                  className="journey-outline catalog-create-action"
+                  className="journey-primary catalog-create-action"
                   disabled={busy || !destinations.length}
                   onClick={() => {
                     setSaved(null);
@@ -571,7 +571,7 @@ export function AdminCatalog({
                     setSuccess('');
                   }}
                 >
-                  <PlusCircle size={17} /> Thêm thủ công
+                  <PlusCircle size={17} /> Thêm địa điểm
                 </button>
               </div>
             ) : undefined
@@ -1044,7 +1044,7 @@ export function AdminCatalog({
                   ? 'Đang lưu…'
                   : isDirty
                     ? 'Có thay đổi chưa lưu'
-                    : 'Đã lưu đề xuất'}
+                    : 'Đã lưu bản chỉnh sửa'}
               </span>
             </div>
           </header>
@@ -1101,7 +1101,7 @@ export function AdminCatalog({
               </div>
               <section
                 className="place-editor-photos"
-                hidden={!['overview', 'photos'].includes(editorTab)}
+                hidden={editorTab !== 'photos'}
                 data-editor-field="images"
               >
                 <AdminWikimediaImages
@@ -1364,7 +1364,7 @@ export function AdminCatalog({
                         checked={autosave}
                         onChange={(e) => setAutosave(e.target.checked)}
                       />
-                      Tự lưu bản nháp hợp lệ sau 2 giây
+                      Tự lưu khi thông tin hợp lệ
                     </label>
                   )}
 
@@ -1382,7 +1382,7 @@ export function AdminCatalog({
                   </label>
 
                   <details>
-                    <summary>Khóa biên tập theo trường</summary>
+                    <summary>Bảo vệ thông tin đã chỉnh sửa</summary>
                     <p>
                       Trường khóa được bảo vệ khi nguồn cập nhật, xuất bản và
                       phục hồi. Khóa không tự xác minh dữ kiện.
@@ -1425,7 +1425,7 @@ export function AdminCatalog({
                   </details>
                   {saved?.fieldProvenance?.length ? (
                     <details>
-                      <summary>Lịch sử nguồn theo trường</summary>
+                      <summary>Nguồn của từng thông tin</summary>
                       {saved.fieldProvenance.map((p) => (
                         <div key={p.field} className="admin-version">
                           <strong>{p.field}</strong>
@@ -1582,11 +1582,11 @@ export function AdminCatalog({
                 ? 'Đang lưu…'
                 : isDirty
                   ? 'Có thay đổi chưa lưu'
-                  : 'Đã lưu đề xuất'}{' '}
+                  : 'Đã lưu bản chỉnh sửa'}{' '}
               ·{' '}
               {saved?.publicRevision
-                ? 'Bản công khai giữ nguyên khi lưu'
-                : 'Chưa công khai'}
+                ? 'Chưa thay đổi nội dung khách đang xem'
+                : 'Chưa hiển thị cho khách'}
             </span>
             <button
               type="button"

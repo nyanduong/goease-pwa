@@ -110,21 +110,21 @@ export function AdminPolicies({ scope }: { scope: string }) {
       <div className="admin-two-column">
         <section className="admin-panel">
           <div className="admin-panel-title">
-            <h2>Quy tắc có phiên bản</h2>
+            <h2>Cách xử lý dữ liệu mới</h2>
             <button
               onClick={() => {
                 setCreating((v) => !v);
                 setError('');
               }}
             >
-              Tạo phiên bản quy tắc
+              Thêm quy tắc
             </button>
           </div>
           {loading && <p role="status">Đang tải quy tắc…</p>}
           {!loading && !policies.length && (
             <p>
-              Chưa có phiên bản quy tắc. Đợt mới mặc định đưa thay đổi vào ngoại
-              lệ và không tự xuất bản.
+              Chưa có quy tắc. Dữ liệu mới sẽ chờ bạn kiểm tra và chưa tự đăng
+              cho khách.
             </p>
           )}
           <div className="admin-policy-list">
@@ -144,7 +144,7 @@ export function AdminPolicies({ scope }: { scope: string }) {
                 <p>
                   {p.autoApplyDraftHours
                     ? 'Tự áp dụng giờ nguồn cho bản nháp đủ điều kiện'
-                    : 'Đưa thay đổi vào hàng đợi ngoại lệ'}
+                    : 'Chờ người quản trị kiểm tra'}
                 </p>
                 <small>
                   {new Date(p.createdAt).toLocaleString('vi-VN')} · xuất bản tự
@@ -188,7 +188,7 @@ export function AdminPolicies({ scope }: { scope: string }) {
                 className="journey-primary"
                 disabled={busy || !name.trim()}
               >
-                Lưu phiên bản quy tắc
+                Lưu quy tắc
               </button>
             </form>
           )}
@@ -199,18 +199,25 @@ export function AdminPolicies({ scope }: { scope: string }) {
               onClick={() => void simulate()}
             >
               <FlaskConical size={16} />{' '}
-              {busy ? 'Đang mô phỏng…' : 'Mô phỏng tác động'}
+              {busy ? 'Đang mô phỏng…' : 'Xem trước ảnh hưởng'}
             </button>
-            <a href="#automatic">Tạo đợt với quy tắc đã chọn →</a>
+            <a href="#automatic">Tạo đợt thu thập →</a>
           </div>
-          {!scope && (
-            <p>Chọn điểm đến cụ thể trên thanh phạm vi để mô phỏng.</p>
+          {(!scope || !selected) && (
+            <p>
+              Chọn{' '}
+              {!scope && !selected
+                ? 'khu vực và quy tắc'
+                : !scope
+                  ? 'khu vực'
+                  : 'quy tắc'}{' '}
+              để xem trước thay đổi.
+            </p>
           )}
-          {!selected && <p>Chọn một phiên bản quy tắc để mô phỏng.</p>}
         </section>
         <aside className="admin-panel">
           <h2>
-            <ShieldCheck size={17} /> Phạm vi tự động an toàn
+            <ShieldCheck size={17} /> Những gì hệ thống tự làm
           </h2>
           <p>
             Quy tắc không tự xuất bản địa điểm. Thay đổi tên, vị trí, loại hình,
@@ -219,7 +226,7 @@ export function AdminPolicies({ scope }: { scope: string }) {
           </p>
           <p>
             <LockKeyhole size={17} /> Trường đã khóa và nội dung biên tập được
-            bảo vệ. Ngày nhận nguồn không thay ngày xác minh.
+            bảo vệ. Ngày lấy dữ liệu không phải ngày đã kiểm tra thực tế.
           </p>
           <p>
             Mỗi đợt lưu phiên bản quy tắc riêng. Lưu bản quy tắc mới không âm
@@ -230,19 +237,22 @@ export function AdminPolicies({ scope }: { scope: string }) {
       {simulation && (
         <section className="admin-panel">
           <h2>
-            Kết quả mô phỏng · {simulation.policy.name} · bản{' '}
+            Thay đổi dự kiến · {simulation.policy.name} · bản{' '}
             {simulation.policy.version}
           </h2>
           <p>
-            {simulation.total} ngoại lệ thuộc phạm vi. Trang này có{' '}
+            {simulation.total} mục cần kiểm tra thuộc phạm vi. Trang này có{' '}
             {simulation.items.filter((p) => p.eligible).length}/
-            {simulation.items.length} mục đủ điều kiện tự áp dụng. Mô phỏng
-            không ghi thay đổi.
+            {simulation.items.length} mục có thể tự cập nhật. Xem trước chưa
+            thay đổi dữ liệu.
           </p>
           {!simulation.items.length ? (
             <div className="admin-empty">
-              <h2>Chưa có thay đổi phù hợp để mô phỏng</h2>
-              <p>Thu thập nguồn trước hoặc chọn điểm đến có ngoại lệ nguồn.</p>
+              <h2>Chưa có thay đổi phù hợp</h2>
+              <p>
+                Thu thập nguồn trước hoặc chọn điểm đến có thay đổi từ nguồn cần
+                kiểm tra.
+              </p>
             </div>
           ) : (
             <div className="admin-table-scroll">
@@ -264,7 +274,9 @@ export function AdminPolicies({ scope }: { scope: string }) {
                         <span
                           className={`admin-pill ${p.eligible ? 'is-good' : 'is-warning'}`}
                         >
-                          {p.eligible ? 'Đủ điều kiện' : 'Đưa vào ngoại lệ'}
+                          {p.eligible
+                            ? 'Đủ điều kiện'
+                            : 'Đưa vào mục cần kiểm tra'}
                         </span>
                       </td>
                       <td>{p.reason}</td>

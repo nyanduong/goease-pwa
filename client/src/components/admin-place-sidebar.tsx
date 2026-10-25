@@ -83,7 +83,7 @@ export function AdminPlaceSidebar({
         >
           {issues.size
             ? `Cần kiểm tra ${issues.size} mục`
-            : 'Đủ điều kiện kiểm tra xuất bản'}
+            : 'Sẵn sàng xem trước'}
         </strong>
         {!!form.name.trim() && !!form.locationQuery.trim() && (
           <div className="place-check-ok">
@@ -126,7 +126,7 @@ export function AdminPlaceSidebar({
           <h2>Vị trí tham khảo</h2>
         </header>
         <AdminMap places={[mapPlace]} />
-        <small>Chưa xác minh lối vào</small>
+        <small>Vị trí tham khảo; cần kiểm tra lối vào</small>
         <details>
           <summary>Kiểm tra vị trí →</summary>
           <fieldset disabled={busy}>

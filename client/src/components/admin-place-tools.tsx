@@ -99,7 +99,7 @@ export function AdminPlaceTools({
     <div className="admin-editor-tools">
       {saved && (
         <section className="admin-panel">
-          <h2>Phiên bản & khôi phục</h2>
+          <h2>Lịch sử chỉnh sửa & phục hồi</h2>
           {error && (
             <p role="alert">
               {error}{' '}

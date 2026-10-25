@@ -104,19 +104,22 @@ export function AdminDestinations() {
       className="admin-panel admin-destination-manager"
       aria-label="Danh mục tỉnh thành"
     >
-      <h2>Danh mục tỉnh/thành Việt Nam</h2>
+      <h2>Hiển thị tỉnh/thành</h2>
       <p>
-        34 tỉnh/thành được nạp sẵn. Bật để khách chọn khi tạo chuyến; tắt sẽ ẩn
-        tỉnh/thành và các địa điểm bên trong khỏi khám phá. Nội dung đã biên tập
-        và chuyến đã lưu được giữ lại.
+        Bật để khách chọn khi tạo chuyến và bắt đầu lấy địa điểm vào bản nháp.
+        Bạn kiểm tra dữ liệu trước khi đăng.
       </p>
       <p>
-        Hội An là khu vực bên trong Đà Nẵng; Sa Pa thuộc Lào Cai. Bật hiển thị
-        sẽ bắt đầu lấy địa điểm tham quan vào nháp; chưa có nghĩa đủ dữ liệu cho
-        Goe. Lịch thu thập được quản lý riêng trong Quy tắc &amp; lịch.
+        Tắt sẽ ẩn tỉnh/thành và các địa điểm bên trong. Chuyến đã lưu được giữ
+        nguyên.
       </p>
-      <details>
-        <summary>Nguồn danh mục và phân vùng</summary>
+      <details className="admin-detail-note">
+        <summary>Thông tin danh mục & cách lấy dữ liệu</summary>
+        <p>
+          Có sẵn 34 tỉnh/thành. Hội An thuộc Đà Nẵng; Sa Pa thuộc Lào Cai. Bật
+          hiển thị chưa có nghĩa dữ liệu đã đủ cho Goe. Lịch thu thập được quản
+          lý riêng trong Quy tắc &amp; lịch.
+        </p>
         <p>
           <a
             href="https://chinhphu.vn/?classid=1&amp;docid=214409&amp;orggroupid=3&amp;pageid=27160"

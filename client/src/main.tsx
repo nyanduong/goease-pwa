@@ -5,6 +5,7 @@ import { App } from './App';
 import './styles.css';
 import './admin.css';
 import './brand-theme.css';
+import './admin-v1.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

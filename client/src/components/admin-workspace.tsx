@@ -90,7 +90,7 @@ const runLabels = {
   running: 'Đang lấy và kiểm tra',
   retry: 'Sẽ tự thử lại',
   succeeded: 'Đã hoàn tất',
-  failed: 'Cần can thiệp',
+  failed: 'Cần kiểm tra lỗi',
 };
 export function AdminWorkspace({
   destinations: initialDestinations,
@@ -342,7 +342,7 @@ export function AdminWorkspace({
         <section className="admin-v2-content">
           <AdminPageHeader
             title="Quy tắc & lịch"
-            description="Mô phỏng tác động trước khi áp dụng tự động."
+            description="Chọn cách cập nhật và đặt lịch chạy."
           />
           <AdminPolicies scope={scope} />
           {scope && data ? (
