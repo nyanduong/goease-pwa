@@ -18,6 +18,13 @@ export const campaignInputSchema = z.strictObject({
   policyId: id.optional(),
 });
 export type CampaignInput = z.infer<typeof campaignInputSchema>;
+export const campaignListQuerySchema = z.strictObject({
+  offset: z.coerce.number().int().min(0).max(1000000).default(0),
+  q: z.string().trim().max(100).default(''),
+  state: z.enum(['running', 'succeeded', 'issues', 'paused']).optional(),
+  destinationId: id.optional(),
+});
+export type CampaignListQuery = z.infer<typeof campaignListQuerySchema>;
 export const campaignControlSchema = z.strictObject({
   action: z.enum(['pause', 'resume', 'retry_failed']),
 });
@@ -75,6 +82,16 @@ export type CampaignSummary = {
   completedTasks: number;
   failedTasks: number;
   pausedTasks: number;
+  source: string;
+  destinations: { id: string; name: string }[];
+  groups: CampaignInput['group'][];
+  counts: { created: number; updated: number; review: number; errors: number };
+};
+export type CampaignListDto = {
+  items: CampaignSummary[];
+  total: number;
+  hasMore: boolean;
+  summary: { running: number; completedToday: number; issues: number };
 };
 export type BulkItemDto = {
   id: string;

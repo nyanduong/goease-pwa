@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import {
   campaignInputSchema,
+  campaignListQuerySchema,
   provinceImportSchema,
   campaignControlSchema,
   catalogPolicyInputSchema,
@@ -41,7 +42,7 @@ export function adminV3Router(service: ReturnType<typeof adminV3Service>) {
       ok: true,
       data: await service.campaigns(
         res.locals.authUser._id,
-        parse(offset, req.query.offset),
+        parse(campaignListQuerySchema, req.query),
       ),
     }),
   );

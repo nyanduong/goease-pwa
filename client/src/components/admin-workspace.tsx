@@ -302,6 +302,7 @@ export function AdminWorkspace({
         scope={scope}
         onScope={setScope}
         name={name}
+        showScope={tab !== 'automatic'}
       />
       {destinationError && (
         <div className="admin-alert" role="alert">
@@ -341,10 +342,6 @@ export function AdminWorkspace({
       )}
       {tab === 'automatic' && (
         <section className="admin-v2-content">
-          <AdminPageHeader
-            title="Đợt thu thập"
-            description="Phạm vi, nguồn và quy tắc được chốt riêng cho từng đợt."
-          />
           <AdminCampaigns
             destinations={destinations}
             scope={scope}

@@ -40,11 +40,13 @@ export function AdminTopbar({
   scope,
   onScope,
   name,
+  showScope = true,
 }: {
   destinations: DestinationDto[];
   scope: string;
   onScope: (s: string) => void;
   name: string;
+  showScope?: boolean;
 }) {
   const [q, setQ] = useState('');
   const [region, setRegion] = useState(''),
@@ -61,33 +63,37 @@ export function AdminTopbar({
   }, []);
   return (
     <header className="admin-topbar">
-      <DestinationRegions
-        region={region}
-        subregion={subregion}
-        onChange={(r, s) => {
-          setRegion(r);
-          setSubregion(s);
-        }}
-      />
-      <label className="admin-region">
-        <MapPin size={19} />
-        <select
-          aria-label="Khu vực quản lý"
-          value={scope}
-          onChange={(e) => onScope(e.target.value)}
-        >
-          <option value="">Tất cả điểm đến · chỉ xem</option>
-          {destinations
-            .filter(
-              (d) => d.id === scope || matchesRegion(d, region, subregion),
-            )
-            .map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-        </select>
-      </label>
+      {showScope && (
+        <>
+          <DestinationRegions
+            region={region}
+            subregion={subregion}
+            onChange={(r, s) => {
+              setRegion(r);
+              setSubregion(s);
+            }}
+          />
+          <label className="admin-region">
+            <MapPin size={19} />
+            <select
+              aria-label="Khu vực quản lý"
+              value={scope}
+              onChange={(e) => onScope(e.target.value)}
+            >
+              <option value="">Tất cả điểm đến · chỉ xem</option>
+              {destinations
+                .filter(
+                  (d) => d.id === scope || matchesRegion(d, region, subregion),
+                )
+                .map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+        </>
+      )}
       <form
         className="admin-global-search"
         onSubmit={(e) => {

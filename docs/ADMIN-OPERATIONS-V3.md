@@ -27,6 +27,18 @@ Không có Hội An mặc định. `hoi-an` chỉ là khóa tương thích của
 
 `/admin/v3/policies` tạo phiên bản mới; không sửa âm thầm phiên bản đang chạy. `/policies/dry-run` phân trang mô phỏng, không ghi địa điểm. Quy tắc ít rủi ro hiện thực thi: chỉ thay duy nhất giờ trên draft, khớp nguồn trước, không khóa/ngoại lệ/trùng hoặc thay đổi quan trọng. Kết quả là đề xuất, không tự xuất bản. Mọi policy có `autoPublish=false`. Các nhóm tự động hóa khác chưa triển khai.
 
+## Giao diện Đợt thu thập — 25/10/2026
+
+Danh sách dùng bố cục đã được owner duyệt: ba thẻ tổng quan, tìm theo địa phương/mã đợt, lọc trạng thái/địa phương và bảng kết quả. Mỗi dòng hiển thị nhóm thu thập, tên phạm vi đã chụp, mã rút gọn (8 ký tự cuối ID), nguồn, thời điểm tạo, số tác vụ thành công và số địa điểm mới/cập nhật/cần kiểm tra/lỗi. Nút mở chi tiết đổi thành **Xem tiến trình**, **Xem kết quả** hoặc **Xem lỗi**; luồng tạo, pause/resume/retry và xuất bản vẫn giữ nguyên. Mobile chuyển từng dòng thành thẻ để đọc đủ trạng thái/kết quả/thao tác. Bộ lọc phạm vi trên topbar được ẩn riêng ở màn hình này, tránh nhầm với bộ lọc danh sách và phạm vi khi tạo đợt.
+
+`GET /admin/v3/campaigns` nhận `offset` (0–1.000.000), `q` (tối đa100 ký tự, tìm literal theo tên địa phương/ID, không nhận regex), `state` (`running|succeeded|issues|paused`), `destinationId` (ObjectId). API aggregate `catalog_campaigns` với `catalog_runs`, lọc trước phân trang20 dòng. DTO `CampaignSummary` bổ sung `source`, `destinations[{id,name}]`, `groups`, `counts{created,updated,review,errors}`; detail và list cùng ý nghĩa. Không thêm trường lưu trữ, collection, index, migration hoặc quy tắc nghiệp vụ mới; dictionary/registry giữ nguyên.
+
+`summary{running,completedToday,issues}` tính toàn bộ đợt, độc lập bộ lọc/trang: đang chạy theo state tổng hợp; hoàn tất hôm nay là đợt `succeeded` có thời điểm kết thúc tác vụ cuối trong ngày Việt Nam (UTC+7); có lỗi là có tác vụ failed hoặc `counts.errors>0`. Tiến độ là tỷ lệ **tác vụ thành công**, không phải tỷ lệ dữ liệu được duyệt. Kết quả mới/cập nhật/cần kiểm tra cộng từ counters đã lưu của từng run; không phải số địa điểm đã xuất bản. Có lỗi xử lý trong đợt hoàn tất được ghi rõ. Không đổi tên trạng thái nguồn thành “đã kết nối” chỉ vì có khóa.
+
+Danh sách đọc lại mỗi5 giây khi đang mở; tìm kiếm chờ300ms, đổi bộ lọc về trang1, bỏ response danh sách cũ đến muộn. Có trạng thái tải/rỗng/lỗi/thử lại, không tự gửi lại mutation.
+
+Kiểm chứng thay đổi: integration MongoDB riêng trong `server/test/campaign-list.integration.ts` kiểm kết quả persisted, đối chiếu list/detail, tìm literal, bộ lọc, phân trang25 đợt, tổng toàn tập, mốc ngày Việt Nam và quyền admin. Browser `tests/admin-campaigns.spec.ts` dùng dữ liệu minh họa có nhãn, kiểm desktop/mobile, không tràn trang, lọc/rỗng/lỗi/thử lại, mở tiến trình và form tạo; không là bằng chứng gọi provider thật. Ảnh kiểm tra ở `.local/campaigns/desktop.png` và `mobile.png` (không commit). Build/typecheck/lint và kết quả kiểm tra được báo ở bàn giao; không chạy thu thập nguồn thật cho thay đổi giao diện này.
+
 ## Theo lô và quy mô
 
 `POST /admin/v3/bulk/preview` nhận action publish/archive/archive_destination và selection page (ID/revision tối đa50) hoặc filter (predicate server). Preview lưu mỗi ID/revision thành item riêng, không nhét cả catalog trong document. Bulk query, list/count và map dùng chung predicate; không lấy toàn bộ catalog xuống browser.

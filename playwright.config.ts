@@ -7,6 +7,7 @@ export default defineConfig({
     'catalog-operations.spec.ts',
     'geography.spec.ts',
     'admin-visit-editor.spec.ts',
+    'admin-campaigns.spec.ts',
   ],
   workers: 1,
   use: { baseURL: e2eWebOrigin, channel: 'msedge' },

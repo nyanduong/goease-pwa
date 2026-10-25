@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
+  AlertTriangle,
   CheckCircle2,
   Database,
   MapPin,
   Pause,
   Play,
+  Plus,
+  Info,
   RefreshCw,
   Search,
 } from 'lucide-react';
@@ -15,14 +18,24 @@ import type {
   CampaignDetail,
   CampaignInput,
   CampaignSummary,
+  CampaignListDto,
   CatalogOperationsDto,
   CatalogPolicyDto,
   DestinationDto,
 } from '@goease/contracts';
 import { api } from '../api';
+import { AdminPageHeader } from './admin-visuals';
 
 const time = (value: string | null) =>
-  value ? new Date(value).toLocaleString('vi-VN') : 'Chưa có';
+  value
+    ? new Date(value).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+    : 'Chưa có';
+const groupLabels = {
+  mixed: 'Tham quan, nhà hàng & cà phê',
+  sights: 'Địa điểm tham quan',
+  restaurant: 'Nhà hàng',
+  cafe: 'Cà phê',
+};
 export const operationState = (state: string) =>
   ({
     queued: 'Đang chờ',
@@ -66,13 +79,15 @@ export function AdminSourceConnection({
     };
   }, [retry]);
   return (
-    <section className="admin-panel admin-source-connection">
+    <section
+      className={`admin-panel admin-source-connection${compact ? ' is-compact' : ''}`}
+    >
       <div className="admin-panel-title">
         <h2>
           <Database size={17} /> Nguồn & hạn mức
         </h2>
         <button onClick={() => setRetry((v) => v + 1)}>
-          Làm mới trạng thái
+          <RefreshCw size={15} /> Làm mới trạng thái
         </button>
       </div>
       {error && (
@@ -162,6 +177,11 @@ export function AdminSourceConnection({
               </p>
             </details>
           )}
+          {compact && (
+            <a className="admin-source-link" href="#sources">
+              Xem nguồn & hạn mức <ArrowRight size={15} />
+            </a>
+          )}
           <small>
             Trạng thái từ máy chủ lúc {time(value.checkedAt)}. Khóa đã cấu hình
             chưa đồng nghĩa đã gọi nguồn thành công.
@@ -187,6 +207,14 @@ export function AdminCampaigns({
     [hasMore, setHasMore] = useState(false),
     [offset, setOffset] = useState(0),
     [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState<CampaignListDto['summary'] | null>(
+    null,
+  );
+  const [listSearch, setListSearch] = useState('');
+  const [listQuery, setListQuery] = useState('');
+  const [stateFilter, setStateFilter] = useState('');
+  const [destinationFilter, setDestinationFilter] = useState('');
+  const loadGeneration = useRef(0);
   const [detail, setDetail] = useState<CampaignDetail | null>(null),
     [creating, setCreating] = useState(false),
     [step, setStep] = useState(1);
@@ -218,31 +246,62 @@ export function AdminCampaigns({
     [notice, setNotice] = useState('');
   const request = useRef({ body: '', key: '' });
   const detailId = detail?.campaign.id;
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const [list, rules, config] = await Promise.all([
-        api<{ items: CampaignSummary[]; total: number; hasMore: boolean }>(
-          `/admin/v3/campaigns?offset=${offset}`,
-        ),
-        api<{ items: CatalogPolicyDto[] }>('/admin/v3/policies'),
-        api<AdminSettings>('/admin/catalog/settings'),
-      ]);
-      setCampaigns(list.items);
-      setTotal(list.total);
-      setHasMore(list.hasMore);
-      setPolicies(rules.items);
-      setSettings(config);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Chưa tải được các đợt.');
-    } finally {
-      setLoading(false);
-    }
-  }, [offset]);
+  const load = useCallback(
+    async (background = false) => {
+      const generation = ++loadGeneration.current;
+      if (!background) setLoading(true);
+      setError('');
+      try {
+        const [list, rules, config] = await Promise.all([
+          api<CampaignListDto>(
+            `/admin/v3/campaigns?${new URLSearchParams({
+              offset: String(offset),
+              q: listQuery,
+              ...(stateFilter ? { state: stateFilter } : {}),
+              ...(destinationFilter
+                ? { destinationId: destinationFilter }
+                : {}),
+            })}`,
+          ),
+          api<{ items: CatalogPolicyDto[] }>('/admin/v3/policies'),
+          api<AdminSettings>('/admin/catalog/settings'),
+        ]);
+        if (generation !== loadGeneration.current) return;
+        setCampaigns(list.items);
+        setTotal(list.total);
+        setHasMore(list.hasMore);
+        setSummary(list.summary);
+        setPolicies(rules.items);
+        setSettings(config);
+      } catch (e) {
+        if (generation !== loadGeneration.current) return;
+        setError(e instanceof Error ? e.message : 'Chưa tải được các đợt.');
+      } finally {
+        if (generation === loadGeneration.current) setLoading(false);
+      }
+    },
+    [offset, listQuery, stateFilter, destinationFilter],
+  );
   useEffect(() => {
     void load();
+    return () => {
+      loadGeneration.current++;
+    };
   }, [load]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setListQuery(listSearch);
+      setOffset(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [listSearch]);
+  useEffect(() => {
+    if (creating || detailId) return;
+    const timer = setInterval(() => {
+      void load(true);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [load, creating, detailId]);
   useEffect(() => {
     localStorage.setItem(
       'goease-admin-campaign-draft',
@@ -360,34 +419,43 @@ export function AdminCampaigns({
   );
   return (
     <>
-      <div className="admin-actions">
-        <button
-          className="journey-primary"
-          disabled={busy || loading}
-          onClick={() => {
-            setCreating(true);
-            setDetail(null);
-            setStep(1);
-            setError('');
-            setNotice('');
-          }}
-        >
-          Tạo đợt thu thập
-        </button>
-        <button
-          disabled={busy || loading}
-          onClick={() => {
-            void load();
-            if (detail) void open(detail.campaign.id);
-          }}
-        >
-          Làm mới dữ liệu
-        </button>
-        <a href="#rules">Quy tắc & lịch →</a>
-      </div>
+      <AdminPageHeader
+        title="Đợt thu thập"
+        description="Lấy dữ liệu địa điểm từ các nguồn và theo dõi kết quả từng đợt."
+        actions={
+          <div className="admin-actions admin-campaign-actions">
+            <button
+              disabled={busy || loading}
+              onClick={() => {
+                void load();
+                if (detail) void open(detail.campaign.id);
+              }}
+            >
+              <RefreshCw size={16} className={loading ? 'is-spinning' : ''} />{' '}
+              Làm mới
+            </button>
+            <button
+              className="journey-primary"
+              disabled={busy || loading}
+              onClick={() => {
+                setCreating(true);
+                setDetail(null);
+                setStep(1);
+                setError('');
+                setNotice('');
+              }}
+            >
+              <Plus size={17} /> Tạo đợt thu thập
+            </button>
+          </div>
+        }
+      />
       {error && (
         <p className="admin-alert" role="alert">
           {error}
+          <button disabled={loading} onClick={() => void load()}>
+            Thử lại
+          </button>
         </p>
       )}
       {notice && (
@@ -737,56 +805,245 @@ export function AdminCampaigns({
         </>
       ) : (
         <>
-          {loading && <p role="status">Đang tải đợt thu thập…</p>}
-          {!loading && !campaigns.length && !error && (
-            <div className="admin-empty">
-              <Database size={36} />
-              <h2>Chưa có đợt thu thập</h2>
-              <p>
-                Chọn phạm vi nhỏ đã cấu hình, kiểm tra nguồn và tạo đợt đầu
-                tiên. Nội dung mới được giữ ở đề xuất trước khi xuất bản.
-              </p>
-              <button
-                className="journey-primary"
-                onClick={() => {
-                  setCreating(true);
-                  setStep(1);
-                }}
-              >
-                Thiết lập đợt đầu tiên
-              </button>
-            </div>
-          )}
-          {!!campaigns.length && (
-            <section className="admin-panel">
-              <div className="admin-panel-title">
-                <h2>Các đợt thu thập ({total})</h2>
-                <span className="admin-list-count">
-                  Độc lập với bộ lọc phạm vi xem
+          <div
+            className="admin-campaign-stats"
+            aria-label="Tổng quan tất cả đợt thu thập"
+          >
+            {(
+              [
+                ['running', 'Đang chạy', 'đợt đang thực hiện', Play],
+                [
+                  'completedToday',
+                  'Hoàn tất hôm nay',
+                  'đợt hoàn tất trong ngày Việt Nam',
+                  CheckCircle2,
+                ],
+                [
+                  'issues',
+                  'Có lỗi',
+                  'đợt có tác vụ hoặc kết quả lỗi',
+                  AlertTriangle,
+                ],
+              ] as const
+            ).map(([key, label, hint, Icon]) => (
+              <div key={key} className={`admin-campaign-stat is-${key}`}>
+                <span className="admin-campaign-stat-icon">
+                  <Icon size={25} />
                 </span>
+                <div>
+                  <h2>{label}</h2>
+                  <strong>{summary?.[key] ?? '—'}</strong>
+                  <small>{hint}</small>
+                </div>
               </div>
-              {campaigns.map((c) => (
-                <article className="admin-campaign-row" key={c.id}>
-                  <div>
-                    <h3>{operationState(c.state)}</h3>
-                    <small>
-                      {time(c.createdAt)} · {c.totalTasks} điểm đến ·{' '}
-                      {c.failedTasks} tác vụ lỗi
-                    </small>
-                    <progress
-                      value={c.completedTasks}
-                      max={c.totalTasks || 1}
-                      aria-label="Số tác vụ đã hoàn tất"
-                    />
-                    <small>
-                      {c.completedTasks}/{c.totalTasks} tác vụ hoàn tất
-                    </small>
-                  </div>
-                  <button onClick={() => void open(c.id)} disabled={busy}>
-                    Xem tiến trình & kết quả
+            ))}
+          </div>
+          <section
+            className="admin-panel admin-campaign-list"
+            aria-label="Danh sách đợt thu thập"
+            aria-busy={loading}
+          >
+            <div className="admin-campaign-list-toolbar">
+              <h2>
+                Danh sách đợt thu thập <span>{total} đợt</span>
+              </h2>
+              <div className="admin-campaign-filters">
+                <label className="admin-campaign-search">
+                  <Search size={17} aria-hidden="true" />
+                  <input
+                    aria-label="Tìm đợt thu thập"
+                    placeholder="Tìm theo địa phương hoặc mã đợt…"
+                    value={listSearch}
+                    maxLength={100}
+                    onChange={(e) => setListSearch(e.target.value)}
+                  />
+                </label>
+                <select
+                  aria-label="Lọc trạng thái đợt"
+                  value={stateFilter}
+                  onChange={(e) => {
+                    setStateFilter(e.target.value);
+                    setOffset(0);
+                  }}
+                >
+                  <option value="">Tất cả trạng thái</option>
+                  <option value="running">Đang chạy</option>
+                  <option value="succeeded">Hoàn tất</option>
+                  <option value="issues">Có lỗi</option>
+                  <option value="paused">Đã tạm dừng</option>
+                </select>
+                <select
+                  aria-label="Lọc địa phương đợt"
+                  value={destinationFilter}
+                  onChange={(e) => {
+                    setDestinationFilter(e.target.value);
+                    setOffset(0);
+                  }}
+                >
+                  <option value="">Tất cả địa phương</option>
+                  {destinations.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {loading && (
+              <p className="admin-campaign-loading" role="status">
+                Đang tải đợt thu thập…
+              </p>
+            )}
+            {!loading && !campaigns.length && !error && (
+              <div className="admin-empty">
+                <Database size={32} />
+                <h3>
+                  {listQuery || stateFilter || destinationFilter
+                    ? 'Không có đợt phù hợp'
+                    : 'Chưa có đợt thu thập'}
+                </h3>
+                <p>
+                  {listQuery || stateFilter || destinationFilter
+                    ? 'Thử từ khóa khác hoặc xóa bộ lọc để xem lại các đợt.'
+                    : 'Tạo đợt đầu tiên để bổ sung dữ liệu địa điểm. Dữ liệu mới được lưu nháp để kiểm tra.'}
+                </p>
+                {(listQuery || stateFilter || destinationFilter) && (
+                  <button
+                    onClick={() => {
+                      setListSearch('');
+                      setListQuery('');
+                      setStateFilter('');
+                      setDestinationFilter('');
+                      setOffset(0);
+                    }}
+                  >
+                    Xóa bộ lọc
                   </button>
-                </article>
-              ))}
+                )}
+              </div>
+            )}
+            {!!campaigns.length && (
+              <div className="admin-campaign-table-wrap">
+                <table className="admin-campaign-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Đợt thu thập</th>
+                      <th scope="col">Trạng thái & tiến độ</th>
+                      <th scope="col">Kết quả</th>
+                      <th scope="col">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {campaigns.map((c) => {
+                      const hasErrors =
+                        c.failedTasks > 0 || c.counts.errors > 0;
+                      const title =
+                        c.groups.map((g) => groupLabels[g]).join(', ') ||
+                        'Thu thập địa điểm';
+                      const names = c.destinations.map(
+                        (d) =>
+                          d.name ||
+                          destinations.find((v) => v.id === d.id)?.name ||
+                          'Địa phương chưa rõ',
+                      );
+                      const action = hasErrors
+                        ? 'Xem lỗi'
+                        : c.state === 'succeeded'
+                          ? 'Xem kết quả'
+                          : 'Xem tiến trình';
+                      const StatusIcon = hasErrors
+                        ? AlertTriangle
+                        : c.state === 'succeeded'
+                          ? CheckCircle2
+                          : c.state === 'paused'
+                            ? Pause
+                            : Play;
+                      return (
+                        <tr key={c.id}>
+                          <td>
+                            <h3>
+                              {title} ·{' '}
+                              {names.length > 1
+                                ? `${names.length} địa phương`
+                                : names[0] || 'Chưa rõ phạm vi'}
+                            </h3>
+                            {names.length > 1 && (
+                              <small>{names.join(', ')}</small>
+                            )}
+                            <small className="admin-campaign-code" title={c.id}>
+                              #{c.id.slice(-8).toUpperCase()} ·{' '}
+                              {c.source === 'geoapify'
+                                ? 'Geoapify / OpenStreetMap'
+                                : c.source}
+                            </small>
+                            <small>Tạo lúc {time(c.createdAt)}</small>
+                          </td>
+                          <td>
+                            <span
+                              className={`admin-campaign-status is-${hasErrors ? 'issues' : c.state}`}
+                            >
+                              <StatusIcon size={14} />
+                              {hasErrors && c.state === 'succeeded'
+                                ? 'Hoàn tất · có lỗi'
+                                : operationState(c.state)}
+                            </span>
+                            <div className="admin-campaign-progress">
+                              <progress
+                                value={c.completedTasks}
+                                max={c.totalTasks || 1}
+                                aria-label={`Tiến độ đợt ${c.id.slice(-8)}: ${c.completedTasks}/${c.totalTasks} tác vụ thành công`}
+                              />
+                              <span>
+                                {Math.round(
+                                  (c.completedTasks / (c.totalTasks || 1)) *
+                                    100,
+                                )}
+                                %
+                              </span>
+                            </div>
+                            <small>
+                              {c.completedTasks}/{c.totalTasks} tác vụ thành
+                              công
+                            </small>
+                          </td>
+                          <td>
+                            <strong>
+                              {c.counts.created} mới · {c.counts.updated} cập
+                              nhật
+                            </strong>
+                            <small>{c.counts.review} cần kiểm tra</small>
+                            <small
+                              className={
+                                hasErrors ? 'admin-campaign-error' : ''
+                              }
+                            >
+                              {hasErrors
+                                ? `${c.failedTasks} tác vụ lỗi · ${c.counts.errors} lỗi xử lý`
+                                : '0 lỗi'}
+                            </small>
+                          </td>
+                          <td>
+                            <button
+                              onClick={() => void open(c.id)}
+                              disabled={busy || loading}
+                              aria-label={`${action} đợt ${c.id.slice(-8)}`}
+                            >
+                              {action} <ArrowRight size={15} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="admin-campaign-list-footer">
+              <span>
+                {total
+                  ? `Hiển thị ${offset + 1}–${offset + campaigns.length} / ${total} đợt`
+                  : '0 đợt'}
+              </span>
               <div className="admin-actions">
                 <button
                   disabled={!offset || loading}
@@ -802,9 +1059,14 @@ export function AdminCampaigns({
                   Trang tiếp
                 </button>
               </div>
-            </section>
-          )}
+            </div>
+          </section>
           <AdminSourceConnection compact />
+          <p className="admin-campaign-help">
+            <Info size={16} /> Mỗi đợt lưu riêng phạm vi, nguồn và quy tắc thu
+            thập. Dữ liệu thu được cần kiểm tra trước khi xuất bản.{' '}
+            <a href="#rules">Quy tắc & lịch →</a>
+          </p>
         </>
       )}
     </>

@@ -12,6 +12,8 @@ import {
   type AdminMapQuery,
   type BulkJobDto,
   type CampaignSummary,
+  type CampaignListQuery,
+  type CampaignListDto,
   type ProvinceImportInput,
 } from '@goease/contracts';
 import { adminV3Models } from './admin-v3.models.js';
@@ -177,6 +179,21 @@ export function adminV3Service(
       completedTasks: completed,
       failedTasks: failed,
       pausedTasks: paused,
+      source: campaign.source,
+      destinations: runs.map((r) => ({
+        id: r.scopeSnapshot?.destinationId ?? scopeDestination(r.scope),
+        name: r.scopeSnapshot?.destinationName ?? '',
+      })),
+      groups: [...new Set(runs.map((r) => r.group))],
+      counts: runs.reduce(
+        (sum, r) => ({
+          created: sum.created + (r.counts?.created ?? 0),
+          updated: sum.updated + (r.counts?.updated ?? 0),
+          review: sum.review + (r.counts?.review ?? 0),
+          errors: sum.errors + (r.counts?.errors ?? 0),
+        }),
+        { created: 0, updated: 0, review: 0, errors: 0 },
+      ),
     };
     return {
       campaign: {
@@ -1031,19 +1048,208 @@ export function adminV3Service(
     previewBulk,
     executeBulk,
     bulkDetail,
-    async campaigns(actor: Types.ObjectId, offset = 0) {
+    async campaigns(
+      actor: Types.ObjectId,
+      query: CampaignListQuery = { offset: 0, q: '' },
+    ): Promise<CampaignListDto> {
       await catalog.requireAdmin(actor);
-      const docs = await Campaign.find()
-        .sort({ createdAt: -1, _id: -1 })
-        .skip(offset)
-        .limit(21);
-      const items = [];
-      for (const p of docs.slice(0, 20))
-        items.push((await campaignDetail(actor, String(p._id))).campaign);
+      const taskCount = (state: string) => ({
+        $size: {
+          $filter: {
+            input: '$runs',
+            as: 'run',
+            cond: { $eq: ['$$run.state', state] },
+          },
+        },
+      });
+      const sumCount = (field: string) => ({ $sum: `$runs.counts.${field}` });
+      const match: Record<string, unknown> = {};
+      if (query.destinationId) match['destinations.id'] = query.destinationId;
+      if (query.state === 'issues')
+        match.$and = [
+          {
+            $or: [{ failedTasks: { $gt: 0 } }, { 'counts.errors': { $gt: 0 } }],
+          },
+        ];
+      else if (query.state) match.state = query.state;
+      if (query.q) {
+        // Literal search, never execute a user-provided regular expression.
+        const escaped = query.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        match.$or = ['id', 'destinations.name'].map((field) => ({
+          [field]: { $regex: escaped, $options: 'i' },
+        }));
+      }
+      // Vietnam's calendar day, independent of the server's local timezone.
+      const today = new Date(Date.now() + 7 * 3600000)
+        .toISOString()
+        .slice(0, 10);
+      const todayStart = new Date(`${today}T00:00:00+07:00`);
+      const tomorrow = new Date(todayStart.getTime() + 86400000);
+      const [result] = await Campaign.aggregate<{
+        items: CampaignSummary[];
+        total: { value: number }[];
+        summary: CampaignListDto['summary'][];
+      }>([
+        {
+          $lookup: {
+            from: Run.collection.name,
+            localField: '_id',
+            foreignField: 'campaignId',
+            pipeline: [
+              {
+                $project: {
+                  state: 1,
+                  counts: 1,
+                  scopeSnapshot: 1,
+                  scope: 1,
+                  group: 1,
+                  finishedAt: 1,
+                },
+              },
+            ],
+            as: 'runs',
+          },
+        },
+        {
+          $set: {
+            totalTasks: { $size: '$runs' },
+            completedTasks: taskCount('succeeded'),
+            failedTasks: taskCount('failed'),
+            pausedTasks: taskCount('paused'),
+            finishedAt: { $max: '$runs.finishedAt' },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            id: { $toString: '$_id' },
+            source: 1,
+            createdAt: {
+              $dateToString: {
+                date: '$createdAt',
+                format: '%Y-%m-%dT%H:%M:%S.%LZ',
+              },
+            },
+            finishedAt: 1,
+            totalTasks: 1,
+            completedTasks: 1,
+            failedTasks: 1,
+            pausedTasks: 1,
+            state: {
+              $switch: {
+                branches: [
+                  { case: { $eq: ['$state', 'paused'] }, then: 'paused' },
+                  {
+                    case: { $eq: ['$completedTasks', '$totalTasks'] },
+                    then: 'succeeded',
+                  },
+                  {
+                    case: {
+                      $eq: [
+                        { $add: ['$completedTasks', '$failedTasks'] },
+                        '$totalTasks',
+                      ],
+                    },
+                    then: { $cond: ['$completedTasks', 'partial', 'failed'] },
+                  },
+                ],
+                default: 'running',
+              },
+            },
+            groups: { $setUnion: ['$runs.group', []] },
+            destinations: {
+              $map: {
+                input: '$runs',
+                as: 'run',
+                in: {
+                  id: {
+                    $ifNull: [
+                      '$$run.scopeSnapshot.destinationId',
+                      {
+                        $cond: [
+                          { $eq: ['$$run.scope', 'hoi-an'] },
+                          scopeDestination('hoi-an'),
+                          '$$run.scope',
+                        ],
+                      },
+                    ],
+                  },
+                  name: {
+                    $ifNull: ['$$run.scopeSnapshot.destinationName', ''],
+                  },
+                },
+              },
+            },
+            counts: {
+              created: sumCount('created'),
+              updated: sumCount('updated'),
+              review: sumCount('review'),
+              errors: sumCount('errors'),
+            },
+          },
+        },
+        {
+          $facet: {
+            items: [
+              { $match: match },
+              { $sort: { createdAt: -1, id: -1 } },
+              { $skip: query.offset },
+              { $limit: 21 },
+              { $unset: 'finishedAt' },
+            ],
+            total: [{ $match: match }, { $count: 'value' }],
+            summary: [
+              {
+                $group: {
+                  _id: null,
+                  running: {
+                    $sum: { $cond: [{ $eq: ['$state', 'running'] }, 1, 0] },
+                  },
+                  completedToday: {
+                    $sum: {
+                      $cond: [
+                        {
+                          $and: [
+                            { $eq: ['$state', 'succeeded'] },
+                            { $gte: ['$finishedAt', todayStart] },
+                            { $lt: ['$finishedAt', tomorrow] },
+                          ],
+                        },
+                        1,
+                        0,
+                      ],
+                    },
+                  },
+                  issues: {
+                    $sum: {
+                      $cond: [
+                        {
+                          $or: [
+                            { $gt: ['$failedTasks', 0] },
+                            { $gt: ['$counts.errors', 0] },
+                          ],
+                        },
+                        1,
+                        0,
+                      ],
+                    },
+                  },
+                },
+              },
+              { $project: { _id: 0 } },
+            ],
+          },
+        },
+      ]);
       return {
-        items,
-        total: await Campaign.countDocuments(),
-        hasMore: docs.length > 20,
+        items: result?.items.slice(0, 20) ?? [],
+        total: result?.total[0]?.value ?? 0,
+        hasMore: (result?.items.length ?? 0) > 20,
+        summary: result?.summary[0] ?? {
+          running: 0,
+          completedToday: 0,
+          issues: 0,
+        },
       };
     },
     async policies(actor: Types.ObjectId) {

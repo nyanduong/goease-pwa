@@ -7,6 +7,7 @@ export default defineConfig({
     'catalog-operations.spec.ts',
     'geography.spec.ts',
     'province-import.spec.ts',
+    'admin-campaigns.spec.ts',
   ],
   workers: 1,
   outputDir: '../test-results/catalog-browser',
