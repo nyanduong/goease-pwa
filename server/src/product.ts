@@ -38,6 +38,7 @@ import { adminV3Router } from './features/explore/admin-v3.router.js';
 import { adminSettingsSchema } from '@goease/contracts';
 import {
   catalogScheduleSchema,
+  catalogHistoryQuerySchema,
   catalogBatchSchema,
   reviewDecisionSchema,
 } from '@goease/contracts';
@@ -770,10 +771,7 @@ export function createProduct(
       ok: true,
       data: await operations.history(
         res.locals.authUser._id,
-        parse(
-          z.coerce.number().int().min(0).max(100000),
-          req.query.offset ?? 0,
-        ),
+        parse(catalogHistoryQuerySchema, req.query),
       ),
     }),
   );

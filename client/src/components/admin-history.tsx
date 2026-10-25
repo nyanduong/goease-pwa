@@ -5,27 +5,17 @@ import {
   Database,
   FilePenLine,
   History,
-  Info,
-  RefreshCw,
   Settings,
   TriangleAlert,
+  Search,
+  ChevronRight,
+  X,
+  MapPin,
 } from 'lucide-react';
 
-export type HistoryEntry = {
-  id: string;
-  action: string;
-  actor: string;
-  placeId: string | null;
-  name: string;
-  occurredAt: string;
-  outcome: string;
-  note?: string;
-  campaignId?: string | null;
-  batchId?: string | null;
-  runId?: string | null;
-  entityRevision?: number | null;
-  previousRevision?: number | null;
-};
+import { useRef, useState } from 'react';
+import type { CatalogHistoryDto, CatalogHistoryQuery } from '@goease/contracts';
+export type HistoryEntry = CatalogHistoryDto;
 
 // Describe only what the recorded action establishes. Saving/receiving data is
 // never described as publication or independent verification.
@@ -209,199 +199,292 @@ const kinds = {
   other: { label: 'Hoạt động khác', Icon: History },
 };
 
+const shortTitles: Record<string, string> = {
+  'catalog.published': 'Xuất bản địa điểm',
+  'catalog.proposal_saved': 'Lưu chỉnh sửa',
+  'catalog.review_later': 'Hẹn kiểm tra lại',
+  'catalog.run_succeeded': 'Lấy dữ liệu hoàn tất',
+  'catalog.run_failed': 'Lấy dữ liệu thất bại',
+  'catalog.run_requested': 'Yêu cầu lấy dữ liệu',
+};
+function presentation(entry: HistoryEntry) {
+  const copy = activityCopy[entry.action];
+  const failed =
+    ['failure', 'failed', 'error', 'denied'].includes(entry.outcome) ||
+    entry.action === 'catalog.run_failed';
+  const special: Record<string, [string, string]> = {
+    'catalog.published': ['Đã xuất bản', 'good'],
+    'catalog.proposal_saved': ['Chưa xuất bản', 'info'],
+    'catalog.review_later': ['Xem sau', 'warning'],
+    'catalog.run_succeeded': ['Hoàn tất', 'good'],
+    'catalog.run_requested': ['Đã yêu cầu', 'neutral'],
+  };
+  const [badge, tone] = failed
+    ? ['Có lỗi', 'error']
+    : (special[entry.action] ?? [
+        kinds[copy?.kind ?? 'other'].label,
+        'neutral',
+      ]);
+  return {
+    title:
+      failed && entry.action !== 'catalog.run_failed'
+        ? 'Thao tác chưa thành công'
+        : (copy?.title ?? 'Đã ghi nhận hoạt động quản lý dữ liệu'),
+    short:
+      failed && entry.action !== 'catalog.run_failed'
+        ? 'Thao tác chưa thành công'
+        : (shortTitles[entry.action] ??
+          copy?.title.replace(/^Đã /, '') ??
+          'Hoạt động khác'),
+    result:
+      failed && entry.action !== 'catalog.run_failed'
+        ? 'Thao tác chưa hoàn tất. Xem thông tin hỗ trợ để đối chiếu khi cần.'
+        : (copy?.result ?? 'Lịch sử chưa có mô tả chi tiết cho hoạt động này.'),
+    badge,
+    tone,
+    Icon: failed ? TriangleAlert : kinds[copy?.kind ?? 'other'].Icon,
+  };
+}
+
 export function AdminHistory({
   items,
+  total,
   offset,
   hasMore,
   loading,
   failedToLoad,
+  search,
+  kind,
+  period,
+  onSearch,
+  onKind,
+  onPeriod,
   onPage,
   onOpen,
-  onRefresh,
-  onReviews,
 }: {
   items: HistoryEntry[];
+  total: number;
   offset: number;
   hasMore: boolean;
   loading: boolean;
   failedToLoad: boolean;
+  search: string;
+  kind: CatalogHistoryQuery['kind'];
+  period: CatalogHistoryQuery['period'];
+  onSearch: (q: string) => void;
+  onKind: (kind: CatalogHistoryQuery['kind']) => void;
+  onPeriod: (period: CatalogHistoryQuery['period']) => void;
   onPage: (offset: number) => void;
   onOpen: (id: string) => void;
-  onRefresh: () => void;
-  onReviews: () => void;
 }) {
+  const [selectedId, setSelectedId] = useState<string | null | undefined>();
+  const panel = useRef<HTMLElement>(null);
+  const list = useRef<HTMLElement>(null);
+  const selected =
+    selectedId === null
+      ? null
+      : (items.find((item) => item.id === selectedId) ?? items[0] ?? null);
+  const detail = selected ? presentation(selected) : null;
   const today = dayKey(new Date().toISOString());
   const days = new Map<string, HistoryEntry[]>();
   for (const entry of items) {
     const key = dayKey(entry.occurredAt);
     days.set(key, [...(days.get(key) ?? []), entry]);
   }
+  const choose = (id: string) => {
+    if (loading || failedToLoad) return;
+    setSelectedId(id);
+    if (window.matchMedia('(max-width:1100px)').matches)
+      requestAnimationFrame(() => {
+        panel.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        panel.current?.focus({ preventScroll: true });
+      });
+  };
+  const close = () => {
+    const selectedButton = list.current?.querySelector<HTMLButtonElement>(
+      '[aria-pressed="true"]',
+    );
+    setSelectedId(null);
+    if (window.matchMedia('(max-width:1100px)').matches)
+      (selectedButton ?? list.current)?.scrollIntoView({ block: 'center' });
+    selectedButton?.focus({ preventScroll: true });
+  };
   return (
-    <div className="admin-history-layout">
+    <div className="history-browser">
       <section
-        className="admin-panel admin-activity-log"
+        ref={list}
+        className="admin-panel history-browser-list"
         aria-label="Nhật ký hoạt động"
         aria-busy={loading}
       >
-        <div className="admin-activity-heading">
-          <div>
-            <h2>Hoạt động gần đây</h2>
-            <p>Thứ tự mới nhất trước · Giờ Việt Nam</p>
-          </div>
-          <button disabled={loading} onClick={onRefresh}>
-            <RefreshCw size={16} /> Làm mới
-          </button>
+        <h2 className="sr-only">Nhật ký hoạt động</h2>
+        <div className="history-browser-filters">
+          <label className="history-browser-search">
+            <Search size={17} />
+            <input
+              value={search}
+              maxLength={100}
+              aria-label="Tìm hoạt động"
+              placeholder="Tìm địa điểm hoặc người thực hiện…"
+              onChange={(event) => onSearch(event.target.value)}
+            />
+          </label>
+          <select
+            aria-label="Lọc loại hoạt động"
+            value={kind}
+            onChange={(event) =>
+              onKind(event.target.value as CatalogHistoryQuery['kind'])
+            }
+          >
+            <option value="all">Tất cả hoạt động</option>
+            <option value="publication">Xuất bản & hiển thị</option>
+            <option value="editing">Chỉnh sửa nội dung</option>
+            <option value="review">Kiểm tra thông tin</option>
+            <option value="collection">Thu thập dữ liệu</option>
+            <option value="settings">Cài đặt</option>
+          </select>
+          <select
+            aria-label="Lọc thời gian hoạt động"
+            value={period}
+            onChange={(event) =>
+              onPeriod(event.target.value as CatalogHistoryQuery['period'])
+            }
+          >
+            <option value="all">Mọi thời gian</option>
+            <option value="today">Hôm nay</option>
+            <option value="7days">7 ngày gần đây</option>
+            <option value="30days">30 ngày gần đây</option>
+          </select>
         </div>
         {loading && <p role="status">Đang tải hoạt động…</p>}
         {failedToLoad && items.length > 0 && (
           <p role="status">
-            Chưa cập nhật được nhật ký. Các hoạt động bên dưới thuộc lần tải
+            Chưa cập nhật được nhật ký. Bảng đang hiển thị kết quả lần tải
             trước.
           </p>
         )}
         {!loading && !failedToLoad && !items.length && (
           <div className="admin-empty">
-            <History size={32} />
-            <h3>Chưa có hoạt động để hiển thị</h3>
-            <p>Các lần lưu, xuất bản và xử lý dữ liệu sẽ xuất hiện ở đây.</p>
+            <History size={30} />
+            <h3>
+              {search || kind !== 'all' || period !== 'all'
+                ? 'Không có hoạt động phù hợp'
+                : 'Chưa có hoạt động để hiển thị'}
+            </h3>
+            <p>
+              {search || kind !== 'all' || period !== 'all'
+                ? 'Thử đổi từ khóa hoặc bộ lọc.'
+                : 'Các lần lưu, xuất bản và xử lý dữ liệu sẽ xuất hiện ở đây.'}
+            </p>
           </div>
         )}
-        {[...days].map(([day, entries]) => (
-          <section
-            className="admin-activity-day"
-            key={day}
-            aria-label={`Hoạt động ngày ${dayLabel(entries[0]!.occurredAt)}`}
-          >
-            <h3>
-              {day === today ? 'Hôm nay' : dayLabel(entries[0]!.occurredAt)}
-              {day === today && <span>{dayLabel(entries[0]!.occurredAt)}</span>}
-            </h3>
-            <ol>
-              {entries.map((entry) => {
-                const failed =
-                  ['failure', 'failed', 'error', 'denied'].includes(
-                    entry.outcome,
-                  ) || entry.action === 'catalog.run_failed';
-                const copy = activityCopy[entry.action];
-                const { label, Icon } = kinds[copy?.kind ?? 'other'];
-                const EntryIcon = failed ? TriangleAlert : Icon;
-                return (
-                  <li
-                    key={entry.id}
-                    className={`admin-activity-entry${failed ? ' is-failed' : ''}`}
-                  >
-                    <time dateTime={entry.occurredAt}>
-                      {clockLabel(entry.occurredAt)}
-                    </time>
-                    <span
-                      className={`admin-activity-icon is-${failed ? 'failed' : (copy?.kind ?? 'other')}`}
-                    >
-                      <EntryIcon size={18} />
-                    </span>
-                    <article>
-                      <div className="admin-activity-title">
-                        <h4>
-                          {failed && entry.action !== 'catalog.run_failed'
-                            ? 'Thao tác chưa thành công'
-                            : (copy?.title ??
-                              'Đã ghi nhận hoạt động quản lý dữ liệu')}
-                        </h4>
-                        <span>{failed ? 'Cần xử lý' : label}</span>
-                      </div>
-                      {entry.placeId ? (
-                        <button
-                          className="admin-activity-place"
-                          onClick={() => onOpen(entry.placeId!)}
-                        >
-                          {entry.name || 'Địa điểm'} <ArrowRight size={14} />
-                        </button>
-                      ) : (
-                        <strong className="admin-activity-target">
-                          {entry.name}
-                        </strong>
-                      )}
-                      <p>
-                        {failed && entry.action !== 'catalog.run_failed'
-                          ? 'Thao tác chưa hoàn tất. Xem thông tin hỗ trợ để đối chiếu khi cần.'
-                          : (copy?.result ??
-                            'Lịch sử chưa có mô tả chi tiết cho hoạt động này.')}
-                      </p>
-                      <small className="admin-activity-actor">
-                        Người thực hiện:{' '}
-                        <strong>
-                          {entry.actor || 'Chưa rõ người thực hiện'}
-                        </strong>
-                      </small>
-                      {entry.note && (
-                        <blockquote>
-                          <span>Ghi chú của người xử lý</span>
-                          {entry.note}
-                        </blockquote>
-                      )}
-                      {entry.action === 'catalog.run_failed' && (
-                        <a
-                          className="admin-activity-followup"
-                          href="#automatic"
-                        >
-                          Xem đợt thu thập <ArrowRight size={14} />
-                        </a>
-                      )}
-                      <details className="admin-activity-support">
-                        <summary>Thông tin hỗ trợ</summary>
-                        <dl>
-                          <dt>Mã hoạt động</dt>
-                          <dd>{entry.id}</dd>
-                          <dt>Loại hoạt động</dt>
-                          <dd>{entry.action}</dd>
-                          <dt>Thời điểm</dt>
-                          <dd>
-                            {dayLabel(entry.occurredAt)} ·{' '}
+        {items.length > 0 && (
+          <div className="history-browser-table-wrap">
+            <table className="history-browser-table">
+              <thead>
+                <tr>
+                  <th scope="col">Thời gian</th>
+                  <th scope="col">Người thực hiện</th>
+                  <th scope="col">Địa điểm / phạm vi</th>
+                  <th scope="col">Hoạt động</th>
+                </tr>
+              </thead>
+              {[...days].map(([day, entries]) => (
+                <tbody key={day}>
+                  <tr className="history-browser-day">
+                    <th colSpan={4} scope="rowgroup">
+                      {day === today ? 'Hôm nay · ' : ''}
+                      {dayLabel(entries[0]!.occurredAt)}{' '}
+                      <span>{entries.length} hoạt động trên trang</span>
+                    </th>
+                  </tr>
+                  {entries.map((entry) => {
+                    const view = presentation(entry);
+                    return (
+                      <tr
+                        key={entry.id}
+                        className={`history-browser-row${selected?.id === entry.id ? ' is-selected' : ''}`}
+                        onClick={() => choose(entry.id)}
+                      >
+                        <td>
+                          <time dateTime={entry.occurredAt}>
                             {clockLabel(entry.occurredAt)}
-                          </dd>
-                          <dt>Kết quả được lưu</dt>
-                          <dd>{entry.outcome || 'Chưa ghi nhận'}</dd>
-                          {entry.entityRevision != null && (
-                            <>
-                              <dt>Phiên bản nội dung</dt>
-                              <dd>
-                                {entry.previousRevision != null
-                                  ? `${entry.previousRevision} → `
-                                  : ''}
-                                {entry.entityRevision}
-                              </dd>
-                            </>
-                          )}
-                          {entry.campaignId && (
-                            <>
-                              <dt>Mã đợt thu thập</dt>
-                              <dd>{entry.campaignId}</dd>
-                            </>
-                          )}
-                          {entry.runId && (
-                            <>
-                              <dt>Mã lượt xử lý</dt>
-                              <dd>{entry.runId}</dd>
-                            </>
-                          )}
-                          {entry.batchId && (
-                            <>
-                              <dt>Mã lần xử lý theo lô</dt>
-                              <dd>{entry.batchId}</dd>
-                            </>
-                          )}
-                        </dl>
-                      </details>
-                    </article>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        ))}
-        <footer className="admin-activity-pagination">
+                          </time>
+                        </td>
+                        <td>
+                          <span className="history-browser-actor">
+                            <span
+                              className={`history-browser-avatar${entry.actorType === 'system' ? ' is-system' : ''}`}
+                            >
+                              {entry.actorType === 'system' ? (
+                                <Settings size={15} />
+                              ) : (
+                                entry.actor.slice(0, 1).toUpperCase()
+                              )}
+                            </span>
+                            <span>{entry.actor || 'Chưa rõ'}</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span className="history-browser-target">
+                            {entry.name || 'Chưa rõ đối tượng'}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            aria-pressed={selected?.id === entry.id}
+                            aria-controls="history-selected-detail"
+                            disabled={loading || failedToLoad}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              choose(entry.id);
+                            }}
+                            onKeyDown={(event) => {
+                              if (!['ArrowDown', 'ArrowUp'].includes(event.key))
+                                return;
+                              event.preventDefault();
+                              const index = items.findIndex(
+                                (item) => item.id === entry.id,
+                              );
+                              const next =
+                                items[
+                                  index + (event.key === 'ArrowDown' ? 1 : -1)
+                                ];
+                              if (next) {
+                                setSelectedId(next.id);
+                                const buttons =
+                                  list.current?.querySelectorAll<HTMLButtonElement>(
+                                    'tbody button',
+                                  );
+                                buttons?.[
+                                  index + (event.key === 'ArrowDown' ? 1 : -1)
+                                ]?.focus();
+                              }
+                            }}
+                            aria-label={`Xem hoạt động: ${view.short} · ${entry.name} · ${clockLabel(entry.occurredAt)}`}
+                          >
+                            <span>{view.short}</span>
+                            <span className={`history-status is-${view.tone}`}>
+                              {view.badge}
+                            </span>
+                            <ChevronRight size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              ))}
+            </table>
+          </div>
+        )}
+        <footer className="history-browser-pagination">
           <span>
-            Trang {Math.floor(offset / 30) + 1}
-            {items.length > 0 && ` · ${items.length} hoạt động`}
+            {total > 0
+              ? `Hiển thị ${offset + 1}–${offset + items.length} / ${total} hoạt động`
+              : '0 hoạt động'}{' '}
+            · Trang {Math.floor(offset / 30) + 1}
           </span>
           <div>
             <button
@@ -414,40 +497,123 @@ export function AdminHistory({
               disabled={!hasMore || loading}
               onClick={() => onPage(offset + 30)}
             >
-              Xem hoạt động cũ hơn
+              Trang tiếp
             </button>
           </div>
         </footer>
-      </section>
-      <aside className="admin-history-guide">
-        <section className="admin-panel">
-          <span className="admin-history-guide-icon">
-            <Clock3 size={22} />
-          </span>
-          <h2>Việc nào đang chờ bạn?</h2>
-          <p>
-            Nhật ký cho biết những gì đã xảy ra. Các việc cần kiểm tra và quyết
-            định nằm trong danh sách chờ duyệt.
-          </p>
-          <button className="journey-primary" onClick={onReviews}>
-            Xem việc chờ duyệt <ArrowRight size={15} />
-          </button>
-        </section>
-        <section className="admin-panel">
-          <h2>Theo dõi việc lấy dữ liệu</h2>
-          <p>
-            Xem đợt đang chạy, kết quả thu thập và phần bị lỗi tại màn hình
-            riêng.
-          </p>
-          <a href="#automatic">
-            Mở Đợt thu thập <ArrowRight size={15} />
-          </a>
-        </section>
-        <p className="admin-history-hint">
-          <Info size={17} /> Nhật ký hiển thị hoạt động toàn hệ thống. Thông tin
-          cũ có thể chưa ghi đầy đủ chi tiết.
+        <p className="history-browser-help">
+          Chọn một hoạt động để xem chi tiết. Thời gian hiển thị theo giờ Việt
+          Nam.
         </p>
-      </aside>
+      </section>
+      <section
+        ref={panel}
+        id="history-selected-detail"
+        tabIndex={-1}
+        className="admin-panel history-browser-detail"
+        aria-label="Chi tiết hoạt động"
+      >
+        <div className="history-detail-heading">
+          <h2>Chi tiết hoạt động</h2>
+          {selected && (
+            <button onClick={close} aria-label="Đóng chi tiết hoạt động">
+              <X size={18} />
+            </button>
+          )}
+        </div>
+        {!selected || !detail ? (
+          <div className="admin-empty">
+            <History size={28} />
+            <h3>Chọn một hoạt động</h3>
+            <p>Thông tin, kết quả và ghi chú sẽ hiển thị tại đây.</p>
+          </div>
+        ) : (
+          <div key={selected.id}>
+            <div className={`history-detail-title is-${detail.tone}`}>
+              <detail.Icon size={24} />
+              <h3>{detail.title}</h3>
+            </div>
+            <h4>{selected.name || 'Chưa rõ đối tượng'}</h4>
+            {selected.destinationName && (
+              <p className="history-detail-destination">
+                <MapPin size={16} />
+                {selected.destinationName}
+              </p>
+            )}
+            <dl className="history-detail-facts">
+              <dt>Người thực hiện</dt>
+              <dd>{selected.actor || 'Chưa rõ'}</dd>
+              <dt>Thời gian</dt>
+              <dd>
+                {clockLabel(selected.occurredAt)} ·{' '}
+                {dayLabel(selected.occurredAt)}
+              </dd>
+            </dl>
+            <h5>Kết quả</h5>
+            <p className={`history-detail-result is-${detail.tone}`}>
+              {detail.result}
+            </p>
+            <h5>Ghi chú</h5>
+            <p className="history-detail-note">
+              {selected.note || 'Không có ghi chú.'}
+            </p>
+            {selected.placeId && (
+              <button
+                className="journey-primary history-detail-open"
+                onClick={() => onOpen(selected.placeId!)}
+              >
+                Mở địa điểm <ArrowRight size={16} />
+              </button>
+            )}
+            {selected.action.startsWith('catalog.run_') ||
+            selected.action.startsWith('catalog.campaign_') ? (
+              <a className="history-detail-link" href="#automatic">
+                Mở Đợt thu thập <ArrowRight size={15} />
+              </a>
+            ) : null}
+            <details className="history-detail-support">
+              <summary>Thông tin hỗ trợ</summary>
+              <dl>
+                <dt>Mã hoạt động</dt>
+                <dd>{selected.id}</dd>
+                <dt>Loại hoạt động</dt>
+                <dd>{selected.action}</dd>
+                <dt>Kết quả được lưu</dt>
+                <dd>{selected.outcome || 'Chưa ghi nhận'}</dd>
+                {selected.entityRevision != null && (
+                  <>
+                    <dt>Phiên bản nội dung</dt>
+                    <dd>
+                      {selected.previousRevision != null
+                        ? `${selected.previousRevision} → `
+                        : ''}
+                      {selected.entityRevision}
+                    </dd>
+                  </>
+                )}
+                {selected.campaignId && (
+                  <>
+                    <dt>Mã đợt thu thập</dt>
+                    <dd>{selected.campaignId}</dd>
+                  </>
+                )}
+                {selected.runId && (
+                  <>
+                    <dt>Mã lượt xử lý</dt>
+                    <dd>{selected.runId}</dd>
+                  </>
+                )}
+                {selected.batchId && (
+                  <>
+                    <dt>Mã lần xử lý theo lô</dt>
+                    <dd>{selected.batchId}</dd>
+                  </>
+                )}
+              </dl>
+            </details>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

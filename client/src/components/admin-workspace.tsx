@@ -10,6 +10,8 @@ import { catalogTime } from './admin-review-utils';
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import type {
   CatalogOperationsDto,
+  CatalogHistoryListDto,
+  CatalogHistoryQuery,
   CatalogReviewDto,
   CatalogReviewListDto,
   CatalogScheduleInput,
@@ -171,6 +173,18 @@ export function AdminWorkspace({
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyOffset, setHistoryOffset] = useState(0);
   const [historyMore, setHistoryMore] = useState(false);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyFilters, setHistoryFilters] = useState<
+    Omit<CatalogHistoryQuery, 'offset'>
+  >({ q: '', kind: 'all', period: 'all' });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setHistoryFilters((value) => ({ ...value, q: historySearch }));
+      setHistoryOffset(0);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [historySearch]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -203,12 +217,13 @@ export function AdminWorkspace({
       }
       try {
         if (tab === 'history' && historyView === 'events') {
-          const value = await api<{ items: HistoryEntry[]; hasMore: boolean }>(
-            `/admin/catalog/history?offset=${historyOffset}`,
+          const value = await api<CatalogHistoryListDto>(
+            `/admin/catalog/history?${new URLSearchParams({ offset: String(historyOffset), ...historyFilters })}`,
           );
           if (generation !== refreshGeneration.current) return;
           setHistory(value.items);
           setHistoryMore(value.hasMore);
+          setHistoryTotal(value.total);
           setError('');
           return;
         }
@@ -244,6 +259,7 @@ export function AdminWorkspace({
       offset,
       historyOffset,
       historyView,
+      historyFilters,
       scope,
       workQuery,
       workKind,
@@ -367,12 +383,20 @@ export function AdminWorkspace({
                 : tab === 'automatic'
                   ? 'Thiết lập và chạy tự động thu thập, cập nhật địa điểm từ các nguồn dữ liệu bên ngoài.'
                   : historyView === 'events'
-                    ? 'Xem ai đã thay đổi thông tin, thay đổi gì và khi nào.'
+                    ? 'Tra cứu thao tác đã thực hiện và xử lý những việc đang chờ duyệt.'
                     : 'Kiểm tra và quyết định những việc đang chờ xử lý.'
             }
             actions={
               tab === 'work' ? (
                 <a href="#history">Lịch sử xử lý ↗</a>
+              ) : tab === 'history' && historyView === 'events' ? (
+                <button
+                  className="history-refresh"
+                  disabled={loading}
+                  onClick={() => void refresh()}
+                >
+                  <RefreshCw size={16} /> Làm mới
+                </button>
               ) : undefined
             }
           />
@@ -403,15 +427,13 @@ export function AdminWorkspace({
                       aria-pressed={historyView === 'events'}
                       onClick={() => setHistoryView('events')}
                     >
-                      Hoạt động đã thực hiện
-                      <small>Những gì đã xảy ra</small>
+                      Nhật ký hoạt động
                     </button>
                     <button
                       aria-pressed={historyView === 'reviews'}
                       onClick={() => setHistoryView('reviews')}
                     >
                       Việc chờ duyệt
-                      <small>Những việc cần quyết định</small>
                     </button>
                   </div>
                 )}
@@ -520,14 +542,25 @@ export function AdminWorkspace({
                 {tab === 'history' && historyView === 'events' && (
                   <AdminHistory
                     items={history}
+                    total={historyTotal}
                     offset={historyOffset}
                     hasMore={historyMore}
                     loading={loading}
                     failedToLoad={!!error}
                     onPage={setHistoryOffset}
                     onOpen={edit}
-                    onRefresh={() => void refresh()}
-                    onReviews={() => setHistoryView('reviews')}
+                    search={historySearch}
+                    kind={historyFilters.kind}
+                    period={historyFilters.period}
+                    onSearch={setHistorySearch}
+                    onKind={(kind) => {
+                      setHistoryFilters((value) => ({ ...value, kind }));
+                      setHistoryOffset(0);
+                    }}
+                    onPeriod={(period) => {
+                      setHistoryFilters((value) => ({ ...value, period }));
+                      setHistoryOffset(0);
+                    }}
                   />
                 )}
               </>

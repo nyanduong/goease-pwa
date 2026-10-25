@@ -9,6 +9,10 @@ import {
   adminPlaceInputSchema,
   approvedPhoto,
   catalogToday,
+  catalogHistoryActionGroups,
+  catalogHistoryQuerySchema,
+  type CatalogHistoryQuery,
+  type CatalogHistoryListDto,
   catalogQuality,
   sourceSnapshotSchema,
   type CatalogBatchInput,
@@ -1094,16 +1098,49 @@ export function catalogOperations(
       return { runId: String(run._id) };
     });
   }
-  async function history(actor: Types.ObjectId, offset = 0) {
+  async function history(
+    actor: Types.ObjectId,
+    query: CatalogHistoryQuery = catalogHistoryQuerySchema.parse({}),
+  ): Promise<CatalogHistoryListDto> {
     await catalog.requireAdmin(actor);
-    const events = await connection
+    const match: Record<string, unknown> = { category: 'catalog' };
+    if (query.kind !== 'all')
+      match.action = { $in: catalogHistoryActionGroups[query.kind] };
+    if (query.period !== 'all') {
+      const today = new Date(Date.now() + 7 * 3600000)
+        .toISOString()
+        .slice(0, 10);
+      const start = new Date(`${today}T00:00:00+07:00`);
+      const days =
+        query.period === '7days' ? 7 : query.period === '30days' ? 30 : 1;
+      match.occurredAt = {
+        $gte: new Date(start.getTime() - (days - 1) * 86400000),
+        $lt: new Date(start.getTime() + 86400000),
+      };
+    }
+    const objectId = (input: string) => ({
+      $convert: { input, to: 'objectId', onError: null, onNull: null },
+    });
+    const ref = (type: string) => ({
+      $cond: [{ $eq: ['$entityType', type] }, objectId('$entityId'), null],
+    });
+    const textMatch: Record<string, unknown> = {};
+    if (query.q) {
+      const literal = query.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      textMatch.$or = [
+        'historyActor',
+        'historyPlace.name',
+        'historyDestination.name',
+        'historyRun.scopeSnapshot.destinationName',
+      ].map((key) => ({ [key]: { $regex: literal, $options: 'i' } }));
+    }
+    const [result] = await connection
       .collection('audit_logs')
-      .find(
-        { category: 'catalog' },
+      .aggregate([
+        { $match: match },
         {
-          projection: {
+          $project: {
             action: 1,
-            operationId: 1,
             actor: 1,
             entityId: 1,
             entityType: 1,
@@ -1114,36 +1151,106 @@ export function catalogOperations(
             runId: 1,
             occurredAt: 1,
             outcome: 1,
+            operationId: 1,
           },
         },
-      )
-      .sort({ occurredAt: -1, _id: -1 })
-      .skip(offset)
-      .limit(31)
+        {
+          $set: {
+            historyUserId: objectId('$actor.userId'),
+            historyPlaceId: ref('place'),
+            historyDestinationId: ref('destination'),
+            historyRunId: ref('catalog_run'),
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'historyUserId',
+            foreignField: '_id',
+            pipeline: [{ $project: { displayName: 1 } }],
+            as: 'historyUser',
+          },
+        },
+        {
+          $lookup: {
+            from: Place.collection.name,
+            localField: 'historyPlaceId',
+            foreignField: '_id',
+            pipeline: [{ $project: { name: 1, destinationId: 1 } }],
+            as: 'historyPlace',
+          },
+        },
+        {
+          $lookup: {
+            from: trips.models.Destination.collection.name,
+            localField: 'historyDestinationId',
+            foreignField: '_id',
+            pipeline: [{ $project: { name: 1 } }],
+            as: 'historyDestination',
+          },
+        },
+        {
+          $lookup: {
+            from: Run.collection.name,
+            localField: 'historyRunId',
+            foreignField: '_id',
+            pipeline: [{ $project: { scopeSnapshot: 1 } }],
+            as: 'historyRun',
+          },
+        },
+        {
+          $set: {
+            historyActor: {
+              $cond: [
+                { $eq: ['$actor.type', 'system'] },
+                'Hệ thống',
+                {
+                  $ifNull: [
+                    { $first: '$historyUser.displayName' },
+                    'Người vận hành',
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        { $match: textMatch },
+        {
+          $facet: {
+            items: [
+              { $sort: { occurredAt: -1, _id: -1 } },
+              { $skip: query.offset },
+              { $limit: 31 },
+            ],
+            total: [{ $count: 'value' }],
+          },
+        },
+      ])
       .toArray();
+    const events = result?.items ?? [];
     const items = [];
     for (const e of events.slice(0, 30)) {
-      const p =
-        e.entityType === 'place'
-          ? await Place.findById(e.entityId).select('name')
-          : null;
+      const p = e.historyPlace[0];
+      const destination = e.historyDestination[0];
+      const run = e.historyRun[0];
+      const placeDestination = p?.destinationId
+        ? await trips.models.Destination.findById(p.destinationId).select(
+            'name',
+          )
+        : null;
+      const destinationName =
+        placeDestination?.name ??
+        destination?.name ??
+        run?.scopeSnapshot?.destinationName ??
+        null;
       items.push({
         id: String(e._id),
         action: String(e.action),
-        actor:
-          e.actor.type === 'system'
-            ? 'Hệ thống'
-            : String(
-                (
-                  await connection
-                    .collection('users')
-                    .findOne(
-                      { _id: new Types.ObjectId(e.actor.userId) },
-                      { projection: { displayName: 1 } },
-                    )
-                )?.displayName ?? 'Người vận hành',
-              ),
+        actor: String(e.historyActor),
+        actorType:
+          e.actor?.type === 'system' ? ('system' as const) : ('user' as const),
         placeId: p ? String(p._id) : null,
+        destinationName,
         entityRevision: e.entityRevision,
         previousRevision: e.previousRevision,
         campaignId: e.campaignId,
@@ -1151,26 +1258,35 @@ export function catalogOperations(
         runId: e.runId,
         name:
           p?.name ??
+          destination?.name ??
           (e.entityType === 'catalog_run'
-            ? 'Lượt cập nhật dữ liệu'
+            ? destinationName
+              ? `${destinationName} · Lượt lấy dữ liệu`
+              : 'Lượt lấy dữ liệu'
             : e.entityType === 'catalog_campaign'
               ? 'Đợt thu thập'
               : e.entityType === 'catalog_policy'
-                ? 'Phiên bản quy tắc'
+                ? 'Bộ quy tắc'
                 : e.entityType === 'destination'
                   ? 'Điểm đến'
-                  : 'Cấu hình cập nhật'),
-        occurredAt: e.occurredAt,
+                  : 'Cài đặt dữ liệu'),
+        occurredAt: new Date(e.occurredAt).toISOString(),
         outcome: e.outcome,
         note:
-          (
-            await Decision.findOne({ operationId: e.operationId }).select(
-              'note',
-            )
-          )?.note ?? '',
+          typeof e.operationId === 'string'
+            ? ((
+                await Decision.findOne({ operationId: e.operationId }).select(
+                  'note',
+                )
+              )?.note ?? '')
+            : '',
       });
     }
-    return { items, hasMore: events.length > 30 };
+    return {
+      items,
+      total: result?.total[0]?.value ?? 0,
+      hasMore: events.length > 30,
+    };
   }
 
   async function tick() {
