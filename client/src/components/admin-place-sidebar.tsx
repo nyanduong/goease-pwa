@@ -105,14 +105,14 @@ export function AdminPlaceSidebar({
         ))}
         <div className="place-extra-checks">
           <h3>Bổ sung khi có thông tin</h3>
-          {!form.referencePrice && (
-            <button type="button" onClick={() => onField('referencePrice')}>
-              Giá tham khảo chưa xác minh →
+          {!form.visitInfo?.price?.reviewed && !form.referencePrice && (
+            <button type="button" onClick={() => onField('visitInfo')}>
+              Bổ sung giá tham khảo →
             </button>
           )}
-          {!form.openingHoursNote && (
+          {!form.openingHoursNote && !form.visitInfo?.hours && (
             <button type="button" onClick={() => onField('openingHoursNote')}>
-              Giờ mở cửa chưa xác minh →
+              Bổ sung giờ mở cửa →
             </button>
           )}
           <small>

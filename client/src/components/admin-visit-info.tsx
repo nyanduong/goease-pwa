@@ -1,6 +1,14 @@
+import {
+  Clock3,
+  Banknote,
+  CheckCircle2,
+  Search,
+  ArrowRight,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
   visitPriceLabel,
+  visitInfoSchema,
   type AdminPlaceDto,
   type AdminPlaceInput,
   type VisitInfo,
@@ -97,92 +105,319 @@ export function AdminVisitInfo({
         ...change,
       },
     });
+
+  const hours = info?.hours;
+  const price = info?.price;
+  const pending = busy || ['pending', 'searching'].includes(data?.state ?? '');
+  const validPrice =
+    !!price && visitInfoSchema.shape.price.safeParse(price).success;
+  const priceMode = !price ? 'unknown' : price.amount === 0 ? 'free' : 'paid';
+  function selectPrice(mode: 'unknown' | 'free' | 'paid') {
+    if (mode === priceMode) return;
+    if (mode === 'unknown') {
+      patch({ price: null });
+      return;
+    }
+    patch({
+      price: {
+        amount: mode === 'free' ? 0 : Number.NaN,
+        currency: 'VND',
+        unit: 'unspecified',
+        conditions:
+          mode === 'free'
+            ? 'Miễn phí vé vào cửa; dịch vụ riêng có thể thu phí.'
+            : '',
+        sourceUrl: '',
+        observedAt: new Date().toISOString(),
+        reviewed: false,
+      },
+    });
+  }
   return (
-    <fieldset
-      className="admin-form-fields admin-visit-info"
-      disabled={disabled || locked}
-      data-editor-field="visitInfo"
-    >
-      <legend>Giờ & giá từ nguồn</legend>
-      <p>
-        Thông tin được lấy vào bản nháp. Kiểm tra điều kiện trước khi xuất bản;
-        giá “Từ” không tự dùng để tính ngân sách.
-      </p>
-      {error ? (
-        <p role="alert">{error}</p>
-      ) : (
-        <p role="status">
+    <div className="visit-editor">
+      <div className="visit-editor-intro">
+        <h2>Thông tin khách sẽ thấy</h2>
+        <p>
+          Kiểm tra giờ và giá bên dưới. Chưa biết thông tin nào, bạn có thể để
+          trống thông tin đó.
+        </p>
+      </div>
+      <div className="visit-source-strip">
+        <Search size={17} />
+        <span role="status">
           {!place
-            ? 'Lưu bản nháp để tìm thông tin.'
+            ? 'Lưu địa điểm để hệ thống tự tìm thông tin.'
             : !data
-              ? 'Đang kiểm tra nguồn…'
+              ? 'Đang kiểm tra kết quả tìm…'
               : data.state === 'pending'
-                ? 'Đang chờ lượt tìm từ các nguồn…'
+                ? 'Đang chờ hệ thống tìm giờ và giá…'
                 : data.state === 'searching'
-                  ? 'Đang đọc nguồn và website địa điểm…'
-                  : data.message}
+                  ? 'Đang tìm thông tin cho địa điểm này…'
+                  : data.state === 'failed'
+                    ? 'Chưa kết nối được nguồn. Bạn có thể thử lại.'
+                    : data.result
+                      ? 'Đã có thông tin gợi ý. Hãy kiểm tra trước khi dùng.'
+                      : 'Hệ thống chưa tìm được giờ và giá phù hợp.'}
+        </span>
+        {place && form.publicationStatus === 'draft' && (
+          <button
+            type="button"
+            disabled={disabled || locked || pending}
+            onClick={() => void retry()}
+          >
+            {pending ? 'Đang tìm…' : 'Tìm lại'}
+          </button>
+        )}
+      </div>
+      {error && (
+        <p role="alert" className="admin-alert">
+          {error}
+          <button type="button" onClick={() => setReload((v) => v + 1)}>
+            Tải lại
+          </button>
         </p>
       )}
-      {info?.hours && (
-        <section className="visit-fact">
-          <h3>Giờ mở cửa gợi ý</h3>
+      <fieldset
+        className="visit-editor-card"
+        disabled={disabled}
+        data-editor-field="openingHoursNote"
+        id="admin-section-hours"
+      >
+        <legend>
+          <Clock3 size={20} />
+          Giờ mở cửa
+        </legend>
+        <header>
+          <p>Địa điểm đón khách vào thời gian nào?</p>
+          <span
+            className={
+              hours?.reviewed || (!hours && form.openingHoursNote)
+                ? 'is-confirmed'
+                : hours
+                  ? 'is-suggested'
+                  : 'is-unknown'
+            }
+          >
+            {hours?.reviewed
+              ? 'Đã xác nhận'
+              : hours
+                ? 'Gợi ý cần kiểm tra'
+                : form.openingHoursNote
+                  ? 'Đã nhập'
+                  : 'Chưa có thông tin'}
+          </span>
+        </header>
+        <label>
+          Giờ mở cửa hiển thị cho khách
           <textarea
-            aria-label="Giờ mở cửa từ nguồn"
+            aria-label="Giờ mở cửa hiển thị cho khách"
+            rows={2}
             maxLength={400}
-            value={info.hours.text}
+            disabled={!!hours && locked}
+            value={hours?.text ?? form.openingHoursNote}
+            placeholder="Ví dụ: Thứ Ba – Chủ nhật, 08:00–17:00; nghỉ thứ Hai"
             onChange={(e) =>
-              patch({
-                hours: {
-                  ...info.hours!,
-                  text: e.target.value,
-                  reviewed: false,
-                },
-              })
+              hours
+                ? patch({
+                    hours: { ...hours, text: e.target.value, reviewed: false },
+                  })
+                : update({ openingHoursNote: e.target.value })
             }
           />
+        </label>
+        {!hours && !form.openingHoursNote && (
           <small>
-            <a href={info.hours.sourceUrl} target="_blank" rel="noreferrer">
-              Xem nguồn ↗
-            </a>{' '}
-            · Lấy ngày{' '}
-            {new Date(info.hours.observedAt).toLocaleDateString('vi-VN')}
+            Chưa rõ giờ? Để trống, khách sẽ thấy thông tin chưa được cập nhật.
           </small>
-          <label className="visit-review">
-            <input
-              type="checkbox"
-              checked={info.hours.reviewed}
-              onChange={(e) => {
-                const reviewed = e.target.checked;
-                update({
-                  visitInfo: { ...info, hours: { ...info.hours!, reviewed } },
-                  ...(reviewed ? { openingHoursNote: info.hours!.text } : {}),
-                });
-              }}
-            />
-            Đã kiểm tra giờ mở cửa
-          </label>
-          <button type="button" onClick={() => patch({ hours: null })}>
-            Bỏ gợi ý giờ
+        )}
+        {hours && (
+          <>
+            <a
+              className="visit-evidence-link"
+              href={hours.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Đối chiếu giờ tại nguồn ↗
+            </a>
+            <div className="visit-card-actions">
+              {hours.reviewed ? (
+                <span className="visit-confirmed">
+                  <CheckCircle2 size={17} />
+                  Giờ này đã được chọn cho bản nháp
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="visit-use-button"
+                  disabled={locked || !hours.text.trim()}
+                  onClick={() =>
+                    update({
+                      visitInfo: {
+                        hours: { ...hours, reviewed: true },
+                        price: price ?? null,
+                      },
+                      openingHoursNote: hours.text,
+                    })
+                  }
+                >
+                  Dùng giờ này
+                  <CheckCircle2 size={16} />
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={locked}
+                onClick={() => {
+                  patch({ hours: null });
+                  if (form.openingHoursNote === hours.text)
+                    update({
+                      visitInfo: { hours: null, price: price ?? null },
+                      openingHoursNote: '',
+                    });
+                }}
+              >
+                Bỏ gợi ý giờ
+              </button>
+            </div>
+          </>
+        )}
+        {!hours && data?.result?.hours && (
+          <button
+            type="button"
+            disabled={locked}
+            onClick={() => patch({ hours: data.result!.hours })}
+          >
+            Xem gợi ý giờ đã tìm được
           </button>
-        </section>
-      )}
-      {info?.price && (
-        <section className="visit-fact">
-          <h3>{visitPriceLabel(info.price)}</h3>
-          <div className="visit-price-grid">
+        )}
+      </fieldset>
+      <fieldset
+        className="visit-editor-card"
+        disabled={disabled || locked}
+        data-editor-field="visitInfo"
+      >
+        <legend>
+          <Banknote size={20} />
+          Giá tham khảo
+        </legend>
+        <header>
+          <p>Khách cần trả bao nhiêu để tham quan hoặc sử dụng dịch vụ?</p>
+          <span
+            className={
+              price?.reviewed
+                ? 'is-confirmed'
+                : price
+                  ? 'is-suggested'
+                  : 'is-unknown'
+            }
+          >
+            {price?.reviewed
+              ? 'Đã xác nhận'
+              : price
+                ? 'Cần xác nhận'
+                : 'Chưa rõ giá'}
+          </span>
+        </header>
+        <div
+          className="visit-price-choices"
+          role="group"
+          aria-label="Loại giá tham khảo"
+        >
+          {(
+            [
+              { value: 'unknown', label: 'Chưa rõ giá' },
+              { value: 'free', label: 'Miễn phí' },
+              { value: 'paid', label: 'Có thu phí' },
+            ] as const
+          ).map((option) => (
+            <button
+              type="button"
+              key={option.value}
+              aria-pressed={priceMode === option.value}
+              onClick={() => selectPrice(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        {!price ? (
+          <div className="visit-price-empty">
+            <p>Chưa có giá được xác nhận cho địa điểm này.</p>
+            <small>
+              Bạn có thể giữ “Chưa rõ giá” và tiếp tục hoàn thiện địa điểm. Chỉ
+              chọn “Miễn phí” khi đã có căn cứ.
+            </small>
+            {data?.result?.price && (
+              <button
+                type="button"
+                onClick={() => patch({ price: data.result!.price })}
+              >
+                Xem giá gợi ý đã tìm được
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            {priceMode === 'paid' && (
+              <div className="visit-editor-fields">
+                <label>
+                  Giá từ (VND)
+                  <input
+                    aria-label="Giá từ (VND)"
+                    type="number"
+                    min={1}
+                    max={1e9}
+                    step={1}
+                    value={Number.isFinite(price.amount) ? price.amount : ''}
+                    placeholder="Ví dụ: 40000"
+                    onChange={(e) =>
+                      patch({
+                        price: {
+                          ...price,
+                          amount: e.target.valueAsNumber,
+                          reviewed: false,
+                        },
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  Đơn vị áp dụng
+                  <select
+                    value={price.unit}
+                    onChange={(e) =>
+                      patch({
+                        price: {
+                          ...price,
+                          unit: e.target.value as NonNullable<
+                            VisitInfo['price']
+                          >['unit'],
+                          reviewed: false,
+                        },
+                      })
+                    }
+                  >
+                    <option value="unspecified">Theo điều kiện bên dưới</option>
+                    <option value="person">Mỗi người</option>
+                    <option value="item">Mỗi món</option>
+                    <option value="group">Mỗi nhóm</option>
+                  </select>
+                </label>
+              </div>
+            )}
             <label>
-              Giá từ (VND)
-              <input
-                type="number"
-                min={0}
-                max={1e9}
-                step={1}
-                value={info.price.amount}
+              Giá này áp dụng cho ai, gồm những gì?
+              <textarea
+                rows={2}
+                maxLength={500}
+                value={price.conditions}
+                placeholder="Ví dụ: Vé vào cửa dành cho người lớn; chưa gồm dịch vụ riêng."
                 onChange={(e) =>
                   patch({
                     price: {
-                      ...info.price!,
-                      amount: e.target.valueAsNumber,
+                      ...price,
+                      conditions: e.target.value,
                       reviewed: false,
                     },
                   })
@@ -190,89 +425,90 @@ export function AdminVisitInfo({
               />
             </label>
             <label>
-              Đơn vị áp dụng
-              <select
-                value={info.price.unit}
+              Nguồn để kiểm tra giá
+              <input
+                type="url"
+                maxLength={2048}
+                value={price.sourceUrl}
+                placeholder="Dán đường dẫn bảng giá hoặc website địa điểm"
                 onChange={(e) =>
                   patch({
                     price: {
-                      ...info.price!,
-                      unit: e.target.value as NonNullable<
-                        VisitInfo['price']
-                      >['unit'],
+                      ...price,
+                      sourceUrl: e.target.value,
                       reviewed: false,
                     },
                   })
                 }
-              >
-                <option value="unspecified">Theo điều kiện bên dưới</option>
-                <option value="person">Mỗi người</option>
-                <option value="item">Mỗi món</option>
-                <option value="group">Mỗi nhóm</option>
-              </select>
+              />
             </label>
-          </div>
-          <label>
-            Đối tượng và điều kiện
-            <textarea
-              maxLength={500}
-              value={info.price.conditions}
-              onChange={(e) =>
-                patch({
-                  price: {
-                    ...info.price!,
-                    conditions: e.target.value,
-                    reviewed: false,
-                  },
-                })
-              }
-            />
-          </label>
-          <small>
-            <a href={info.price.sourceUrl} target="_blank" rel="noreferrer">
-              Xem nguồn giá ↗
-            </a>{' '}
-            · Lấy ngày{' '}
-            {new Date(info.price.observedAt).toLocaleDateString('vi-VN')}
-          </small>
-          <label className="visit-review">
-            <input
-              type="checkbox"
-              checked={info.price.reviewed}
-              onChange={(e) =>
-                patch({ price: { ...info.price!, reviewed: e.target.checked } })
-              }
-            />
-            Đã kiểm tra giá và điều kiện áp dụng
-          </label>
-          <button type="button" onClick={() => patch({ price: null })}>
-            Bỏ gợi ý giá
-          </button>
-        </section>
+            {!!price.sourceUrl && (
+              <a
+                className="visit-evidence-link"
+                href={
+                  price.sourceUrl.startsWith('https://')
+                    ? price.sourceUrl
+                    : undefined
+                }
+                target="_blank"
+                rel="noreferrer"
+              >
+                Mở nguồn để đối chiếu ↗
+              </a>
+            )}
+            {Number.isFinite(price.amount) && (
+              <div className="visit-customer-preview">
+                <small>KHÁCH SẼ THẤY SAU KHI XUẤT BẢN</small>
+                <strong>{visitPriceLabel(price)}</strong>
+                <p>
+                  {price.conditions ||
+                    'Bổ sung đối tượng và điều kiện áp dụng.'}
+                </p>
+              </div>
+            )}
+            <div className="visit-card-actions">
+              {price.reviewed ? (
+                <span className="visit-confirmed">
+                  <CheckCircle2 size={17} />
+                  Giá này đã được chọn cho bản nháp
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="visit-use-button"
+                  disabled={!validPrice}
+                  onClick={() => patch({ price: { ...price, reviewed: true } })}
+                >
+                  Xác nhận giá này
+                  <CheckCircle2 size={16} />
+                </button>
+              )}
+              <button type="button" onClick={() => patch({ price: null })}>
+                Bỏ giá này
+              </button>
+            </div>
+            {!validPrice && (
+              <small className="visit-validation-hint">
+                Điền số tiền hợp lệ, điều kiện áp dụng và đường dẫn nguồn HTTPS
+                để xác nhận.
+              </small>
+            )}
+          </>
+        )}
+      </fieldset>
+      {locked && (
+        <p className="admin-alert">
+          Thông tin giá và gợi ý giờ đang khóa. Bạn có thể mở khóa trong tab
+          Nguồn & lịch sử.
+        </p>
       )}
-      {data?.result && (
-        <button
-          type="button"
-          onClick={() => {
-            applied.current = true;
-            update({ visitInfo: data.result });
-          }}
-        >
-          Nạp lại gợi ý vào nháp
-        </button>
-      )}
-      {place && form.publicationStatus === 'draft' && (
-        <button
-          type="button"
-          disabled={
-            busy || ['pending', 'searching'].includes(data?.state ?? '')
-          }
-          onClick={() => void retry()}
-        >
-          {busy ? 'Đang yêu cầu…' : 'Tìm lại giờ & giá'}
-        </button>
-      )}
-      {locked && <p>Trường này đang khóa trong tab Nguồn & lịch sử.</p>}
-    </fieldset>
+      <div className="visit-editor-next">
+        <ArrowRight size={18} />
+        <p>
+          Xong phần này, bấm <strong>Lưu đề xuất</strong>. Sau đó chọn{' '}
+          <strong>Xem trước xuất bản</strong> để kiểm tra lần cuối.
+        </p>
+      </div>
+    </div>
   );
 }

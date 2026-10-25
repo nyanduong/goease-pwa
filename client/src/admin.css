@@ -5361,3 +5361,314 @@
     overflow: visible;
   }
 }
+
+.visit-editor {
+  display: grid;
+  gap: 18px;
+}
+.admin-catalog .visit-editor-intro h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+.visit-editor-intro p {
+  font-size: 13px;
+  color: #71868f;
+  margin: 0;
+  line-height: 1.7;
+}
+.visit-source-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #edf6f3;
+  border: 1px solid #d8e8e2;
+  border-radius: 10px;
+  color: #5a7b84;
+  font-size: 12px;
+}
+.visit-source-strip > svg {
+  flex-shrink: 0;
+  color: #158c92;
+}
+.visit-source-strip > span {
+  flex: 1;
+}
+.admin-catalog .visit-source-strip button {
+  padding: 7px 12px;
+  border: 1px solid #bfd9d4;
+  background: white;
+  border-radius: 7px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.admin-catalog fieldset.visit-editor-card {
+  display: block;
+  min-width: 0;
+  padding: 22px 24px;
+  background: #fff;
+  border: 1px solid #e1e6de;
+  border-radius: 14px;
+  margin: 0;
+}
+.admin-catalog .visit-editor-card legend {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 16px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #164b58;
+}
+.visit-editor-card header {
+  clear: both;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.visit-editor-card header p {
+  font-size: 13px;
+  color: #72878f;
+  margin: 0;
+  line-height: 1.6;
+}
+.visit-editor-card header > span {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  background: #f1f4f1;
+  color: #839497;
+}
+.visit-editor-card header > span.is-confirmed {
+  color: #258366;
+  background: #e7f5ed;
+}
+.visit-editor-card header > span.is-suggested {
+  color: #b37d20;
+  background: #fff3dd;
+}
+.admin-catalog .visit-editor-card > label,
+.admin-catalog .visit-editor-fields > label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: #335d68;
+  font-size: 12px;
+}
+.admin-catalog .visit-editor-card textarea {
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.7;
+  background: #fff;
+}
+.admin-catalog .visit-editor-card input,
+.admin-catalog .visit-editor-card select {
+  background: #fff;
+}
+.visit-editor-card > small {
+  display: block;
+  color: #80949a;
+  line-height: 1.7;
+  font-size: 12px;
+}
+.visit-evidence-link {
+  display: inline-block;
+  color: #00858b;
+  font-size: 12px;
+  margin: 0 0 10px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.visit-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.admin-catalog .visit-card-actions > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #dbe6e1;
+  background: #fff;
+  font-size: 12px;
+}
+.admin-catalog .visit-card-actions > button.visit-use-button {
+  background: #008b94;
+  color: white;
+  border-color: #008b94;
+  font-weight: 600;
+}
+.visit-confirmed {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #258366;
+}
+.visit-price-choices {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.admin-catalog .visit-price-choices button {
+  flex: 1;
+  min-width: 105px;
+  padding: 13px 14px;
+  background: #fff;
+  border: 1px solid #dce5df;
+  border-radius: 9px;
+  font-size: 13px;
+}
+.admin-catalog .visit-price-choices button[aria-pressed='true'] {
+  border-color: #008b94;
+  background: #e9f6f2;
+  color: #007b84;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px #008b94;
+}
+.visit-price-empty {
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: #f8faf7;
+}
+.visit-price-empty p {
+  font-size: 13px;
+  color: #55747d;
+  margin: 0 0 7px;
+}
+.visit-price-empty small {
+  color: #809398;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.admin-catalog .visit-price-empty button {
+  display: block;
+  margin-top: 12px;
+  font-size: 12px;
+  text-decoration: underline;
+}
+.visit-editor-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.visit-customer-preview {
+  padding: 16px 18px;
+  border-radius: 10px;
+  background: #f0f7f2;
+  border: 1px solid #dfebe0;
+  margin: 14px 0;
+}
+.visit-customer-preview > small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #7c928c;
+  margin-bottom: 8px;
+}
+.visit-customer-preview > strong {
+  display: block;
+  font-size: 21px;
+  color: #116570;
+}
+.visit-customer-preview p {
+  margin: 7px 0 0;
+  font-size: 12px;
+  color: #6e8688;
+  line-height: 1.7;
+}
+.visit-validation-hint {
+  display: block;
+  color: #aa7d32;
+  font-size: 12px;
+  margin-top: 12px;
+}
+.visit-editor-next {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64818a;
+  font-size: 12px;
+  padding: 0 4px;
+}
+.visit-editor-next > svg {
+  flex-shrink: 0;
+  color: #008b94;
+}
+.visit-editor-next p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0;
+}
+.visit-budget-advanced {
+  margin-top: 22px;
+  border: 1px dashed #cddbd4;
+  border-radius: 11px;
+  background: #fffcf7;
+}
+.visit-budget-advanced > summary {
+  padding: 17px 20px;
+  color: #5b7881;
+  cursor: pointer;
+  font-size: 13px;
+}
+.visit-budget-advanced > summary span {
+  font-weight: 600;
+  margin-right: 12px;
+}
+.visit-budget-advanced > summary small {
+  font-size: 11px;
+  color: #8b9ba0;
+}
+.visit-budget-advanced[open] > summary {
+  border-bottom: 1px solid #e8ece5;
+}
+.admin-catalog .visit-budget-advanced > fieldset {
+  border: 0;
+  margin: 0;
+  padding: 22px;
+}
+@media (max-width: 650px) {
+  .admin-catalog fieldset.visit-editor-card {
+    padding: 18px 16px;
+  }
+  .visit-editor-card header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .visit-editor-fields {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .visit-price-choices {
+    gap: 7px;
+  }
+  .admin-catalog .visit-price-choices button {
+    min-width: 0;
+    padding: 11px 6px;
+    font-size: 12px;
+  }
+  .visit-source-strip {
+    flex-wrap: wrap;
+  }
+  .visit-source-strip > span {
+    min-width: 160px;
+  }
+  .visit-budget-advanced > summary small {
+    display: block;
+    margin: 7px 0 0 18px;
+  }
+}

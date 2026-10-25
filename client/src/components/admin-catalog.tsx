@@ -427,6 +427,8 @@ export function AdminCatalog({
       const el = document.querySelector<HTMLElement>(
         '[data-editor-field="' + field + '"]',
       );
+      const disclosure = el?.closest('details');
+      if (disclosure) disclosure.open = true;
       el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       el?.querySelector<HTMLElement>('input,textarea,select,button')?.focus({
         preventScroll: true,
@@ -1305,321 +1307,323 @@ export function AdminCatalog({
                   disabled={busy}
                 />
                 {fieldError('visitInfo')}
-                <fieldset disabled={busy} className="admin-form-fields">
-                  <legend>Giờ mở cửa</legend>{' '}
-                  <label
-                    data-editor-field="openingHoursNote"
-                    id="admin-section-hours"
-                  >
-                    Giờ mở cửa (nếu đã kiểm tra)
-                    <input
-                      maxLength={400}
-                      value={form.openingHoursNote}
-                      placeholder="Để trống nếu chưa rõ"
-                      onChange={(e) =>
-                        update({ openingHoursNote: e.target.value })
-                      }
-                    />
-                  </label>
-                </fieldset>
-                <fieldset
-                  disabled={busy}
-                  className="admin-form-fields"
-                  data-editor-field="referencePrice"
+                <details
+                  className="visit-budget-advanced"
+                  id="visit-budget-advanced"
                 >
-                  <legend id="admin-section-price">
-                    Giá cho dự toán tự động
-                  </legend>
-                  {fieldError('referencePrice')}
-                  <p>
-                    Giá được dùng riêng cho dự toán và Goe. Thiếu giá vẫn có thể
-                    xuất bản để khám phá nếu đủ điều kiện; không tự suy ra miễn
-                    phí.
-                  </p>
-                  <label className="admin-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={!!form.referencePrice}
-                      disabled={form.venueType === 'food_idea'}
-                      onChange={(e) =>
-                        update({
-                          referencePrice: e.target.checked ? newPrice() : null,
-                        })
-                      }
-                    />
-                    Có giá đủ căn cứ để tự tính
-                  </label>
-                  {form.referencePrice ? (
-                    <>
-                      <label>
-                        Tên khoản giá
-                        <input
-                          required
-                          maxLength={120}
-                          value={form.referencePrice.label}
-                          placeholder="Ví dụ: bữa ăn tham khảo / vé tham quan"
-                          onChange={(e) =>
-                            updatePrice({ label: e.target.value })
-                          }
-                        />
-                      </label>
-                      <div className="admin-two">
+                  <summary>
+                    <span>Thiết lập giá để tính ngân sách</span>
+                    <small>
+                      {form.referencePrice
+                        ? 'Đã có cấu hình'
+                        : 'Tùy chọn · dành cho tính chi phí tự động'}
+                    </small>
+                  </summary>
+                  <fieldset
+                    disabled={busy}
+                    className="admin-form-fields"
+                    data-editor-field="referencePrice"
+                  >
+                    <legend id="admin-section-price">
+                      Giá dùng để tính ngân sách
+                    </legend>
+                    {fieldError('referencePrice')}
+                    <p>
+                      Giá được dùng riêng cho dự toán và Goe. Thiếu giá vẫn có
+                      thể xuất bản để khám phá nếu đủ điều kiện; không tự suy ra
+                      miễn phí.
+                    </p>
+                    <label className="admin-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={!!form.referencePrice}
+                        disabled={form.venueType === 'food_idea'}
+                        onChange={(e) =>
+                          update({
+                            referencePrice: e.target.checked
+                              ? newPrice()
+                              : null,
+                          })
+                        }
+                      />
+                      Có giá đủ căn cứ để tự tính
+                    </label>
+                    {form.referencePrice ? (
+                      <>
                         <label>
-                          Giá tham khảo (VND)
+                          Tên khoản giá
+                          <input
+                            required
+                            maxLength={120}
+                            value={form.referencePrice.label}
+                            placeholder="Ví dụ: bữa ăn tham khảo / vé tham quan"
+                            onChange={(e) =>
+                              updatePrice({ label: e.target.value })
+                            }
+                          />
+                        </label>
+                        <div className="admin-two">
+                          <label>
+                            Giá tham khảo (VND)
+                            <input
+                              required
+                              type="number"
+                              min={0}
+                              max={1e12}
+                              step={1}
+                              value={
+                                Number.isFinite(form.referencePrice.amountMinor)
+                                  ? form.referencePrice.amountMinor
+                                  : ''
+                              }
+                              placeholder="0 chỉ khi đã xác nhận miễn phí"
+                              onChange={(e) =>
+                                updatePrice({
+                                  amountMinor:
+                                    e.target.value === ''
+                                      ? Number.NaN
+                                      : Number(e.target.value),
+                                })
+                              }
+                            />
+                          </label>
+                          <label>
+                            Đơn vị tính
+                            <select
+                              aria-label="Đơn vị tính"
+                              value={form.referencePrice.basis}
+                              onChange={(e) =>
+                                updatePrice({
+                                  basis: e.target
+                                    .value as ReferencePrice['basis'],
+                                  maxTravelers:
+                                    e.target.value === 'group_total' ? 1 : 1000,
+                                })
+                              }
+                            >
+                              <option value="per_person">Theo người</option>
+                              <option value="group_total">Cho cả nhóm</option>
+                            </select>
+                          </label>
+                        </div>
+                        <label>
+                          Áp dụng cho nhóm tối thiểu (người)
                           <input
                             required
                             type="number"
-                            min={0}
-                            max={1e12}
+                            min={1}
+                            max={1000}
                             step={1}
-                            value={
-                              Number.isFinite(form.referencePrice.amountMinor)
-                                ? form.referencePrice.amountMinor
-                                : ''
-                            }
-                            placeholder="0 chỉ khi đã xác nhận miễn phí"
+                            value={form.referencePrice.minTravelers ?? 1}
                             onChange={(e) =>
                               updatePrice({
-                                amountMinor:
-                                  e.target.value === ''
-                                    ? Number.NaN
-                                    : Number(e.target.value),
+                                minTravelers: Number(e.target.value),
                               })
                             }
                           />
                         </label>
                         <label>
-                          Đơn vị tính
-                          <select
-                            aria-label="Đơn vị tính"
-                            value={form.referencePrice.basis}
+                          Áp dụng cho nhóm tối đa (người)
+                          <input
+                            required
+                            type="number"
+                            min={1}
+                            max={1000}
+                            step={1}
+                            value={form.referencePrice.maxTravelers}
                             onChange={(e) =>
                               updatePrice({
-                                basis: e.target
-                                  .value as ReferencePrice['basis'],
-                                maxTravelers:
-                                  e.target.value === 'group_total' ? 1 : 1000,
+                                maxTravelers: Number(e.target.value),
                               })
                             }
-                          >
-                            <option value="per_person">Theo người</option>
-                            <option value="group_total">Cho cả nhóm</option>
-                          </select>
+                          />
                         </label>
-                      </div>
-                      <label>
-                        Áp dụng cho nhóm tối thiểu (người)
-                        <input
-                          required
-                          type="number"
-                          min={1}
-                          max={1000}
-                          step={1}
-                          value={form.referencePrice.minTravelers ?? 1}
-                          onChange={(e) =>
-                            updatePrice({
-                              minTravelers: Number(e.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Áp dụng cho nhóm tối đa (người)
-                        <input
-                          required
-                          type="number"
-                          min={1}
-                          max={1000}
-                          step={1}
-                          value={form.referencePrice.maxTravelers}
-                          onChange={(e) =>
-                            updatePrice({
-                              maxTravelers: Number(e.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Bao gồm gì / điều kiện áp dụng
-                        <textarea
-                          required
-                          rows={2}
-                          maxLength={500}
-                          value={form.referencePrice.conditions}
-                          onChange={(e) =>
-                            updatePrice({ conditions: e.target.value })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Link nguồn giá
-                        <input
-                          required
-                          type="url"
-                          maxLength={2048}
-                          value={form.referencePrice.sourceUrl}
-                          placeholder="https://…"
-                          onChange={(e) =>
-                            updatePrice({ sourceUrl: e.target.value })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Bao gồm trong giá
-                        <input
-                          required
-                          maxLength={500}
-                          value={form.referencePrice.inclusions ?? ''}
-                          onChange={(e) =>
-                            updatePrice({ inclusions: e.target.value })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Không bao gồm trong giá
-                        <input
-                          required
-                          maxLength={500}
-                          placeholder="Ghi Không có nếu đã xác minh không có khoản loại trừ"
-                          value={form.referencePrice.exclusions ?? ''}
-                          onChange={(e) =>
-                            updatePrice({ exclusions: e.target.value })
-                          }
-                        />
-                      </label>
-                      {form.category !== 'food' && (
-                        <>
-                          <label className="admin-checkbox">
-                            <input
-                              type="checkbox"
-                              checked={!!form.referencePrice.bundle}
-                              onChange={(e) => {
-                                const { bundle: _old, ...price } =
-                                  form.referencePrice!;
-                                void _old;
-                                update({
-                                  referencePrice: e.target.checked
-                                    ? {
-                                        ...price,
+                        <label>
+                          Bao gồm gì / điều kiện áp dụng
+                          <textarea
+                            required
+                            rows={2}
+                            maxLength={500}
+                            value={form.referencePrice.conditions}
+                            onChange={(e) =>
+                              updatePrice({ conditions: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Link nguồn giá
+                          <input
+                            required
+                            type="url"
+                            maxLength={2048}
+                            value={form.referencePrice.sourceUrl}
+                            placeholder="https://…"
+                            onChange={(e) =>
+                              updatePrice({ sourceUrl: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Bao gồm trong giá
+                          <input
+                            required
+                            maxLength={500}
+                            value={form.referencePrice.inclusions ?? ''}
+                            onChange={(e) =>
+                              updatePrice({ inclusions: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label>
+                          Không bao gồm trong giá
+                          <input
+                            required
+                            maxLength={500}
+                            placeholder="Ghi Không có nếu đã xác minh không có khoản loại trừ"
+                            value={form.referencePrice.exclusions ?? ''}
+                            onChange={(e) =>
+                              updatePrice({ exclusions: e.target.value })
+                            }
+                          />
+                        </label>
+                        {form.category !== 'food' && (
+                          <>
+                            <label className="admin-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={!!form.referencePrice.bundle}
+                                onChange={(e) => {
+                                  const { bundle: _old, ...price } =
+                                    form.referencePrice!;
+                                  void _old;
+                                  update({
+                                    referencePrice: e.target.checked
+                                      ? {
+                                          ...price,
+                                          bundle: {
+                                            code: '',
+                                            validDays: 1,
+                                            maxEntries: 1,
+                                          },
+                                        }
+                                      : price,
+                                  });
+                                }}
+                              />
+                              Dùng chung vé gói với các điểm khác
+                            </label>
+                            {form.referencePrice.bundle && (
+                              <>
+                                <p>
+                                  Chỉ gán cùng mã cho các điểm thực sự được vé
+                                  bao gồm, cùng giá và điều kiện. Số lượt tính
+                                  mỗi lần vào cửa; không dùng cho gói có hạn mức
+                                  riêng từng nhóm di tích hoặc thời hạn theo giờ
+                                  chưa được hỗ trợ.
+                                </p>
+                                <label>
+                                  Mã vé gói
+                                  <input
+                                    required
+                                    pattern="[a-z0-9-]{3,80}"
+                                    value={form.referencePrice.bundle.code}
+                                    onChange={(e) =>
+                                      updatePrice({
                                         bundle: {
-                                          code: '',
-                                          validDays: 1,
-                                          maxEntries: 1,
+                                          ...form.referencePrice!.bundle!,
+                                          code: e.target.value,
                                         },
-                                      }
-                                    : price,
-                                });
-                              }}
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <label>
+                                  Hiệu lực (ngày, tính cả ngày đầu)
+                                  <input
+                                    required
+                                    type="number"
+                                    min={1}
+                                    max={31}
+                                    value={form.referencePrice.bundle.validDays}
+                                    onChange={(e) =>
+                                      updatePrice({
+                                        bundle: {
+                                          ...form.referencePrice!.bundle!,
+                                          validDays: Number(e.target.value),
+                                        },
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <label>
+                                  Số lượt vào cửa trong một gói
+                                  <input
+                                    required
+                                    type="number"
+                                    min={1}
+                                    max={300}
+                                    value={
+                                      form.referencePrice.bundle.maxEntries
+                                    }
+                                    onChange={(e) =>
+                                      updatePrice({
+                                        bundle: {
+                                          ...form.referencePrice!.bundle!,
+                                          maxEntries: Number(e.target.value),
+                                        },
+                                      })
+                                    }
+                                  />
+                                </label>
+                              </>
+                            )}
+                          </>
+                        )}
+                        <div className="admin-two">
+                          <label>
+                            Ngày đối chiếu giá
+                            <input
+                              required
+                              type="date"
+                              max={catalogToday()}
+                              value={form.referencePrice.checkedAt}
+                              onInput={(e) =>
+                                updatePrice({
+                                  checkedAt: e.currentTarget.value,
+                                })
+                              }
+                              onChange={(e) =>
+                                updatePrice({ checkedAt: e.target.value })
+                              }
                             />
-                            Dùng chung vé gói với các điểm khác
                           </label>
-                          {form.referencePrice.bundle && (
-                            <>
-                              <p>
-                                Chỉ gán cùng mã cho các điểm thực sự được vé bao
-                                gồm, cùng giá và điều kiện. Số lượt tính mỗi lần
-                                vào cửa; không dùng cho gói có hạn mức riêng
-                                từng nhóm di tích hoặc thời hạn theo giờ chưa
-                                được hỗ trợ.
-                              </p>
-                              <label>
-                                Mã vé gói
-                                <input
-                                  required
-                                  pattern="[a-z0-9-]{3,80}"
-                                  value={form.referencePrice.bundle.code}
-                                  onChange={(e) =>
-                                    updatePrice({
-                                      bundle: {
-                                        ...form.referencePrice!.bundle!,
-                                        code: e.target.value,
-                                      },
-                                    })
-                                  }
-                                />
-                              </label>
-                              <label>
-                                Hiệu lực (ngày, tính cả ngày đầu)
-                                <input
-                                  required
-                                  type="number"
-                                  min={1}
-                                  max={31}
-                                  value={form.referencePrice.bundle.validDays}
-                                  onChange={(e) =>
-                                    updatePrice({
-                                      bundle: {
-                                        ...form.referencePrice!.bundle!,
-                                        validDays: Number(e.target.value),
-                                      },
-                                    })
-                                  }
-                                />
-                              </label>
-                              <label>
-                                Số lượt vào cửa trong một gói
-                                <input
-                                  required
-                                  type="number"
-                                  min={1}
-                                  max={300}
-                                  value={form.referencePrice.bundle.maxEntries}
-                                  onChange={(e) =>
-                                    updatePrice({
-                                      bundle: {
-                                        ...form.referencePrice!.bundle!,
-                                        maxEntries: Number(e.target.value),
-                                      },
-                                    })
-                                  }
-                                />
-                              </label>
-                            </>
-                          )}
-                        </>
-                      )}
-                      <div className="admin-two">
-                        <label>
-                          Ngày đối chiếu giá
-                          <input
-                            required
-                            type="date"
-                            max={catalogToday()}
-                            value={form.referencePrice.checkedAt}
-                            onInput={(e) =>
-                              updatePrice({ checkedAt: e.currentTarget.value })
-                            }
-                            onChange={(e) =>
-                              updatePrice({ checkedAt: e.target.value })
-                            }
-                          />
-                        </label>
-                        <label>
-                          Cần kiểm tra lại vào
-                          <input
-                            required
-                            type="date"
-                            min={form.referencePrice.checkedAt}
-                            value={form.referencePrice.reviewAfter}
-                            onInput={(e) =>
-                              updatePrice({
-                                reviewAfter: e.currentTarget.value,
-                              })
-                            }
-                            onChange={(e) =>
-                              updatePrice({ reviewAfter: e.target.value })
-                            }
-                          />
-                        </label>
-                      </div>
-                    </>
-                  ) : (
-                    <p>
-                      Chưa có căn cứ giá. Địa điểm có thể phục vụ khám phá; Goe
-                      và ngân sách vẫn cần dữ liệu đủ điều kiện.
-                    </p>
-                  )}
-                </fieldset>
+                          <label>
+                            Cần kiểm tra lại vào
+                            <input
+                              required
+                              type="date"
+                              min={form.referencePrice.checkedAt}
+                              value={form.referencePrice.reviewAfter}
+                              onInput={(e) =>
+                                updatePrice({
+                                  reviewAfter: e.currentTarget.value,
+                                })
+                              }
+                              onChange={(e) =>
+                                updatePrice({ reviewAfter: e.target.value })
+                              }
+                            />
+                          </label>
+                        </div>
+                      </>
+                    ) : (
+                      <p>
+                        Chưa có căn cứ giá. Địa điểm có thể phục vụ khám phá;
+                        Goe và ngân sách vẫn cần dữ liệu đủ điều kiện.
+                      </p>
+                    )}
+                  </fieldset>
+                </details>
               </div>
               <div
                 role="tabpanel"
