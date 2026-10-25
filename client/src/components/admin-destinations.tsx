@@ -23,6 +23,26 @@ type Pending = {
   payload: string;
   key: string;
 };
+
+function paginationItems(current: number, total: number, compact: boolean) {
+  const siblings = compact ? 0 : 1;
+  const start = Math.max(
+    0,
+    Math.min(current - siblings, total - 1 - 2 * siblings),
+  );
+  const end = Math.min(total - 1, Math.max(current + siblings, 2 * siblings));
+  const pages = new Set([0, total - 1]);
+  for (let i = start; i <= end; i++) pages.add(i);
+  const items: (number | string)[] = [];
+  let previous = -1;
+  for (const page of [...pages].sort((a, b) => a - b)) {
+    if (previous >= 0 && page - previous > 1) items.push(`gap-${previous}`);
+    items.push(page);
+    previous = page;
+  }
+  return items;
+}
+
 export function AdminDestinations() {
   const generation = useRef(0);
   const [importTarget, setImportTarget] = useState<{
@@ -33,6 +53,16 @@ export function AdminDestinations() {
   const [region, setRegion] = useState('');
   const [visibility, setVisibility] = useState('all');
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
+  const [compactPages, setCompactPages] = useState(
+    () => window.matchMedia('(max-width: 700px)').matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 700px)');
+    const update = () => setCompactPages(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false);
@@ -137,9 +167,12 @@ export function AdminDestinations() {
         [d.name, d.provinceCode ?? '', ...(d.tourismAreas ?? [])].join(' '),
       ).includes(fold(q)),
   );
-  const pageCount = Math.max(1, Math.ceil(filtered.length / 5));
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount - 1);
-  const visible = filtered.slice(currentPage * 5, currentPage * 5 + 5);
+  const visible = filtered.slice(
+    currentPage * pageSize,
+    (currentPage + 1) * pageSize,
+  );
   function filterVisibility(value: string) {
     setVisibility(value);
     setPage(0);
@@ -400,11 +433,31 @@ export function AdminDestinations() {
                 </table>
               </div>
               <footer className="settings-province-pagination">
-                <p>
-                  Hiển thị {currentPage * 5 + 1}–
-                  {Math.min(currentPage * 5 + 5, filtered.length)} trong{' '}
-                  {filtered.length} tỉnh/thành
-                </p>
+                <div className="settings-pagination-summary">
+                  <p aria-live="polite" aria-atomic="true">
+                    Hiển thị {currentPage * pageSize + 1}–
+                    {Math.min((currentPage + 1) * pageSize, filtered.length)}{' '}
+                    trong {filtered.length} tỉnh/thành
+                  </p>
+                  <label>
+                    Số dòng mỗi trang
+                    <select
+                      aria-label="Số dòng mỗi trang"
+                      value={pageSize}
+                      disabled={busy || !!pending}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setPage(0);
+                      }}
+                    >
+                      {[5, 10, 20, 50].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
                 <nav aria-label="Phân trang tỉnh thành">
                   <button
                     aria-label="Trang trước"
@@ -413,17 +466,28 @@ export function AdminDestinations() {
                   >
                     <ChevronLeft size={17} />
                   </button>
-                  {Array.from({ length: pageCount }, (_, i) => (
-                    <button
-                      key={i}
-                      aria-label={'Trang ' + (i + 1)}
-                      aria-current={i === currentPage ? 'page' : undefined}
-                      disabled={busy || !!pending}
-                      onClick={() => setPage(i)}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
+                  {paginationItems(currentPage, pageCount, compactPages).map(
+                    (i) =>
+                      typeof i === 'string' ? (
+                        <span
+                          key={i}
+                          className="settings-pagination-gap"
+                          aria-hidden="true"
+                        >
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={i}
+                          aria-label={'Trang ' + (i + 1)}
+                          aria-current={i === currentPage ? 'page' : undefined}
+                          disabled={busy || !!pending}
+                          onClick={() => setPage(i)}
+                        >
+                          {i + 1}
+                        </button>
+                      ),
+                  )}
                   <button
                     aria-label="Trang sau"
                     disabled={

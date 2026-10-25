@@ -31,11 +31,34 @@ test('settings provinces filter and paginate, persist toggles, import drafts and
     fullPage: true,
   });
   const first = await manager.locator('tbody tr').first().textContent();
+  const pagination = manager.getByRole('navigation', {
+    name: 'Phân trang tỉnh thành',
+  });
+  await expect(
+    pagination.getByRole('button', { name: 'Trang 4', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    pagination.getByRole('button', { name: 'Trang trước', exact: true }),
+  ).toBeDisabled();
   await manager.getByRole('button', { name: 'Trang 7', exact: true }).click();
   await expect(manager.locator('tbody tr')).toHaveCount(4);
+  await expect(
+    pagination.getByRole('button', { name: 'Trang sau', exact: true }),
+  ).toBeDisabled();
   expect(await manager.locator('tbody tr').first().textContent()).not.toBe(
     first,
   );
+  await manager.getByLabel('Số dòng mỗi trang').selectOption('10');
+  await expect(manager.locator('tbody tr')).toHaveCount(10);
+  await expect(
+    pagination.getByRole('button', { name: 'Trang 1', exact: true }),
+  ).toHaveAttribute('aria-current', 'page');
+  await manager.getByLabel('Số dòng mỗi trang').selectOption('50');
+  await expect(manager.locator('tbody tr')).toHaveCount(34);
+  await expect(
+    pagination.getByRole('button', { name: 'Trang sau', exact: true }),
+  ).toBeDisabled();
+  await manager.getByLabel('Số dòng mỗi trang').selectOption('5');
   await manager
     .getByLabel('Miền du lịch', { exact: true })
     .selectOption('north');
@@ -55,6 +78,18 @@ test('settings provinces filter and paginate, persist toggles, import drafts and
   await expect(manager.locator('tbody tr')).toHaveCount(5);
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
+    await expect(
+      pagination.getByRole('button', { name: 'Trang 2', exact: true }),
+    ).toHaveCount(0);
+    await pagination
+      .getByRole('button', { name: 'Trang sau', exact: true })
+      .click();
+    await expect(
+      pagination.getByRole('button', { name: 'Trang 2', exact: true }),
+    ).toHaveAttribute('aria-current', 'page');
+    await pagination
+      .getByRole('button', { name: 'Trang 1', exact: true })
+      .click();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
