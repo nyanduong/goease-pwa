@@ -32,3 +32,5 @@ export * from './geography.js';
 export * from './admin-v3.js';
 export * from './place-description.js';
 export * from './visit-info.js';
+
+export * from './visit-progress.js';

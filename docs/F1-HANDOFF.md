@@ -159,3 +159,8 @@ CAT-22 verification: 89 unit tests pass; province-import + visit-info integratio
 CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa độ), HTML giờ/giá có nhãn và liên kết cùng origin; visitSearch.providerVersion=3 xếp tìm lại observation cũ, context bổ sung tọa độ. Giữ nội dung đã duyệt/public, không thay giá ngân sách. Phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
 
 CAT-22 expanded-source verification: 93 unit tests pass; focused visit-info Mongo integration passes including provider-version requeue/idempotence and retained observations; typecheck/lint pass; fixture browser still passes. Live additional-source coverage increase not established; old drafts requeued for providerVersion=3.
+
+
+Đã thêm trang admin #progress / Tiến trình lấy dữ liệu và GET admin/catalog/visit-progress. Aggregate toàn scope, lọc/pagination, trạng thái lỗi/quá hạn, polling 5s và mở editor. Không thêm persistence/index. Kiểm chứng và ý nghĩa counts tại [ADMIN-VISIT-PROGRESS](ADMIN-VISIT-PROGRESS.md).
+
+Verification trang tiến trình: typecheck/lint/build đạt; integration MongoDB riêng đạt (counts/filter/role/pagination/read-only); service chỉ đọc local thật và browser fixture desktop/mobile đạt. Vite vẫn có cảnh báo bundle >500KB hiện hữu. Không chạy lại toàn bộ integration suite cho thay đổi trang này.

@@ -1,3 +1,5 @@
+import { visitProgress } from './features/explore/visit-progress.js';
+import { visitProgressQuerySchema } from '@goease/contracts';
 import { placeVisitInfo } from './features/explore/place-visit-info.js';
 import {
   visitInfoProvider,
@@ -162,6 +164,7 @@ export function createProduct(
     explore,
     dependencies.generate,
   );
+  const progress = visitProgress(explore, catalog);
   const visitSearch = placeVisitInfo(
     explore,
     catalog,
@@ -526,6 +529,15 @@ export function createProduct(
     );
     res.json({ ok: true, data });
   });
+  router.get('/admin/catalog/visit-progress', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await progress(
+        res.locals.authUser._id,
+        parse(visitProgressQuerySchema, req.query),
+      ),
+    }),
+  );
   router.get('/admin/catalog/overview', async (req, res) =>
     res.json({
       ok: true,
@@ -1127,6 +1139,7 @@ export function createProduct(
     imageSearch,
     descriptionSearch,
     visitSearch,
+    visitProgress: progress,
     async initialize(withProvinceCatalog = false) {
       ready = false;
       const all = [

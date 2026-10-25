@@ -1,3 +1,4 @@
+import { AdminVisitProgress } from './admin-visit-progress';
 import { AdminScopeSummary } from './admin-scope-summary';
 import { AdminCampaigns } from './admin-campaigns';
 import { AdminPolicies } from './admin-policies';
@@ -22,6 +23,7 @@ import {
   MapPin,
   RefreshCw,
   History as HistoryIcon,
+  Activity,
   Database,
   Settings,
 } from 'lucide-react';
@@ -31,6 +33,7 @@ const tabs = {
   work: 'Cần kiểm tra',
   places: 'Địa điểm',
   automatic: 'Đợt thu thập',
+  progress: 'Tiến trình lấy dữ liệu',
   history: 'Lịch sử & phê duyệt',
   sources: 'Nguồn dữ liệu',
   settings: 'Cài đặt',
@@ -41,6 +44,7 @@ const navIcons = {
   work: ListTodo,
   places: MapPin,
   automatic: RefreshCw,
+  progress: Activity,
   history: HistoryIcon,
   sources: Database,
   settings: Settings,
@@ -326,6 +330,15 @@ export function AdminWorkspace({
           destinations={destinations}
         />
       )}
+      {tab === 'progress' && (
+        <AdminVisitProgress
+          scope={scope}
+          region={
+            destinations.find((d) => d.id === scope)?.name ?? 'Tất cả khu vực'
+          }
+          onOpen={edit}
+        />
+      )}
       {tab === 'automatic' && (
         <section className="admin-v2-content">
           <AdminPageHeader
@@ -368,6 +381,7 @@ export function AdminWorkspace({
         'settings',
         'automatic',
         'rules',
+        'progress',
       ].includes(tab) && (
         <section className="admin-catalog admin-operations">
           <AdminPageHeader
@@ -504,6 +518,16 @@ export function AdminWorkspace({
                       ) : null;
                     })()}
                   </AdminReviewQueue>
+                )}
+                {tab === 'progress' && (
+                  <AdminVisitProgress
+                    scope={scope}
+                    region={
+                      destinations.find((d) => d.id === scope)?.name ??
+                      'Tất cả khu vực'
+                    }
+                    onOpen={edit}
+                  />
                 )}
                 {tab === 'automatic' && (
                   <Automatic

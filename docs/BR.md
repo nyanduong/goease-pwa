@@ -525,3 +525,6 @@ Owner chốt: lấy thông tin có nguồn vào draft để admin kiểm tra r�
 
 
 CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa độ), HTML giờ/giá có nhãn và liên kết cùng origin; visitSearch.providerVersion=3 xếp tìm lại observation cũ, context bổ sung tọa độ. Giữ nội dung đã duyệt/public, không thay giá ngân sách. Phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
+
+
+CAT-22 bổ sung trang admin chỉ đọc Tiến trình lấy dữ liệu: counts hàng đợi và kết quả lưu có giải thích phân biệt dữ liệu đã duyệt, không đổi gate hoặc tự thực thi provider. Hợp đồng/ý nghĩa số liệu tại [ADMIN-VISIT-PROGRESS](ADMIN-VISIT-PROGRESS.md).
