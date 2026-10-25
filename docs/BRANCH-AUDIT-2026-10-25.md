@@ -1,5 +1,7 @@
 # Audit hai branch mới nhất — 25/10/2026
 
+Ghi nhận lịch sử tại commit `832d138`. Công việc sửa E2E theo yêu cầu tiếp theo và kết quả đầy đủ xem [E2E-VERIFICATION-2026-10-25](E2E-VERIFICATION-2026-10-25.md).
+
 Theo yêu cầu owner: xác định code mới, audit và merge vào `main` nếu đạt kiểm tra.
 
 ## Nền và phạm vi
@@ -50,7 +52,7 @@ node --import tsx --test --test-concurrency=1 server/test/email-registration.int
 
 Kiểm tra fixture tạo chuyến tại 320/390/768px sau chỉnh CSS: chiều rộng document bằng viewport; đã mở ảnh 320px để xem bố cục.
 
-## Giới hạn của bộ E2E tổng
+## Giới hạn của bộ E2E tổng tại commit 832d138
 
 Đã chạy bộ mặc định và thấy các assertion giao diện/ngân sách cũ nêu trên; sau đồng bộ, bài hành trình thủ công đã chạy qua. Bài `Hoi An catalog journey and server budget stay connected across save and reload` vẫn không qua bước lưu: API trả `DATE_SCHEDULE_UNAVAILABLE` vì fixture catalog thiếu giá/giờ theo gate `eligibleForPlanner` khi xác nhận ngày. Không báo bộ E2E tổng PASS.
 

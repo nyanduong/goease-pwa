@@ -1,6 +1,6 @@
 import { images } from '@goease/media';
 import { createHash, randomBytes } from 'node:crypto';
-import { test, expect } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdtemp, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -32,6 +32,81 @@ function inputFromTrip(trip: TripDto): TripInput {
 }
 import { e2eApiOrigin } from './ports.js';
 import { catalogToday } from '@goease/contracts';
+
+type SchedulingPlace = {
+  id: string;
+  amountMinor: number;
+  restaurant?: boolean;
+};
+const test = base.extend<{
+  schedulingCatalog: (places: SchedulingPlace[]) => Promise<void>;
+}>({
+  schedulingCatalog: async ({ baseURL }, use) => {
+    if (!baseURL?.startsWith('http://localhost:'))
+      throw new Error(
+        'Scheduling fixtures require the owned localhost E2E server',
+      );
+    const connection = await mongoose
+      .createConnection(
+        'mongodb://127.0.0.1:27020/goease_f0_test?replicaSet=goease_e2e',
+      )
+      .asPromise();
+    const collection = connection.collection('places');
+    const restorePlaces = new Map<string, () => Promise<unknown>>();
+    try {
+      await use(async (places) => {
+        for (const place of places) {
+          const _id = new mongoose.Types.ObjectId(place.id);
+          const original = await collection.findOne({ _id });
+          if (!original) throw new Error('Scheduling fixture place is missing');
+          if (!restorePlaces.has(place.id))
+            restorePlaces.set(place.id, () =>
+              collection.replaceOne({ _id }, original),
+            );
+          await collection.updateOne(
+            { _id },
+            {
+              $set: {
+                openingHoursNote: '07:00–22:00',
+                planning: {
+                  ...original.planning,
+                  durationMinutes: original.planning?.durationMinutes ?? 60,
+                  locationQuery: 'Hội An · địa chỉ minh họa E2E',
+                },
+                ...(place.restaurant
+                  ? {
+                      venueType: 'restaurant',
+                      name: 'Quán cơm minh họa E2E',
+                      description:
+                        'Nhà hàng fixture E2E, không phải cơ sở thực.',
+                    }
+                  : {}),
+                referencePrice: {
+                  label: 'Giá fixture E2E',
+                  amountMinor: place.amountMinor,
+                  basis: 'per_person',
+                  maxTravelers: 10,
+                  conditions: 'Dữ liệu kiểm thử, không phải giá thực tế.',
+                  inclusions: 'Hoạt động minh họa',
+                  exclusions: 'Dịch vụ khác',
+                  sourceUrl: 'https://example.invalid/e2e-price',
+                  checkedAt: catalogToday(),
+                  reviewAfter: '2099-12-31',
+                },
+              },
+            },
+          );
+        }
+      });
+    } finally {
+      try {
+        for (const restore of restorePlaces.values()) await restore();
+      } finally {
+        await connection.close();
+      }
+    }
+  },
+});
 
 let mongo: ChildProcess;
 let dbPath: string;
@@ -144,6 +219,10 @@ test.beforeAll(async () => {
 });
 test.afterAll(async () => {
   await stopMongo();
+});
+
+test.beforeEach(({ page }) => {
+  page.setDefaultTimeout(15000);
 });
 
 test('browser uses live API and database health at desktop and mobile sizes', async ({
@@ -593,6 +672,7 @@ test('real browser account, manual trip, failed save preservation, reload and re
 });
 test('Hoi An catalog journey and server budget stay connected across save and reload', async ({
   page,
+  schedulingCatalog,
 }) => {
   test.setTimeout(90000);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -659,6 +739,29 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   await page
     .getByLabel('Tên chuyến đi', { exact: true })
     .fill('Hội An nối dữ liệu thật');
+  const rejectedDateCheck = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/v1/trips/reschedule-dates') &&
+      response.request().method() === 'POST',
+  );
+  await page
+    .getByRole('button', { name: 'Lưu chuyến đi', exact: true })
+    .click();
+  const rejected = await rejectedDateCheck;
+  expect(rejected.status()).toBe(409);
+  expect((await rejected.json()).error.code).toBe('DATE_SCHEDULE_UNAVAILABLE');
+  await expect(page.getByRole('dialog').getByRole('alert')).toContainText(
+    'Goe chưa tìm đủ điểm mở cửa phù hợp',
+  );
+  expect(
+    (await (await page.request.get('/api/v1/trips')).json()).data.items,
+  ).toEqual([]);
+  // Only this owned test DB gets explicit price/hours fixtures. Retry still uses the real rescheduler.
+  await schedulingCatalog([
+    { id: '100000000000000000000001', amountMinor: 80000 },
+    { id: '100000000000000000000003', amountMinor: 20000 },
+    { id: '100000000000000000000004', amountMinor: 30000 },
+  ]);
   await page
     .getByRole('button', { name: 'Lưu chuyến đi', exact: true })
     .click();
@@ -675,9 +778,9 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   await page.getByRole('button', { name: 'Xong', exact: true }).click();
   await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-total')).toContainText('130.000');
   await expect(page.locator('.budget-per-person')).toContainText(
-    'Cả nhóm 5 người: 400.000',
+    'Cả nhóm 5 người: 650.000',
   );
   await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
   await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
@@ -685,9 +788,9 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   );
   await page.reload();
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-total')).toContainText('130.000');
   await expect(page.locator('.budget-per-person')).toContainText(
-    'Cả nhóm 5 người: 400.000',
+    'Cả nhóm 5 người: 650.000',
   );
   await mkdir('.local/hoian-preview', { recursive: true });
   await page.screenshot({ path: '.local/hoian-preview/budget-live-390.png' });
@@ -696,13 +799,13 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText(
-    'Chưa tính được ngân sách',
+    'Chưa tính được chi phí dự kiến',
   );
   await page.unroute('**/api/v1/trips/budget-preview');
   await page.getByRole('button', { name: 'Thử lại', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-total')).toContainText('130.000');
   await expect(page.locator('.budget-per-person')).toContainText(
-    'Cả nhóm 5 người: 400.000',
+    'Cả nhóm 5 người: 650.000',
   );
   await page.getByRole('link', { name: 'Khám phá', exact: true }).click();
   await page
@@ -755,11 +858,11 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   await expect(page.locator('.journey-stop-open')).toHaveCount(2);
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
   await expect(page.locator('.budget-disclaimer')).toContainText(
-    '3 lượt dừng chưa rõ',
+    '1 lượt dừng chưa rõ',
   );
-  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-total')).toContainText('130.000');
   await expect(page.locator('.budget-per-person')).toContainText(
-    'Cả nhóm 5 người: 400.000',
+    'Cả nhóm 5 người: 650.000',
   );
   const stored = (
     await (
@@ -770,7 +873,7 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   ).data.trip;
   expect(stored.days[0].activities[0].placeId).toBe('100000000000000000000001');
   expect(stored.days[1].activities[1].placeId).toBe('100000000000000000000002');
-  expect(stored.budgetSummary.knownEstimatedMinor).toBe(400000);
+  expect(stored.budgetSummary.knownEstimatedMinor).toBe(650000);
   expect(stored.days[1].activities[1].notes).toBe('Ăn trưa cùng nhóm');
   await page.goto('/saved');
   await page
@@ -871,9 +974,9 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   await expect(page).toHaveURL(/\/$/);
   await page.goto(tripUrl);
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-total')).toContainText('130.000');
   await expect(page.locator('.budget-per-person')).toContainText(
-    'Cả nhóm 5 người: 400.000',
+    'Cả nhóm 5 người: 650.000',
   );
 });
 
@@ -949,7 +1052,9 @@ test('real expenses create retry edit conflict delete and persist independently 
   const path = `/api/v1/trips/${trip.id}/expenses`;
   await page.goto(`/trips/${trip.id}`);
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await page.getByRole('button', { name: 'Thực chi', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Ghi lại chi tiêu (tùy chọn)', exact: true })
+    .click();
   await expect(
     page.getByText('Chưa ghi nhận khoản chi nào.', { exact: false }),
   ).toBeVisible();
@@ -1014,7 +1119,7 @@ test('real expenses create retry edit conflict delete and persist independently 
     .click();
   await expect(page.locator('.expense-total')).toContainText('1.400.000');
   await expect(page.locator('.expense-caption').first()).toContainText(
-    '1 điểm dừng chưa có dự toán',
+    '1 điểm dừng chưa có giá dự kiến',
   );
   for (const width of [320, 390, 768]) {
     await page.setViewportSize({ width, height: 844 });
@@ -1032,7 +1137,9 @@ test('real expenses create retry edit conflict delete and persist independently 
   });
   await page.reload();
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await page.getByRole('button', { name: 'Thực chi', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Ghi lại chi tiêu (tùy chọn)', exact: true })
+    .click();
   await expect(page.locator('.expense-total')).toContainText('1.400.000');
   await page
     .getByRole('button', { name: 'Sửa Ăn trưa cả nhóm', exact: true })
@@ -1094,7 +1201,9 @@ test('real expenses create retry edit conflict delete and persist independently 
   await page.route(`**${path}?**`, (r) => r.abort());
   await page.reload();
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await page.getByRole('button', { name: 'Thực chi', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Ghi lại chi tiêu (tùy chọn)', exact: true })
+    .click();
   await expect(
     page.getByRole('button', { name: 'Tải lại chi tiêu' }),
   ).toBeVisible();
@@ -2522,6 +2631,7 @@ test('offline itinerary survives network loss reload and clears across tabs on l
 
 test('mobile newcomer resumes setup, sees unknown costs and recovers from failed Goe without losing the trip', async ({
   page,
+  schedulingCatalog,
 }) => {
   test.setTimeout(90000);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -2615,6 +2725,9 @@ test('mobile newcomer resumes setup, sees unknown costs and recovers from failed
   await page
     .getByRole('button', { name: 'Áp dụng thay đổi', exact: true })
     .click();
+  await schedulingCatalog([
+    { id: '100000000000000000000002', amountMinor: 60000, restaurant: true },
+  ]);
   await page.getByRole('button', { name: 'Giữ lịch này', exact: true }).click();
   await page.getByLabel('Ngày khởi hành', { exact: true }).fill('2026-11-12');
   await page.getByText('Đổi tên hoặc thêm ghi chú', { exact: false }).click();
@@ -2962,18 +3075,21 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await page.reload();
     await expect(
       page.getByRole('heading', {
-        name: 'Việc cần làm',
+        name: 'Tổng quan dữ liệu',
         exact: true,
       }),
     ).toBeVisible();
+    await page
+      .getByLabel('Khu vực quản lý')
+      .selectOption('000000000000000000000004');
     await page.getByRole('link', { name: 'Địa điểm', exact: true }).click();
     await page
       .getByRole('button', { name: 'Thêm địa điểm / quán ăn', exact: true })
       .click();
     await page
-      .getByLabel('Loại địa điểm', { exact: true })
+      .getByRole('combobox', { name: 'Loại địa điểm', exact: true })
       .selectOption('restaurant');
-    const name = `Quán kiểm thử ${Date.now()}`;
+    const name = `Quán cơm kiểm thử ${Date.now()}`;
     await page.getByLabel('Tên địa điểm / quán ăn', { exact: true }).fill(name);
     await page
       .getByLabel('Giới thiệu ngắn', { exact: true })
@@ -2981,6 +3097,9 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await page
       .getByLabel('Địa chỉ / vị trí tìm trên bản đồ', { exact: true })
       .fill('Địa chỉ minh họa Hội An');
+    await page
+      .getByLabel('Giờ mở cửa (nếu đã kiểm tra)', { exact: true })
+      .fill('07:00–22:00');
     await page
       .getByLabel('Link nguồn thông tin', { exact: true })
       .fill('https://example.invalid/catalog-test');
@@ -2994,6 +3113,12 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await page
       .getByLabel('Bao gồm gì / điều kiện áp dụng', { exact: true })
       .fill('Một bữa/người. Chỉ là giá kiểm thử.');
+    await page
+      .getByLabel('Bao gồm trong giá', { exact: true })
+      .fill('Một bữa minh họa E2E');
+    await page
+      .getByLabel('Không bao gồm trong giá', { exact: true })
+      .fill('Đồ uống và dịch vụ khác');
     await page
       .getByLabel('Link nguồn giá', { exact: true })
       .fill('https://example.invalid/test-price');
@@ -3012,16 +3137,16 @@ test('admin publishes reference prices and mobile customer gets automatic estima
       } else await route.continue();
     });
     await page
-      .getByRole('button', { name: 'Lưu bản nháp', exact: true })
+      .getByRole('button', { name: 'Lưu đề xuất', exact: true })
       .click();
     await expect(page.getByRole('alert')).toContainText('Không kết nối');
     await expect(
       page.getByLabel('Tên địa điểm / quán ăn', { exact: true }),
     ).toHaveValue(name);
     await page
-      .getByRole('button', { name: 'Lưu bản nháp', exact: true })
+      .getByRole('button', { name: 'Lưu đề xuất', exact: true })
       .click();
-    await expect(page.getByRole('status')).toContainText('Đã lưu bản nháp');
+    await expect(page.getByRole('status')).toContainText('Đã lưu đề xuất');
     expect(await connection.collection('places').countDocuments({ name })).toBe(
       1,
     );
@@ -3035,7 +3160,9 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await page
       .getByRole('button', { name: 'Đăng địa điểm', exact: true })
       .click();
-    await expect(page.getByRole('status')).toContainText('Đã xuất bản');
+    await expect(page.getByRole('status')).toContainText(
+      'Đã áp dụng bản công khai',
+    );
     await page
       .getByRole('button', { name: '← Về danh sách', exact: true })
       .click();
@@ -3120,7 +3247,9 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await page
       .getByRole('button', { name: 'Cập nhật nội dung công khai', exact: true })
       .click();
-    await expect(page.getByRole('status')).toContainText('Đã xuất bản');
+    await expect(page.getByRole('status')).toContainText(
+      'Đã áp dụng bản công khai',
+    );
     await customer.reload();
     await customer
       .getByRole('button', { name: 'Chi phí', exact: true })
@@ -3173,11 +3302,26 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await expect(customer.locator('.budget-per-person')).toContainText(
       'Cả nhóm 2 người: 160.000',
     );
+    const archiveResponse = page.waitForResponse(
+      (response) =>
+        response
+          .url()
+          .endsWith(
+            `/api/v1/admin/places/${original.days[0]!.activities[0]!.placeId}`,
+          ) && response.request().method() === 'PATCH',
+    );
     page.once('dialog', (dialog) => dialog.accept());
     await page
       .getByRole('button', { name: 'Ngừng hiển thị', exact: true })
       .click();
-    await expect(page.getByRole('status')).toContainText('Đã ngừng hiển thị');
+    const archived = await archiveResponse;
+    expect(archived.status()).toBe(200);
+    expect((await archived.json()).data.place.publicationStatus).toBe(
+      'archived',
+    );
+    await expect(
+      page.getByRole('button', { name: 'Ngừng hiển thị', exact: true }),
+    ).toBeHidden();
     await customer.reload();
     const final = (await (await customer.request.get(tripPath)).json()).data
       .trip as TripDto;

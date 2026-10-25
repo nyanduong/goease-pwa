@@ -120,6 +120,8 @@ Các override chỉ áp dụng Playwright và `tests/vite.config.mts`; không đ
 
 CI GitHub chạy npm ci, format, lint, typecheck, unit test và build. E2E/database là kiểm tra local có điều kiện riêng. Trạng thái CI chỉ được xác nhận sau khi quan sát run trên GitHub; xem [bằng chứng F0](docs/F0-VERIFICATION.md).
 
+Fixture catalog và kết quả chạy E2E đầy đủ ngày 25/10/2026: [E2E-VERIFICATION](docs/E2E-VERIFICATION-2026-10-25.md). Các giá/giờ minh họa chỉ được ghi vào MongoDB do test sở hữu, không sửa dữ liệu ứng dụng hoặc nới gate xếp lịch.
+
 ## API và tổ chức mã
 
 | Request                 | HTTP              | Response                                                                                                            |
