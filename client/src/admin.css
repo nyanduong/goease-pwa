@@ -123,7 +123,7 @@
 }
 .admin-page-heading h1,
 .admin-desktop-main .admin-heading h1 {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-sans);
   font-size: clamp(30px, 2.7vw, 44px);
   line-height: 1.2;
   margin: 8px 0;
@@ -202,9 +202,7 @@
 }
 .admin-kpi strong {
   display: block;
-  font:
-    bold 34px Georgia,
-    serif;
+  font: bold 34px var(--font-sans);
   color: #092b3d;
   margin: 4px 0;
 }
@@ -382,9 +380,7 @@
   justify-content: center;
 }
 .admin-quality-ring strong {
-  font:
-    bold 29px Georgia,
-    serif;
+  font: bold 29px var(--font-sans);
 }
 .admin-quality-ring small {
   font-size: 10px;
@@ -987,9 +983,7 @@
   margin-top: 8px;
 }
 .admin-live-clock time {
-  font:
-    700 32px Georgia,
-    serif;
+  font: 700 32px var(--font-sans);
   color: #073a4c;
 }
 .admin-live-clock small {
@@ -1151,9 +1145,7 @@
 }
 .admin-place-stat strong {
   display: block;
-  font:
-    700 28px Georgia,
-    serif;
+  font: 700 28px var(--font-sans);
   margin: 4px 0;
 }
 .admin-place-stat span {

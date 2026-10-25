@@ -178,6 +178,11 @@ export function authModels(connection: Connection) {
       nonceHash: String,
       encryptedPkceVerifier: String,
       bindingHash: String,
+      registrationFlow: Boolean,
+      registrationRequestedAt: Date,
+      registrationOtpHash: { type: String, select: false },
+      registrationPasswordHash: { type: String, select: false },
+      registrationDisplayName: { type: String, maxlength: 100, select: false },
     },
     { _id: false, versionKey: false, strict: 'throw' },
   );
@@ -226,6 +231,17 @@ export function authModels(connection: Connection) {
   challengeSchema.index({ tokenHash: 1 }, { unique: true });
   challengeSchema.index({ userId: 1, purpose: 1, createdAt: -1 });
   challengeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+  // One registration slot per email serializes concurrent requests and resend cooldowns.
+  challengeSchema.index(
+    { purpose: 1, targetEmailNormalized: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        purpose: 'verify_email',
+        'context.registrationFlow': true,
+      },
+    },
+  );
   return {
     User: connection.model('User', userSchema),
     Identity: connection.model('AuthIdentity', identitySchema),

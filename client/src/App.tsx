@@ -21,7 +21,13 @@ import { ExplorePage, PlaceDetail, placeActivity } from './components/explore';
 import { AccountAvatar } from './components/account-avatar';
 import { Compass, Map, House, Bookmark, UserRound } from 'lucide-react';
 import { HomeDiscovery } from './components/home-discovery';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import {
   tripInputSchema,
   type DestinationDto,
@@ -526,6 +532,18 @@ export function App() {
   const isPlaceDetail = path.startsWith('/places/');
   const isExplore = path === '/explore';
   const isDiscovery = ['/', '/explore', '/saved', '/goe'].includes(path);
+  const mobileNavIndex =
+    path === '/explore'
+      ? 0
+      : path.startsWith('/trips') || path === '/budget'
+        ? 1
+        : path === '/saved'
+          ? 3
+          : path === '/account'
+            ? 4
+            : path === '/'
+              ? 2
+              : null;
   const setOnboardingSeen = (seen: boolean) => {
     setWelcomeSeenInMemory(seen);
     try {
@@ -568,8 +586,23 @@ export function App() {
                   )}
                   {link(
                     '/trips',
-                    'Chuyến đi của tôi',
+                    'Chuyến đi',
                     `nav-link ${path.startsWith('/trips') || path === '/budget' ? 'active' : ''}`,
+                  )}
+                  {link(
+                    '/explore',
+                    'Khám phá',
+                    `nav-link ${path === '/explore' ? 'active' : ''}`,
+                  )}
+                  {link(
+                    '/goe',
+                    'Cùng Goe',
+                    `nav-link ${path === '/goe' ? 'active' : ''}`,
+                  )}
+                  {link(
+                    '/saved',
+                    'Đã lưu',
+                    `nav-link ${path === '/saved' ? 'active' : ''}`,
                   )}
                 </nav>
 
@@ -1053,12 +1086,10 @@ export function App() {
           <div className="container footer-inner">
             <div className="footer-brand-line">
               <Brand />
-              <span className="footer-tagline">
-                Ít loay hoay hơn. Nhiều trải nghiệm hơn.
-              </span>
+              <span className="footer-tagline">Just go. We’ll plan.</span>
             </div>
             <span className="footer-note">
-              Made for your next little escape.
+              Khám phá dễ dàng · Lên kế hoạch thông minh
             </span>
           </div>
         </footer>
@@ -1071,6 +1102,15 @@ export function App() {
         path !== '/trips/new' &&
         path !== '/admin' && (
           <nav className="mobile-bottom-nav" aria-label="Điều hướng di động">
+            {mobileNavIndex !== null && (
+              <span
+                aria-hidden="true"
+                className="mobile-nav-indicator"
+                style={{ '--nav-index': mobileNavIndex } as CSSProperties}
+              >
+                <span key={mobileNavIndex} />
+              </span>
+            )}
             {[
               { to: '/explore', label: 'Khám phá', Icon: Compass },
               { to: '/trips', label: 'Chuyến đi', Icon: Map },

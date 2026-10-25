@@ -1,7 +1,7 @@
 :root {
   font-family: system-ui, sans-serif;
-  color: #143e38;
-  background: #faf7ef;
+  color: #123e4b;
+  background: #fff8ef;
 }
 * {
   box-sizing: border-box;
@@ -24,8 +24,8 @@ nav {
 }
 header a {
   font:
-    bold 28px Georgia,
-    serif;
+    800 28px system-ui,
+    sans-serif;
   text-decoration: none;
 }
 a {
@@ -34,7 +34,8 @@ a {
 h1,
 h2,
 h3 {
-  font-family: Georgia, serif;
+  font-family: system-ui, sans-serif;
+  font-weight: 750;
   overflow-wrap: anywhere;
 }
 h1 {
@@ -49,10 +50,10 @@ h3 {
   font-size: 20px;
 }
 button {
-  border: 1px solid #b8cdc0;
+  border: 1px solid #e9e1d5;
   border-radius: 24px;
-  background: #fffdf7;
-  color: #143e38;
+  background: #fffcf7;
+  color: #006f78;
   padding: 12px 16px;
   font: inherit;
   cursor: pointer;
@@ -89,9 +90,9 @@ article button {
   margin: 12px 8px 0 0;
 }
 .primary {
-  background: #18564c;
+  background: linear-gradient(110deg, #008d91, #006f78);
   color: white;
-  border-color: #18564c;
+  border-color: #006f78;
 }
 .activity {
   border-top: 1px solid #e5e8de;

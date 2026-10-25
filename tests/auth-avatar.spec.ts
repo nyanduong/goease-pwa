@@ -55,7 +55,7 @@ for (const avatar of ['missing', 'account', 'broken'] as const) {
     await page.getByRole('button', { name: 'Đăng nhập', exact: false }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(
-      page.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
+      page.getByRole('heading', { name: 'Sẵn sàng cho hành trình mới?' }),
     ).toBeVisible();
     const image = page.getByRole('img', {
       name: `Ảnh đại diện của ${user.displayName}`,
@@ -77,5 +77,19 @@ for (const avatar of ['missing', 'account', 'broken'] as const) {
       'src',
       avatar === 'account' ? avatarUrl! : images.defaultAvatar,
     );
+    if (avatar === 'missing') {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      for (const selector of ['.goe-chat-launcher', '.mobile-nav-indicator']) {
+        await expect
+          .poll(() =>
+            page.locator(selector).evaluate((element) =>
+              getComputedStyle(element)
+                .transitionDuration.split(',')
+                .every((duration) => Number.parseFloat(duration) <= 0.00001),
+            ),
+          )
+          .toBe(true);
+      }
+    }
   });
 }

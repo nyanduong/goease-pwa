@@ -248,7 +248,9 @@ test('real browser account, manual trip, failed save preservation, reload and re
     .getByRole('link', { name: 'Khám phá trước' })
     .click();
   await expect(
-    storageBlockedPage.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
+    storageBlockedPage.getByRole('heading', {
+      name: 'Sẵn sàng cho hành trình mới?',
+    }),
   ).toBeVisible();
   await storageBlockedPage.close();
   await page.addInitScript(() => {
@@ -282,7 +284,7 @@ test('real browser account, manual trip, failed save preservation, reload and re
   });
   await page.getByRole('button', { name: 'Bắt đầu hành trình' }).click();
   await expect(
-    page.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
+    page.getByRole('heading', { name: 'Sẵn sàng cho hành trình mới?' }),
   ).toBeVisible();
   await page
     .getByRole('searchbox', { name: 'Tìm điểm đến ở Việt Nam' })
@@ -307,7 +309,7 @@ test('real browser account, manual trip, failed save preservation, reload and re
     .click();
   await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByRole('heading', { name: 'Hôm nay, mình đi đâu?' }),
+    page.getByRole('heading', { name: 'Sẵn sàng cho hành trình mới?' }),
   ).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/trips');
@@ -347,11 +349,12 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await mkdir('.local/journey-preview', { recursive: true });
   for (const width of [320, 390, 768]) {
     await page.setViewportSize({ width, height: 844 });
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
+    // Resizing asynchronously fits the floating Goe button to the new edge.
+    await expect
+      .poll(() =>
+        page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      )
+      .toBe(true);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
@@ -401,7 +404,7 @@ test('real browser account, manual trip, failed save preservation, reload and re
   await addStop('Một ngày thong thả', '09:00', '10:00');
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
   await expect(page.locator('.journey-budget-view')).toContainText(
-    '4 điểm dừng chưa rõ chi phí',
+    '4 lượt dừng chưa rõ chi phí',
   );
   await expect(page.locator('.journey-budget-view')).toContainText('200.000');
   await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
@@ -468,13 +471,16 @@ test('real browser account, manual trip, failed save preservation, reload and re
   ]);
   expect(stored.data.trip.budget.amountMinor).toBe(10000000);
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('200.000');
+  await expect(page.locator('.budget-total')).toContainText('50.000');
+  await expect(page.locator('.budget-per-person')).toContainText(
+    'Cả nhóm 4 người: 200.000',
+  );
   await expect(page.getByRole('meter')).toHaveCount(0);
   await expect(page.locator('.budget-incomplete')).toContainText(
-    'Chưa đủ dữ liệu',
+    'Các khoản chưa tính',
   );
   await expect(page.locator('.budget-disclaimer')).toContainText(
-    '4 điểm dừng chưa rõ chi phí',
+    '4 lượt dừng chưa rõ chi phí',
   );
   await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
   await page.getByRole('button', { name: /Muốn đổi nhịp/ }).click();
@@ -639,9 +645,12 @@ test('Hoi An catalog journey and server budget stay connected across save and re
       .click();
   }
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('320.000');
+  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-per-person')).toContainText(
+    'Cả nhóm 4 người: 320.000',
+  );
   await expect(page.locator('.budget-disclaimer')).toContainText(
-    '2 điểm dừng chưa rõ',
+    '2 lượt dừng chưa rõ',
   );
   await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
   await page.getByRole('button', { name: 'Giữ lịch này', exact: true }).click();
@@ -666,15 +675,20 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   await page.getByRole('button', { name: 'Xong', exact: true }).click();
   await page.getByRole('button', { name: 'Quay lại', exact: true }).click();
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('400.000');
-  await expect(page.locator('.budget-per-person')).toContainText('80.000');
+  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-per-person')).toContainText(
+    'Cả nhóm 5 người: 400.000',
+  );
   await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click();
   await expect(page.getByRole('status', { name: 'Trạng thái lưu' })).toHaveText(
     'Đã lưu',
   );
   await page.reload();
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('400.000');
+  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-per-person')).toContainText(
+    'Cả nhóm 5 người: 400.000',
+  );
   await mkdir('.local/hoian-preview', { recursive: true });
   await page.screenshot({ path: '.local/hoian-preview/budget-live-390.png' });
   // A failed preview must not masquerade as a successful, freshly calculated budget.
@@ -686,7 +700,10 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   );
   await page.unroute('**/api/v1/trips/budget-preview');
   await page.getByRole('button', { name: 'Thử lại', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('400.000');
+  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-per-person')).toContainText(
+    'Cả nhóm 5 người: 400.000',
+  );
   await page.getByRole('link', { name: 'Khám phá', exact: true }).click();
   await page
     .getByRole('button', { name: /Cơm gà Hội An/ })
@@ -738,9 +755,12 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   await expect(page.locator('.journey-stop-open')).toHaveCount(2);
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
   await expect(page.locator('.budget-disclaimer')).toContainText(
-    '3 điểm dừng chưa rõ',
+    '3 lượt dừng chưa rõ',
   );
-  await expect(page.locator('.budget-total')).toContainText('400.000');
+  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-per-person')).toContainText(
+    'Cả nhóm 5 người: 400.000',
+  );
   const stored = (
     await (
       await page.request.get(
@@ -851,7 +871,10 @@ test('Hoi An catalog journey and server budget stay connected across save and re
   await expect(page).toHaveURL(/\/$/);
   await page.goto(tripUrl);
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('400.000');
+  await expect(page.locator('.budget-total')).toContainText('80.000');
+  await expect(page.locator('.budget-per-person')).toContainText(
+    'Cả nhóm 5 người: 400.000',
+  );
 });
 
 test('real expenses create retry edit conflict delete and persist independently of itinerary', async ({
@@ -2568,9 +2591,9 @@ test('mobile newcomer resumes setup, sees unknown costs and recovers from failed
     .click();
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
   await expect(page.locator('.budget-incomplete')).toContainText(
-    'Chưa đủ dữ liệu',
+    'Các khoản chưa tính',
   );
-  await expect(page.locator('.budget-total')).toHaveText('Chưa có dự toán');
+  await expect(page.locator('.budget-total')).toHaveText('Chưa rõ');
   await expect(page.locator('.budget-reserve')).not.toContainText('Còn');
   await expect(page.locator('.budget-breakdown')).toContainText('Chưa thêm');
   await expect(page.getByRole('meter')).toHaveCount(0);
@@ -2583,7 +2606,7 @@ test('mobile newcomer resumes setup, sees unknown costs and recovers from failed
     ).toBe(true);
   }
   await page
-    .getByRole('button', { name: 'Bổ sung chi phí trong lịch', exact: true })
+    .getByRole('button', { name: 'Xem lại lịch trình', exact: true })
     .click();
   await expect(page.getByRole('dialog')).toContainText(
     'Gợi ý món ăn, chưa chọn quán',
@@ -2644,7 +2667,10 @@ test('mobile newcomer resumes setup, sees unknown costs and recovers from failed
   await expect(page).toHaveURL(tripUrl + '?day=0');
   await expect(page.locator('.journey-stop-open')).toHaveCount(1);
   await page.getByRole('button', { name: 'Chi phí', exact: true }).click();
-  await expect(page.locator('.budget-total')).toContainText('120.000');
+  await expect(page.locator('.budget-total')).toContainText('60.000');
+  await expect(page.locator('.budget-per-person')).toContainText(
+    'Cả nhóm 2 người: 120.000',
+  );
 });
 
 test('quick mobile plan: recover proposal, swap or undo a stop, choose dates only at save and reload', async ({
@@ -2929,7 +2955,7 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await page.getByRole('button', { name: 'Đăng nhập', exact: false }).click();
     await expect(page).toHaveURL(/\/admin$/);
     await expect(
-      page.getByRole('link', { name: 'Chuyến đi của tôi', exact: true }),
+      page.getByRole('link', { name: 'Chuyến đi', exact: true }),
     ).toHaveCount(0);
     await page.goto('/trips/new');
     await expect(page).toHaveURL(/\/admin$/);
@@ -3054,7 +3080,10 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await customer
       .getByRole('button', { name: 'Chi phí', exact: true })
       .click();
-    await expect(customer.locator('.budget-total')).toContainText('100.000');
+    await expect(customer.locator('.budget-total')).toContainText('50.000');
+    await expect(customer.locator('.budget-per-person')).toContainText(
+      'Cả nhóm 2 người: 100.000',
+    );
     await customer
       .getByText('Giá nào đang được dùng?', { exact: true })
       .click();
@@ -3096,7 +3125,10 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await customer
       .getByRole('button', { name: 'Chi phí', exact: true })
       .click();
-    await expect(customer.locator('.budget-total')).toContainText('100.000');
+    await expect(customer.locator('.budget-total')).toContainText('50.000');
+    await expect(customer.locator('.budget-per-person')).toContainText(
+      'Cả nhóm 2 người: 100.000',
+    );
     await customer.screenshot({
       path: '.local/catalog-review/customer-390.png',
       fullPage: false,
@@ -3137,7 +3169,10 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await customer
       .getByRole('button', { name: 'Chi phí', exact: true })
       .click();
-    await expect(customer.locator('.budget-total')).toContainText('160.000');
+    await expect(customer.locator('.budget-total')).toContainText('80.000');
+    await expect(customer.locator('.budget-per-person')).toContainText(
+      'Cả nhóm 2 người: 160.000',
+    );
     page.once('dialog', (dialog) => dialog.accept());
     await page
       .getByRole('button', { name: 'Ngừng hiển thị', exact: true })

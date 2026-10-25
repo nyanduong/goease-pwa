@@ -285,11 +285,11 @@
         ],
         ["requestId", "string", "Bắt buộc", "Liên kết technical/audit logs."]
       ],
-      "indexes": "Unique tokenHash; {userId,purpose,createdAt:-1}; TTL expiresAt.",
+      "indexes": "Unique tokenHash; {userId,purpose,createdAt:-1}; TTL expiresAt. Unique partial {purpose:1,targetEmailNormalized:1} where purpose=verify_email and context.registrationFlow=true.",
       "rules": "Kiểm tra purpose, expiry, consumed và user binding. Không tin returnTo tùy ý. PKCE verifier nếu cần phải encrypt để dùng lại, không chỉ hash rồi mất khả năng đổi code.",
       "retention": "Thời gian ngắn theo purpose; không dùng challenge collection làm lịch sử bảo mật.",
-      "brRefs": ["AUTH-02", "AUTH-03", "AUTH-07"],
-      "implementationStatus": "OAuth plus reset_password implemented local. Reset SMTP adapter implemented; credentials deferred by owner, live delivery unverified. Other proposed purposes not implemented. See PASSWORD-RECOVERY.md.",
+      "brRefs": ["AUTH-02", "AUTH-03", "AUTH-07", "AUTH-10"],
+      "implementationStatus": "OAuth, reset_password and opt-in verify_email registration implemented. SMTP live delivery not verified. Link/change_email remain design-only. See EMAIL-REGISTRATION.md and PASSWORD-RECOVERY.md.",
       "runtimeFields": [
         [
           "context.identityId; context.securityVersionAtIssue",
@@ -308,6 +308,24 @@
           "Date; integer",
           "900seconds configurable300–3600; attemptCount0/maxAttempts1",
           "Strict one-use transaction; independent of TTL."
+        ],
+        [
+          "context.registrationFlow; context.registrationRequestedAt",
+          "boolean; Date",
+          "Required for OTP registration",
+          "One slot/email; resend cooldown 60 seconds."
+        ],
+        [
+          "context.registrationOtpHash; context.registrationPasswordHash; context.registrationDisplayName",
+          "SHA-256; Argon2id; string<=100",
+          "Private pending registration data",
+          "OTP hash binds browser challenge; no raw OTP/binding/password. Cleared on success."
+        ],
+        [
+          "registration expiry / attempts",
+          "Date; integer",
+          "10 minutes; attemptCount0/maxAttempts5",
+          "Consume with account/identity/session/audit transaction. No user before verification."
         ]
       ]
     },

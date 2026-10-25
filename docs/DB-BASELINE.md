@@ -226,6 +226,8 @@ Token một lần cho xác minh email/reset/link/OAuth state.
 
 **Retention:** Thời gian ngắn theo purpose; không dùng challenge collection làm lịch sử bảo mật.
 
+**Runtime AUTH-10, 25/10/2026 — đăng ký OTP:** `auth_challenges` purpose=verify_email thêm context.registrationFlow=true, registrationRequestedAt(Date), deliveryState(pending/sent/failed), registrationOtpHash(SHA-256), registrationPasswordHash(Argon2id), registrationDisplayName(string<=100). Ba field hash/tên và targetEmailNormalized/tokenHash là select:false. Chưa có userId trước xác nhận. expiresAt=10 phút, attemptCount=0/maxAttempts=5; gửi lại sau60giây xoay binding/mã và reset attempts. tokenHash lưu SHA-256 của browser challenge ngẫu nhiên; OTPHash=SHA-256(challenge+':'+OTP), không lưu raw binding/code. Unique partial `{purpose:1,targetEmailNormalized:1}` với purpose=verify_email và context.registrationFlow=true, ngoài unique tokenHash/TTL hiện có. Consume transaction tạo user/identity có verifiedAt, phiên và audit; bỏ tên/passwordHash/OTPHash sau thành công. Flag REGISTRATION_OTP_REQUIRED và mẫu env mặc định false giữ tương thích; chỉ bật true sau khi cấu hình SMTP, khi bật mà thiếu SMTP sẽ503. Link/change_email vẫn design-only. Chi tiết [EMAIL-REGISTRATION](EMAIL-REGISTRATION.md).
+
 ### 05. `consent_events`
 
 **Lớp:** F1 · **Bộ metadata:** `APPEND`

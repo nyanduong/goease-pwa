@@ -322,6 +322,50 @@ export function authService(
         return { changed: true };
       });
     },
+    async registerVerified(
+      value: { email: string; passwordHash: string; displayName: string },
+      session: ClientSession,
+    ) {
+      const reqId = requestId(),
+        operationId = randomUUID();
+      const user = await new User({
+        emailNormalized: value.email,
+        displayName: value.displayName,
+        status: 'active',
+        emailVerifiedAt: new Date(),
+      }).save({ session });
+      const identity = await new Identity({
+        userId: user._id,
+        provider: 'password',
+        loginEmailNormalized: value.email,
+        passwordHash: value.passwordHash,
+        linkedAt: new Date(),
+        verifiedAt: new Date(),
+      }).save({ session });
+      for (const action of [
+        'auth.registered',
+        'auth.email_verified',
+      ] as const) {
+        await audit.append(
+          {
+            action,
+            entityId: user._id.toHexString(),
+            actorUserId: user._id.toHexString(),
+            requestId: reqId,
+            operationId,
+          },
+          session,
+        );
+      }
+      const token = await createSession(
+        user,
+        identity._id,
+        session,
+        reqId,
+        operationId,
+      );
+      return { user: userDto(user), token };
+    },
     async register(
       req: Request,
       value: { email: string; password: string; displayName: string },

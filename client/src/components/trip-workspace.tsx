@@ -781,6 +781,24 @@ export function TripWorkspace({
         )}
       </header>
       <fieldset className="journey-fieldset" disabled={busy}>
+        {!loaded && !showSettings && (
+          <ol className="planning-steps" aria-label="Tiến trình tạo chuyến">
+            {['Thông tin', 'Lịch trình', 'Lưu chuyến'].map((label, index) => (
+              <li
+                key={label}
+                aria-current={
+                  (isSetup ? 0 : keeping ? 2 : 1) === index ? 'step' : undefined
+                }
+                className={
+                  (isSetup ? 0 : keeping ? 2 : 1) > index ? 'is-complete' : ''
+                }
+              >
+                <span>{index + 1}</span>
+                <strong>{label}</strong>
+              </li>
+            ))}
+          </ol>
+        )}
         {isSetup && !settings ? (
           <QuickTripSetup
             draft={draft}

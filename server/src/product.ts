@@ -1,4 +1,10 @@
 import { passwordRecovery } from './features/auth/password-recovery.js';
+import { emailRegistration } from './features/auth/email-registration.js';
+import {
+  registrationEmailSender,
+  type RegistrationEmailSender,
+} from './features/auth/registration-email.js';
+import { registrationOtpSchema } from '@goease/contracts';
 import { adminCatalog } from './features/explore/admin-catalog.js';
 import { placeImportService } from './features/explore/place-import.js';
 import { geoapifyProvider } from './features/explore/geoapify.js';
@@ -85,6 +91,7 @@ export function createProduct(
   config: Config,
   dependencies: {
     resetEmail?: ResetEmailSender;
+    registrationEmail?: RegistrationEmailSender;
     logger?: Logger;
     geoapify?: ReturnType<typeof geoapifyProvider>;
     generate?: Generate;
@@ -93,6 +100,13 @@ export function createProduct(
 ) {
   const audit = businessAudit(connection, config.NODE_ENV);
   const auth = authService(connection, config, audit);
+  const registration = emailRegistration(
+    connection,
+    config,
+    auth,
+    dependencies.registrationEmail ?? registrationEmailSender(config),
+    dependencies.logger ?? createLogger(config.NODE_ENV),
+  );
   const uploadAvatar = dependencies.avatarUpload ?? avatarUploader(config);
   const avatarLimit = authLimiter(10, 900);
   const recovery = passwordRecovery(
@@ -170,6 +184,7 @@ export function createProduct(
       '/me/avatar',
       '/me/password',
       '/auth/register',
+      '/auth/registration/verify',
       '/auth/login',
       '/auth/forgot-password',
       '/auth/reset-password',
@@ -262,6 +277,7 @@ export function createProduct(
       data: {
         google: google.configured,
         emailMode: 'password',
+        registrationOtpRequired: config.REGISTRATION_OTP_REQUIRED,
       },
     }),
   );
@@ -281,6 +297,12 @@ export function createProduct(
   router.post('/auth/register', async (req, res) => {
     const value = parse(registerSchema, req.body);
     try {
+      if (config.REGISTRATION_OTP_REQUIRED) {
+        res
+          .status(202)
+          .json({ ok: true, data: await registration.request(req, value) });
+        return;
+      }
       const result = await auth.register(req, value);
       auth.setCookie(res, result.token);
       res.status(201).json({ ok: true, data: { user: result.user } });
@@ -296,6 +318,20 @@ export function createProduct(
         );
       throw error;
     }
+  });
+  router.post('/auth/registration/verify', async (req, res) => {
+    if (!config.REGISTRATION_OTP_REQUIRED)
+      throw new HttpError(
+        409,
+        'REGISTRATION_OTP_DISABLED',
+        'Xác nhận đăng ký bằng OTP chưa được bật.',
+      );
+    const result = await registration.verify(
+      req,
+      parse(registrationOtpSchema, req.body),
+    );
+    auth.setCookie(res, result.token);
+    res.status(201).json({ ok: true, data: { user: result.user } });
   });
   router.post('/auth/login', async (req, res) => {
     const value = await auth.login(req, parse(loginSchema, req.body));
@@ -977,6 +1013,7 @@ export function createProduct(
     router,
     auth,
     recovery,
+    registration,
     trips,
     explore,
     expenses,

@@ -18,6 +18,8 @@ export default defineConfig({
         SMTP_USER: '',
         SMTP_PASS: '',
         MAIL_FROM: '',
+        // This suite covers existing password accounts; OTP has its own tests.
+        REGISTRATION_OTP_REQUIRED: 'false',
         GEOAPIFY_API_KEY: '',
         AI_PROVIDER: 'gemini',
         GEMINI_API_KEY:
