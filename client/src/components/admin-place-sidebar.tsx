@@ -42,6 +42,7 @@ export function AdminPlaceSidebar({
       locationQuery: 'Bổ sung địa chỉ',
       sourceUrl: 'Kiểm tra nguồn thông tin',
       referencePrice: 'Kiểm tra giá và điều kiện',
+      visitInfo: 'Kiểm tra giờ và giá từ nguồn',
       durationMinutes: 'Kiểm tra thời gian tham quan',
     };
     issues.set(field, labels[field] ?? 'Kiểm tra thông tin địa điểm');

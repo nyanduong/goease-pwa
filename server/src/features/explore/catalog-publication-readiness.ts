@@ -34,6 +34,7 @@ export function publicationReadiness(
   });
   if (!checked.success) {
     const labels: Record<string, string> = {
+      visitInfo: 'Cần kiểm tra giờ và giá',
       images: 'Thiếu ảnh bìa hợp lệ',
       description: 'Thiếu giới thiệu',
       name: 'Cần kiểm tra tên',

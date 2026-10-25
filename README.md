@@ -1,5 +1,7 @@
 # GoEase
 
+**Giờ mở cửa và giá từ nguồn (CAT-22):** draft nhập mới/cũ tự xếp hàng đọc OSM và website liên kết có dữ liệu cấu trúc. Admin → địa điểm → Giá & giờ mở cửa → kiểm tra từng mục → lưu/xuất bản. Giá “Từ” tách khỏi giá dự toán. Xem [VISIT-INFORMATION](docs/VISIT-INFORMATION.md).
+
 **Lấy địa điểm tự động (CAT-19):** Admin → Cài đặt → bật tỉnh sẽ mở đợt lấy địa điểm tham quan từ Geoapify vào nháp; tỉnh đã bật dùng “Lấy địa điểm / xem tiến trình”. Admin kiểm tra rồi xuất bản theo lô. Lượt đầu tối đa 50 kết quả trong vùng tìm, không phải toàn tỉnh; nguồn lỗi có thể thử lại. Xem [hướng dẫn demo](docs/PROVINCE-IMPORT.md).
 
 **Danh mục tỉnh/thành (25/10/2026):** API tự nạp34 tỉnh/thành; vào Admin → Cài đặt → Danh mục tỉnh/thành Việt Nam để bật/tắt. Mới mặc định tắt. Hội An là khu vực trong Đà Nẵng, Sa Pa trong Lào Cai. `npm run db:seed` hiện chỉ đồng bộ danh mục tỉnh/thành, không thêm POI mẫu hoặc tự bật. Xem [quy tắc và kiểm thử](docs/PROVINCE-CATALOG.md).

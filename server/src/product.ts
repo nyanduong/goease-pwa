@@ -1,3 +1,8 @@
+import { placeVisitInfo } from './features/explore/place-visit-info.js';
+import {
+  visitInfoProvider,
+  type FindVisitInfo,
+} from './features/explore/visit-info-provider.js';
 import { placeDescriptions } from './features/explore/place-descriptions.js';
 import {
   wikipediaDescriptions,
@@ -114,6 +119,7 @@ export function createProduct(
     resolveProvinceArea?: ResolveProvinceArea;
     findImages?: FindImages;
     findDescription?: FindDescription;
+    findVisitInfo?: FindVisitInfo;
     generate?: Generate;
     avatarUpload?: (bytes: Buffer) => Promise<string>;
   } = {},
@@ -155,6 +161,11 @@ export function createProduct(
     trips,
     explore,
     dependencies.generate,
+  );
+  const visitSearch = placeVisitInfo(
+    explore,
+    catalog,
+    dependencies.findVisitInfo ?? visitInfoProvider(),
   );
   const descriptionSearch = placeDescriptions(
     explore,
@@ -530,6 +541,25 @@ export function createProduct(
       ),
     }),
   );
+  router.get('/admin/places/:id/visit-info', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await visitSearch.read(
+        res.locals.authUser._id,
+        parse(z.string().regex(/^[a-f0-9]{24}$/), req.params.id),
+      ),
+    }),
+  );
+  router.post('/admin/places/:id/visit-info/search', async (req, res) => {
+    parse(z.strictObject({}), req.body);
+    res.json({
+      ok: true,
+      data: await visitSearch.enqueue(
+        res.locals.authUser._id,
+        parse(z.string().regex(/^[a-f0-9]{24}$/), req.params.id),
+      ),
+    });
+  });
   router.get('/admin/places/:id/description', async (req, res) =>
     res.json({
       ok: true,
@@ -1096,6 +1126,7 @@ export function createProduct(
     catalog,
     imageSearch,
     descriptionSearch,
+    visitSearch,
     async initialize(withProvinceCatalog = false) {
       ready = false;
       const all = [
@@ -1115,6 +1146,7 @@ export function createProduct(
       await audit.initialize();
       await imageSearch.prepareStorage();
       await descriptionSearch.prepare();
+      await visitSearch.prepare();
       if (withProvinceCatalog)
         await syncProvinceCatalog(connection, trips.models.Destination, audit);
       await planner.reconcile();

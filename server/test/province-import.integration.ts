@@ -290,6 +290,8 @@ test(
               {
                 ...fixtureCandidate.image,
                 url: 'https://res.cloudinary.com/fixture/image/upload/other.webp',
+                sourceUrl:
+                  'https://commons.wikimedia.org/wiki/File:Different-photo.jpg',
                 selection: 'admin',
               },
             ],

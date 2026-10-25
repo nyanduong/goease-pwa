@@ -1,3 +1,5 @@
+import { visitInfoModel, visitSearchModel } from './visit-info.model.js';
+import { visitInfoSchema } from '@goease/contracts';
 import {
   descriptionSearchModel,
   descriptionResultModel,
@@ -52,6 +54,8 @@ export function exploreService(connection: Connection) {
         default: [],
         validate: (v: unknown[]) => v.length <= 8,
       },
+      visitInfo: { type: visitInfoModel, default: null },
+      visitSearch: { type: visitSearchModel, required: false },
       descriptionSearch: { type: descriptionSearchModel, required: false },
       descriptionSource: { type: descriptionResultModel, default: null },
       imageSearch: { type: imageSearchSchema, default: () => ({}) },
@@ -254,6 +258,16 @@ export function exploreService(connection: Connection) {
       (doc.venueType as PlaceDto['venueType']) ??
       (doc.category === 'food' ? 'food_idea' : 'place'),
     openingHoursNote: doc.openingHoursNote,
+    visitInfo: doc.visitInfo
+      ? visitInfoSchema.parse({
+          hours: doc.visitInfo.hours?.reviewed
+            ? JSON.parse(JSON.stringify(doc.visitInfo.hours))
+            : null,
+          price: doc.visitInfo.price?.reviewed
+            ? JSON.parse(JSON.stringify(doc.visitInfo.price))
+            : null,
+        })
+      : null,
     referencePrice: doc.referencePrice
       ? referencePriceSchema.parse(
           doc.referencePrice instanceof mongoose.Document

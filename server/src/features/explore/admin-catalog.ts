@@ -1,3 +1,5 @@
+import { visitContext } from './visit-info-provider.js';
+import { visitInfoSchema } from '@goease/contracts';
 import {
   needsPlaceDescription,
   importedDescriptionPlaceholder,
@@ -87,6 +89,9 @@ export function adminCatalog(
     description: doc.description,
     locationQuery: doc.planning?.locationQuery ?? doc.name,
     durationMinutes: doc.planning?.durationMinutes ?? 60,
+    visitInfo: doc.visitInfo
+      ? visitInfoSchema.parse(doc.toObject().visitInfo)
+      : null,
     openingHoursNote: doc.openingHoursNote ?? '',
     sourceUrl: doc.sourceUrl,
     publicationStatus:
@@ -147,6 +152,13 @@ export function adminCatalog(
   function withSourceDefaults(doc: Doc): Doc {
     if (doc.publicationStatus !== 'draft') return doc;
     const value = doc.toObject();
+    if (
+      !value.visitInfo &&
+      !doc.fieldLocks?.includes('visitInfo') &&
+      value.visitSearch?.context === visitContext(doc) &&
+      value.visitSearch.result
+    )
+      value.visitInfo = value.visitSearch.result;
     let defaultImages;
     if (
       !doc.images.length &&
@@ -220,6 +232,7 @@ export function adminCatalog(
       sourceCheckedAt: doc.sourceCheckedAt,
       imageSearch: doc.toObject().imageSearch,
       descriptionSearch: doc.toObject().descriptionSearch,
+      visitSearch: doc.toObject().visitSearch,
       deletedAt: doc.deletedAt,
     });
     return applyDefaults ? withSourceDefaults(projected) : projected;
@@ -264,6 +277,7 @@ export function adminCatalog(
     snapshot.revision = revision;
     delete snapshot.imageSearch;
     delete snapshot.descriptionSearch;
+    delete snapshot.visitSearch;
     await Version.create(
       [
         {
@@ -459,6 +473,7 @@ export function adminCatalog(
             'sourceCheckedAt',
             'imageSearch',
             'descriptionSearch',
+            'visitSearch',
             'destinationId',
             'destinationName',
             'deletedAt',
@@ -821,6 +836,9 @@ export function adminCatalog(
                   }
                 : {}),
               referencePrice: input.referencePrice,
+              ...(input.visitInfo !== undefined
+                ? { visitInfo: input.visitInfo }
+                : {}),
               publicationStatus: input.publicationStatus,
               fieldLocks: input.fieldLocks ?? editable?.fieldLocks ?? [],
               durationLabel: `${input.durationMinutes} phút`,

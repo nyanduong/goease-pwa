@@ -122,8 +122,8 @@ export function AdminPlaceImport({
       )}
       <p>
         Chọn địa điểm để lưu bản nháp, sau đó mở từng mục để biên tập và xuất
-        bản. Giá chưa rõ; ảnh là minh họa AI. Thời lượng mặc định 60 phút là ước
-        tính cần chỉnh.
+        bản. Hệ thống tìm ảnh thật, giờ mở cửa và giá có nguồn vào nháp để bạn
+        kiểm tra. Thời lượng mặc định 60 phút là ước tính cần chỉnh.
       </p>
       <SourceCredit expanded />
       <form

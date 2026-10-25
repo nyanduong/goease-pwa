@@ -1,3 +1,4 @@
+import type { VisitInfo } from './visit-info.js';
 import { z } from 'zod';
 import { destinationQuerySchema, travelRegionOf } from './geography.js';
 import type { ReferencePrice, catalogImageSchema } from './catalog.js';
@@ -22,6 +23,7 @@ export type PlaceDto = {
   revision?: number;
   venueType?: 'place' | 'restaurant' | 'food_idea';
   openingHoursNote?: string;
+  visitInfo?: VisitInfo | null | undefined;
   referencePrice?: ReferencePrice | null;
   mapLocation?: MapLocation;
   planning?: {

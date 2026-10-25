@@ -676,6 +676,18 @@
           "CAT-17: public fields remain stable on proposal save/restore. Arrays bounded by editable field set. Provenance origin/receivedAt/verifiedAt/validUntil/actorId/state, unknown remains unknown."
         ],
         [
+          "visitSearch",
+          "embedded object?",
+          "Imported drafts queued pending",
+          "IMPLEMENTED CAT-22: bounded observation providerVersion=3/state/result/context(name/source/destination/coordinates)/message/attempts/nextAttemptAt/leaseToken/leaseUntil/checkedAt; lease/revision fenced. See VISIT-INFORMATION.md."
+        ],
+        [
+          "visitInfo",
+          "embedded object|null",
+          "null",
+          "IMPLEMENTED CAT-22: hours(text,evidence,reviewed); price(amount VND,unit,conditions,evidence,reviewed). Evidence sourceUrl/observedAt. Editorial version/proposal, field lock/provenance visitInfo; unreviewed blocks publication; separate referencePrice budget."
+        ],
+        [
           "descriptionSearch",
           "embedded object?",
           "Imported drafts queued pending",

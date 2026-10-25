@@ -1,3 +1,4 @@
+import { visitPriceLabel } from '@goease/contracts';
 import { useEffect, useState } from 'react';
 import {
   catalogCost,
@@ -50,6 +51,22 @@ export function PlacePlanning({
       <p>{planning.costNote}</p>
       {place.openingHoursNote && (
         <p>Giờ mở cửa tham khảo: {place.openingHoursNote}</p>
+      )}
+      {place.visitInfo?.price?.reviewed && (
+        <section className="place-price-reference">
+          <strong>{visitPriceLabel(place.visitInfo.price)}</strong>
+          <p>{place.visitInfo.price.conditions}</p>
+          <small>
+            Giá tham khảo · kiểm tra lại với cơ sở trước khi đi.{' '}
+            <a
+              href={place.visitInfo.price.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Nguồn giá ↗
+            </a>
+          </small>
+        </section>
       )}
       {place.referencePrice && (
         <div className="place-reference-price">
@@ -116,9 +133,11 @@ export function PlacePlanning({
           )}
         </div>
       ))}
-      {!planning.priceOptions.length && !place.referencePrice && (
-        <small>Chi phí: Chưa rõ. Bạn có thể nhập dự kiến bên dưới.</small>
-      )}
+      {!planning.priceOptions.length &&
+        !place.referencePrice &&
+        !place.visitInfo?.price?.reviewed && (
+          <small>Chi phí: Chưa rõ. Bạn có thể nhập dự kiến bên dưới.</small>
+        )}
       {place.source && <SourceCredit />}
     </section>
   );

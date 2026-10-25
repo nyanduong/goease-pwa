@@ -736,6 +736,7 @@ export function adminV3Service(
                     ...version.snapshot,
                     imageSearch: place.toObject().imageSearch,
                     descriptionSearch: place.toObject().descriptionSearch,
+                    visitSearch: place.toObject().visitSearch,
                     fieldLocks: place.fieldLocks,
                     _id: place._id,
                     revision: place.revision,

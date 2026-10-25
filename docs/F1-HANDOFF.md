@@ -147,3 +147,15 @@ Hàng chờ #work đổi nhãn Cần kiểm tra, dùng hai cột và count theo 
 ## Catalog library refinement (2026-10-25)
 See [ADMIN-CATALOG-LIBRARY.md](ADMIN-CATALOG-LIBRARY.md) for the approved layout, derived readiness contract, real Cloudinary images and verification limits.
 Verified: typecheck, lint, 84 server unit tests, readonly local catalog service and fixture browser checks. Full MongoDB integration not rerun due low disk space.
+
+
+## CAT-22 — Giờ mở cửa / giá từ nguồn
+
+Đã nối import/backfill draft → worker → panel Giá & giờ mở cửa → admin review → publication gate/public label; giữ nguồn, không tự tính budget bằng giá từ. Chi tiết schema, nguồn thực và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md). Kiểm tra fixture ảnh cũ được sửa để ảnh “khác” thực sự có sourceUrl khác; cùng sourceUrl vẫn được nâng chất lượng theo CAT-20.
+
+CAT-22 verification: 89 unit tests pass; province-import + visit-info integration 14/14, catalog + visit-info integration 11/11, final visit-info integration 1/1 (overlapping runs, not additive). Fixture browser desktop/mobile pass. Typecheck/lint/build checked; Vite retains existing >500KB bundle warning. Live OSM read-only evidence in VISIT-INFORMATION.md; website extraction fixture-tested only.
+
+
+CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa độ), HTML giờ/giá có nhãn và liên kết cùng origin; visitSearch.providerVersion=3 xếp tìm lại observation cũ, context bổ sung tọa độ. Giữ nội dung đã duyệt/public, không thay giá ngân sách. Phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
+
+CAT-22 expanded-source verification: 93 unit tests pass; focused visit-info Mongo integration passes including provider-version requeue/idempotence and retained observations; typecheck/lint pass; fixture browser still passes. Live additional-source coverage increase not established; old drafts requeued for providerVersion=3.

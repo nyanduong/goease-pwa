@@ -31,3 +31,4 @@ export * from './admin-operations.js';
 export * from './geography.js';
 export * from './admin-v3.js';
 export * from './place-description.js';
+export * from './visit-info.js';

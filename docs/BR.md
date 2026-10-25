@@ -517,3 +517,11 @@ Phạm vi triển khai và hợp đồng: [WIKIPEDIA-DESCRIPTIONS](WIKIPEDIA-DES
 ### CAT-20 — Bổ sung chất lượng ảnh 25/10/2026
 
 Owner yêu cầu dùng ảnh chất lượng cao nhất từ nguồn: lấy raster gốc, giữ nguyên độ phân giải, lưu WebP lossless lên Cloudinary thay thumbnail nhỏ. Không upscale. Giới hạn tải/pixel/provider vẫn được kiểm tra và báo lỗi đúng; không cam kết mọi nguồn đều có ảnh nét. Nâng chất lượng đúng cùng ảnh qua sourceUrl, không tự đổi ảnh admin đã chọn hoặc sửa bản công khai. Chi tiết storageVersion=2 và kiểm chứng: [ADMIN-REVIEW-QUEUE](ADMIN-REVIEW-QUEUE.md).
+
+
+## CAT-22 — Tự lấy giờ mở cửa và giá tham khảo (25/10/2026)
+
+Owner chốt: lấy thông tin có nguồn vào draft để admin kiểm tra rồi xuất bản. Giá hiển thị “Từ …đ” với đơn vị và điều kiện; không tự lấy giá thấp nhất cho dự toán. Tự động đọc OSM theo ID, thiếu thì đọc dữ liệu có cấu trúc ở website được liên kết. Giờ/giá nhận từ nguồn chưa phải đã xác minh. Mục giữ lại chưa reviewed chặn publish đơn lẻ/theo lô; admin được bỏ gợi ý không phù hợp. Thiếu dữ liệu không suy miễn phí/mở cả ngày, giữ gate khám phá CAT-17. CAT-14 vẫn quyết định referencePrice cho ngân sách/Goe. Không tự xuất bản hoặc ghi đè nội dung admin/public. Đã triển khai phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).
+
+
+CAT-22 bổ sung nguồn: Wikidata P856 (entity liên kết hoặc tên+tọa độ), HTML giờ/giá có nhãn và liên kết cùng origin; visitSearch.providerVersion=3 xếp tìm lại observation cũ, context bổ sung tọa độ. Giữ nội dung đã duyệt/public, không thay giá ngân sách. Phạm vi và giới hạn tại [VISIT-INFORMATION](VISIT-INFORMATION.md).

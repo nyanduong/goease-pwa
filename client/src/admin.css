@@ -4865,3 +4865,59 @@
     padding: 10px 8px;
   }
 }
+
+.admin-visit-info .visit-fact {
+  padding: 18px;
+  margin: 14px 0;
+  border: 1px solid #dce7e3;
+  border-radius: 12px;
+  background: #f8fbfa;
+}
+.admin-visit-info .visit-fact h3 {
+  margin: 0 0 12px;
+}
+.admin-visit-info .visit-fact small {
+  display: block;
+  margin: 10px 0;
+}
+.admin-visit-info .visit-fact input[type='checkbox'] {
+  width: auto;
+  margin-right: 8px;
+}
+.admin-visit-info .visit-fact button {
+  margin-top: 10px;
+}
+
+.admin-catalog .admin-visit-info label.visit-review {
+  display: flex;
+  flex-direction: row;
+  text-align: left;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+}
+.admin-catalog .admin-visit-info label.visit-review input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin: 0;
+}
+.admin-visit-info .visit-price-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.admin-catalog .admin-visit-info > button {
+  display: inline-flex;
+  width: auto;
+  margin: 8px 10px 0 0;
+  padding: 10px 14px;
+  border: 1px solid #cfe0db;
+  border-radius: 8px;
+}
+@media (max-width: 600px) {
+  .admin-visit-info .visit-price-grid {
+    grid-template-columns: 1fr;
+  }
+}

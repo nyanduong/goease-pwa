@@ -17,6 +17,7 @@ async function main() {
         product.operations.start();
         product.imageSearch.start();
         product.descriptionSearch.start();
+        product.visitSearch.start();
       })
       .catch(() => logger.write('product.init_failed'));
   });
@@ -38,6 +39,7 @@ async function main() {
     await product.operations.stop();
     await product.imageSearch.stop();
     await product.descriptionSearch.stop();
+    await product.visitSearch.stop();
     await database.close();
     clearTimeout(deadline);
   }

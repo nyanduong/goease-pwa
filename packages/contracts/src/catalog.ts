@@ -1,3 +1,4 @@
+import { visitInfoSchema } from './visit-info.js';
 import { needsPlaceDescription } from './place-description.js';
 import { z } from 'zod';
 import type { ActivityInput } from './product.js';
@@ -109,6 +110,7 @@ export const catalogEditableFields = [
   'openingHoursNote',
   'sourceUrl',
   'referencePrice',
+  'visitInfo',
   'mapLocation',
   'images',
 ] as const;
@@ -140,6 +142,7 @@ export const adminPlaceInputSchema = z
     openingHoursNote: z.string().trim().max(400),
     sourceUrl: publicSourceSchema,
     referencePrice: referencePriceSchema.nullable(),
+    visitInfo: visitInfoSchema.nullable().optional(),
     publicationStatus: z.enum(['draft', 'published', 'archived']),
     mapLocation: mapLocationSchema.nullable().optional(),
     internalNote: z.string().trim().max(1000).optional(),
@@ -151,6 +154,17 @@ export const adminPlaceInputSchema = z
       .optional(),
   })
   .superRefine((v, ctx) => {
+    if (
+      v.publicationStatus === 'published' &&
+      (v.visitInfo?.hours?.reviewed === false ||
+        v.visitInfo?.price?.reviewed === false)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['visitInfo'],
+        message:
+          'Kiểm tra hoặc bỏ thông tin giờ/giá lấy từ nguồn trước khi xuất bản.',
+      });
     if (
       v.publicationStatus === 'published' &&
       needsPlaceDescription(v.description)

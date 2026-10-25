@@ -376,6 +376,7 @@ export function placeImportService(
                 description: '',
                 internalNote:
                   'Nhập từ Geoapify / OpenStreetMap; cần kiểm tra thông tin trước khi xuất bản.',
+                visitSearch: { state: 'pending', nextAttemptAt: new Date() },
                 descriptionSearch: {
                   state: 'pending',
                   nextAttemptAt: new Date(),

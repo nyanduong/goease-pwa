@@ -1,3 +1,4 @@
+import { AdminVisitInfo } from './admin-visit-info';
 import { AdminPlaceDescription } from './admin-place-description';
 import { AdminPageHeader } from './admin-visuals';
 import {
@@ -416,7 +417,7 @@ export function AdminCatalog({
     const tab: PlaceEditorTab =
       field === 'images'
         ? 'photos'
-        : ['referencePrice', 'openingHoursNote'].includes(field)
+        : ['referencePrice', 'openingHoursNote', 'visitInfo'].includes(field)
           ? 'practical'
           : field === 'sourceUrl'
             ? 'sources'
@@ -1297,6 +1298,13 @@ export function AdminCatalog({
                 aria-labelledby="place-tab-practical"
                 hidden={editorTab !== 'practical'}
               >
+                <AdminVisitInfo
+                  place={saved}
+                  form={form}
+                  update={update}
+                  disabled={busy}
+                />
+                {fieldError('visitInfo')}
                 <fieldset disabled={busy} className="admin-form-fields">
                   <legend>Giờ mở cửa</legend>{' '}
                   <label
@@ -1710,6 +1718,7 @@ export function AdminCatalog({
                               openingHoursNote: 'Giờ mở cửa',
                               sourceUrl: 'Nguồn thông tin',
                               referencePrice: 'Giá',
+                              visitInfo: 'Giờ & giá từ nguồn',
                               mapLocation: 'Tọa độ',
                               images: 'Ảnh',
                             }[field]
