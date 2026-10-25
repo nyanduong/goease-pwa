@@ -7,7 +7,7 @@ import mongoose, { Types, type ClientSession, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import {
   adminPlaceInputSchema,
-  approvedPhoto,
+  approvedCover,
   catalogToday,
   catalogHistoryActionGroups,
   catalogHistoryQuerySchema,
@@ -837,10 +837,10 @@ export function catalogOperations(
       )
         return blocked('Cần quyết định thông tin nguồn hoặc nghi trùng trước.');
       const form = catalog.input(await catalog.proposal(p, session));
-      if (!approvedPhoto(form.images?.[0]))
-        return blocked(
-          'Thiếu ảnh bìa thật đã được admin duyệt và đủ nguồn/quyền sử dụng.',
-        );
+      if (!approvedCover(form.images?.[0]))
+        return blocked('Thiếu ảnh bìa hợp lệ và đủ nguồn/quyền sử dụng.');
+      if (form.images?.[0]?.storage === 'source')
+        return blocked('Lưu ảnh bìa lên Cloudinary trước khi xuất bản.');
       if (
         !adminPlaceInputSchema.safeParse({ ...form, publicationStatus: status })
           .success

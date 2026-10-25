@@ -1142,7 +1142,11 @@ export function AdminCatalog({
                   disabled={busy}
                   hidden={editorTab !== 'photos'}
                 >
-                  <AdminImageGallery form={form} update={update} />
+                  <AdminImageGallery
+                    form={form}
+                    update={update}
+                    hasRealCandidates={photoCount > 0}
+                  />
                 </fieldset>
               </section>
               <div

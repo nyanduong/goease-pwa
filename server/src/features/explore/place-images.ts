@@ -96,7 +96,7 @@ export function placeImages(
       {
         $set: {
           'imageSearch.state': 'searching',
-          'imageSearch.storageVersion': 2,
+          'imageSearch.storageVersion': 3,
           'imageSearch.leaseToken': token,
           'imageSearch.leaseUntil': new Date(Date.now() + 120000),
         },
@@ -126,7 +126,7 @@ export function placeImages(
             : {}),
         })
       )
-        .slice(0, 6)
+        .slice(0, 5)
         .map((c) => imageCandidateSchema.parse(c));
       // Do not apply observations to a renamed/moved place while the network call was in flight.
       const saved = await Place.updateOne(
@@ -150,16 +150,18 @@ export function placeImages(
             ...(place.imageSearch?.defaultCover &&
             candidates.find(
               (c) =>
+                c.image.storage !== 'source' &&
                 c.image.sourceUrl ===
-                place.imageSearch!.defaultCover!.sourceUrl,
+                  place.imageSearch!.defaultCover!.sourceUrl,
             )
               ? {
                   'imageSearch.defaultCover': {
                     ...place.toObject().imageSearch!.defaultCover,
                     url: candidates.find(
                       (c) =>
+                        c.image.storage !== 'source' &&
                         c.image.sourceUrl ===
-                        place.imageSearch!.defaultCover!.sourceUrl,
+                          place.imageSearch!.defaultCover!.sourceUrl,
                     )!.image.url,
                   },
                 }
@@ -170,7 +172,7 @@ export function placeImages(
             'imageSearch.leaseToken': null,
             'imageSearch.leaseUntil': null,
             'imageSearch.message': candidates.length
-              ? `Có ${candidates.length}/6 ảnh đã sẵn sàng. Ảnh đầu tiên làm bìa mặc định; bạn có thể đổi ảnh khác.`
+              ? `Có ${candidates.length}/5 ảnh. Bìa đã lưu; các ảnh bổ sung dùng link nguồn. Đổi bìa sẽ lưu ảnh được chọn.`
               : 'Chưa tìm thấy ảnh phù hợp có giấy phép được hỗ trợ. Bổ sung ảnh thật hoặc thử lại.',
           },
         },
@@ -237,7 +239,7 @@ export function placeImages(
     await Place.updateMany(
       {
         deletedAt: null,
-        'imageSearch.storageVersion': { $in: [1, 2] },
+        'imageSearch.storageVersion': { $in: [1, 2, 3] },
         'imageSearch.defaultCover': null,
         'imageSearch.candidates.0': { $exists: true },
       },
@@ -260,7 +262,7 @@ export function placeImages(
       {
         deletedAt: null,
         publicationStatus: { $ne: 'archived' },
-        'imageSearch.storageVersion': { $ne: 2 },
+        'imageSearch.storageVersion': { $nin: [2, 3] },
         $or: [
           { 'imageSearch.leaseUntil': null },
           { 'imageSearch.leaseUntil': { $lt: new Date() } },
@@ -268,12 +270,12 @@ export function placeImages(
       },
       {
         $set: {
-          'imageSearch.storageVersion': 2,
+          'imageSearch.storageVersion': 3,
           'imageSearch.state': 'pending',
           'imageSearch.attempts': 0,
           'imageSearch.nextAttemptAt': new Date(),
           'imageSearch.message':
-            'Đang lấy ảnh gốc chất lượng cao và lưu trên Cloudinary.',
+            'Đang tìm ảnh và lưu một ảnh bìa gốc trên Cloudinary.',
         },
       },
       { timestamps: false },

@@ -23,9 +23,8 @@ import {
 import { HttpError } from '../../http-error.js';
 import {
   referencePriceSchema,
-  catalogImageSchema,
-  catalogPhotoCover,
-  approvedPhoto,
+  catalogImageCover,
+  catalogGallery,
 } from '@goease/contracts';
 import { referencePriceModelSchema } from './reference-price.js';
 import { mutableFields } from '../auth/auth.models.js';
@@ -293,7 +292,7 @@ export function exploreService(connection: Connection) {
         }
       : null,
     imageUrl:
-      catalogPhotoCover(
+      catalogImageCover(
         doc.images.map((i) =>
           i instanceof mongoose.Document ? i.toObject() : i,
         ),
@@ -308,18 +307,16 @@ export function exploreService(connection: Connection) {
     })),
     sourceUrl: doc.sourceUrl,
     imageCredit:
-      catalogPhotoCover(
+      catalogImageCover(
         doc.images.map((i) =>
           i instanceof mongoose.Document ? i.toObject() : i,
         ),
       )?.credit ?? 'Chưa có ảnh thật được duyệt',
-    images: doc.images
-      .map((i) =>
-        catalogImageSchema.parse(
-          i instanceof mongoose.Document ? i.toObject() : i,
-        ),
-      )
-      .filter(approvedPhoto),
+    images: catalogGallery(
+      doc.images.map((i) =>
+        i instanceof mongoose.Document ? i.toObject() : i,
+      ),
+    ),
     ...(parseMapLocation(doc.mapLocation).success
       ? { mapLocation: parseMapLocation(doc.mapLocation).data! }
       : {}),

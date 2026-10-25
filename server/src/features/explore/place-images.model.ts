@@ -13,13 +13,16 @@ export const photoSchema = new Schema(
     licenseUrl: { type: String, maxlength: 2048 },
     reviewed: { type: Boolean, default: false },
     selection: { type: String, enum: ['automatic', 'admin'] },
+    kind: { type: String, enum: ['photo', 'ai_illustration'] },
+    storage: { type: String, enum: ['cloudinary', 'source'] },
+    originalUrl: { type: String, maxlength: 2048 },
   },
   { _id: false, strict: 'throw', versionKey: false },
 );
 export const imageSearchSchema = new Schema(
   {
     defaultCover: { type: photoSchema, default: null },
-    storageVersion: { type: Number, default: 2 },
+    storageVersion: { type: Number, default: 3 },
     state: {
       type: String,
       enum: ['pending', 'searching', 'ready', 'empty', 'failed'],

@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import sharp from 'sharp';
-import { storedWikimediaImages } from '../src/features/explore/place-photo-storage.js';
+import {
+  catalogCoverStorage,
+  storedWikimediaImages,
+} from '../src/features/explore/place-photo-storage.js';
 import { fixtureCandidate } from './support/photo.js';
 
 const config = {
@@ -126,4 +129,107 @@ test('Cloudinary errors and forged response URLs fail closed after a valid downl
       { code: 'PLACE_PHOTO_STORAGE_FAILED' },
     );
   }
+});
+
+test('five-photo search backs up one lossless cover and leaves four source links with rights', async () => {
+  const bytes = await sharp({
+    create: { width: 40, height: 30, channels: 3, background: '#008080' },
+  })
+    .png()
+    .toBuffer();
+  let downloads = 0,
+    uploads = 0;
+  const candidates = Array.from({ length: 5 }, (_, i) => ({
+    ...fixtureCandidate,
+    id: String(i),
+    image: {
+      ...fixtureCandidate.image,
+      url: `https://upload.wikimedia.org/wikipedia/commons/a/ab/fixture-${i}.png`,
+      sourceUrl: `https://commons.wikimedia.org/wiki/File:fixture-${i}.png`,
+    },
+  }));
+  const request: typeof fetch = async (url, init) => {
+    if (new URL(String(url)).hostname === 'upload.wikimedia.org') {
+      downloads++;
+      return new Response(bytes);
+    }
+    uploads++;
+    const id = (init!.body as FormData).get('public_id');
+    return Response.json({
+      public_id: id,
+      format: 'webp',
+      secure_url: `https://res.cloudinary.com/fixture/image/upload/v1/${id}.webp`,
+    });
+  };
+  const found = await storedWikimediaImages(
+    config,
+    async () => candidates,
+    request,
+  )(query);
+  assert.equal(downloads, 1);
+  assert.equal(uploads, 1);
+  assert.equal(found.length, 5);
+  assert.equal(found[0]!.image.storage, 'cloudinary');
+  assert.equal(found[0]!.image.originalUrl, candidates[0]!.image.url);
+  for (let i = 1; i < 5; i++) {
+    assert.equal(found[i]!.image.url, candidates[i]!.image.url);
+    assert.equal(found[i]!.image.storage, 'source');
+    assert.equal(found[i]!.image.credit, fixtureCandidate.image.credit);
+    assert.equal(found[i]!.image.license, fixtureCandidate.image.license);
+  }
+  const promoted = await catalogCoverStorage(config, request).prepareCover({
+    ...found[1]!.image,
+    selection: 'admin',
+    reviewed: true,
+  });
+  assert.equal(promoted.storage, 'cloudinary');
+  assert.equal(promoted.selection, 'admin');
+  assert.equal(promoted.reviewed, true);
+  assert.equal(promoted.originalUrl, candidates[1]!.image.url);
+  await catalogCoverStorage(config, request).prepareCover(promoted);
+  assert.equal(uploads, 2, 'saving a cached cover does not upload again');
+});
+
+test('a failed first backup can use the next valid photo; all failed backups never report ready', async () => {
+  const bytes = await sharp({
+    create: { width: 4, height: 3, channels: 3, background: '#008080' },
+  })
+    .png()
+    .toBuffer();
+  const other = {
+    ...fixtureCandidate,
+    id: 'next',
+    image: {
+      ...fixtureCandidate.image,
+      url: 'https://upload.wikimedia.org/wikipedia/commons/b/bb/next.png',
+    },
+  };
+  let uploads = 0;
+  const found = await storedWikimediaImages(
+    config,
+    async () => [fixtureCandidate, other],
+    async (url, init) => {
+      if (String(url) === fixtureCandidate.image.url)
+        return new Response('not available', { status: 404 });
+      if (String(url) === other.image.url) return new Response(bytes);
+      uploads++;
+      const id = (init!.body as FormData).get('public_id');
+      return Response.json({
+        public_id: id,
+        format: 'webp',
+        secure_url: `https://res.cloudinary.com/fixture/image/upload/v1/${id}.webp`,
+      });
+    },
+  )(query);
+  assert.equal(uploads, 1);
+  assert.equal(found[0]!.id, 'next');
+  assert.equal(found[0]!.image.storage, 'cloudinary');
+  await assert.rejects(
+    catalogCoverStorage(config).prepareCover({
+      ...fixtureCandidate.image,
+      storage: 'source',
+      url: 'http://localhost/private',
+    }),
+    { code: 'PLACE_PHOTO_STORAGE_FAILED' },
+  );
 });

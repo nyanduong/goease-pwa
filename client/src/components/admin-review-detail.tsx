@@ -9,7 +9,7 @@ import {
   Expand,
 } from 'lucide-react';
 import {
-  catalogPhotoCover,
+  catalogImageCover,
   catalogCapabilities,
   needsPlaceDescription,
   type CatalogReviewDto,
@@ -36,7 +36,7 @@ export function ReviewDetail({
   onReload: () => Promise<void>;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const cover = catalogPhotoCover(r.place.images ?? []);
+  const cover = catalogImageCover(r.place.images ?? []);
   const capabilities = r.place.capabilities ?? catalogCapabilities(r.place);
   const checks = [
     { label: 'Đã có ảnh bìa', missing: 'Cần bổ sung ảnh bìa', ready: !!cover },

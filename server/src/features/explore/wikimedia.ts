@@ -116,7 +116,7 @@ export function parseCommons(
       image: image.data,
     });
   }
-  return result.slice(0, 6);
+  return result.slice(0, 5);
 }
 export function wikimediaImages(request: typeof fetch = fetch): FindImages {
   async function query(

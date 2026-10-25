@@ -21,7 +21,10 @@ import { registrationOtpSchema } from '@goease/contracts';
 import { adminCatalog } from './features/explore/admin-catalog.js';
 import { placeImportService } from './features/explore/place-import.js';
 import { placeImages } from './features/explore/place-images.js';
-import { storedWikimediaImages } from './features/explore/place-photo-storage.js';
+import {
+  catalogCoverStorage,
+  storedWikimediaImages,
+} from './features/explore/place-photo-storage.js';
 import {
   wikimediaImages,
   type FindImages,
@@ -121,6 +124,7 @@ export function createProduct(
     geoapify?: ReturnType<typeof geoapifyProvider>;
     resolveProvinceArea?: ResolveProvinceArea;
     findImages?: FindImages;
+    preparePlaceCover?: ReturnType<typeof catalogCoverStorage>['prepareCover'];
     findDescription?: FindDescription;
     findVisitInfo?: FindVisitInfo;
     generate?: Generate;
@@ -157,6 +161,7 @@ export function createProduct(
     trips,
     audit,
     auth.models.User,
+    dependencies.preparePlaceCover ?? catalogCoverStorage(config).prepareCover,
   );
   const planner = plannerService(
     connection,

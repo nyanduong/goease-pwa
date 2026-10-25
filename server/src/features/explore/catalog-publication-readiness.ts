@@ -28,6 +28,8 @@ export function publicationReadiness(
         : 'Cần đối chiếu nguồn',
     );
   if (context.closedUnconfirmed) return blocked('Cần xác minh đóng cửa');
+  if (input.images?.[0]?.storage === 'source')
+    return blocked('Cần lưu ảnh bìa lên Cloudinary');
   const checked = adminPlaceInputSchema.safeParse({
     ...input,
     publicationStatus: 'published',

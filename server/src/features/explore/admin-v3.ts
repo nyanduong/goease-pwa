@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { Types, type Connection, type ClientSession } from 'mongoose';
 import {
   adminPlaceInputSchema,
-  approvedPhoto,
+  approvedCover,
   adminPlaceQuerySchema,
   sourceSnapshotSchema,
   type CampaignInput,
@@ -776,9 +776,12 @@ export function adminV3Service(
               place.proposalRevision == null
             )
               reason = 'Đã đăng địa điểm này.';
-            else if (!approvedPhoto(catalog.input(effective).images?.[0]))
+            else if (!approvedCover(catalog.input(effective).images?.[0]))
               reason =
                 'Chưa có ảnh bìa. Chờ hệ thống lấy ảnh hoặc bổ sung ảnh.';
+            else if (catalog.input(effective).images?.[0]?.storage === 'source')
+              reason =
+                'Mở địa điểm và lưu ảnh bìa lên Cloudinary trước khi xuất bản theo lô.';
             else if (
               !adminPlaceInputSchema.safeParse({
                 ...catalog.input(effective),

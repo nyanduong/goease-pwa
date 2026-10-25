@@ -540,7 +540,7 @@ test(
           const requeued = (await product.explore.models.Place.findById(
             place._id,
           ))!;
-          assert.equal(requeued.imageSearch?.storageVersion, 2);
+          assert.equal(requeued.imageSearch?.storageVersion, 3);
           assert.equal(requeued.imageSearch?.state, 'pending');
           assert.equal(requeued.revision, current.revision);
           assert.equal(requeued.images[0]?.url, current.images[0]?.url);

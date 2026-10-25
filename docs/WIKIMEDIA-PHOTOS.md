@@ -1,3 +1,5 @@
+> Cập nhật owner 25/10/2026: tối đa 5 ảnh thật; giữ 1 bìa lossless Cloudinary, tối đa 4 ảnh khác dùng link nguồn. Khi chưa có ảnh thật dùng đúng 1 ảnh minh họa AI đã lưu, có metadata/quyền riêng và nhãn customer. Xem [ONE-COVER-MEDIA](ONE-COVER-MEDIA.md). Các mốc <=6, lưu mọi ứng viên lên Cloudinary và cấm AI bên dưới là lịch sử, được thay bằng CAT-20 hiện hành trong BR.md. Chưa có job gen ảnh AI hàng loạt; admin có thể thêm URL ảnh đã chuẩn bị. Không tự xuất bản hoặc bỏ gate giờ/giá.
+
 # CAT-20 — Ảnh thật cho địa điểm
 
 ## Demo admin

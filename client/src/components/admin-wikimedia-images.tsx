@@ -6,7 +6,12 @@ import type {
 } from '@goease/contracts';
 import { api } from '../api';
 import { Image as ImageIcon, X, Check, RefreshCw } from 'lucide-react';
-import { approvedPhoto } from '@goease/contracts';
+import {
+  approvedCover,
+  approvedPhoto,
+  approvedIllustration,
+  catalogGallery,
+} from '@goease/contracts';
 
 export function AdminWikimediaImages({
   id,
@@ -75,10 +80,25 @@ export function AdminWikimediaImages({
     if (
       data?.defaultCover &&
       form.publicationStatus === 'draft' &&
-      !form.images?.length &&
+      (!form.images?.length ||
+        (form.images.length === 1 && approvedIllustration(form.images[0]))) &&
       !form.fieldLocks?.includes('images')
     ) {
-      update({ images: [data.defaultCover] });
+      update({
+        images: catalogGallery([
+          data.defaultCover,
+          ...data.candidates.map((c) => ({
+            ...c.image,
+            selection: 'automatic' as const,
+          })),
+        ])
+          .filter(approvedPhoto)
+          .filter(
+            (image, index, all) =>
+              all.findIndex((i) => i.url === image.url) === index,
+          )
+          .slice(0, 5),
+      });
     }
   }, [
     data?.defaultCover,
@@ -105,7 +125,7 @@ export function AdminWikimediaImages({
       setBusy(false);
     }
   }
-  const cover = approvedPhoto(form.images?.[0]) ? form.images?.[0] : undefined;
+  const cover = approvedCover(form.images?.[0]) ? form.images?.[0] : undefined;
   const waiting = !data || ['pending', 'searching'].includes(data.state);
   return (
     <section
@@ -198,7 +218,8 @@ export function AdminWikimediaImages({
                     disabled={
                       disabled ||
                       previews[candidate.image.url] !== 'loaded' ||
-                      ((form.images?.length ?? 0) >= 8 &&
+                      ((form.images?.filter((i) => i.kind !== 'ai_illustration')
+                        .length ?? 0) >= 5 &&
                         !form.images?.some(
                           (i) => i.url === candidate.image.url,
                         ))
@@ -212,7 +233,9 @@ export function AdminWikimediaImages({
                             reviewed: false,
                           },
                           ...(form.images ?? []).filter(
-                            (i) => i.url !== candidate.image.url,
+                            (i) =>
+                              i.url !== candidate.image.url &&
+                              i.kind !== 'ai_illustration',
                           ),
                         ],
                       })
@@ -235,7 +258,8 @@ export function AdminWikimediaImages({
             )}
           <footer className="place-photo-help">
             <span>
-              Ảnh đầu tiên được chọn làm bìa. Bạn có thể đổi ảnh khác.
+              Giữ 1 ảnh bìa trên Cloudinary, tối đa 4 ảnh khác dùng link nguồn.
+              Đổi bìa sẽ lưu ảnh được chọn khi lưu địa điểm.
             </span>
             {(!compact || !data?.candidates.length) && (
               <button

@@ -14,6 +14,7 @@ export default defineConfig({
     'admin-topbar.spec.ts',
     'admin-schedules.spec.ts',
     'confirmation.spec.ts',
+    'media-policy.spec.ts',
   ],
   workers: 1,
   outputDir: '../test-results/catalog-browser',

@@ -708,8 +708,8 @@
         [
           "imageSearch.storageVersion",
           "number",
-          "2 for current pipeline",
-          "IMPLEMENTED original raster dimensions + lossless WebP Cloudinary. Legacy observations requeued, matching defaultCover sourceUrl upgraded. Draft unlocked selected photos may project same-source high-resolution URL; public snapshot unchanged. See ADMIN-REVIEW-QUEUE.md."
+          "3 for new one-cover pipeline; legacy 2 retained",
+          "IMPLEMENTED one original-dimension lossless Cloudinary cover plus up to4 source-linked supplemental images. New photo metadata storage? cloudinary|source and originalUrl? HTTPS<=2048. Legacy v2 not bulk-requeued or purged; public snapshots unchanged. See ONE-COVER-MEDIA.md."
         ]
       ],
       "indexes": "Unique partial {source.provider,source.externalId} khi có externalId; {destinationId,publicationStatus,deletedAt}; 2dsphere location nếu dùng near.",
@@ -790,13 +790,13 @@
           "images",
           "object[]",
           "[]",
-          "CAT-20: max8 HTTPS url/sourceUrl<=2048,credit1..1000,license owned/permission/CC0/Public-domain/CC-BY[-SA]-2.0|2.5|3.0|4.0,licenseUrl? HTTPS,reviewed defaultfalse; selection? enum automatic/admin. First selected photo projects hero; publication accepts selection automatic/admin or reviewed=true. No AI fallback/upload/server rights verification."
+          "CAT-20: max8 HTTPS url/sourceUrl<=2048,credit1..1000,license owned/permission/CC0/Public-domain/CC-BY[-SA]-2.0|2.5|3.0|4.0,licenseUrl? HTTPS,reviewed defaultfalse; selection? enum automatic/admin. kind? photo|ai_illustration; storage? cloudinary|source; originalUrl? HTTPS<=2048. New writes: <=5 real photos OR exactly1 AI, no mixed gallery. One cached cover, up to4 source links. New source covers must cache before publication; legacy untagged images retain previous behavior. AI requires owned/permission and explicit kind plus selection/review, never fake Wikimedia. Public gallery prioritizes real photos and labels AI. Legacy <=8 arrays retained; no AI generation job or server ownership verification."
         ],
         [
           "imageSearch",
           "bounded embedded object",
-          "defaultCover=null; storageVersion=1; state=pending; candidates=[]; attempts=0; nextAttemptAt=now; leaseToken/leaseUntil/checkedAt=null; message=empty",
-          "CAT-20 implemented: defaultCover photo|null is the stable automatic first candidate, applied only to empty unlocked draft images; selection automatic/admin does not imply human review. state pending/searching/ready/empty/failed; <=6 candidates(id<=40,title<=300,match name|nearby,image same photo schema); message<=300. Index state+nextAttemptAt+leaseUntil. Independent source observation; no editorial revision/updatedAt change, publish/restore preserve current state."
+          "defaultCover=null; storageVersion=3; state=pending; candidates=[]; attempts=0; nextAttemptAt=now; leaseToken/leaseUntil/checkedAt=null; message=empty",
+          "CAT-20 implemented: defaultCover photo|null is stable automatic cached cover, applied to empty unlocked drafts or unlocked AI-only drafts when real candidates exist; selection automatic/admin does not imply human review. state pending/searching/ready/empty/failed; new workers <=5 candidates(id<=40,title<=300,match name|nearby,image same photo schema with optional kind/storage/originalUrl), upload only first successful cover; legacy <=6 observations retained; message<=300. Legacy v2 observations not requeued solely for v3. Index state+nextAttemptAt+leaseUntil. Independent source observation; no editorial revision/updatedAt change, publish/restore preserve current state."
         ]
       ]
     },

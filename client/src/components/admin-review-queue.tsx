@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import {
   needsPlaceDescription,
-  catalogPhotoCover,
+  catalogImageCover,
   type CatalogReviewDto,
   type CatalogReviewListDto,
   type CatalogRunDto,
@@ -174,7 +174,7 @@ export function AdminReviewQueue({
             {items.map((item) => {
               const warning = needsPlaceDescription(item.place.description)
                 ? 'Thiếu giới thiệu'
-                : !catalogPhotoCover(item.place.images ?? [])
+                : !catalogImageCover(item.place.images ?? [])
                   ? 'Thiếu ảnh bìa'
                   : item.kind === 'draft'
                     ? 'Chờ kiểm tra'
