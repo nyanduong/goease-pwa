@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "GoEase · Chuyến đi theo cách của bạn",
+  "short_name": "GoEase",
+  "description": "Khám phá điểm đến và lên lịch chuyến đi tại Việt Nam.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#184C43",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/dqc4hufot/image/upload/c_pad,w_192,h_192,b_white,f_png/v1792838072/goease/app/goe-original-png.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://res.cloudinary.com/dqc4hufot/image/upload/c_pad,w_512,h_512,b_white,f_png/v1792838072/goease/app/goe-original-png.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

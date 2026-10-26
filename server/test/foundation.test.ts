@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { AddressInfo } from 'node:net';
+import { Router } from 'express';
 import { createApp } from '../src/app.js';
+import { authLimiter } from '../src/features/auth/security.js';
 import { parseConfig } from '../src/config.js';
 import { validateTestUri } from '../scripts/test-database.js';
 import {
@@ -87,6 +89,94 @@ test('environment validation fails without leaking values', () => {
         /Invalid environment/.test(error.message) &&
         !error.message.includes('secret-value'),
     );
+  }
+});
+
+test('Atlas SRV config is accepted without weakening HTTPS or test-database guards', () => {
+  const env = {
+    NODE_ENV: 'production',
+    CLIENT_ORIGIN: 'https://test.example.com',
+    MONGODB_URI:
+      'mongodb+srv://test-user:test-password@cluster.example.com/goease_test?retryWrites=true&w=majority',
+  };
+  assert.equal(parseConfig(env).MONGODB_URI, env.MONGODB_URI);
+  assert.equal(parseConfig(env).TRUST_PROXY_LOOPBACK, false);
+  assert.equal(parseConfig(env).BACKGROUND_WORKERS_ENABLED, true);
+  assert.equal(
+    parseConfig({ ...env, BACKGROUND_WORKERS_ENABLED: 'false' })
+      .BACKGROUND_WORKERS_ENABLED,
+    false,
+  );
+  assert.throws(() =>
+    parseConfig({ ...env, BACKGROUND_WORKERS_ENABLED: 'disabled' }),
+  );
+  assert.equal(
+    parseConfig({ ...env, TRUST_PROXY_LOOPBACK: 'true' }).TRUST_PROXY_LOOPBACK,
+    true,
+  );
+  assert.throws(() => parseConfig({ ...env, TRUST_PROXY_LOOPBACK: 'yes' }));
+  assert.throws(() =>
+    parseConfig({ ...env, CLIENT_ORIGIN: 'http://test.example.com' }),
+  );
+  assert.throws(() => validateTestUri(env.MONGODB_URI, 'development'));
+  assert.throws(
+    () =>
+      parseConfig({
+        ...env,
+        MONGODB_URI: 'https://test-user:test-password@cluster.example.com',
+      }),
+    (error: unknown) =>
+      error instanceof Error &&
+      error.message === 'Invalid environment: MONGODB_URI',
+  );
+});
+
+test('proxy client IPs remain isolated and untrusted forwarded headers cannot bypass auth limits', async () => {
+  for (const trusted of [false, true]) {
+    const router = Router();
+    const limit = authLimiter(1, 60);
+    let account = 0;
+    router.get('/probe', (req, res) => {
+      limit(req, `fixture-${account++}@example.com`);
+      res.json({ ip: req.ip });
+    });
+    const app = createApp(
+      {
+        CLIENT_ORIGIN: 'https://test.example.com',
+        TRUST_PROXY_LOOPBACK: trusted,
+      },
+      async () => {},
+      undefined,
+      router,
+    );
+    const server = app.listen(0, '127.0.0.1');
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1/probe`;
+    try {
+      assert.equal(
+        (await fetch(url, { headers: { 'X-Forwarded-For': '198.51.100.1' } }))
+          .status,
+        200,
+      );
+      const second = await fetch(url, {
+        headers: { 'X-Forwarded-For': '198.51.100.2' },
+      });
+      assert.equal(second.status, trusted ? 200 : 429);
+      if (trusted) {
+        assert.deepEqual(await second.json(), { ip: '198.51.100.2' });
+        // Express stops at the first untrusted hop; a prepended fake IP cannot reset the bucket.
+        assert.equal(
+          (
+            await fetch(url, {
+              headers: { 'X-Forwarded-For': '203.0.113.99, 198.51.100.2' },
+            })
+          ).status,
+          429,
+        );
+      }
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   }
 });
 

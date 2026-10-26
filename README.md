@@ -83,6 +83,8 @@ Sau khi cập nhật source có thay đổi dependency, dừng `npm run dev` b�
 
 ## MongoDB và phục hồi kết nối
 
+Bản test VPS + Atlas đã chạy tại [app.goease.com.vn](https://app.goease.com.vn/): 13 tỉnh/thành và 43 địa điểm published; API và frontend cùng origin qua Nginx. Đã có manifest/icon và service worker để cài PWA; offline vẫn giới hạn các chuyến đã tải xuống. Worker nền đang tắt trên bản host, mặc định vẫn bật ở local. Cấu hình AI/SMTP/Cloudinary được dùng lại theo yêu cầu owner; chưa kiểm thử provider live trên VPS. Hai tài khoản local được chuyển riêng theo chỉ định owner; chuyến đi và phiên đăng nhập local không được chép sang. Xem [cấu hình, bằng chứng và giới hạn đo tải](docs/VPS-ATLAS-TEST.md).
+
 `server/.env.example` có:
 
 ```dotenv

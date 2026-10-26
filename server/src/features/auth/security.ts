@@ -21,7 +21,7 @@ export function authLimiter(limit: number, windowSeconds: number) {
       if (value.until <= now) buckets.delete(key);
     // Ephemeral keyed identifiers are used only for bounded security rate limiting, never analytics/logs.
     for (const raw of [
-      `network:${req.socket.remoteAddress ?? 'unknown'}`,
+      `network:${req.ip ?? req.socket.remoteAddress ?? 'unknown'}`,
       `account:${email}`,
     ]) {
       const key = createHmac('sha256', secret).update(raw).digest('hex');

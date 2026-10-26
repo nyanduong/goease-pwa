@@ -14,6 +14,7 @@ async function main() {
     void product
       .initialize(true)
       .then(() => {
+        if (!config.BACKGROUND_WORKERS_ENABLED) return;
         product.operations.start();
         product.imageSearch.start();
         product.descriptionSearch.start();

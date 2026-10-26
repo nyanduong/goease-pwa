@@ -6,6 +6,14 @@ const schema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
   HOST: z.string().min(1).default('localhost'),
+  TRUST_PROXY_LOOPBACK: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  BACKGROUND_WORKERS_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   CLIENT_ORIGIN: z.url().refine((value) => {
     const url = new URL(value);
@@ -13,7 +21,7 @@ const schema = z.object({
   }, 'Expected an HTTP origin without a path'),
   MONGODB_URI: z
     .string()
-    .regex(/^mongodb:\/\//, 'Expected a local MongoDB URI'),
+    .regex(/^mongodb(?:\+srv)?:\/\//, 'Expected a MongoDB URI'),
   SESSION_TTL_SECONDS: z.coerce
     .number()
     .int()

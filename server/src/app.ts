@@ -12,12 +12,14 @@ import {
 } from './observability/logger.js';
 
 export function createApp(
-  config: Pick<Config, 'CLIENT_ORIGIN'> & Partial<Pick<Config, 'NODE_ENV'>>,
+  config: Pick<Config, 'CLIENT_ORIGIN'> &
+    Partial<Pick<Config, 'NODE_ENV' | 'TRUST_PROXY_LOOPBACK'>>,
   ping: () => Promise<void>,
   logger: Logger = createLogger(config.NODE_ENV),
   productRouter?: Router,
 ) {
   const app = express();
+  if (config.TRUST_PROXY_LOOPBACK) app.set('trust proxy', 'loopback');
   app.disable('x-powered-by');
   app.use(requestContext);
   app.use((req, res, next) => {

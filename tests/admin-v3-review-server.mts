@@ -33,6 +33,8 @@ const config: Config = {
   REGISTRATION_OTP_REQUIRED: false,
   NODE_ENV: 'test',
   HOST: 'localhost',
+  TRUST_PROXY_LOOPBACK: false,
+  BACKGROUND_WORKERS_ENABLED: true,
   PORT: apiPort,
   CLIENT_ORIGIN: webOrigin,
   MONGODB_URI: uri,

@@ -1,0 +1,25 @@
+[Unit]
+Description=GoEase test API
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=goease
+Group=goease
+WorkingDirectory=/opt/goease/current/server
+EnvironmentFile=/etc/goease/server.env
+ExecStart=/opt/goease/runtime/node/bin/node --max-old-space-size=256 dist/index.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
