@@ -1,6 +1,6 @@
 import { confirmAction } from '../confirmation';
 import { PlacePhoto } from './place-photo';
-import { images } from '@goease/media';
+import { images, destinationCovers } from '@goease/media';
 import { TripManagement } from './trip-management';
 import { TripOffline } from './trip-offline';
 import { Sheet } from './journey-sheet';
@@ -16,6 +16,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type SyntheticEvent,
 } from 'react';
 import {
   ArrowLeft,
@@ -63,12 +64,27 @@ const TripMap = lazy(() =>
 
 const shortDate = (date: string) =>
   date.slice(5).split('-').reverse().join('/');
-const travelImage = (name: string) =>
-  /hội an/i.test(name)
-    ? images.exploreHoian
-    : /sa pa/i.test(name)
-      ? images.destinationSapa
-      : images.welcomeHalongBay;
+const travelImage = (name: string, slug?: string) => {
+  const nameSlug = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-');
+  return (
+    destinationCovers[slug ?? nameSlug] ??
+    (/hội an/i.test(name)
+      ? images.exploreHoian
+      : /sa pa/i.test(name)
+        ? images.destinationSapa
+        : images.goeMascot)
+  );
+};
+const onCoverError = (event: SyntheticEvent<HTMLImageElement>) => {
+  if (event.currentTarget.src !== images.goeMascot)
+    event.currentTarget.src = images.goeMascot;
+};
 const tastes = [
   { code: 'food', label: 'Ẩm thực', Icon: Utensils },
   { code: 'culture', label: 'Văn hóa', Icon: Landmark },
@@ -93,6 +109,7 @@ function Companion({ children }: { children: ReactNode }) {
 
 export function JourneyList({
   trips,
+  destinations,
   loading,
   error,
   signedIn,
@@ -107,6 +124,7 @@ export function JourneyList({
   onNavigate,
 }: {
   trips: TripDto[];
+  destinations: DestinationDto[];
   loading: boolean;
   error: string;
   signedIn: boolean;
@@ -226,8 +244,14 @@ export function JourneyList({
             >
               <div className="journey-saved-cover">
                 <img
-                  src={travelImage(trip.destinationName)}
-                  alt="Ảnh minh họa hành trình"
+                  src={travelImage(
+                    trip.destinationName,
+                    destinations.find(
+                      (d) => d.id === trip.destinations[0]?.destinationId,
+                    )?.slug,
+                  )}
+                  alt={trip.destinationName}
+                  onError={onCoverError}
                 />
                 <span>
                   <MapPin size={12} />
@@ -965,8 +989,9 @@ export function TripWorkspace({
                 {loaded && (
                   <div className="journey-cover">
                     <img
-                      src={travelImage(destinationName)}
-                      alt="Ảnh minh họa hành trình"
+                      src={travelImage(destinationName, destination?.slug)}
+                      alt={destinationName}
+                      onError={onCoverError}
                     />
                   </div>
                 )}

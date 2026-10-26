@@ -1022,6 +1022,7 @@ export function App() {
           )
         ) : path === '/trips' ? (
           <JourneyList
+            destinations={destinations}
             offset={tripOffset}
             onPrevious={() => setTripOffset((v) => Math.max(0, v - 50))}
             phase={tripPhase}
