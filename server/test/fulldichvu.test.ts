@@ -26,6 +26,90 @@ const completion = (content: string, finish_reason = 'stop') => ({
   choices: [{ finish_reason, message: { content } }],
 });
 
+test('ranking deduplicates repeated venues in preference order before schedule validation', async () => {
+  const ids = [1, 2, 3, 4, 5].map((n) => `10000000000000000000000${n}`);
+  const stub = mock.method(globalThis, 'fetch', async () =>
+    Response.json(
+      completion(JSON.stringify({ placeIds: [...ids, ids[1], ids[2]] })),
+    ),
+  );
+  try {
+    assert.deepEqual(await plannerProvider(config)({ selectionOnly: true }), {
+      placeIds: ids,
+    });
+    assert.equal(stub.mock.callCount(), 1);
+  } finally {
+    stub.mock.restore();
+  }
+});
+
+test('ranking uses request-local short references and rejects invented references without guessing', async () => {
+  const ids = [1, 2, 3, 4].map((n) => `10000000000000000000000${n}`);
+  for (const unknown of [false, true]) {
+    const stub = mock.method(
+      globalThis,
+      'fetch',
+      async (_url: unknown, init?: RequestInit) => {
+        const payload = JSON.parse(
+          JSON.parse(String(init?.body)).messages[1].content,
+        );
+        assert.deepEqual(
+          payload.catalog.map((p: { id: string }) => p.id),
+          ['P01', 'P02', 'P03', 'P04'],
+        );
+        assert.ok(ids.every((id) => !String(init?.body).includes(id)));
+        return Response.json(
+          completion(
+            JSON.stringify({
+              placeIds: ['P03', 'P01', 'P04', unknown ? 'P99' : 'P02', 'P03'],
+            }),
+          ),
+        );
+      },
+    );
+    try {
+      const result = plannerProvider(config)({
+        selectionOnly: true,
+        catalog: ids.map((id) => ({ id, name: 'Public venue' })),
+      });
+      if (unknown)
+        await assert.rejects(
+          result,
+          (e) => e instanceof HttpError && e.code === 'AI_UNKNOWN_SELECTION',
+        );
+      else
+        assert.deepEqual(await result, {
+          placeIds: [ids[2], ids[0], ids[3], ids[1]],
+        });
+      assert.equal(stub.mock.callCount(), 1);
+    } finally {
+      stub.mock.restore();
+    }
+  }
+});
+
+test('ranking normalization still rejects malformed IDs, too few unique venues and oversized output', async () => {
+  const ids = [1, 2, 3, 4].map((n) => `10000000000000000000000${n}`);
+  for (const placeIds of [
+    [ids[0], ids[1], ids[2], ids[0]],
+    [...ids, 'invalid-id'],
+    Array.from({ length: 31 }, (_, i) => ids[i % 4]),
+  ]) {
+    const stub = mock.method(globalThis, 'fetch', async () =>
+      Response.json(completion(JSON.stringify({ placeIds }))),
+    );
+    try {
+      await assert.rejects(
+        plannerProvider(config)({ selectionOnly: true }),
+        (e) => e instanceof HttpError && e.code === 'AI_INVALID_OUTPUT',
+      );
+      assert.equal(stub.mock.callCount(), 1);
+    } finally {
+      stub.mock.restore();
+    }
+  }
+});
+
 test('ranking mode requests IDs only and rejects invented output fields or duplicate IDs', async () => {
   const placeIds = [1, 2, 3, 4].map((n) => `10000000000000000000000${n}`);
   for (const output of [

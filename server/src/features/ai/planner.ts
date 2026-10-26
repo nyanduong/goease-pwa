@@ -606,7 +606,7 @@ export function plannerService(
             promptVersion: input.adjustment
               ? 'goe-v5'
               : config.AI_PROVIDER === 'fulldichvu'
-                ? 'vietnam-rank-v2'
+                ? 'vietnam-rank-v3'
                 : 'vietnam-v2',
             plannerVersion: '5',
             status: 'pending',

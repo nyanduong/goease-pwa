@@ -1,5 +1,15 @@
 # Gemini planner — local customer MVP (2026-10-23)
 
+## Sửa lỗi tạo lịch Cần Thơ — 26/10/2026
+
+Hai lượt thất bại lúc 10:47 và 10:48 (giờ Việt Nam) lưu AI_INVALID_OUTPUT, provider Fulldichvu/Haiku, prompt vietnam-rank-v2. Không lưu phản hồi gốc nên không thể chứng minh nội dung chính xác của hai lượt cũ. Tái hiện trực tiếp phát hiện danh sách có mã quán lặp; lượt tiếp theo phát hiện model chép sai ObjectId. Không đổi thông báo để che lỗi.
+
+Adapter tạo chuyến mới gửi mã tạm P01…P30 thay ObjectId, ánh xạ chính xác theo từng request rồi loại mã lặp, giữ lần xuất hiện đầu. Vẫn chặn mã không được gửi, field thừa, quá 30 phần tử, dưới 4 mã duy nhất, phản hồi bị cắt và lỗi provider. Kết quả chuẩn hóa vẫn qua arranger và validator catalog/ngày/giờ/giá/bữa ăn. Không đoán hoặc sửa gần đúng mã sai; không fallback/retry tự động. Prompt mới vietnam-rank-v3; plannerVersion vẫn 5. Gemini và Goe chỉnh ngày giữ payload hiện hành.
+
+Không thêm field/index/collection hoặc thay REST DTO, quota và schema lưu trữ; ai_runs.sources/proposal tiếp tục dùng ID thật, không lưu alias. Kiểm tra bằng phản hồi lặp đã thu được xếp đủ 2 ngày; receipt replay tạm được gỡ cùng reservation do chính kiểm tra đó tạo, không giữ như lượt AI live. Ba provider calls chẩn đoán thực: một phản hồi lặp, một có ID sai, một thành công sau bản sửa. Lượt thành công tạo đề xuất Cần Thơ 31/10–01/11 cho 2 người, mỗi ngày 2 tham quan + trưa/tối; hai quán ăn lặp giữa ngày vì catalog hiện có. Không tự lưu hoặc sửa chuyến của người dùng. Bằng chứng ignored: .local/current-ai-diagnostic.json và .local/current-ai-response.json (lượt cuối); không cam kết mọi lượt model đều thành công.
+
+Kiểm chứng: 26 adapter/planner tests, toàn bộ 121 unit/HTTP tests, 8 checks trong nationwide integration trên replica set riêng đạt. Bản cuối typecheck/lint/build đạt; build còn cảnh báo bundle >500KB hiện hữu. API local health trả up sau khi watcher nạp sửa đổi. Browser customer chưa chạy lại trong sửa lỗi này.
+
 26/10/2026: arranger thêm chọn cụm tọa độ bán kính12km quanh từng ứng viên, ưu tiên cụm nhiều ứng viên nhất khi vẫn đủ2tham quan/ngày và2quán ăn. Validate ID theo catalog gốc trước; thiếu tọa độ hoặc không có cụm đủ coverage giữ luồng cũ. Không dùng khoảng cách thẳng làm kết quả chỉ đường. Bản live đầu có1điểm Hội An chen vào; sửa được kiểm lại bằng phản hồi model đã lưu, không gọi model lần hai. Trip giữ9activityId nguồn AI gốc và1điểm thay source=manual đúng provenance.
 
 **Runtime26/10/2026 — AI-02/TRIP-08:** plannerVersion5, prompt vietnam-v2/vietnam-rank-v2/goe-v5; apply tiếp tục nhận goe-v1..v4. Date reschedule dùng date-reschedule-v2/plannerVersion5. Candidate tối đa30, dành chỗ cho tối đa20tham quan+8bữa ăn+2café khi có2café; không có café giữ20+10. Projection thêm boolean cafeSuitable, không gửi thêm mô tả/private notes. Balanced/active có thể dùng1café được model chọn trước17:30, không thay bữa ăn; relaxed giữ4điểm. Ưu tiên đa dạng quán giữa ngày khi đủ lựa chọn. Cafe kind=free_time và reschedule giữ/thay đúng café. Không thêm Mongo/REST schema hoặc nới quota/provider failure guards.
