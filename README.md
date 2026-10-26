@@ -79,6 +79,8 @@ Mở [web local](http://localhost:5180). API ở [health](http://localhost:3000/
 
 `npm run dev` build media và contracts trước rồi chạy web/API song song. Nếu sửa package dùng chung, build lại package và khởi động lại dev. Vite proxy `/api` tới API trên `localhost:3000`. Web, API và MongoDB chỉ dùng localhost/loopback, không mở ra IP LAN. Khi đổi `server/.env`, khởi động lại dev để API đọc URI mới. Khi triển khai web/API khác origin, cấu hình `VITE_API_BASE_URL` là origin API và `CLIENT_ORIGIN` là origin web; đổi proxy nếu đổi cổng API local. Không dùng Vite dev server làm production server.
 
+Sau khi cập nhật source có thay đổi dependency, dừng `npm run dev` bằng `Ctrl+C`, chạy `npm ci` rồi chạy lại `npm run dev`. Nếu Vite báo không tìm thấy `@phosphor-icons/react/dist/csr/...`, kiểm tra bằng `npm ls @phosphor-icons/react`; package có thể đã nằm trong lockfile nhưng chưa được cài trên máy. Dừng dev trước khi chạy `npm ci` để tránh lỗi Windows `EPERM` do tiến trình đang giữ file native; khởi động lại dev sau khi cài để Vite xóa kết quả resolve lỗi đã cache.
+
 ## MongoDB và phục hồi kết nối
 
 `server/.env.example` có:
