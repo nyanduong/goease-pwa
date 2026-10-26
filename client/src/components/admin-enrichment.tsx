@@ -151,7 +151,11 @@ export function AdminEnrichment() {
             max={Math.max(1, job.total)}
             aria-label="Tiến độ xử lý địa điểm"
           />
-          <div className="admin-enrichment-counts">
+          <div
+            className="admin-enrichment-counts"
+            role="group"
+            aria-label="Lọc kết quả bổ sung dữ liệu"
+          >
             {Object.entries(labels).map(([state, label]) => (
               <button
                 key={state}

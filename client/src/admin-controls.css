@@ -1,0 +1,337 @@
+/* One interaction language for every admin page and its nested tools. */
+html:has(.admin-desktop-shell) {
+  scrollbar-gutter: stable;
+}
+
+.admin-desktop-shell [hidden] {
+  display: none !important;
+}
+
+.admin-desktop-shell
+  .admin-desktop-main
+  :is(
+    .admin-check-tabs,
+    .catalog-status-tabs,
+    .settings-visibility-filters,
+    .visit-progress-states,
+    .admin-enrichment-counts,
+    .visit-price-choices,
+    .schedule-frequency
+  ) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-desktop-shell
+  .admin-desktop-main
+  :is(
+    .admin-check-tabs,
+    .catalog-status-tabs,
+    .settings-visibility-filters,
+    .visit-progress-states,
+    .admin-enrichment-counts,
+    .visit-price-choices,
+    .schedule-frequency,
+    .place-editor-tabs,
+    .admin-history-tabs,
+    .schedule-tabs,
+    .sources-tabs,
+    .settings-tabs,
+    .catalog-view-switch
+  )
+  > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #cdd7e2;
+  border-radius: 8px;
+  background: #fff;
+  color: #405169;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.admin-desktop-shell
+  .admin-desktop-main
+  :is(
+    .admin-check-tabs,
+    .catalog-status-tabs,
+    .settings-visibility-filters,
+    .visit-progress-states,
+    .admin-enrichment-counts,
+    .visit-price-choices,
+    .schedule-frequency,
+    .place-editor-tabs,
+    .admin-history-tabs,
+    .schedule-tabs,
+    .sources-tabs,
+    .settings-tabs,
+    .catalog-view-switch
+  )
+  > button:not(:disabled):not([aria-pressed='true']):not(
+    [aria-selected='true']
+  ):hover {
+  border-color: var(--admin-teal);
+  background: #eff7f8;
+  color: var(--admin-teal-dark);
+}
+
+.admin-desktop-shell
+  .admin-desktop-main
+  :is(
+    .admin-check-tabs,
+    .catalog-status-tabs,
+    .settings-visibility-filters,
+    .visit-progress-states,
+    .admin-enrichment-counts,
+    .visit-price-choices,
+    .schedule-frequency,
+    .place-editor-tabs,
+    .admin-history-tabs,
+    .schedule-tabs,
+    .sources-tabs,
+    .settings-tabs,
+    .catalog-view-switch
+  )
+  > button:is([aria-pressed='true'], [aria-selected='true']) {
+  border-color: var(--admin-teal);
+  background: var(--admin-teal);
+  color: #fff;
+  font-weight: 600;
+}
+
+.admin-desktop-shell
+  .admin-desktop-main
+  :is(
+    .admin-check-tabs,
+    .catalog-status-tabs,
+    .settings-visibility-filters,
+    .visit-progress-states,
+    .admin-enrichment-counts
+  )
+  > button
+  > :is(span, b, strong) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #edf1f5;
+  color: #4c5d73;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-desktop-shell
+  .admin-desktop-main
+  :is(
+    .admin-check-tabs,
+    .catalog-status-tabs,
+    .settings-visibility-filters,
+    .visit-progress-states,
+    .admin-enrichment-counts
+  )
+  > button[aria-pressed='true']
+  > :is(span, b, strong) {
+  background: #ffffff24;
+  color: #fff;
+}
+
+.admin-desktop-shell :is(button, a, summary):focus-visible {
+  outline: 3px solid #087f8c;
+  outline-offset: 3px;
+}
+
+.admin-desktop-shell .admin-check-tools {
+  gap: 16px;
+}
+.admin-desktop-shell .admin-check-tabs {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--admin-line);
+}
+.admin-desktop-shell .admin-check-search input,
+.admin-desktop-shell .admin-check-sort select {
+  min-height: 44px;
+  font-size: 15px;
+}
+.admin-desktop-shell .admin-check-list > header {
+  padding: 18px 20px;
+  background: #f7f9fb;
+  border-bottom: 1px solid var(--admin-line);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.admin-desktop-shell .admin-check-list > header h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+.admin-desktop-shell .admin-check-rows {
+  max-height: min(760px, 85vh);
+  padding: 0;
+}
+.admin-desktop-shell .admin-operations .admin-check-row {
+  min-height: 112px;
+  padding: 16px 20px;
+  gap: 14px;
+  border-radius: 0;
+}
+.admin-desktop-shell .admin-operations .admin-check-row:hover {
+  background: #f5f8fb;
+}
+.admin-desktop-shell .admin-operations .admin-check-row[aria-pressed='true'] {
+  background: #eaf5f6;
+  box-shadow: inset 3px 0 var(--admin-teal);
+}
+.admin-desktop-shell .admin-check-row .admin-place-photo {
+  width: 56px;
+  height: 56px;
+  flex-basis: 56px;
+  border-radius: 6px;
+}
+.admin-desktop-shell .admin-check-row-copy {
+  gap: 8px;
+}
+.admin-desktop-shell .admin-check-row-copy strong {
+  font-weight: 600;
+  line-height: 1.5;
+}
+.admin-desktop-shell .admin-check-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  color: var(--admin-muted);
+  font-size: 14px;
+}
+.admin-desktop-shell .admin-check-row-meta small {
+  font-size: inherit;
+}
+.admin-desktop-shell .admin-check-row > svg {
+  flex: 0 0 auto;
+  color: var(--admin-teal);
+}
+
+/* Standalone navigation actions must look different from body copy. */
+.admin-desktop-shell
+  .admin-desktop-main
+  :is(
+    .admin-check-back,
+    .admin-check-edit-link,
+    .settings-progress-link,
+    .history-detail-link,
+    .admin-source-link,
+    .settings-help a,
+    .settings-destination-tip a
+  ) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #cdd7e2;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--admin-teal-dark);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.admin-desktop-shell .admin-check-back {
+  margin-bottom: 18px;
+}
+.admin-desktop-shell .settings-help a {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+}
+.admin-desktop-shell .admin-check-detail-heading {
+  min-height: 120px;
+}
+.admin-desktop-shell .admin-check-detail-heading .admin-check-edit-link {
+  margin-top: 8px;
+}
+
+/* Keep settings stable while data arrives and when returning from another page. */
+.admin-desktop-shell .settings-count {
+  min-width: 208px;
+  justify-content: center;
+}
+.admin-desktop-shell .settings-visibility-filters button > span {
+  min-width: 28px;
+}
+.admin-desktop-shell .settings-table-loading {
+  border: 1px solid var(--admin-line);
+  border-radius: 8px;
+  overflow: hidden;
+  padding-bottom: 76px;
+}
+.admin-desktop-shell .settings-loading-heading {
+  height: 48px;
+  background: #f5f7fa;
+}
+.admin-desktop-shell .settings-loading-row {
+  display: grid;
+  grid-template-columns: 30fr 27fr 25fr 18fr;
+  gap: 24px;
+  min-height: 115px;
+  align-items: center;
+  padding: 16px;
+  border-top: 1px solid var(--admin-line);
+}
+.admin-desktop-shell .settings-loading-row > span {
+  display: block;
+  height: 16px;
+  width: 75%;
+  border-radius: 4px;
+  background: #e9edf2;
+}
+.admin-desktop-shell .admin-settings-page [role='tabpanel'] {
+  min-height: 480px;
+}
+.admin-desktop-shell .admin-settings-page {
+  animation: none;
+}
+
+@media (max-width: 700px) {
+  .admin-desktop-shell
+    .admin-desktop-main
+    :is(.admin-check-tabs, .visit-progress-states, .admin-enrichment-counts) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-block: 4px 12px;
+    scrollbar-width: thin;
+  }
+  .admin-desktop-shell
+    .admin-desktop-main
+    :is(.admin-check-tabs, .visit-progress-states, .admin-enrichment-counts)
+    > button {
+    flex: 0 0 auto;
+  }
+  .admin-desktop-shell .admin-operations .admin-check-row {
+    padding: 16px;
+  }
+  .admin-desktop-shell .settings-loading-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    min-height: 230px;
+  }
+  .admin-desktop-shell .settings-count {
+    min-width: 0;
+  }
+}

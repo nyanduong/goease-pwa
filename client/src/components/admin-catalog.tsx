@@ -559,6 +559,9 @@ export function AdminCatalog({
           actions={
             !form && !importing ? (
               <div className="admin-actions admin-catalog-actions">
+                <a className="journey-outline" href="#work">
+                  Mở việc cần kiểm tra
+                </a>
                 <button
                   className="journey-outline catalog-import-action"
                   disabled={busy}
@@ -641,11 +644,6 @@ export function AdminCatalog({
               { label: 'Tất cả', value: overview?.total, status: 'all' },
               { label: 'Bản nháp', value: overview?.draft, status: 'draft' },
               {
-                label: 'Cần kiểm tra',
-                value: overview?.needsAttention,
-                status: 'attention',
-              },
-              {
                 label: 'Đã xuất bản',
                 value: overview?.published,
                 status: 'published',
@@ -655,30 +653,19 @@ export function AdminCatalog({
                 value: overview?.archived,
                 status: 'archived',
               },
-            ].map((tab) =>
-              tab.status === 'attention' ? (
-                <a
-                  key={tab.status}
-                  href="#work"
-                  title="Mở hàng chờ cần kiểm tra"
-                >
-                  {tab.label}
-                  <span>{tab.value ?? '—'}</span>
-                </a>
-              ) : (
-                <button
-                  key={tab.status}
-                  aria-pressed={status === tab.status}
-                  onClick={() => {
-                    setStatus(tab.status);
-                    setOffset(0);
-                  }}
-                >
-                  {tab.label}
-                  <span>{tab.value ?? '—'}</span>
-                </button>
-              ),
-            )}
+            ].map((tab) => (
+              <button
+                key={tab.status}
+                aria-pressed={status === tab.status}
+                onClick={() => {
+                  setStatus(tab.status);
+                  setOffset(0);
+                }}
+              >
+                {tab.label}
+                <span>{tab.value ?? '—'}</span>
+              </button>
+            ))}
           </nav>
           <div className="catalog-library">
             <div className="catalog-library-toolbar">

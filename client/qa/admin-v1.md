@@ -135,3 +135,49 @@ Local screenshots and layout measurements:
 - Verified the campaign header actions at 390px after a fresh page load: labels
   stay on one line and controls are 44–45px tall. Restarted the local web/API
   preview after shared-package builds; database health reports connected.
+
+## Shared controls across admin — 26/10/2026
+
+- Added scoped `admin-controls.css` after the existing admin styles. Review,
+  catalog, history, source, settings, progress, enrichment, price and schedule
+  choices share bordered 44px controls with a solid teal selected state. Keyboard
+  focus remains visible; narrow review/progress filters scroll within their group.
+- The review queue separates the toolbar, list heading, selectable rows and detail
+  pane. Place names lead, badges follow, and publication/date share a quieter row.
+  Filters remain available while GET requests refresh, avoiding dimmed navigation.
+- Styled the import tool's “Về danh mục”, queue “Lịch sử xử lý”, review back/edit
+  buttons and standalone settings/history actions as actual controls.
+- Removed the misleading “Cần kiểm tra” link from catalog status filters. Existing
+  API supports all/draft/published/archived only. A separately named “Mở việc cần
+  kiểm tra” action explicitly opens the existing review workspace; no client-side
+  approximation of a server filter or new backend contract was introduced.
+- Settings mounts on its first visit and retains its selected group and filters
+  when returning. Removed an empty status container that created an extra flex gap.
+  Reserved scrollbar space, count space and a loading-table placeholder; unrelated
+  operations polling is skipped on pages that load their own data.
+
+Observed checks:
+
+- Client ESLint, TypeScript/production build and `git diff --check` passed.
+  Vite's existing large-bundle advisory remains.
+- Navigated all nine admin routes at 1440x900 and 375x667: no page-level horizontal
+  overflow; navigation remained available. Sampled visible control/body/table text
+  had no fonts below 14px at desktop; no visible buttons below 14px at 375px.
+  This route sweep is a layout check, not acceptance of every async data feature.
+- At Cần Thơ the real review API returned 870 jobs and 20 visible rows. Selected
+  review filters and the History review view; inspected Sources quality, all three
+  Settings groups, the schedule frequency choices and editor price choices.
+- Settings title/menu/content positions matched between advanced and province
+  groups (top 102 / 204.78 / 286.78px at 1440px). Selected settings group and loaded
+  data persisted after visiting Overview and returning. ArrowRight selected/focused
+  the next settings tab. No settings were saved or province switches changed.
+- Existing desktop editor alignment is preserved: form and map cards both start
+  at 263.89px and are 673.95px high; sidebar is 248px wide. Opened and discarded only
+  the empty UI-test draft. Opened/cancelled schedule creation without saving and
+  opened/closed import without searching or importing. No catalog, settings or
+  schedule mutation was submitted.
+- The existing `/admin/catalog/reviews` request for all regions returned HTTP 500;
+  Cần Thơ returned HTTP 200. Backend was left untouched. Queue UI now distinguishes
+  failed/loading reads from a genuinely empty list rather than claiming zero jobs.
+
+Screenshots and measurements: `.local/ui-admin-v1/all-admin-controls/` (ignored).

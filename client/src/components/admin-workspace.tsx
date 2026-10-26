@@ -154,6 +154,9 @@ export function AdminWorkspace({
     };
   }, [destinationReload]);
   const [tab, setTab] = useState<Tab>(currentTab);
+  const [settingsOpened, setSettingsOpened] = useState(
+    () => currentTab() === 'settings',
+  );
   const [historyView, setHistoryView] = useState<'events' | 'reviews'>(
     'events',
   );
@@ -188,6 +191,7 @@ export function AdminWorkspace({
   useEffect(() => {
     const changed = () => {
       setTab(currentTab());
+      if (currentTab() === 'settings') setSettingsOpened(true);
       const target = new URLSearchParams(location.hash.split('?')[1] ?? '').get(
         'destinationId',
       );
@@ -215,7 +219,10 @@ export function AdminWorkspace({
         setError('');
       }
       try {
-        if (tab === 'rules') return;
+        if (
+          ['rules', 'settings', 'sources', 'progress', 'places'].includes(tab)
+        )
+          return;
         if (tab === 'history' && historyView === 'events') {
           const value = await api<CatalogHistoryListDto>(
             `/admin/catalog/history?${new URLSearchParams({ offset: String(historyOffset), ...historyFilters })}`,
@@ -335,7 +342,9 @@ export function AdminWorkspace({
           }
         />
       )}
-      {tab === 'settings' && <AdminSettingsPage destinations={destinations} />}
+      <div hidden={tab !== 'settings'}>
+        {settingsOpened && <AdminSettingsPage destinations={destinations} />}
+      </div>
       {tab === 'overview' && (
         <AdminDashboard
           scope={scope}
@@ -393,7 +402,9 @@ export function AdminWorkspace({
             }
             actions={
               tab === 'work' ? (
-                <a href="#history">Lịch sử xử lý ↗</a>
+                <a className="journey-outline" href="#history">
+                  Lịch sử xử lý ↗
+                </a>
               ) : tab === 'history' && historyView === 'events' ? (
                 <button
                   className="history-refresh"
@@ -452,6 +463,7 @@ export function AdminWorkspace({
                     offset={offset}
                     hasMore={more}
                     loading={loading}
+                    failedToLoad={!!error}
                     query={workQuery}
                     kind={workKind}
                     sort={workSort}

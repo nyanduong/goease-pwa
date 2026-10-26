@@ -191,11 +191,13 @@ export function AdminDestinations() {
               Bật để khách chọn khi tạo chuyến và xem các địa điểm đã xuất bản.
             </p>
           </div>
-          {!loading && !error && (
-            <span className="settings-count">
-              {enabledCount} đang bật / {rows.length} tỉnh, thành
-            </span>
-          )}
+          <span className="settings-count">
+            {loading
+              ? 'Đang tải danh mục…'
+              : error
+                ? 'Chưa tải được danh mục'
+                : `${enabledCount} đang bật / ${rows.length} tỉnh, thành`}
+          </span>
         </header>
         <div className="settings-visibility-note">
           <Info size={22} />
@@ -279,7 +281,7 @@ export function AdminDestinations() {
               onClick={() => filterVisibility(item.id)}
             >
               {item.name}
-              {!loading && !error && <span>{item.count}</span>}
+              <span>{loading || error ? '—' : item.count}</span>
             </button>
           ))}
         </div>
@@ -311,7 +313,22 @@ export function AdminDestinations() {
           />
         )}
         {loading ? (
-          <p role="status">Đang tải tỉnh/thành…</p>
+          <div className="settings-table-loading" role="status">
+            <span className="sr-only">Đang tải tỉnh/thành…</span>
+            <div className="settings-loading-heading" aria-hidden="true" />
+            {Array.from({ length: pageSize }, (_, index) => (
+              <div
+                className="settings-loading-row"
+                key={index}
+                aria-hidden="true"
+              >
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+            ))}
+          </div>
         ) : !filtered.length && !error ? (
           <div className="settings-province-empty">
             <h3>Không có tỉnh/thành phù hợp bộ lọc.</h3>

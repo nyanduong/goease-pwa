@@ -176,7 +176,11 @@ export function AdminSchedules({
           </button>
         )}
       </div>
-      <div className="schedule-tabs" aria-label="Chế độ quản lý tự động">
+      <div
+        className="schedule-tabs"
+        role="group"
+        aria-label="Chế độ quản lý tự động"
+      >
         <button
           aria-pressed={tab === 'schedules'}
           onClick={() => setTab('schedules')}
@@ -754,7 +758,11 @@ function ScheduleEditor({
           </label>
           <div className="schedule-sheet-time">
             <h3>Thời gian chạy</h3>
-            <div className="schedule-frequency">
+            <div
+              className="schedule-frequency"
+              role="group"
+              aria-label="Tần suất cập nhật"
+            >
               {(['daily', 'weekly'] as const).map((f) => (
                 <button
                   type="button"
