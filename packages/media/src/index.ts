@@ -47,6 +47,8 @@ export const imageUrls = {
     'https://res.cloudinary.com/dqc4hufot/image/upload/f_auto,q_auto/v1792838075/goease/app/welcome-halong-bay-png.png',
 } as const;
 
+export { destinationCovers } from './destination-covers.js';
+
 export const images = {
   welcomeHalongBay: imageUrls['/images/welcome-halong-bay.png'],
   logo: imageUrls['/images/goease-logo.webp'],

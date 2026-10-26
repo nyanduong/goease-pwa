@@ -1,4 +1,4 @@
-import { images } from '@goease/media';
+import { images, destinationCovers } from '@goease/media';
 import { useState } from 'react';
 import {
   ArrowRight,
@@ -103,7 +103,7 @@ export function HomeDiscovery({
       name: d.name,
       subtitle: d.summary || 'Khám phá theo cách của bạn',
       category: known?.category ?? 'Khám phá',
-      image: known?.image ?? images.goeMascot,
+      image: destinationCovers[d.slug] ?? known?.image ?? images.goeMascot,
       destination: d,
     };
   });
@@ -351,6 +351,12 @@ export function HomeDiscovery({
                     <img
                       src={d.image}
                       alt={`${d.name} — ảnh minh họa tạo bằng AI`}
+                      loading="lazy"
+                      decoding="async"
+                      onError={(event) => {
+                        if (event.currentTarget.src !== images.goeMascot)
+                          event.currentTarget.src = images.goeMascot;
+                      }}
                     />
                     <span className="discovery-card-caption">
                       <strong>{d.name}</strong>
@@ -382,6 +388,9 @@ export function HomeDiscovery({
               ? 'Bạn chưa lưu điểm đến nào trong mục này. Chạm biểu tượng đánh dấu trên thẻ để lưu.'
               : 'Chưa tìm thấy điểm đến phù hợp.'}
           </p>
+        )}
+        {visible.length > 0 && (
+          <p className="discovery-storage-note">Ảnh điểm đến là ảnh minh họa AI.</p>
         )}
         {mode === 'home' && visible.length > 4 && (
           <div className="discovery-all-destinations">

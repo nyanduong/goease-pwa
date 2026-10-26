@@ -877,6 +877,54 @@
       "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792838134/goease/docs/screenshots/redesign/before/trips-768-png.png",
       "width": 768,
       "height": 1024
+    },
+    {
+      "sourcePath": "client/public/images/destinations/an-giang-v1.png",
+      "sha256": "d3f47a1cd456f07fd1b66c52735c9467047a67199555d4254e43eb3c19e45183",
+      "bytes": 3329305,
+      "publicId": "goease/app/destinations/an-giang-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "7163c88e5e5bcf5e8fc35776480867c5",
+      "version": 1792983950,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792983950/goease/app/destinations/an-giang-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/can-tho-v1.png",
+      "sha256": "2d79129c7d26f940a44de6b705276f93e9b1e4810ed01ac868e758e0c9c777f6",
+      "bytes": 2477515,
+      "publicId": "goease/app/destinations/can-tho-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "d4dded41cd71f37156348a3dd67a7b05",
+      "version": 1792984019,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984019/goease/app/destinations/can-tho-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/gia-lai-v1.png",
+      "sha256": "ae422a750b1a4022d896bf96fe71510bffc5bbf97dc10cacbca87080e6bae423",
+      "bytes": 3127027,
+      "publicId": "goease/app/destinations/gia-lai-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "6575c77694a2c1336a97998e4b2eef21",
+      "version": 1792984021,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984021/goease/app/destinations/gia-lai-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/hue-v1.png",
+      "sha256": "418c8a030378cc7884fd5e398bd90044d20a64a46bc1270cb3f6dcdc0445d8b4",
+      "bytes": 3000461,
+      "publicId": "goease/app/destinations/hue-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "98ef3f9b9a4ea1c1f9286ab76513728f",
+      "version": 1792984024,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984024/goease/app/destinations/hue-v1-png.png",
+      "width": 1122,
+      "height": 1402
     }
   ]
 }

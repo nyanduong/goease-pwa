@@ -105,9 +105,9 @@ test('settings provinces filter and paginate, persist toggles, import drafts and
     });
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
-  await search.fill('cao bang');
+  await search.fill('lai chau');
   const toggle = manager.getByRole('switch', {
-    name: 'Hiển thị Cao Bằng',
+    name: 'Hiển thị Lai Châu',
     exact: true,
   });
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
@@ -122,16 +122,16 @@ test('settings provinces filter and paginate, persist toggles, import drafts and
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
   await expect(
-    manager.getByRole('status').filter({ hasText: 'Đã bật Cao Bằng.' }),
+    manager.getByRole('status').filter({ hasText: 'Đã bật Lai Châu.' }),
   ).toBeVisible();
   await expect(
     page
-      .getByRole('region', { name: 'Lấy địa điểm Cao Bằng' })
+      .getByRole('region', { name: 'Lấy địa điểm Lai Châu' })
       .getByText(/Nháp mới: 1/),
   ).toBeVisible({ timeout: 20000 });
   expect(imports).toBe(1);
   await page.reload();
-  await search.fill('Cao Bằng');
+  await search.fill('Lai Châu');
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
   const progress = manager.getByRole('link', { name: 'Xem tiến trình' });
   const href = await progress.getAttribute('href');
@@ -143,7 +143,7 @@ test('settings provinces filter and paginate, persist toggles, import drafts and
   expect(imports).toBe(1);
   expect(href).toContain('destinationId=');
   await page.getByRole('link', { name: 'Cài đặt', exact: true }).click();
-  await search.fill('Cao Bằng');
+  await search.fill('Lai Châu');
   await toggle.click();
   await respondToConfirmation(page, false);
   await expect(toggle).toHaveAttribute('aria-checked', 'true');

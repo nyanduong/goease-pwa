@@ -52,19 +52,36 @@ async function main() {
     _limit: number,
     area?: { latitude: number },
   ) => {
-    if (area?.latitude === 22.66)
+    // Keep settings and the full publication workflow on separate provinces.
+    // Both fixtures are synthetic and independent of live provider data.
+    const province =
+      area?.latitude === 22.66
+        ? { id: 990001, name: 'Cao Bằng', latitude: 22.66, longitude: 106.26 }
+        : area?.latitude === 22.386
+          ? {
+              id: 990002,
+              name: 'Lai Châu',
+              latitude: 22.386,
+              longitude: 103.47,
+            }
+          : null;
+    if (province)
       return {
         group,
         received: 1,
         rejected: 0,
         items: [
           {
-            ...candidate(990001, 'Tham quan Cao Bằng · dữ liệu thử', 22.66),
-            longitude: 106.26,
+            ...candidate(
+              province.id,
+              `Tham quan ${province.name} · dữ liệu thử`,
+              province.latitude,
+            ),
+            longitude: province.longitude,
             category: 'culture' as const,
             venueType: 'place' as const,
             categories: ['tourism.attraction'],
-            address: 'Địa chỉ Cao Bằng · dữ liệu thử',
+            address: `Địa chỉ ${province.name} · dữ liệu thử`,
           },
         ],
       };
@@ -107,6 +124,8 @@ async function main() {
       })),
     geoapify: provider,
     resolveProvinceArea: async (name) => {
+      if (name === 'Lai Châu')
+        return { latitude: 22.386, longitude: 103.47, radiusMeters: 10000 };
       if (name !== 'Cao Bằng')
         throw new HttpError(
           502,
