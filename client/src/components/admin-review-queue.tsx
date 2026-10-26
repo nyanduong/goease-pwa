@@ -31,6 +31,7 @@ export function AdminReviewQueue({
   offset,
   hasMore,
   loading,
+  failedToLoad = false,
   query,
   kind,
   sort,
@@ -50,6 +51,7 @@ export function AdminReviewQueue({
   offset: number;
   hasMore: boolean;
   loading: boolean;
+  failedToLoad?: boolean;
   query: string;
   kind: string;
   sort: 'priority' | 'newest';
@@ -98,12 +100,15 @@ export function AdminReviewQueue({
               <button
                 key={code}
                 aria-pressed={kind === code}
-                disabled={loading}
                 onClick={() => onKind(code)}
               >
                 {label}
                 <span>
-                  {code ? counts[code as CatalogReviewDto['kind']] : allCount}
+                  {failedToLoad || (loading && !items.length)
+                    ? '—'
+                    : code
+                      ? counts[code as CatalogReviewDto['kind']]
+                      : allCount}
                 </span>
               </button>
             ),
@@ -136,7 +141,11 @@ export function AdminReviewQueue({
           aria-label="Danh sách cần kiểm tra"
         >
           <header>
-            <h2>{total} việc cần kiểm tra</h2>
+            <h2>
+              {failedToLoad || (loading && !items.length)
+                ? 'Danh sách cần kiểm tra'
+                : `${total} việc cần kiểm tra`}
+            </h2>
             <span role="status">
               {loading
                 ? 'Đang cập nhật…'
@@ -149,14 +158,22 @@ export function AdminReviewQueue({
             <div className="admin-check-empty">
               <ListChecks size={32} />
               <h3>
-                {query || kind
-                  ? 'Không có việc khớp bộ lọc'
-                  : 'Hiện không có việc cần xử lý'}
+                {failedToLoad
+                  ? 'Chưa tải được hàng chờ'
+                  : loading
+                    ? 'Đang tải hàng chờ…'
+                    : query || kind
+                      ? 'Không có việc khớp bộ lọc'
+                      : 'Hiện không có việc cần xử lý'}
               </h3>
               <p>
-                {query || kind
-                  ? 'Thử tìm tên khác hoặc xem tất cả loại việc.'
-                  : 'Các vấn đề mới sẽ xuất hiện tại đây để bạn kiểm tra.'}
+                {failedToLoad
+                  ? 'Dùng nút thử tải lại ở trên để lấy dữ liệu mới.'
+                  : loading
+                    ? 'Thông tin sẽ xuất hiện tại đây khi tải xong.'
+                    : query || kind
+                      ? 'Thử tìm tên khác hoặc xem tất cả loại việc.'
+                      : 'Các vấn đề mới sẽ xuất hiện tại đây để bạn kiểm tra.'}
               </p>
               {(query || kind) && (
                 <button
@@ -184,7 +201,6 @@ export function AdminReviewQueue({
                   className="admin-check-row"
                   key={item.id}
                   aria-pressed={item.id === selectedId}
-                  disabled={loading}
                   onClick={() => onSelect(item)}
                 >
                   <AdminPlaceImage place={item.place} />
@@ -200,17 +216,20 @@ export function AdminReviewQueue({
                         </span>
                       )}
                     </span>
-                    <small>
-                      {item.place.publicationStatus === 'published'
-                        ? 'Đang hiển thị cho khách'
-                        : item.place.publicationStatus === 'archived'
-                          ? 'Đã ngừng hiển thị'
-                          : 'Chưa hiển thị cho khách'}
-                    </small>
-                    <time dateTime={item.updatedAt}>
-                      {catalogTime(item.updatedAt)}
-                    </time>
+                    <span className="admin-check-row-meta">
+                      <small>
+                        {item.place.publicationStatus === 'published'
+                          ? 'Đang hiển thị cho khách'
+                          : item.place.publicationStatus === 'archived'
+                            ? 'Đã ngừng hiển thị'
+                            : 'Chưa hiển thị cho khách'}
+                      </small>
+                      <time dateTime={item.updatedAt}>
+                        {catalogTime(item.updatedAt)}
+                      </time>
+                    </span>
                   </span>
+                  <ChevronRight size={18} aria-hidden="true" />
                 </button>
               );
             })}

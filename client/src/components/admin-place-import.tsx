@@ -105,7 +105,7 @@ export function AdminPlaceImport({
   return (
     <section className="admin-import" aria-label="Nhập địa điểm từ Geoapify">
       <div className="admin-actions">
-        <button disabled={busy} onClick={onBack}>
+        <button className="journey-outline" disabled={busy} onClick={onBack}>
           ← Về danh mục
         </button>
       </div>
@@ -190,7 +190,9 @@ export function AdminPlaceImport({
               </button>
             )}
           </div>
-          <button onClick={onBack}>Về danh mục để biên tập</button>
+          <button className="journey-outline" onClick={onBack}>
+            Về danh mục để biên tập
+          </button>
         </div>
       ) : (
         preview && (

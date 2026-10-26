@@ -116,7 +116,7 @@ export function AdminSettingsPage({
       >
         <AdminDestinations />
       </div>
-      <div hidden={tab === 'destinations'}>
+      <div hidden={tab === 'destinations' || (!error && !notice && !!settings)}>
         {error && (
           <div className="admin-alert" role="alert">
             {error}
