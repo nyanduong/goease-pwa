@@ -1,7 +1,7 @@
 import { images } from '@goease/media';
 import { useState, type ReactNode } from 'react';
 import { ImageOff } from 'lucide-react';
-import type { AdminPlaceDto } from '@goease/contracts';
+import { catalogImageCover, type AdminPlaceDto } from '@goease/contracts';
 
 export function PhotoSearchStatus({ place }: { place: AdminPlaceDto }) {
   const status = place.photoSearch;
@@ -36,6 +36,7 @@ type PlaceImage = {
   category: string;
   imageUrl?: string | undefined;
   imageCredit?: string | undefined;
+  images?: AdminPlaceDto['images'];
   photoSearch?: AdminPlaceDto['photoSearch'];
 };
 export function adminIllustration(
@@ -57,13 +58,17 @@ export function AdminPlaceImage({
   large?: boolean;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
-  const illustrated =
-    !place.imageUrl ||
-    /minh họa|\bAI\b/i.test(place.imageCredit ?? '') ||
-    place.imageUrl === images.exploreHoian ||
-    failed === place.imageUrl;
+  const cover = catalogImageCover(place.images ?? []);
+  const imageUrl = cover?.url ?? place.imageUrl;
+  const isAi = cover?.kind === 'ai_illustration';
+  const missing =
+    !imageUrl ||
+    (!cover &&
+      (/minh họa|\bAI\b/i.test(place.imageCredit ?? '') ||
+        imageUrl === images.exploreHoian)) ||
+    failed === imageUrl;
   const missingLabel =
-    failed === place.imageUrl
+    failed === imageUrl
       ? 'Ảnh lỗi tải'
       : ({
           pending: 'Chờ tìm ảnh',
@@ -74,19 +79,23 @@ export function AdminPlaceImage({
   return (
     <span
       className={`admin-place-photo${large ? ' is-large' : ''}`}
-      title={illustrated ? missingLabel : place.imageCredit}
+      title={
+        missing
+          ? missingLabel
+          : `${isAi ? 'Ảnh minh họa AI · ' : ''}${cover?.credit ?? place.imageCredit ?? ''}`
+      }
     >
-      {illustrated ? (
+      {missing ? (
         <span role="img" aria-label={missingLabel}>
           <ImageOff size={large ? 28 : 18} aria-hidden="true" />
           {large && <span>{missingLabel}</span>}
         </span>
       ) : (
         <img
-          src={place.imageUrl}
-          alt={place.name}
+          src={imageUrl}
+          alt={isAi ? `${place.name} — ảnh minh họa AI` : place.name}
           loading="lazy"
-          onError={() => setFailed(place.imageUrl ?? '')}
+          onError={() => setFailed(imageUrl ?? '')}
         />
       )}
     </span>

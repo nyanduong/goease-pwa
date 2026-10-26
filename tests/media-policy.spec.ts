@@ -252,6 +252,30 @@ test('AI cover metadata persists and customer sees explicit illustration label a
       password: 'Browser-fixture-2026!',
     },
   });
+  await page.goto('/admin#places');
+  await page.getByPlaceholder('Tìm tên hoặc địa chỉ…').fill(place.name);
+  const adminCover = page
+    .getByRole('button', { name: `Mở ${place.name}`, exact: true })
+    .getByRole('img', { name: `${place.name} — ảnh minh họa AI` });
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(adminCover).toBeVisible();
+    await expect(adminCover).toHaveAttribute('src', image.url);
+    await expect
+      .poll(() =>
+        adminCover.evaluate((img: HTMLImageElement) => img.naturalWidth),
+      )
+      .toBeGreaterThan(0);
+  }
+  await page.unroute(image.url);
+  await page.route(image.url, (route) => route.abort());
+  await page.reload();
+  await page.getByPlaceholder('Tìm tên hoặc địa chỉ…').fill(place.name);
+  await expect(
+    page
+      .getByRole('button', { name: `Mở ${place.name}`, exact: true })
+      .getByRole('img', { name: 'Ảnh lỗi tải', exact: true }),
+  ).toBeVisible();
   await page.goto('/admin#places?create=1');
   await page.getByRole('tab', { name: /Ảnh địa điểm/ }).click();
   await page.getByText('Ảnh đã chọn (0/5)', { exact: true }).click();
