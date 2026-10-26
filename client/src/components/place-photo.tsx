@@ -15,19 +15,18 @@ export function PlaceGalleryPhoto({
     <figure>
       <img
         src={image.url}
-        alt={`${name} · ảnh ${index + 1}${image.kind === 'ai_illustration' ? ' — ảnh minh họa AI' : ''}`}
+        alt={`${name} · ảnh ${index + 1}`}
         loading="lazy"
         referrerPolicy="no-referrer"
         onError={() => setFailed(image.url)}
       />
-      <figcaption>
-        {image.kind === 'ai_illustration' && (
-          <strong>Ảnh minh họa AI · </strong>
-        )}
-        <a href={image.sourceUrl} target="_blank" rel="noreferrer">
-          {image.credit} · {image.license}
-        </a>
-      </figcaption>
+      {image.kind !== 'ai_illustration' && (
+        <figcaption>
+          <a href={image.sourceUrl} target="_blank" rel="noreferrer">
+            {image.credit} · {image.license}
+          </a>
+        </figcaption>
+      )}
     </figure>
   );
 }
@@ -45,11 +44,7 @@ export function PlacePhoto({
       {place.imageUrl && failed !== place.imageUrl ? (
         <img
           src={place.imageUrl}
-          alt={
-            cover?.kind === 'ai_illustration'
-              ? `${place.name} — ảnh minh họa AI`
-              : place.name
-          }
+          alt={place.name}
           loading="lazy"
           onError={() => setFailed(place.imageUrl)}
         />
@@ -62,11 +57,8 @@ export function PlacePhoto({
           Chưa có ảnh thật
         </span>
       )}
-      {cover && (
-        <small>
-          {cover.kind === 'ai_illustration' && (
-            <strong className="place-ai-label">Ảnh minh họa AI · </strong>
-          )}
+      {cover && cover.kind !== 'ai_illustration' && (
+        <small title={`${cover.credit} · ${cover.license}`}>
           {compact ? (
             <>
               {cover.credit} · {cover.license}

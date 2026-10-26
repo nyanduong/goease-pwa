@@ -630,6 +630,20 @@ button:disabled {
 .journey-stop-open img {
   @apply w-[76px] h-[76px] rounded-[10px];
 }
+.journey-stop-open > .journey-stop-photo {
+  @apply w-[76px] shrink-0 self-start;
+  flex: none;
+}
+.journey-stop-photo .place-real-photo > img {
+  @apply w-full;
+}
+.journey-stop-photo .place-real-photo > small {
+  @apply text-[length:9px] leading-[1.3] p-[2px] whitespace-normal line-clamp-2;
+}
+.journey-stop-photo-empty,
+.journey-stop-photo .place-photo-empty {
+  @apply grid min-h-[76px] place-items-center rounded-[10px] bg-goease-soft text-center text-[length:10px] p-[4px];
+}
 .journey-stop-open strong {
   @apply text-[length:15px] leading-[1.45] font-bold text-goease-ink;
 }
@@ -1383,6 +1397,9 @@ button:disabled {
   }
   .journey-stop-open img {
     @apply w-[46px] h-[56px];
+  }
+  .journey-stop-open > .journey-stop-photo {
+    @apply w-[46px];
   }
   .mobile-nav-item {
     @apply text-[length:10px];

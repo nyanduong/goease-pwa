@@ -69,12 +69,6 @@ const travelImage = (name: string) =>
     : /sa pa/i.test(name)
       ? images.destinationSapa
       : images.welcomeHalongBay;
-const activityImage = (a: ActivityInput, destination: string) =>
-  /cơm gà/i.test(a.title)
-    ? images.exploreRice
-    : /trà quế/i.test(a.title)
-      ? images.exploreTraque
-      : travelImage(destination);
 const tastes = [
   { code: 'food', label: 'Ẩm thực', Icon: Utensils },
   { code: 'culture', label: 'Văn hóa', Icon: Landmark },
@@ -284,9 +278,7 @@ export function JourneyList({
           Trang tiếp theo
         </button>
       )}
-      <p className="journey-caption">
-        Ảnh minh họa AI · Lịch trình riêng tư của bạn
-      </p>
+      <p className="journey-caption">Lịch trình riêng tư của bạn</p>
     </section>
   );
 }
@@ -410,6 +402,47 @@ export function TripWorkspace({
     destination?.name ?? loaded?.destinationName ?? 'Chuyến đi của bạn';
   const dayIndex = Math.min(selectedDay, Math.max(0, draft.days.length - 1));
   const day = draft.days[dayIndex];
+  const [stopPhotos, setStopPhotos] = useState<Record<string, PlaceDto>>({});
+  const [stopPhotosFailed, setStopPhotosFailed] = useState(false);
+  const [stopPhotosLoading, setStopPhotosLoading] = useState(false);
+  const [stopPhotosRetry, setStopPhotosRetry] = useState(0);
+  const stopPhotoIds = JSON.stringify([
+    ...new Set(
+      day?.activities.flatMap((a) => (a.placeId ? [a.placeId] : [])) ?? [],
+    ),
+  ]);
+  const stopDestinationId = day?.destinationId;
+  useEffect(() => {
+    let active = true;
+    setStopPhotos({});
+    setStopPhotosFailed(false);
+    setStopPhotosLoading(true);
+    void Promise.all(
+      (JSON.parse(stopPhotoIds) as string[]).map(async (id) => {
+        try {
+          const { place } = await api<{ place: PlaceDto }>(`/places/${id}`);
+          return {
+            id,
+            place: place.destinationId === stopDestinationId ? place : null,
+          };
+        } catch {
+          return { id, place: null };
+        }
+      }),
+    ).then((results) => {
+      if (!active) return;
+      setStopPhotos(
+        Object.fromEntries(
+          results.flatMap(({ id, place }) => (place ? [[id, place]] : [])),
+        ),
+      );
+      setStopPhotosFailed(results.some(({ place }) => !place));
+      setStopPhotosLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [stopPhotoIds, stopDestinationId, stopPhotosRetry]);
   const isSetup = !loaded && step === 1;
   const showSettings = settings;
   const allActivities = draft.days.flatMap((d) => d.activities);
@@ -935,7 +968,6 @@ export function TripWorkspace({
                       src={travelImage(destinationName)}
                       alt="Ảnh minh họa hành trình"
                     />
-                    <span>Ảnh minh họa AI</span>
                   </div>
                 )}
                 <div
@@ -1134,6 +1166,17 @@ export function TripWorkspace({
                   ) : (
                     <>
                       <div className="journey-timeline">
+                        {stopPhotosFailed && (
+                          <p role="status">
+                            Chưa tải được ảnh của một số địa điểm.{' '}
+                            <button
+                              type="button"
+                              onClick={() => setStopPhotosRetry((v) => v + 1)}
+                            >
+                              Thử tải lại ảnh
+                            </button>
+                          </p>
+                        )}
                         {day?.activities.map((a, i) => (
                           <article className="journey-stop" key={a.activityId}>
                             <span className="journey-stop-dot" />
@@ -1145,10 +1188,20 @@ export function TripWorkspace({
                                 setError('');
                               }}
                             >
-                              <img
-                                src={activityImage(a, destinationName)}
-                                alt=""
-                              />
+                              <span className="journey-stop-photo">
+                                {a.placeId && stopPhotos[a.placeId] ? (
+                                  <PlacePhoto
+                                    place={stopPhotos[a.placeId]!}
+                                    compact
+                                  />
+                                ) : (
+                                  <span className="journey-stop-photo-empty">
+                                    {a.placeId && stopPhotosLoading
+                                      ? 'Đang tải ảnh…'
+                                      : 'Chưa có ảnh'}
+                                  </span>
+                                )}
+                              </span>
                               <span>
                                 <small>
                                   {a.startLocalTime ?? 'Chưa đặt giờ'}
@@ -1948,7 +2001,7 @@ export function TripWorkspace({
             </button>
           )}
           <small className="journey-caption">
-            Ảnh minh họa AI · Gợi ý biên tập, không phải lịch trình AI tự động
+            Gợi ý biên tập, không phải lịch trình AI tự động
           </small>
         </Sheet>
       )}

@@ -98,8 +98,8 @@ export function AdminImageGallery({
       </label>
       {kind === 'ai_illustration' && (
         <p>
-          Chỉ thêm một ảnh minh họa AI. Customer sẽ thấy nhãn rõ ràng; ảnh không
-          xác minh diện mạo thực tế của địa điểm.
+          Chỉ thêm một ảnh minh họa AI. Loại và nguồn ảnh được giữ trong quản
+          trị; ảnh không xác minh diện mạo thực tế của địa điểm.
         </p>
       )}
       <label>

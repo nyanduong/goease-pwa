@@ -390,11 +390,6 @@ export function HomeDiscovery({
               : 'Chưa tìm thấy điểm đến phù hợp.'}
           </p>
         )}
-        {visible.length > 0 && (
-          <p className="discovery-storage-note">
-            Ảnh điểm đến là ảnh minh họa AI.
-          </p>
-        )}
         {mode === 'home' && visible.length > 4 && (
           <div className="discovery-all-destinations">
             <span>

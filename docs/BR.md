@@ -1,5 +1,9 @@
 # GoEase — BR v0.2 / Baseline thiết kế hiện hành
 
+## CAT-20 — hiển thị ảnh trên giao diện khách, 26/10/2026
+
+Owner yêu cầu bỏ nhãn/thông báo “Ảnh minh họa AI” và chú thích minh họa đi kèm trên giao diện khách; quyết định này thay yêu cầu gắn nhãn public trong các ghi nhận trước. Metadata kind/source/credit/license và nhãn quản trị giữ nguyên; không gọi ảnh minh họa là ảnh chụp đã xác minh. Ghi công và giấy phép của ảnh thật vẫn hiển thị. Thẻ điểm dừng lấy bìa catalog theo placeId thay ảnh mặc định suy từ tên/điểm đến; thiếu ảnh hiện placeholder, lỗi lấy catalog có thử lại. Không đổi REST DTO, schema MongoDB, registry hoặc dữ liệu chuyến.
+
 ## AI-02 / TRIP-08 / CAT-23 — demo Đà Nẵng và nghỉ cà phê, 26/10/2026
 
 AI-02: kiểm thử thật phát hiện trộn Hội An với cụm trung tâm Đà Nẵng. Khi mọi ứng viên có tọa độ và có cụm bán kính12km quanh một ứng viên đủ2tham quan/ngày+2quán ăn, arranger dùng cụm nhiều ứng viên nhất; thiếu tọa độ hoặc không có cụm đủ coverage thì giữ luồng cũ. Kiểm ID model theo catalog gốc trước khi lọc cụm. Đây là heuristic khoảng cách thẳng, không phải tuyến đường, giới hạn khoảng cách từng cặp hoặc cam kết thời gian di chuyển.
