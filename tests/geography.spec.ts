@@ -20,7 +20,7 @@ test('operator enables a province; customer filters it and gets a truthful empty
   const manager = page.getByRole('region', { name: 'Danh mục tỉnh thành' });
   await expect(
     manager.getByRole('heading', {
-      name: 'Khách có thể chọn những tỉnh/thành nào?',
+      name: 'Hiển thị tỉnh/thành',
     }),
   ).toBeVisible();
   await expect(manager.locator('tbody tr')).toHaveCount(5);
@@ -86,13 +86,16 @@ test('operator enables a province; customer filters it and gets a truthful empty
       .click();
     await expect(mobile).toHaveURL(/\/$/);
     await mobile.goto('/trips/new');
-    await mobile
+    await mobile.getByRole('button', { name: /^Điểm đến/ }).click();
+    const picker = mobile.getByRole('dialog', { name: 'Chọn tỉnh/thành' });
+    await picker
       .getByLabel('Miền du lịch', { exact: true })
       .selectOption('north');
-    await mobile
+    await picker
       .getByLabel('Vùng du lịch', { exact: true })
       .selectOption('northwest');
-    await mobile.getByRole('button', { name: new RegExp(name) }).click();
+    await picker.getByRole('button', { name: new RegExp(name) }).click();
+    await expect(picker).not.toBeVisible();
     await expect(
       mobile.getByRole('button', { name: 'Lên lịch giúp mình', exact: true }),
     ).toBeEnabled();
@@ -107,8 +110,8 @@ test('operator enables a province; customer filters it and gets a truthful empty
       'Chưa có địa điểm đủ dữ liệu',
     );
     await expect(
-      mobile.getByRole('button', { name: new RegExp(name) }),
-    ).toHaveAttribute('aria-pressed', 'true');
+      mobile.getByRole('button', { name: /^Điểm đến Lào Cai$/ }),
+    ).toBeVisible();
     await expect(
       mobile.getByRole('button', { name: '2 ngày', exact: true }),
     ).toHaveAttribute('aria-pressed', 'true');
@@ -131,7 +134,8 @@ test('operator enables a province; customer filters it and gets a truthful empty
     await respondToConfirmation(page);
     await expect(manager.getByRole('status')).toContainText('Đã tắt Lào Cai');
     await mobile.reload();
-    await expect(mobile.getByRole('button', { name: /Lào Cai/ })).toHaveCount(
+    await mobile.getByRole('button', { name: /^Điểm đến/ }).click();
+    await expect(picker.getByRole('button', { name: /Lào Cai/ })).toHaveCount(
       0,
     );
     for (const width of [320, 390, 1366]) {

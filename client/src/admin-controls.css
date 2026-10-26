@@ -1,10 +1,12 @@
+@reference './styles.css';
+
 /* One interaction language for every admin page and its nested tools. */
 html:has(.admin-desktop-shell) {
   scrollbar-gutter: stable;
 }
 
 .admin-desktop-shell [hidden] {
-  display: none !important;
+  @apply hidden!;
 }
 
 .admin-desktop-shell
@@ -18,11 +20,7 @@ html:has(.admin-desktop-shell) {
     .visit-price-choices,
     .schedule-frequency
   ) {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+  @apply flex flex-wrap items-center gap-[8px] min-w-0;
 }
 
 .admin-desktop-shell
@@ -43,22 +41,13 @@ html:has(.admin-desktop-shell) {
     .catalog-view-switch
   )
   > button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px 14px;
+  @apply inline-flex items-center justify-center gap-[8px] min-h-[44px] py-[10px] px-[14px];
   border: 1px solid #cdd7e2;
-  border-radius: 8px;
+  @apply rounded-[8px];
   background: #fff;
-  color: #405169;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.4;
-  white-space: nowrap;
+  @apply text-[#405169] text-[length:15px] font-medium leading-[1.4] whitespace-nowrap;
   box-shadow: none;
-  cursor: pointer;
+  @apply cursor-pointer;
 }
 
 .admin-desktop-shell
@@ -106,8 +95,7 @@ html:has(.admin-desktop-shell) {
   > button:is([aria-pressed='true'], [aria-selected='true']) {
   border-color: var(--admin-teal);
   background: var(--admin-teal);
-  color: #fff;
-  font-weight: 600;
+  @apply text-[#fff] font-semibold;
 }
 
 .admin-desktop-shell
@@ -121,17 +109,9 @@ html:has(.admin-desktop-shell) {
   )
   > button
   > :is(span, b, strong) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  padding: 2px 6px;
-  border-radius: 5px;
+  @apply inline-flex items-center justify-center min-w-[24px] py-[2px] px-[6px] rounded-[5px];
   background: #edf1f5;
-  color: #4c5d73;
-  font-size: 14px;
-  line-height: 1.4;
-  font-weight: 500;
+  @apply text-[#4c5d73] text-[length:14px] leading-[1.4] font-medium;
   font-variant-numeric: tabular-nums;
 }
 
@@ -147,7 +127,7 @@ html:has(.admin-desktop-shell) {
   > button[aria-pressed='true']
   > :is(span, b, strong) {
   background: #ffffff24;
-  color: #fff;
+  @apply text-[#fff];
 }
 
 .admin-desktop-shell :is(button, a, summary):focus-visible {
@@ -156,37 +136,30 @@ html:has(.admin-desktop-shell) {
 }
 
 .admin-desktop-shell .admin-check-tools {
-  gap: 16px;
+  @apply gap-[16px];
 }
 .admin-desktop-shell .admin-check-tabs {
-  padding-bottom: 16px;
+  @apply pb-[16px];
   border-bottom: 1px solid var(--admin-line);
 }
 .admin-desktop-shell .admin-check-search input,
 .admin-desktop-shell .admin-check-sort select {
-  min-height: 44px;
-  font-size: 15px;
+  @apply min-h-[44px] text-[length:15px];
 }
 .admin-desktop-shell .admin-check-list > header {
-  padding: 18px 20px;
+  @apply py-[18px] px-[20px];
   background: #f7f9fb;
   border-bottom: 1px solid var(--admin-line);
-  align-items: flex-start;
-  flex-wrap: wrap;
+  @apply items-start flex-wrap;
 }
 .admin-desktop-shell .admin-check-list > header h2 {
-  font-size: 18px;
-  font-weight: 600;
+  @apply text-[length:18px] font-semibold;
 }
 .admin-desktop-shell .admin-check-rows {
-  max-height: min(760px, 85vh);
-  padding: 0;
+  @apply max-h-[min(760px,_85vh)] p-0;
 }
 .admin-desktop-shell .admin-operations .admin-check-row {
-  min-height: 112px;
-  padding: 16px 20px;
-  gap: 14px;
-  border-radius: 0;
+  @apply min-h-[112px] py-[16px] px-[20px] gap-[14px] rounded-none;
 }
 .admin-desktop-shell .admin-operations .admin-check-row:hover {
   background: #f5f8fb;
@@ -196,28 +169,22 @@ html:has(.admin-desktop-shell) {
   box-shadow: inset 3px 0 var(--admin-teal);
 }
 .admin-desktop-shell .admin-check-row .admin-place-photo {
-  width: 56px;
-  height: 56px;
-  flex-basis: 56px;
-  border-radius: 6px;
+  @apply w-[56px] h-[56px] basis-[56px] rounded-[6px];
 }
 .admin-desktop-shell .admin-check-row-copy {
-  gap: 8px;
+  @apply gap-[8px];
 }
 .admin-desktop-shell .admin-check-row-copy strong {
-  font-weight: 600;
-  line-height: 1.5;
+  @apply font-semibold leading-[1.5];
 }
 .admin-desktop-shell .admin-check-row-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  @apply flex flex-wrap items-center;
   gap: 4px 12px;
   color: var(--admin-muted);
-  font-size: 14px;
+  @apply text-[length:14px];
 }
 .admin-desktop-shell .admin-check-row-meta small {
-  font-size: inherit;
+  @apply text-[length:inherit];
 }
 .admin-desktop-shell .admin-check-row > svg {
   flex: 0 0 auto;
@@ -236,73 +203,51 @@ html:has(.admin-desktop-shell) {
     .settings-help a,
     .settings-destination-tip a
   ) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px 14px;
+  @apply inline-flex items-center justify-center gap-[8px] min-h-[44px] py-[10px] px-[14px];
   border: 1px solid #cdd7e2;
-  border-radius: 8px;
+  @apply rounded-[8px];
   background: #fff;
   color: var(--admin-teal-dark);
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.4;
-  cursor: pointer;
+  @apply no-underline text-[length:15px] font-medium leading-[1.4] cursor-pointer;
 }
 .admin-desktop-shell .admin-check-back {
-  margin-bottom: 18px;
+  @apply mb-[18px];
 }
 .admin-desktop-shell .settings-help a {
-  display: flex;
-  width: fit-content;
-  max-width: 100%;
+  @apply flex w-[fit-content] max-w-full;
 }
 .admin-desktop-shell .admin-check-detail-heading {
-  min-height: 120px;
+  @apply min-h-[120px];
 }
 .admin-desktop-shell .admin-check-detail-heading .admin-check-edit-link {
-  margin-top: 8px;
+  @apply mt-[8px];
 }
 
 /* Keep settings stable while data arrives and when returning from another page. */
 .admin-desktop-shell .settings-count {
-  min-width: 208px;
-  justify-content: center;
+  @apply min-w-[208px] justify-center;
 }
 .admin-desktop-shell .settings-visibility-filters button > span {
-  min-width: 28px;
+  @apply min-w-[28px];
 }
 .admin-desktop-shell .settings-table-loading {
   border: 1px solid var(--admin-line);
-  border-radius: 8px;
-  overflow: hidden;
-  padding-bottom: 76px;
+  @apply rounded-[8px] overflow-hidden pb-[76px];
 }
 .admin-desktop-shell .settings-loading-heading {
-  height: 48px;
+  @apply h-[48px];
   background: #f5f7fa;
 }
 .admin-desktop-shell .settings-loading-row {
-  display: grid;
-  grid-template-columns: 30fr 27fr 25fr 18fr;
-  gap: 24px;
-  min-height: 115px;
-  align-items: center;
-  padding: 16px;
+  @apply grid grid-cols-[30fr_27fr_25fr_18fr] gap-[24px] min-h-[115px] items-center p-[16px];
   border-top: 1px solid var(--admin-line);
 }
 .admin-desktop-shell .settings-loading-row > span {
-  display: block;
-  height: 16px;
-  width: 75%;
-  border-radius: 4px;
+  @apply block h-[16px] w-[75%] rounded-[4px];
   background: #e9edf2;
 }
 .admin-desktop-shell .admin-settings-page [role='tabpanel'] {
-  min-height: 480px;
+  @apply min-h-[480px];
 }
 .admin-desktop-shell .admin-settings-page {
   animation: none;
@@ -312,8 +257,7 @@ html:has(.admin-desktop-shell) {
   .admin-desktop-shell
     .admin-desktop-main
     :is(.admin-check-tabs, .visit-progress-states, .admin-enrichment-counts) {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    @apply flex-nowrap overflow-x-auto;
     padding-block: 4px 12px;
     scrollbar-width: thin;
   }
@@ -324,14 +268,12 @@ html:has(.admin-desktop-shell) {
     flex: 0 0 auto;
   }
   .admin-desktop-shell .admin-operations .admin-check-row {
-    padding: 16px;
+    @apply p-[16px];
   }
   .admin-desktop-shell .settings-loading-row {
-    grid-template-columns: 1fr;
-    gap: 14px;
-    min-height: 230px;
+    @apply grid-cols-[1fr] gap-[14px] min-h-[230px];
   }
   .admin-desktop-shell .settings-count {
-    min-width: 0;
+    @apply min-w-0;
   }
 }

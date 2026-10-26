@@ -1,207 +1,132 @@
+@reference './styles.css';
+
 /* A bounded destination list shared by discovery and the trip form. */
 .journey-sheet.destination-picker {
-  width: min(100%, 480px);
-  height: min(640px, calc(100dvh - 24px));
-  max-height: calc(100dvh - 24px);
-  padding: 16px;
-  overflow: hidden;
+  @apply w-[min(100%,_480px)] h-[min(640px,_calc(100dvh_-_24px))] max-h-[calc(100dvh_-_24px)] p-[16px] overflow-hidden;
 }
 .journey-sheet.destination-picker[open] {
-  display: flex;
-  flex-direction: column;
+  @apply flex flex-col;
 }
 .journey-sheet.destination-picker > header {
-  position: static;
-  flex-shrink: 0;
-  padding: 0 0 12px;
+  @apply static shrink-0 pt-0 px-0 pb-[12px];
 }
 .journey-sheet.destination-picker > header h2 {
-  font-size: 20px;
-  font-weight: 600;
+  @apply text-[length:20px] font-semibold;
 }
 .destination-picker-search {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 10px;
-  padding: 0 12px;
-  min-height: 46px;
+  @apply flex items-center shrink-0 gap-[10px] py-0 px-[12px] min-h-[46px];
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  color: var(--teal-dark);
+  @apply rounded-[10px] text-goease-teal-dark;
 }
 .destination-picker-search:focus-within {
   outline: 2px solid var(--teal-dark);
   outline-offset: 2px;
 }
 .destination-picker-search input {
-  min-width: 0;
-  width: 100%;
-  height: 44px;
-  padding: 0;
+  @apply min-w-0 w-full h-[44px] p-0;
   border: 0;
   background: transparent;
-  color: var(--ink);
+  @apply text-goease-ink;
   font: inherit;
-  font-size: 16px;
+  @apply text-[length:16px];
   outline: 0;
   box-shadow: none;
 }
 .destination-picker .destination-region-filters {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  flex-shrink: 0;
-  gap: 10px;
-  margin: 14px 0 0;
+  @apply grid grid-cols-[repeat(2,_minmax(0,_1fr))] shrink-0 gap-[10px] mt-[14px] mx-0 mb-0;
 }
 .destination-picker .destination-region-filters label {
-  min-width: 0;
-  font-size: 14px;
+  @apply min-w-0 text-[length:14px];
 }
 .destination-picker .destination-region-filters select {
-  min-width: 0;
-  width: 100%;
-  min-height: 44px;
-  padding: 8px;
-  font-size: 14px;
+  @apply min-w-0 w-full min-h-[44px] p-[8px] text-[length:14px];
 }
 .destination-picker-count {
-  flex-shrink: 0;
-  margin: 12px 0 8px;
-  font-size: 14px;
-  color: var(--muted);
+  @apply shrink-0 mt-[12px] mx-0 mb-[8px] text-[length:14px] text-goease-muted;
 }
 .destination-picker-results {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+  @apply min-h-0 overflow-y-auto;
   overscroll-behavior: contain;
-  padding-bottom: env(safe-area-inset-bottom);
+  @apply pb-[env(safe-area-inset-bottom)];
 }
 .destination-picker-results ul {
-  padding: 0;
-  margin: 0;
+  @apply p-0 m-0;
   list-style: none;
 }
 .destination-picker-results li + li {
   border-top: 1px solid var(--line);
 }
 .destination-picker-results li > button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  min-height: 54px;
-  padding: 13px 10px;
+  @apply flex items-center justify-between gap-[12px] w-full min-h-[54px] py-[13px] px-[10px];
   border: 0;
-  border-radius: 8px;
+  @apply rounded-[8px];
   background: transparent;
-  color: var(--ink);
-  text-align: left;
+  @apply text-goease-ink text-left;
 }
 .destination-picker-results li > button > span {
-  min-width: 0;
+  @apply min-w-0;
 }
 .destination-picker-results strong {
-  display: block;
-  font-size: 16px;
-  font-weight: 500;
+  @apply block text-[length:16px] font-medium;
 }
 .destination-picker-results small {
-  display: block;
-  margin-top: 3px;
-  font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @apply block mt-[3px] text-[length:14px] whitespace-nowrap overflow-hidden text-ellipsis;
 }
 .destination-picker-results li > button > svg {
-  flex-shrink: 0;
-  color: var(--teal-dark);
+  @apply shrink-0 text-goease-teal-dark;
 }
 .destination-picker-results li > button:hover,
 .destination-picker-results li > button[aria-pressed='true'] {
   background: var(--soft);
 }
 .destination-picker-empty {
-  padding: 20px 8px;
-  font-size: 15px;
-  color: var(--muted);
+  @apply py-[20px] px-[8px] text-[length:15px] text-goease-muted;
 }
 .destination-picker-empty button {
-  color: var(--teal-dark);
-  padding: 10px 0;
+  @apply text-goease-teal-dark py-[10px] px-0;
   background: transparent;
-  text-decoration: underline;
+  @apply underline;
 }
 .quick-destination-field {
-  margin-bottom: 22px;
+  @apply mb-[22px];
 }
 .quick-destination-field > span {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 8px;
+  @apply block text-[length:14px] font-medium mb-[8px];
 }
 .quick-fields .quick-destination-select {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 56px;
-  padding: 12px 14px;
+  @apply flex items-center gap-[10px] w-full min-h-[56px] py-[12px] px-[14px];
   border: 1px solid var(--line);
-  border-radius: 12px;
+  @apply rounded-[12px];
   background: var(--paper-card);
-  color: var(--ink);
-  text-align: left;
-  font-size: 16px;
+  @apply text-goease-ink text-left text-[length:16px];
 }
 .quick-destination-select > span {
   flex: 1;
-  min-width: 0;
+  @apply min-w-0;
 }
 .quick-destination-select > svg {
-  flex-shrink: 0;
-  color: var(--teal-dark);
+  @apply shrink-0 text-goease-teal-dark;
 }
 .quick-destination-field > small {
-  display: block;
-  margin-top: 8px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--muted);
+  @apply block mt-[8px] text-[length:13px] leading-[1.5] text-goease-muted;
 }
 .discovery-all-destinations {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 16px;
+  @apply flex flex-wrap gap-[12px] items-center justify-between mt-[16px];
 }
 .discovery-all-destinations > span {
-  font-size: 14px;
-  color: var(--muted);
+  @apply text-[length:14px] text-goease-muted;
 }
 .discovery-all-destinations > button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 10px 14px;
+  @apply inline-flex items-center justify-center gap-[8px] min-h-[44px] py-[10px] px-[14px];
   border: 1px solid var(--line);
-  border-radius: 10px;
+  @apply rounded-[10px];
   background: var(--paper-card);
-  color: var(--teal-dark);
-  font-size: 15px;
-  font-weight: 500;
+  @apply text-goease-teal-dark text-[length:15px] font-medium;
 }
 @media (max-width: 480px) {
   .discovery-all-destinations > button {
-    width: 100%;
+    @apply w-full;
   }
 }

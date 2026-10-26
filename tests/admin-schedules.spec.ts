@@ -206,7 +206,7 @@ test('schedule list persists edits and toggles, creates a schedule, handles conf
     .click();
   await expect(page.getByLabel('Khu vực xem trước')).toBeVisible();
   await expect(
-    page.getByRole('button', { name: 'Mô phỏng tác động' }),
+    page.getByRole('button', { name: 'Xem trước ảnh hưởng' }),
   ).toBeDisabled();
   await page
     .getByRole('button', { name: 'Lịch cập nhật', exact: true })

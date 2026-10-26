@@ -36,10 +36,12 @@ export function Notice({
       className={`notice ${error ? 'notice-error' : ''} ${className}`}
       role={error ? 'alert' : 'status'}
     >
-      <span className="notice-icon" aria-hidden="true">
+      <span className="notice-icon grid place-items-center" aria-hidden="true">
         {error ? '!' : '✓'}
       </span>
-      <div className="notice-text">{children}</div>
+      <div className="notice-text min-w-0 flex-1 [overflow-wrap:anywhere]">
+        {children}
+      </div>
     </div>
   );
 }
@@ -48,7 +50,7 @@ export function Brand() {
   return (
     <span className="brand">
       <img
-        className="brand-mark"
+        className="brand-mark block h-[36px] w-[36px] flex-[0_0_auto] object-contain"
         src={images.logo}
         alt=""
         aria-hidden="true"
@@ -67,9 +69,14 @@ export function Goe({
   className?: string;
   size?: 'small' | 'medium' | 'large';
 }) {
+  const dimensions = {
+    small: 'h-[56px] w-[56px]',
+    medium: 'h-[96px] w-[96px]',
+    large: 'h-[160px] w-[160px]',
+  };
   return (
     <img
-      className={`goe-mascot goe-${size} ${className}`}
+      className={`goe-mascot goe-${size} block object-contain ${dimensions[size]} ${className}`}
       src={images.goeOriginal}
       alt="Goe, linh thú xanh dương của GoEase"
       width={1254}
@@ -88,7 +95,7 @@ export function HeroArtwork() {
     >
       <svg
         viewBox="0 0 540 380"
-        className="hero-artwork-svg"
+        className="hero-artwork-svg block h-auto w-full"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"

@@ -1,15 +1,9 @@
+@reference './styles.css';
+
 .app-confirmation {
-  position: fixed;
-  inset: 0;
-  margin: auto;
-  width: min(440px, calc(100vw - 32px));
-  max-width: none;
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  padding: 28px;
+  @apply fixed inset-0 m-auto w-[min(440px,_calc(100vw_-_32px))] max-w-none max-h-[calc(100dvh_-_32px)] overflow-y-auto p-[28px];
   border: 1px solid #e3e9e6;
-  border-radius: 18px;
-  color: #214652;
+  @apply rounded-[18px] text-[#214652];
   background: #fffefb;
   box-shadow: 0 24px 80px #163e4933;
 }
@@ -18,81 +12,54 @@
   backdrop-filter: blur(3px);
 }
 .app-confirmation .app-confirmation-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  min-height: 32px;
-  padding: 0;
+  @apply absolute top-[16px] right-[16px] grid place-items-center w-[32px] h-[32px] min-h-[32px] p-0;
   border: 0;
-  border-radius: 8px;
+  @apply rounded-[8px];
   background: transparent;
-  color: #7a8e94;
+  @apply text-[#7a8e94];
   box-shadow: none;
 }
 .app-confirmation-close:hover {
   background: #edf4f1;
 }
 .app-confirmation-icon {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  margin-bottom: 20px;
+  @apply grid place-items-center w-[52px] h-[52px] mb-[20px];
   border: 1px solid #f0dfbc;
-  border-radius: 15px;
-  color: #b87a21;
+  @apply rounded-[15px] text-[#b87a21];
   background: #fff4df;
 }
 .app-confirmation.is-danger .app-confirmation-icon {
-  color: #bc4b3f;
+  @apply text-[#bc4b3f];
   background: #fff0ec;
-  border-color: #f4d9d2;
+  @apply border-[#f4d9d2];
 }
 .app-confirmation h2 {
-  margin: 0 24px 12px 0;
-  font-size: 23px;
-  line-height: 1.4;
-  letter-spacing: -0.4px;
-  color: #214652;
+  @apply mt-0 mr-[24px] mb-[12px] ml-0 text-[length:23px] leading-[1.4] tracking-[-0.4px] text-[#214652];
 }
 .app-confirmation p {
-  margin: 0;
-  color: #6d838c;
-  line-height: 1.75;
-  font-size: 14px;
+  @apply m-0 text-[#6d838c] leading-[1.75] text-[length:14px];
   overflow-wrap: anywhere;
 }
 .app-confirmation-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 28px;
+  @apply flex justify-end gap-[12px] mt-[28px];
 }
 .app-confirmation-actions button {
-  min-height: 42px;
-  padding: 10px 18px;
-  border-radius: 9px;
-  font-size: 13px;
-  font-weight: 600;
+  @apply min-h-[42px] py-[10px] px-[18px] rounded-[9px] text-[length:13px] font-semibold;
   box-shadow: none;
 }
 .app-confirmation .app-confirmation-cancel {
   border: 1px solid #d9e4e5;
-  color: #54717c;
+  @apply text-[#54717c];
   background: white;
 }
 .app-confirmation .app-confirmation-accept {
   border: 1px solid #00868f;
-  color: white;
+  @apply text-white;
   background: #00868f;
 }
 .app-confirmation.is-danger .app-confirmation-accept {
   background: #b74c40;
-  border-color: #b74c40;
+  @apply border-[#b74c40];
 }
 .app-confirmation :is(button):focus-visible {
   outline: 3px solid #008b9590;
@@ -100,14 +67,13 @@
 }
 @media (max-width: 480px) {
   .app-confirmation {
-    padding: 24px 20px;
-    border-radius: 16px;
+    @apply py-[24px] px-[20px] rounded-[16px];
   }
   .app-confirmation h2 {
-    font-size: 21px;
+    @apply text-[length:21px];
   }
   .app-confirmation-actions button {
     flex: 1;
-    padding-inline: 10px;
+    @apply px-[10px];
   }
 }

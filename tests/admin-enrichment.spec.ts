@@ -80,7 +80,9 @@ test('national enrichment shows honest progress, pauses and resumes, filters and
   await expect.poll(() => filter).toBe('unresolved');
   await panel.getByText('Xem từng địa điểm và thông tin còn thiếu').click();
   await expect(panel.getByText('Chưa có mục trong bộ lọc này.')).toBeVisible();
-  await panel.getByLabel('Lọc kết quả').selectOption('review');
+  await panel
+    .getByRole('combobox', { name: 'Lọc kết quả' })
+    .selectOption('review');
   await expect(
     panel.getByText('Địa điểm kiểm thử bổ sung', { exact: true }),
   ).toBeVisible();

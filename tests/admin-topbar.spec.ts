@@ -44,7 +44,7 @@ test('admin header is consistent and only scopes pages that consume the selected
       header.getByRole('link', { name: 'Mở hàng chờ cần kiểm tra' }),
     ).toBeVisible();
     await expect(header.getByLabel('Tìm kiếm toàn danh mục')).toHaveCount(0);
-    expect((await header.boundingBox())!.height).toBe(80);
+    expect((await header.boundingBox())!.height).toBe(72);
     if (['overview', 'automatic', 'settings'].includes(hash))
       await page.screenshot({
         path: `test-results/header-evidence/${hash}-desktop.png`,

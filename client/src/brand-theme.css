@@ -1,3 +1,5 @@
+@reference './styles.css';
+
 /* Presentation only. Keep the existing forms, API contracts and data states. */
 :root {
   --teal: #00858c;
@@ -12,25 +14,21 @@
 
 body {
   background: var(--paper);
-  color: var(--ink);
-  line-height: 1.55;
+  @apply text-goease-ink leading-[1.55];
 }
 
 h1,
 h2,
 h3,
 h4 {
-  font-family: var(--font-sans);
-  text-wrap: pretty;
+  @apply font-(family-name:--font-sans) text-pretty;
 }
 h1 {
-  font-weight: 800;
-  letter-spacing: -0.045em;
+  @apply font-extrabold tracking-[-0.045em];
 }
 h2,
 h3 {
-  font-weight: 700;
-  letter-spacing: -0.025em;
+  @apply font-bold tracking-[-0.025em];
 }
 button,
 a,
@@ -46,7 +44,7 @@ button,
 }
 button > svg,
 a > svg {
-  flex-shrink: 0;
+  @apply shrink-0;
 }
 button:not(:disabled),
 .button:not(:disabled),
@@ -71,33 +69,21 @@ button:active:not(:disabled),
   accent-color: var(--teal);
 }
 :is(input, select, textarea):not([type='checkbox']):not([type='radio']) {
-  max-width: 100%;
-  color: var(--ink);
+  @apply max-w-full text-goease-ink;
 }
 :is(input, select, textarea):focus {
-  border-color: var(--teal);
+  @apply border-goease-teal;
 }
 ::selection {
   background: #bde6e0;
-  color: var(--ink);
+  @apply text-goease-ink;
 }
 
 /* Shared controls: one obvious primary action, quieter secondary actions. */
 .button,
 .journey-primary,
 .journey-outline {
-  min-height: 46px;
-  max-width: 100%;
-  border-radius: 25px;
-  padding: 11px 18px;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 650;
-  line-height: 1.45;
-  white-space: normal;
-  text-align: center;
-  justify-content: center;
-  align-items: center;
+  @apply min-h-[46px] max-w-full rounded-[25px] py-[11px] px-[18px] gap-[8px] text-[length:14px] font-[650] leading-[1.45] whitespace-normal text-center justify-center items-center;
 }
 .button-primary,
 .button:not(.button-outline):not(.button-subtle):not(.text-button),
@@ -105,7 +91,7 @@ button:active:not(:disabled),
 .discovery-banner .button,
 .place-bottom .button,
 .goe-proposal-actions button:first-child {
-  color: #fff;
+  @apply text-[#fff];
   background: var(--primary-fill);
   border: 1px solid transparent;
   box-shadow: 0 4px 12px #ed85151b;
@@ -116,14 +102,14 @@ button:active:not(:disabled),
   ),
 .journey-primary:hover:not(:disabled) {
   background: linear-gradient(110deg, #f89720, #e9710c);
-  color: #fff;
+  @apply text-[#fff];
   box-shadow: 0 6px 16px #ed851528;
 }
 .button-outline,
 .button-subtle,
 .journey-outline {
   background: var(--soft);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
   border: 1px solid transparent;
   box-shadow: none;
 }
@@ -133,9 +119,7 @@ button:active:not(:disabled),
   background: var(--soft-hover);
 }
 .button-small {
-  min-height: 40px;
-  padding: 8px 13px;
-  font-size: 13px;
+  @apply min-h-[40px] py-[8px] px-[13px] text-[length:13px];
 }
 .button:disabled,
 button:disabled {
@@ -144,7 +128,7 @@ button:disabled {
 .field label,
 .journey-field,
 .account-card label {
-  font-weight: 600;
+  @apply font-semibold;
 }
 .field input,
 .field select,
@@ -154,161 +138,119 @@ button:disabled {
 .journey-field textarea,
 .expense-form input,
 .expense-form select {
-  min-height: 46px;
+  @apply min-h-[46px];
   border: 1px solid var(--line);
-  border-radius: 11px;
+  @apply rounded-[11px];
   background: var(--paper-card);
-  font-size: 14px;
-  padding: 11px 12px;
+  @apply text-[length:14px] py-[11px] px-[12px];
 }
 .field small,
 .journey-field small,
 .quick-hint {
-  color: var(--muted);
-  line-height: 1.5;
+  @apply text-goease-muted leading-[1.5];
 }
 .notice,
 .journey-notice {
-  border-radius: 14px;
+  @apply rounded-[14px];
   background: var(--soft);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .notice-error {
   background: #fff0e9;
-  color: var(--danger);
+  @apply text-goease-danger;
 }
 .notice a {
-  text-decoration: underline;
+  @apply underline;
   text-underline-offset: 3px;
-}
-.notice-text {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 /* Brand and navigation remain consistent across all traveler pages. */
 .site-header {
   background: #fff8eff5;
-  border-color: var(--line);
+  @apply border-goease-line;
 }
 .header-inner {
-  min-height: 76px;
-  gap: 20px;
+  @apply min-h-[76px] gap-[20px];
 }
 .brand {
-  gap: 8px;
-  color: var(--teal-dark);
-  font-size: 25px;
-  font-weight: 800;
+  @apply gap-[8px] text-goease-teal-dark text-[length:25px] font-extrabold;
 }
 .brand-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  @apply w-[34px] h-[34px] rounded-[50%];
 }
 .main-nav {
-  margin-left: 16px;
-  gap: 3px;
+  @apply ml-[16px] gap-[3px];
 }
 .nav-link {
-  font-size: 13px;
-  padding: 10px 13px;
-  white-space: nowrap;
-  border-radius: 20px;
+  @apply text-[length:13px] py-[10px] px-[13px] whitespace-nowrap rounded-[20px];
 }
 .nav-link.active,
 .nav-link:hover {
   background: var(--soft);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .account-nav,
 .user-menu {
-  gap: 9px;
-  min-width: 0;
+  @apply gap-[9px] min-w-0;
 }
 .user-menu > button[aria-label='Hồ sơ cá nhân'],
 .home-avatar-link {
-  padding: 0;
-  border-radius: 50%;
-  flex-shrink: 0;
+  @apply p-0 rounded-[50%] shrink-0;
 }
 .site-footer {
-  border-color: var(--line);
+  @apply border-goease-line;
   background: var(--paper);
 }
 .footer-tagline {
-  color: #9b612e;
-  font-style: italic;
+  @apply text-[#9b612e] italic;
 }
 .footer-note {
-  color: var(--muted);
+  @apply text-goease-muted;
 }
 
 /* Home: scenic welcome, your trips, shortcuts, then destination discovery. */
 .discovery-page {
-  max-width: 1080px;
+  @apply max-w-[1080px];
 }
 .discovery-home {
-  display: flex;
-  flex-direction: column;
-  gap: 26px;
+  @apply flex flex-col gap-[26px];
 }
 .discovery-home .discovery-destinations {
-  margin-top: -12px;
+  @apply mt-[-12px];
 }
 .discovery-intro {
-  padding: 0;
+  @apply p-0;
 }
 .discovery-eyebrow {
-  color: var(--teal-dark);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  @apply text-goease-teal-dark text-[length:11px] tracking-[0.1em];
 }
 .discovery-intro :is(h1, h2) {
-  font-size: 24px;
-  font-weight: 750;
-  letter-spacing: -0.035em;
-  line-height: 1.3;
-  margin-bottom: 14px;
+  @apply text-[length:24px] font-[750] tracking-[-0.035em] leading-[1.3] mb-[14px];
 }
 .discovery-search {
-  min-height: 48px;
-  border-color: var(--line);
+  @apply min-h-[48px] border-goease-line;
   background: var(--paper-card);
-  border-radius: 13px;
+  @apply rounded-[13px];
 }
 .discovery-search input {
-  font-size: 14px;
-  min-height: 46px;
+  @apply text-[length:14px] min-h-[46px];
 }
 .discovery-search svg {
-  color: var(--teal);
+  @apply text-goease-teal;
 }
 .discovery-banner {
-  min-height: 330px;
-  margin: 0 0 16px;
-  padding: 34px;
-  border-radius: 22px;
+  @apply min-h-[330px] mt-0 mx-0 mb-[16px] p-[34px] rounded-[22px];
   background: #e1efe7;
-  overflow: visible;
-  color: var(--ink);
+  @apply overflow-visible text-goease-ink;
   box-shadow: none;
 }
 .discovery-landscape {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 65%;
-  border-radius: inherit;
-  z-index: -2;
+  @apply absolute inset-0 w-full h-full object-cover object-[50%_65%] rounded-[inherit] z-[-2];
 }
 .discovery-banner::before {
-  inset: 0;
+  @apply inset-0;
   border: 0;
-  border-radius: inherit;
-  z-index: -1;
+  @apply rounded-[inherit] z-[-1];
   background: linear-gradient(
     100deg,
     #fff8effa 0%,
@@ -317,127 +259,77 @@ button:disabled {
   );
 }
 .discovery-banner-copy {
-  width: min(65%, 450px);
+  @apply w-[min(65%,_450px)];
 }
 .discovery-banner .discovery-greeting {
-  margin: 0 0 6px;
-  font-size: 16px;
-  font-weight: 600;
+  @apply mt-0 mx-0 mb-[6px] text-[length:16px] font-semibold;
 }
 .discovery-banner h1 {
-  color: var(--ink);
-  font-size: clamp(30px, 3.6vw, 42px);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.045em;
-  margin-bottom: 12px;
+  @apply text-goease-ink text-[length:clamp(30px,_3.6vw,_42px)] font-extrabold leading-[1.1] tracking-[-0.045em] mb-[12px];
 }
 .discovery-banner p {
-  white-space: normal;
-  color: var(--ink);
-  font-size: 14px;
-  max-width: 330px;
-  line-height: 1.6;
+  @apply whitespace-normal text-goease-ink text-[length:14px] max-w-[330px] leading-[1.6];
 }
 .discovery-slogan {
-  position: absolute;
-  right: 30px;
-  bottom: 55px;
-  text-align: right;
-  color: white;
-  font-size: 21px;
-  font-style: italic;
-  line-height: 1.3;
+  @apply absolute right-[30px] bottom-[55px] text-right text-white text-[length:21px] italic leading-[1.3];
   text-shadow: 0 2px 8px #123e4b80;
 }
 .discovery-start {
-  position: absolute;
-  left: 34px;
-  right: 34px;
-  bottom: -23px;
+  @apply absolute left-[34px] right-[34px] bottom-[-23px];
 }
 .discovery-start .button {
-  width: 100%;
-  min-height: 52px;
-  font-size: 16px;
-  padding: 13px 22px;
-  gap: 12px;
+  @apply w-full min-h-[52px] text-[length:16px] py-[13px] px-[22px] gap-[12px];
 }
 .discovery-start .button svg:last-child {
-  margin-left: 8px;
+  @apply ml-[8px];
 }
 .discovery-section-heading {
-  margin-bottom: 12px;
-  gap: 12px;
-  flex-wrap: wrap;
+  @apply mb-[12px] gap-[12px] flex-wrap;
 }
 .discovery-section-heading h2,
 .discovery-destinations h2,
 .discovery-shortcuts h2 {
-  font-size: 19px;
-  line-height: 1.4;
-  font-weight: 750;
-  letter-spacing: -0.035em;
-  margin: 0;
+  @apply text-[length:19px] leading-[1.4] font-[750] tracking-[-0.035em] m-0;
 }
 .discovery-section-heading > button {
-  font-size: 13px;
-  min-height: 40px;
-  color: var(--muted);
+  @apply text-[length:13px] min-h-[40px] text-goease-muted;
 }
 .discovery-trips {
-  margin-top: 0;
+  @apply mt-0;
 }
 .discovery-trip-empty,
 .discovery-trip-row {
-  padding: 15px;
-  border-color: var(--line);
+  @apply p-[15px] border-goease-line;
   background: var(--paper-card);
-  border-radius: 15px;
-  min-height: 86px;
+  @apply rounded-[15px] min-h-[86px];
 }
 .discovery-trip-empty strong,
 .discovery-trip-row strong {
-  font-size: 15px;
-  font-weight: 700;
+  @apply text-[length:15px] font-bold;
 }
 .discovery-trip-empty small,
 .discovery-trip-row small {
-  font-size: 13px;
-  color: var(--muted);
+  @apply text-[length:13px] text-goease-muted;
 }
 .discovery-trip-row > span:first-child,
 .trip-empty-icon {
   background: var(--soft);
-  color: var(--teal);
+  @apply text-goease-teal;
 }
 .discovery-trip-row > svg,
 .discovery-trip-empty > svg {
-  color: var(--teal);
-  flex-shrink: 0;
+  @apply text-goease-teal shrink-0;
 }
 .discovery-shortcuts > div {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
+  @apply grid grid-cols-[repeat(3,_minmax(0,_1fr))] gap-[12px] mt-[12px];
 }
 .discovery-shortcuts button {
-  display: flex;
-  align-items: center;
-  text-align: left;
-  gap: 13px;
-  min-height: 96px;
-  padding: 20px;
-  border-radius: 15px;
+  @apply flex items-center text-left gap-[13px] min-h-[96px] p-[20px] rounded-[15px];
   background: var(--sand);
-  color: var(--ink);
-  font-size: 14px;
-  line-height: 1.5;
-  font-weight: 650;
+  @apply text-goease-ink text-[length:14px] leading-[1.5] font-[650];
 }
 .discovery-shortcuts button:first-child svg {
-  color: #c6680e;
+  @apply text-[#c6680e];
 }
 .discovery-shortcuts button:nth-child(2) {
   background: #e5f4f5;
@@ -446,64 +338,50 @@ button:disabled {
   background: #fff3d9;
 }
 .discovery-shortcuts svg {
-  color: var(--teal);
+  @apply text-goease-teal;
 }
 .discovery-filters {
-  margin-top: 14px;
-  gap: 8px;
+  @apply mt-[14px] gap-[8px];
 }
 .discovery-filters button {
   flex: 0 1 auto;
-  min-height: 40px;
-  padding: 8px 17px;
-  font-size: 13px;
+  @apply min-h-[40px] py-[8px] px-[17px] text-[length:13px];
   background: var(--soft);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .discovery-filters button[aria-pressed='true'] {
   background: var(--teal-fill);
 }
 .discovery-card {
-  border-radius: 16px;
-  height: 250px;
+  @apply rounded-[16px] h-[250px];
 }
 .discovery-card-caption strong {
-  font-size: 24px;
-  font-weight: 750;
+  @apply text-[length:24px] font-[750];
 }
 .discovery-card-caption > span {
-  font-size: 13px;
-  line-height: 1.5;
+  @apply text-[length:13px] leading-[1.5];
 }
 .discovery-bookmark {
-  width: 40px;
-  height: 40px;
-  color: var(--teal-dark);
+  @apply w-[40px] h-[40px] text-goease-teal-dark;
 }
 .discovery-empty {
   background: var(--soft);
-  color: var(--muted);
-  font-size: 14px;
+  @apply text-goease-muted text-[length:14px];
 }
 .destination-region-filters {
-  gap: 12px;
-  margin: 14px 0;
+  @apply gap-[12px] my-[14px] mx-0;
 }
 .destination-region-filters label {
-  font-size: 12px;
-  color: var(--muted);
+  @apply text-[length:12px] text-goease-muted;
 }
 .destination-region-filters select {
   background: var(--paper-card);
-  border-color: var(--line);
-  min-height: 44px;
-  font-size: 14px;
-  border-radius: 10px;
+  @apply border-goease-line min-h-[44px] text-[length:14px] rounded-[10px];
 }
 
 /* Shared mobile navigation: a soft sliding segment, with a stable touch area. */
 .mobile-nav-indicator {
-  display: none;
+  @apply hidden;
 }
 @keyframes nav-rubber {
   0% {
@@ -522,167 +400,127 @@ button:disabled {
 .journey-workspace,
 .journey-list {
   background: var(--paper);
-  color: var(--ink);
+  @apply text-goease-ink;
 }
 .journey-main {
-  width: min(100%, 760px);
+  @apply w-[min(100%,_760px)];
 }
 .journey-workspace,
 .journey-list {
-  padding: 20px 22px 28px;
+  @apply pt-[20px] px-[22px] pb-[28px];
 }
 .journey-top {
-  grid-template-columns: 44px minmax(0, 1fr) 76px;
-  min-height: 54px;
-  gap: 10px;
-  margin-bottom: 18px;
+  @apply grid-cols-[44px_minmax(0,_1fr)_76px] min-h-[54px] gap-[10px] mb-[18px];
 }
 .journey-top > button {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  @apply w-[44px] h-[44px] rounded-[50%];
   background: var(--soft);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .journey-top > div {
-  margin-left: 0;
-  min-width: 0;
-  font-size: 17px;
+  @apply ml-0 min-w-0 text-[length:17px];
 }
 .journey-top strong {
-  display: block;
+  @apply block;
   overflow-wrap: anywhere;
-  font-weight: 750;
+  @apply font-[750];
 }
 .journey-top small {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--muted);
+  @apply text-[length:12px] leading-[1.5] text-goease-muted;
 }
 .journey-top > span.quick-header-note {
-  font-size: 12px;
-  color: var(--teal-dark);
-  white-space: normal;
+  @apply text-[length:12px] text-goease-teal-dark whitespace-normal;
 }
 .planning-steps {
-  display: flex;
+  @apply flex;
   list-style: none;
-  padding: 0;
-  margin: 8px 0 26px;
-  gap: 8px;
+  @apply p-0 mt-[8px] mx-0 mb-[26px] gap-[8px];
 }
 .planning-steps li {
-  position: relative;
+  @apply relative;
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  color: var(--muted);
-  font-size: 12px;
+  @apply flex flex-col items-center gap-[7px] text-goease-muted text-[length:12px];
 }
 .planning-steps li::after {
   content: '';
-  position: absolute;
-  height: 1px;
+  @apply absolute h-[1px];
   background: #cbdcda;
-  top: 15px;
-  left: calc(50% + 20px);
-  width: calc(100% - 32px);
+  @apply top-[15px] left-[calc(50%_+_20px)] w-[calc(100%_-_32px)];
 }
 .planning-steps li:last-child::after {
-  display: none;
+  @apply hidden;
 }
 .planning-steps span {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
+  @apply grid place-items-center w-[30px] h-[30px] rounded-[50%];
   background: #e4eeec;
-  font-weight: 700;
-  font-size: 14px;
+  @apply font-bold text-[length:14px];
 }
 .planning-steps strong {
-  font-weight: 500;
+  @apply font-medium;
 }
 .planning-steps [aria-current] span,
 .planning-steps .is-complete span {
   background: var(--teal);
-  color: white;
+  @apply text-white;
 }
 .planning-steps [aria-current] strong {
-  color: var(--teal-dark);
-  font-weight: 700;
+  @apply text-goease-teal-dark font-bold;
 }
 .quick-intro h1,
 .quick-result-intro h1 {
-  font-size: clamp(24px, 5.8vw, 30px);
-  font-weight: 800;
+  @apply text-[length:clamp(24px,_5.8vw,_30px)] font-extrabold;
 }
 .quick-intro p,
 .quick-result-intro p {
-  font-size: 14px;
-  color: var(--muted);
+  @apply text-[length:14px] text-goease-muted;
 }
 .quick-intro {
-  margin-bottom: 22px;
-  padding-right: 70px;
+  @apply mb-[22px] pr-[70px];
 }
 .quick-destinations {
-  gap: 10px;
+  @apply gap-[10px];
 }
 .quick-destinations button {
-  border-color: var(--line);
+  @apply border-goease-line;
   background: var(--paper-card);
-  color: var(--ink);
-  padding: 14px;
-  min-height: 84px;
+  @apply text-goease-ink p-[14px] min-h-[84px];
 }
 .quick-destinations button strong {
-  font-size: 15px;
+  @apply text-[length:15px];
 }
 .quick-destinations small {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
+  @apply text-goease-muted text-[length:12px] leading-[1.5];
 }
 .quick-destinations button[aria-pressed='true'] {
-  border-color: var(--teal);
+  @apply border-goease-teal;
   background: var(--soft);
-  padding: 13px;
+  @apply p-[13px];
 }
 .quick-question {
-  margin-top: 24px;
+  @apply mt-[24px];
 }
 .quick-question h2 {
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 10px;
+  @apply text-goease-ink text-[length:15px] font-bold mb-[10px];
 }
 .quick-options button {
-  border-color: var(--line);
+  @apply border-goease-line;
   background: var(--paper-card);
-  color: var(--ink);
-  min-height: 44px;
+  @apply text-goease-ink min-h-[44px];
 }
 .quick-options button[aria-pressed='true'] {
   background: var(--teal-dark);
-  border-color: var(--teal-dark);
-  color: white;
+  @apply border-goease-teal-dark text-white;
 }
 .quick-preferences {
-  border-color: var(--line);
+  @apply border-goease-line;
 }
 .quick-preferences summary {
-  font-size: 14px;
-  color: var(--teal-dark);
+  @apply text-[length:14px] text-goease-teal-dark;
 }
 .quick-action,
 .quick-keep-bar {
   background: #fff8eff5;
-  padding-top: 14px;
+  @apply pt-[14px];
   backdrop-filter: blur(10px);
 }
 .quick-keep-bar {
@@ -690,310 +528,241 @@ button:disabled {
 }
 .quick-hint,
 .quick-keep-bar small {
-  font-size: 12px;
-  color: var(--muted);
+  @apply text-[length:12px] text-goease-muted;
 }
 .quick-manual {
-  color: var(--teal-dark);
-  font-size: 14px;
+  @apply text-goease-teal-dark text-[length:14px];
 }
 .journey-intro-title,
 .journey-review h1,
 .journey-list h1,
 .journey-cost h1 {
-  font-size: clamp(27px, 6.8vw, 36px);
-  font-weight: 800;
-  line-height: 1.2;
-  color: var(--ink);
+  @apply text-[length:clamp(27px,_6.8vw,_36px)] font-extrabold leading-[1.2] text-goease-ink;
 }
 .journey-list-heading > p {
-  color: var(--muted);
-  font-size: 14px;
+  @apply text-goease-muted text-[length:14px];
 }
 .journey-eyebrow {
-  font-size: 11px;
-  color: var(--teal-dark);
+  @apply text-[length:11px] text-goease-teal-dark;
 }
 .journey-create-card {
   background: var(--sand);
   border: 1px solid #f2dfc0;
-  color: var(--ink);
-  border-radius: 16px;
+  @apply text-goease-ink rounded-[16px];
 }
 .journey-create-card strong {
-  font-size: 16px;
+  @apply text-[length:16px];
 }
 .journey-create-card small {
-  color: var(--muted);
-  font-size: 13px;
+  @apply text-goease-muted text-[length:13px];
 }
 .trip-phase-tabs {
-  gap: 7px;
-  overflow-x: auto;
-  padding-bottom: 8px;
+  @apply gap-[7px] overflow-x-auto pb-[8px];
 }
 .trip-phase-tabs button {
   background: var(--soft);
-  color: var(--teal-dark);
-  font-size: 13px;
-  min-height: 42px;
-  flex-shrink: 0;
+  @apply text-goease-teal-dark text-[length:13px] min-h-[42px] shrink-0;
 }
 .trip-phase-tabs button[aria-pressed='true'] {
   background: var(--teal-dark);
-  color: white;
+  @apply text-white;
 }
 .journey-cover {
-  height: 190px;
-  border-radius: 16px;
+  @apply h-[190px] rounded-[16px];
 }
 .journey-view-tabs {
-  gap: 0;
+  @apply gap-0;
   border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  margin-bottom: 18px;
+  @apply rounded-none mb-[18px];
 }
 .journey-view-tabs > button {
   flex: 1;
-  min-width: 0;
-  border-radius: 0;
+  @apply min-w-0 rounded-none;
   background: transparent;
-  color: var(--muted);
+  @apply text-goease-muted;
   border-bottom: 2px solid transparent;
-  min-height: 48px;
-  font-size: 13px;
-  padding: 10px 5px;
+  @apply min-h-[48px] text-[length:13px] py-[10px] px-[5px];
 }
 .journey-view-tabs > button[aria-pressed='true'] {
   background: transparent;
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
   border-bottom-color: var(--teal);
-  font-weight: 750;
+  @apply font-[750];
 }
 .journey-day-tabs {
-  gap: 8px;
-  padding: 2px 0 8px;
+  @apply gap-[8px] pt-[2px] px-0 pb-[8px];
   scroll-padding: 16px;
 }
 .journey-day-tabs > button {
   flex: 1 0 88px;
-  min-height: 46px;
-  font-size: 13px;
+  @apply min-h-[46px] text-[length:13px];
   background: #edf0eb;
-  color: var(--ink);
-  border-radius: 24px;
+  @apply text-goease-ink rounded-[24px];
 }
 .journey-day-tabs > button[aria-selected='true'] {
   background: var(--teal-dark);
-  color: white;
+  @apply text-white;
 }
 .journey-day-heading h1 {
-  font-size: 25px;
-  font-weight: 750;
+  @apply text-[length:25px] font-[750];
 }
 .journey-day-heading > span {
-  font-size: 12px;
-  color: var(--muted);
+  @apply text-[length:12px] text-goease-muted;
 }
 .journey-timeline {
-  grid-template-columns: minmax(0, 1fr);
-  min-width: 0;
+  @apply grid-cols-[minmax(0,_1fr)] min-w-0;
   border-left: 1px solid #c2ded9;
-  padding-left: 17px;
-  gap: 12px;
+  @apply pl-[17px] gap-[12px];
 }
 .journey-stop {
-  min-width: 0;
+  @apply min-w-0;
   background: var(--paper-card);
-  border-color: var(--line);
-  border-radius: 13px;
+  @apply border-goease-line rounded-[13px];
 }
 .journey-stop-dot {
-  left: -23px;
+  @apply left-[-23px];
   background: var(--teal);
   box-shadow: 0 0 0 3px var(--soft);
 }
 .journey-stop-open {
-  min-width: 0;
-  min-height: 104px;
-  padding: 10px 46px 10px 10px;
-  gap: 12px;
+  @apply min-w-0 min-h-[104px] pt-[10px] pr-[46px] pb-[10px] pl-[10px] gap-[12px];
 }
 .journey-stop-open img {
-  width: 76px;
-  height: 76px;
-  border-radius: 10px;
+  @apply w-[76px] h-[76px] rounded-[10px];
 }
 .journey-stop-open strong {
-  font-size: 15px;
-  line-height: 1.45;
-  font-weight: 700;
-  color: var(--ink);
+  @apply text-[length:15px] leading-[1.45] font-bold text-goease-ink;
 }
 .journey-stop-open small {
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--muted);
+  @apply text-[length:12px] leading-[1.6] text-goease-muted;
 }
 .journey-stop-order {
-  top: 7px;
+  @apply top-[7px];
 }
 .journey-stop-order button {
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .journey-add-stop {
-  min-height: 46px;
-  border-color: #a7d1cc;
-  color: var(--teal-dark);
-  font-size: 14px;
+  @apply min-h-[46px] border-[#a7d1cc] text-goease-teal-dark text-[length:14px];
 }
 .journey-companion,
 .journey-preparation,
 .budget-incomplete {
   background: var(--sand);
-  border-color: #f1dfc2;
-  color: var(--ink);
+  @apply border-[#f1dfc2] text-goease-ink;
 }
 .journey-companion p,
 .journey-companion > span {
-  font-size: 13px;
-  color: var(--ink);
+  @apply text-[length:13px] text-goease-ink;
 }
 .journey-save-bar {
-  position: sticky;
-  bottom: 84px;
-  z-index: 9;
+  @apply sticky bottom-[84px] z-9;
   background: #fff8eff5;
-  padding: 12px 0;
+  @apply py-[12px] px-0;
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--line);
-  flex-wrap: wrap;
+  @apply flex-wrap;
 }
 .journey-save-bar > span {
-  font-size: 12px;
-  color: var(--muted);
+  @apply text-[length:12px] text-goease-muted;
 }
 .journey-save-bar .journey-primary {
-  min-height: 46px;
-  font-size: 14px;
+  @apply min-h-[46px] text-[length:14px];
   flex: 1 1 170px;
   background: var(--teal-fill);
 }
 .journey-preparation {
-  margin-top: 18px;
-  border-radius: 14px;
+  @apply mt-[18px] rounded-[14px];
 }
 .journey-preparation summary {
-  font-weight: 700;
-  min-height: 44px;
+  @apply font-bold min-h-[44px];
 }
 .journey-preparation p {
-  font-size: 13px;
+  @apply text-[length:13px];
 }
 .journey-section-title {
-  flex-wrap: wrap;
-  gap: 10px;
+  @apply flex-wrap gap-[10px];
 }
 .journey-section-title h2 {
-  font-size: 18px;
+  @apply text-[length:18px];
 }
 .journey-section-title > span {
-  font-size: 12px;
-  color: var(--muted);
+  @apply text-[length:12px] text-goease-muted;
 }
 .journey-saved-card {
-  border-color: var(--line);
+  @apply border-goease-line;
   background: var(--paper-card);
 }
 .journey-saved-copy h3 {
-  font-size: 18px;
-  font-weight: 700;
+  @apply text-[length:18px] font-bold;
 }
 .journey-empty {
-  font-size: 14px;
-  line-height: 1.65;
+  @apply text-[length:14px] leading-[1.65];
   background: var(--paper-card);
-  border-radius: 16px;
+  @apply rounded-[16px];
 }
 .journey-empty h1 {
-  font-size: 25px;
+  @apply text-[length:25px];
 }
 
 /* Dialogs and new feature pages inherit the same surface and control language. */
 .journey-sheet {
   background: var(--paper-card);
   border: 1px solid var(--line);
-  padding: 24px;
-  border-radius: 22px;
-  color: var(--ink);
-  max-height: 88dvh;
+  @apply p-[24px] rounded-[22px] text-goease-ink max-h-[88dvh];
 }
 .journey-sheet::backdrop {
   background: #123e4b66;
   backdrop-filter: blur(3px);
 }
 .journey-sheet > header {
-  position: sticky;
-  top: -24px;
+  @apply sticky top-[-24px];
   background: var(--paper-card);
-  z-index: 4;
-  padding: 15px 0;
+  @apply z-4 py-[15px] px-0;
 }
 .journey-sheet > header h2 {
-  font-size: 20px;
-  font-weight: 750;
+  @apply text-[length:20px] font-[750];
 }
 .journey-sheet > header button {
-  min-width: 44px;
-  min-height: 44px;
-  border-radius: 50%;
+  @apply min-w-[44px] min-h-[44px] rounded-[50%];
   background: var(--soft);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .journey-sheet-note,
 .journey-sheet small {
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--muted);
+  @apply text-[length:12px] leading-[1.6] text-goease-muted;
 }
 .journey-fields-row {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  @apply grid-cols-[repeat(2,_minmax(0,_1fr))];
 }
 .journey-field {
-  min-width: 0;
+  @apply min-w-0;
 }
 .journey-field input {
-  width: 100%;
+  @apply w-full;
 }
 .quick-stop-actions {
-  gap: 8px;
-  flex-wrap: wrap;
+  @apply gap-[8px] flex-wrap;
 }
 .quick-stop-actions button {
   flex: 1 1 100px;
   background: var(--soft);
-  border-color: var(--line);
-  color: var(--teal-dark);
-  font-size: 13px;
+  @apply border-goease-line text-goease-teal-dark text-[length:13px];
 }
 .trip-picker {
   background: var(--paper-card);
 }
 .trip-picker h2 {
-  font-size: 23px;
-  font-weight: 750;
+  @apply text-[length:23px] font-[750];
 }
 .account-page {
-  max-width: 760px;
-  margin: 0 auto;
+  @apply max-w-[760px] my-0 mx-auto;
 }
 .account-page h1 {
-  font-size: 30px;
-  font-weight: 800;
+  @apply text-[length:30px] font-extrabold;
 }
 .account-page h2 {
-  font-size: 18px;
-  font-weight: 750;
+  @apply text-[length:18px] font-[750];
 }
 .account-card,
 .trip-trash-card,
@@ -1005,45 +774,42 @@ button:disabled {
 .trip-expenses {
   background: var(--paper-card);
   border: 1px solid var(--line);
-  border-radius: 15px;
+  @apply rounded-[15px];
 }
 .account-card {
-  padding: 22px;
+  @apply p-[22px];
 }
 .account-card p,
 .account-card small {
-  color: var(--muted);
+  @apply text-goease-muted;
 }
 .expense-actions {
-  flex-wrap: wrap;
-  gap: 8px;
+  @apply flex-wrap gap-[8px];
 }
 .expense-actions button {
-  min-height: 44px;
-  white-space: normal;
+  @apply min-h-[44px] whitespace-normal;
 }
 .expense-list > li {
-  border-color: var(--line);
+  @apply border-goease-line;
 }
 .expense-list h3 {
-  font-size: 15px;
+  @apply text-[length:15px];
 }
 .expense-form {
-  gap: 14px;
+  @apply gap-[14px];
 }
 .trip-management h2,
 .trip-sharing h2,
 .trip-expenses h2,
 .trip-offline h2 {
-  font-size: 19px;
-  color: var(--ink);
+  @apply text-[length:19px] text-goease-ink;
 }
 .trip-expenses h1 {
   font: 800 28px/1.2 var(--font-sans);
 }
 .expense-total-card {
   background: var(--teal-fill);
-  border-radius: 17px;
+  @apply rounded-[17px];
 }
 .expense-view-tabs {
   background: var(--soft);
@@ -1052,20 +818,18 @@ button:disabled {
   background: var(--teal-dark);
 }
 .expense-comparison > div {
-  flex-wrap: wrap;
-  gap: 8px;
+  @apply flex-wrap gap-[8px];
 }
 .shared-trip-page {
   background: var(--paper);
-  color: var(--ink);
+  @apply text-goease-ink;
 }
 .shared-trip-page h1 {
-  font-size: 30px;
-  font-weight: 800;
+  @apply text-[length:30px] font-extrabold;
 }
 .share-days button[aria-pressed='true'] {
   background: var(--teal-dark);
-  color: white;
+  @apply text-white;
 }
 
 /* Exploration, place details and Goe keep all existing content and actions. */
@@ -1074,267 +838,219 @@ button:disabled {
 .explore-page,
 .place-detail {
   background: var(--paper);
-  color: var(--ink);
+  @apply text-goease-ink;
 }
 .explore-heading h1,
 .place-body h1,
 .goe-chat-page h1 {
-  font-size: clamp(28px, 5.5vw, 36px);
-  font-weight: 800;
-  line-height: 1.15;
+  @apply text-[length:clamp(28px,_5.5vw,_36px)] font-extrabold leading-[1.15];
 }
 .explore-heading p,
 .place-description {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--muted);
+  @apply text-[length:14px] leading-[1.6] text-goease-muted;
 }
 .explore-search {
   background: var(--paper-card);
-  border-color: var(--line);
-  border-radius: 13px;
-  min-height: 48px;
+  @apply border-goease-line rounded-[13px] min-h-[48px];
 }
 .explore-search input {
-  font-size: 14px;
-  min-height: 44px;
+  @apply text-[length:14px] min-h-[44px];
 }
 .explore-filters {
-  gap: 8px;
+  @apply gap-[8px];
 }
 .explore-filters button {
-  min-height: 42px;
-  font-size: 13px;
+  @apply min-h-[42px] text-[length:13px];
   background: var(--soft);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .explore-filters button[aria-pressed='true'] {
   background: var(--teal-dark);
-  color: white;
+  @apply text-white;
 }
 .explore-card {
   background: var(--paper-card);
-  border-color: var(--line);
-  border-radius: 16px;
+  @apply border-goease-line rounded-[16px];
 }
 .explore-card h2,
 .explore-card strong {
-  font-weight: 750;
+  @apply font-[750];
 }
 .place-tip {
   background: var(--sand);
-  padding: 12px;
-  border-radius: 14px;
-  gap: 10px;
+  @apply p-[12px] rounded-[14px] gap-[10px];
 }
 .place-tip h2 {
-  font-weight: 750;
-  font-size: 16px;
+  @apply font-[750] text-[length:16px];
 }
 .place-tip p {
-  font-size: 14px;
-  line-height: 1.6;
+  @apply text-[length:14px] leading-[1.6];
 }
 .place-highlights h2,
 .place-notes h2 {
-  font-size: 18px;
-  font-weight: 750;
+  @apply text-[length:18px] font-[750];
 }
 .place-highlights a {
-  min-height: 44px;
-  border-color: var(--line);
+  @apply min-h-[44px] border-goease-line;
   background: var(--paper-card);
-  font-size: 13px;
+  @apply text-[length:13px];
 }
 .place-notes label {
   background: var(--paper-card);
-  border-color: var(--line);
+  @apply border-goease-line;
 }
 .place-notes textarea {
-  font-size: 14px;
-  line-height: 1.6;
+  @apply text-[length:14px] leading-[1.6];
 }
 .place-source {
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--muted);
+  @apply text-[length:12px] leading-[1.6] text-goease-muted;
 }
 .place-bottom {
   background: #fff8eff5;
-  border-color: var(--line);
-  border-radius: 0;
+  @apply border-goease-line rounded-none;
 }
 .place-bottom-save {
-  border-color: var(--line);
+  @apply border-goease-line;
   background: var(--paper-card);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .place-bottom .button {
-  font-size: 14px;
-  min-height: 48px;
+  @apply text-[length:14px] min-h-[48px];
 }
 .goe-chat-page {
-  color: var(--ink);
+  @apply text-goease-ink;
 }
 .goe-chat-header strong {
-  font-size: 18px;
-  font-weight: 750;
+  @apply text-[length:18px] font-[750];
 }
 .goe-chat-header small {
-  color: var(--muted);
-  font-size: 12px;
+  @apply text-goease-muted text-[length:12px];
 }
 .goe-chat-bubble {
   background: var(--paper-card);
   border: 1px solid var(--line);
   border-radius: 16px 16px 16px 4px;
-  font-size: 14px;
-  line-height: 1.65;
+  @apply text-[length:14px] leading-[1.65];
 }
 .goe-chat-line.user .goe-chat-bubble {
   background: var(--teal-dark);
-  color: white;
-  border-color: var(--teal-dark);
+  @apply text-white border-goease-teal-dark;
   border-radius: 16px 16px 4px 16px;
 }
 .goe-chat-bubble.has-suggestion {
   background: var(--soft);
-  border-color: #cae2dd;
+  @apply border-[#cae2dd];
 }
 .goe-composer-area {
   background: linear-gradient(180deg, #fff8ef00, var(--paper) 18%);
 }
 .goe-composer {
   background: var(--paper-card);
-  border-color: var(--line);
-  min-height: 50px;
+  @apply border-goease-line min-h-[50px];
 }
 .goe-composer input {
-  font-size: 14px;
+  @apply text-[length:14px];
 }
 .goe-composer button {
-  min-width: 44px;
-  min-height: 44px;
-  color: var(--teal-dark);
+  @apply min-w-[44px] min-h-[44px] text-goease-teal-dark;
 }
 .goe-quick-prompts {
-  overflow-x: auto;
-  padding: 2px 0 6px;
+  @apply overflow-x-auto pt-[2px] px-0 pb-[6px];
 }
 .goe-quick-prompts button {
-  flex-shrink: 0;
-  min-height: 42px;
-  font-size: 12px;
+  @apply shrink-0 min-h-[42px] text-[length:12px];
   background: var(--soft);
-  color: var(--teal-dark);
-  border-color: #cde2dc;
+  @apply text-goease-teal-dark border-[#cde2dc];
 }
 .goe-proposal-actions {
-  flex-wrap: wrap;
+  @apply flex-wrap;
 }
 .goe-proposal-actions button {
-  min-height: 44px;
-  white-space: normal;
-  font-size: 13px;
+  @apply min-h-[44px] whitespace-normal text-[length:13px];
 }
 .goe-chat-menu,
 .goe-context-panel {
   background: var(--paper-card);
-  border-color: var(--line);
-  font-size: 13px;
+  @apply border-goease-line text-[length:13px];
 }
 .goe-demo-note,
 .goe-consider {
-  font-size: 12px;
-  line-height: 1.6;
+  @apply text-[length:12px] leading-[1.6];
 }
 .budget-green-card {
   background: var(--teal-fill);
-  border-radius: 18px;
+  @apply rounded-[18px];
 }
 .budget-total {
-  font-weight: 800;
+  @apply font-extrabold;
 }
 .budget-reserve {
   background: var(--sand);
-  color: var(--ink);
-  border-radius: 14px;
+  @apply text-goease-ink rounded-[14px];
 }
 .budget-scope-note,
 .budget-disclaimer,
 .budget-source-note {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.65;
+  @apply text-goease-muted text-[length:12px] leading-[1.65];
 }
 .budget-adjust {
   background: var(--soft);
-  color: var(--teal-dark);
-  border-color: #cde2dc;
-  min-height: 46px;
-  font-size: 14px;
-  border-radius: 24px;
+  @apply text-goease-teal-dark border-[#cde2dc] min-h-[46px] text-[length:14px] rounded-[24px];
 }
 .budget-landscape {
-  border-radius: 16px;
+  @apply rounded-[16px];
 }
 
 /* Auth and onboarding retain their existing authentication/continuation logic. */
 .auth-card {
   background: var(--paper-card);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  @apply rounded-[20px];
   box-shadow: var(--shadow-card);
 }
 .auth-story h1 {
-  font-size: clamp(32px, 4vw, 48px);
-  font-weight: 800;
-  color: var(--ink);
+  @apply text-[length:clamp(32px,_4vw,_48px)] font-extrabold text-goease-ink;
 }
 .auth-card h2 {
-  font-size: 28px;
-  font-weight: 800;
+  @apply text-[length:28px] font-extrabold;
 }
 .auth-story-sub,
 .auth-card-sub {
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.65;
+  @apply text-goease-muted text-[length:14px] leading-[1.65];
 }
 .auth-mascot-card {
   background: var(--soft);
-  border-color: #cee2dd;
-  border-radius: 18px;
+  @apply border-[#cee2dd] rounded-[18px];
 }
 .welcome-page {
   background: var(--paper);
 }
 .welcome-heading h1 {
-  font-weight: 750;
+  @apply font-[750];
 }
 .welcome-promise {
-  font-weight: 650;
+  @apply font-[650];
 }
 .welcome-actions .button {
-  min-height: 50px;
+  @apply min-h-[50px];
 }
 .welcome-explore {
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 
 /* Admin is still a dense desktop workspace, with the same GoEase palette. */
 .admin-desktop-shell {
   background: var(--paper);
-  color: var(--ink);
+  @apply text-goease-ink;
 }
 .admin-sidebar,
 .admin-topbar {
   background: var(--paper-card);
-  border-color: var(--line);
+  @apply border-goease-line;
 }
 .admin-navigation a[aria-current] {
   background: var(--soft);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .admin-navigation a:hover {
   background: #f2f7f4;
@@ -1342,205 +1058,166 @@ button:disabled {
 .admin-global-search,
 .admin-region {
   background: var(--paper);
-  border-color: var(--line);
+  @apply border-goease-line;
 }
 .admin-reference-heading h1,
 .admin-heading h1 {
-  color: var(--ink);
-  font-weight: 800;
+  @apply text-goease-ink font-extrabold;
 }
 .admin-desktop-main .journey-primary,
 .admin-operations button.journey-primary,
 .admin-batch button.journey-primary {
   background: var(--teal-fill);
-  color: white;
+  @apply text-white;
 }
 .admin-desktop-main .journey-outline {
   background: var(--soft);
-  border-color: transparent;
-  color: var(--teal-dark);
+  @apply border-transparent text-goease-teal-dark;
 }
 .admin-catalog-actions,
 .admin-actions {
-  flex-wrap: wrap;
-  gap: 8px;
+  @apply flex-wrap gap-[8px];
 }
 .admin-catalog-actions button {
-  white-space: normal;
+  @apply whitespace-normal;
 }
 .admin-catalog input:not([type='checkbox']),
 .admin-catalog select,
 .admin-catalog textarea {
-  min-height: 42px;
+  @apply min-h-[42px];
   background: var(--paper-card);
-  border-color: var(--line);
-  border-radius: 9px;
+  @apply border-goease-line rounded-[9px];
 }
 .admin-catalog input[type='checkbox'] {
   accent-color: var(--teal);
 }
 .admin-soft-notice {
   background: var(--soft);
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .admin-comparison {
-  overflow-x: auto;
+  @apply overflow-x-auto;
 }
 .admin-comparison table {
-  min-width: 600px;
+  @apply min-w-[600px];
 }
 .admin-save-bar {
   background: var(--paper-card);
-  border-color: var(--line);
+  @apply border-goease-line;
 }
 
 @media (min-width: 761px) {
   .discovery-shortcuts > div {
-    max-width: 100%;
+    @apply max-w-full;
   }
   .discovery-trip-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    @apply grid-cols-[repeat(2,_minmax(0,_1fr))];
   }
   .discovery-destinations {
-    max-width: 100%;
+    @apply max-w-full;
   }
   .journey-main {
-    padding-top: 20px;
+    @apply pt-[20px];
   }
   .journey-workspace,
   .journey-list {
     border: 1px solid var(--line);
-    border-radius: 20px;
+    @apply rounded-[20px];
     background: var(--paper-card);
-    margin: 0 12px;
+    @apply my-0 mx-[12px];
   }
   .journey-save-bar {
-    bottom: 0;
+    @apply bottom-0;
     background: #fffcf7f5;
   }
   .journey-sheet {
-    width: min(560px, calc(100% - 40px));
+    @apply w-[min(560px,_calc(100%_-_40px))];
   }
 }
 @media (max-width: 1000px) and (min-width: 761px) {
   .header-inner {
-    width: calc(100% - 32px);
-    gap: 12px;
+    @apply w-[calc(100%_-_32px)] gap-[12px];
   }
   .main-nav {
-    margin-left: 0;
-    gap: 0;
+    @apply ml-0 gap-0;
   }
   .nav-link {
-    padding: 10px;
-    font-size: 12px;
+    @apply p-[10px] text-[length:12px];
   }
   .user-menu .button {
-    padding: 7px 10px;
+    @apply py-[7px] px-[10px];
   }
 }
 @media (max-width: 760px) {
   .container {
-    width: calc(100% - 32px);
+    @apply w-[calc(100%_-_32px)];
   }
   .home-shell .site-header {
     background: var(--paper);
   }
   .home-shell .header-inner,
   .header-inner {
-    min-height: 72px;
-    width: calc(100% - 32px);
-    padding-top: 0;
+    @apply min-h-[72px] w-[calc(100%_-_32px)] pt-0;
   }
   .home-shell .main-content-wrap {
-    width: calc(100% - 32px);
-    padding-bottom: 110px;
+    @apply w-[calc(100%_-_32px)] pb-[110px];
   }
   .main-nav {
-    display: none;
+    @apply hidden;
   }
   .brand {
-    font-size: 24px;
+    @apply text-[length:24px];
   }
   .brand-mark {
-    width: 32px;
-    height: 32px;
+    @apply w-[32px] h-[32px];
   }
   .home-shell .user-menu .button {
-    font-size: 12px;
-    min-height: 40px;
-    padding: 7px 10px;
+    @apply text-[length:12px] min-h-[40px] py-[7px] px-[10px];
   }
   .mobile-bottom-nav {
-    display: flex;
-    align-items: stretch;
-    isolation: isolate;
-    padding: 8px 8px max(10px, env(safe-area-inset-bottom));
+    @apply flex items-stretch isolate pt-[8px] px-[8px] pb-[max(10px,_env(safe-area-inset-bottom))];
     background: #fffcf7fa;
-    border-color: var(--line);
+    @apply border-goease-line;
     box-shadow: none;
   }
   .mobile-nav-item,
   .mobile-nav-item.mobile-nav-home {
-    position: relative;
+    @apply relative;
     background: transparent;
-    color: var(--muted);
-    font-size: 11px;
-    gap: 5px;
-    min-height: 52px;
-    padding: 7px 2px;
-    border-radius: 22px;
-    min-width: 0;
-    line-height: 1.35;
+    @apply text-goease-muted text-[length:11px] gap-[5px] min-h-[52px] py-[7px] px-[2px] rounded-[22px] min-w-0 leading-[1.35];
     transform: none;
     box-shadow: none;
   }
   .mobile-nav-item.active,
   .mobile-nav-item.mobile-nav-home.active {
-    color: var(--teal-dark);
+    @apply text-goease-teal-dark;
     background: transparent;
-    font-weight: 750;
+    @apply font-[750];
   }
   .mobile-nav-item .bottom-nav-icon {
     background: transparent;
     box-shadow: none;
-    color: inherit;
-    width: auto;
-    height: auto;
+    @apply text-inherit w-auto h-auto;
     border: 0;
   }
   .mobile-nav-home .bottom-nav-icon svg {
-    width: 22px;
-    height: 22px;
+    @apply w-[22px] h-[22px];
   }
   .mobile-nav-indicator {
-    display: block;
-    position: absolute;
-    z-index: -1;
-    top: 8px;
-    left: 8px;
-    width: calc((100% - 16px) / 5);
-    height: 52px;
-    pointer-events: none;
+    @apply block absolute z-[-1] top-[8px] left-[8px] w-[calc((100%_-_16px)_/_5)] h-[52px] pointer-events-none;
     transform: translateX(calc(var(--nav-index) * 100%));
     transition: transform 380ms cubic-bezier(0.22, 1.18, 0.45, 1);
   }
   .mobile-nav-indicator > span {
-    display: block;
-    height: 100%;
-    margin: 0 2px;
-    border-radius: 22px;
+    @apply block h-full my-0 mx-[2px] rounded-[22px];
     background: var(--soft);
     animation: nav-rubber 380ms ease-out;
   }
   .discovery-home {
-    gap: 22px;
+    @apply gap-[22px];
   }
   .discovery-home .discovery-banner {
-    margin: 0 -16px 18px;
-    min-height: 300px;
-    padding: 24px 16px;
-    border-radius: 0;
+    @apply mt-0 mx-[-16px] mb-[18px] min-h-[300px] py-[24px] px-[16px] rounded-none;
   }
   .discovery-banner::before {
     background: linear-gradient(
@@ -1551,152 +1228,126 @@ button:disabled {
     );
   }
   .discovery-banner-copy {
-    width: 85%;
-    max-width: 310px;
+    @apply w-[85%] max-w-[310px];
   }
   .discovery-banner h1 {
-    font-size: 30px;
-    line-height: 1.1;
-    max-width: 300px;
+    @apply text-[length:30px] leading-[1.1] max-w-[300px];
   }
   .discovery-banner p {
-    font-size: 13px;
-    max-width: 290px;
+    @apply text-[length:13px] max-w-[290px];
   }
   .discovery-banner .discovery-greeting {
-    font-size: 14px;
+    @apply text-[length:14px];
   }
   .discovery-slogan {
-    bottom: 48px;
-    right: 17px;
-    font-size: 17px;
+    @apply bottom-[48px] right-[17px] text-[length:17px];
   }
   .discovery-start {
-    left: 16px;
-    right: 16px;
+    @apply left-[16px] right-[16px];
   }
   .discovery-start .button {
-    min-height: 50px;
-    font-size: 15px;
+    @apply min-h-[50px] text-[length:15px];
   }
   .discovery-shortcuts > div {
-    gap: 8px;
-    margin-top: 10px;
+    @apply gap-[8px] mt-[10px];
   }
   .discovery-shortcuts button {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 15px 12px;
-    min-height: 115px;
-    font-size: 12px;
-    gap: 9px;
+    @apply flex-col items-start py-[15px] px-[12px] min-h-[115px] text-[length:12px] gap-[9px];
   }
   .discovery-section-heading h2,
   .discovery-shortcuts h2 {
-    font-size: 17px;
+    @apply text-[length:17px];
   }
   .discovery-section-heading > button {
-    font-size: 12px;
+    @apply text-[length:12px];
   }
   .discovery-intro :is(h1, h2) {
-    font-size: 22px;
-    margin-bottom: 13px;
+    @apply text-[length:22px] mb-[13px];
   }
   .discovery-destinations h2 {
-    font-size: 17px;
+    @apply text-[length:17px];
   }
   .discovery-card {
-    height: 200px;
+    @apply h-[200px];
   }
   .discovery-card-caption strong {
-    font-size: 21px;
+    @apply text-[length:21px];
   }
   .discovery-card-caption > span {
-    font-size: 12px;
+    @apply text-[length:12px];
   }
   .discovery-filters button {
-    min-height: 40px;
-    font-size: 12px;
-    padding: 8px 14px;
+    @apply min-h-[40px] text-[length:12px] py-[8px] px-[14px];
   }
   .journey-workspace,
   .journey-list {
-    padding: 14px 16px 24px;
+    @apply pt-[14px] px-[16px] pb-[24px];
   }
   .journey-top {
-    gap: 8px;
+    @apply gap-[8px];
   }
   .journey-main {
-    padding-bottom: 98px;
+    @apply pb-[98px];
   }
   .journey-sheet {
-    width: calc(100% - 20px);
-    max-height: calc(100dvh - 30px);
-    padding: 20px;
-    margin: auto;
-    border-radius: 20px;
+    @apply w-[calc(100%_-_20px)] max-h-[calc(100dvh_-_30px)] p-[20px] m-auto rounded-[20px];
   }
   .journey-sheet > header {
-    top: -20px;
+    @apply top-[-20px];
   }
   .journey-view-tabs > button {
-    font-size: 12px;
+    @apply text-[length:12px];
   }
   .journey-cover {
-    height: 165px;
+    @apply h-[165px];
   }
   .journey-save-bar {
-    bottom: calc(72px + env(safe-area-inset-bottom));
+    @apply bottom-[calc(72px_+_env(safe-area-inset-bottom))];
   }
   .quick-action,
   .quick-keep-bar {
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    @apply pb-[max(12px,_env(safe-area-inset-bottom))];
   }
   .quick-header-note {
-    white-space: normal;
+    @apply whitespace-normal;
   }
   .journey-stop-open strong {
-    font-size: 14px;
+    @apply text-[length:14px];
   }
   .journey-stop-open img {
-    width: 60px;
-    height: 65px;
+    @apply w-[60px] h-[65px];
   }
   .journey-stop-open small {
-    font-size: 11px;
+    @apply text-[length:11px];
   }
   .account-card {
-    padding: 17px;
+    @apply p-[17px];
   }
   .auth-card {
-    padding: 24px 20px;
+    @apply py-[24px] px-[20px];
   }
   .explore-heading h1 {
-    font-size: 30px;
+    @apply text-[length:30px];
   }
   .goe-chat-page h1 {
-    font-size: 28px;
+    @apply text-[length:28px];
   }
   .goe-composer-area {
-    bottom: calc(74px + env(safe-area-inset-bottom));
+    @apply bottom-[calc(74px_+_env(safe-area-inset-bottom))];
   }
   .goe-chat-bubble {
-    max-width: calc(100% - 40px);
+    @apply max-w-[calc(100%_-_40px)];
   }
   .admin-topbar {
-    flex-wrap: wrap;
-    height: auto;
-    gap: 12px;
-    padding: 14px;
+    @apply flex-wrap h-auto gap-[12px] p-[14px];
   }
   .admin-global-search {
     order: 3;
     flex: 1 1 100%;
-    width: 100%;
-    max-width: 100%;
+    @apply w-full max-w-full;
   }
   .admin-catalog-actions {
-    width: 100%;
+    @apply w-full;
   }
   .admin-catalog-actions button {
     flex: 1 1 130px;
@@ -1704,39 +1355,37 @@ button:disabled {
 }
 @media (max-width: 360px) {
   .journey-sheet .journey-fields-row {
-    grid-template-columns: minmax(0, 1fr);
+    @apply grid-cols-[minmax(0,_1fr)];
   }
   .discovery-banner h1 {
-    font-size: 28px;
+    @apply text-[length:28px];
   }
   .discovery-shortcuts button {
-    padding: 13px 9px;
-    font-size: 12px;
+    @apply py-[13px] px-[9px] text-[length:12px];
   }
   .discovery-card {
-    height: 180px;
+    @apply h-[180px];
   }
   .discovery-card-caption strong {
-    font-size: 19px;
+    @apply text-[length:19px];
   }
   .journey-top {
-    grid-template-columns: 40px minmax(0, 1fr) 55px;
+    @apply grid-cols-[40px_minmax(0,_1fr)_55px];
   }
   .journey-top strong {
-    font-size: 15px;
+    @apply text-[length:15px];
   }
   .journey-fields-row {
-    gap: 8px;
+    @apply gap-[8px];
   }
   .journey-stop-open {
-    gap: 8px;
+    @apply gap-[8px];
   }
   .journey-stop-open img {
-    width: 46px;
-    height: 56px;
+    @apply w-[46px] h-[56px];
   }
   .mobile-nav-item {
-    font-size: 10px;
+    @apply text-[length:10px];
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1762,10 +1411,10 @@ button:disabled {
 .goe-floating-chat .goe-chat-header,
 .goe-floating-chat .goe-composer-area {
   background: var(--paper-card);
-  border-color: var(--line);
+  @apply border-goease-line;
 }
 .goe-floating-chat .goe-composer-area {
-  bottom: 0;
+  @apply bottom-0;
 }
 .goe-chat-launcher:not(:disabled) {
   transition:
@@ -1783,7 +1432,7 @@ button:disabled {
 .account-heading h1 > span,
 .account-card .account-identity-label,
 .avatar-picker-preview button:not(.avatar-camera) {
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .account-card::before {
   background: var(--teal-fill);
@@ -1792,33 +1441,29 @@ button:disabled {
   background: linear-gradient(90deg, var(--orange), var(--teal));
 }
 .account-security-icon {
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
   background: var(--soft);
 }
 .avatar-picker-image > img {
-  border-color: var(--soft);
+  @apply border-goease-soft;
 }
 .avatar-picker-preview .avatar-camera {
-  width: 44px;
-  height: 44px;
-  right: -5px;
-  bottom: -5px;
+  @apply w-[44px] h-[44px] right-[-5px] bottom-[-5px];
   background: var(--teal-dark);
-  border-color: var(--paper-card);
+  @apply border-goease-paper-card;
 }
 .avatar-picker-preview button:not(.avatar-camera) {
-  min-height: 40px;
+  @apply min-h-[40px];
 }
 .avatar-picker > small {
-  color: var(--muted);
-  font-size: 12px;
+  @apply text-goease-muted text-[length:12px];
 }
 .avatar-crop-controls input {
   accent-color: var(--teal);
 }
 .account-password-input {
   background: var(--paper-card);
-  border-color: var(--line);
+  @apply border-goease-line;
 }
 .account-password-input:focus-within {
   outline-color: var(--teal);
@@ -1833,24 +1478,22 @@ button:disabled {
 .admin-sidebar,
 .admin-sidebar > a,
 .admin-sidebar .brand {
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
 }
 .admin-sidebar > p,
 .admin-sidebar > span,
 .admin-sidebar .admin-nav-section {
-  color: var(--muted);
-  border-color: var(--line);
+  @apply text-goease-muted border-goease-line;
 }
 .admin-sidebar .admin-navigation a {
-  color: var(--ink);
+  @apply text-goease-ink;
 }
 .admin-sidebar .admin-navigation a:hover,
 .admin-sidebar .admin-navigation a[aria-current] {
-  color: var(--teal-dark);
+  @apply text-goease-teal-dark;
   background: var(--soft);
 }
 .admin-sidebar > button {
-  color: var(--teal-dark);
-  border-color: var(--line);
+  @apply text-goease-teal-dark border-goease-line;
   background: var(--soft);
 }

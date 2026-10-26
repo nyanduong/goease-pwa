@@ -20,8 +20,13 @@ test('V3 operator preserves public content through proposals, publishes a frozen
     .fill('Browser-fixture-2026!');
   await page.getByRole('button', { name: /^Đăng nhập/ }).click();
   await expect(
-    page.getByRole('heading', { name: 'Tổng quan dữ liệu' }),
+    page.getByRole('heading', { name: 'Tổng quan', exact: true }),
   ).toBeVisible();
+  // Other browser scenarios may add places in other provinces. This workflow
+  // owns the four imported Đà Nẵng fixtures, so keep its bulk scope explicit.
+  await page
+    .getByLabel('Khu vực quản lý')
+    .selectOption('000000000000000000000004');
   await expect(page.locator('.admin-kpi').first()).toContainText('4');
   await page.screenshot({
     path: 'test-results/catalog-evidence/00-dashboard-1366.png',
@@ -297,7 +302,9 @@ test('V3 operator preserves public content through proposals, publishes a frozen
           .click();
         await expect(page.locator('main')).toBeVisible();
         if (tab === 'Cần kiểm tra')
-          await expect(page.locator('.admin-overview')).toBeVisible();
+          await expect(
+            page.getByRole('heading', { name: 'Cần kiểm tra', exact: true }),
+          ).toBeVisible();
         if (tab === 'Tự động cập nhật')
           await expect(
             page.getByRole('button', { name: 'Tạo lịch', exact: true }),
@@ -434,7 +441,7 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
     .fill('Browser-fixture-2026!');
   await page.getByRole('button', { name: /^Đăng nhập/ }).click();
   await expect(
-    page.getByRole('heading', { name: 'Tổng quan dữ liệu' }),
+    page.getByRole('heading', { name: 'Tổng quan', exact: true }),
   ).toBeVisible();
   const response = await page.request.get('/api/v1/admin/catalog/overview');
   const overview = (await response.json()).data;
@@ -482,20 +489,23 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
     .fill('Ghi chú kiểm thử riêng');
   await page.getByRole('button', { name: 'Lưu đề xuất', exact: true }).click();
   await expect(
-    page.getByRole('status').filter({ hasText: 'Đã lưu đề xuất' }),
+    page.getByRole('status').filter({ hasText: 'Đã lưu bản chỉnh sửa' }),
   ).toBeVisible();
-  await page.getByLabel('Tự lưu bản nháp hợp lệ sau 2 giây').check();
+  await page.getByLabel('Tự lưu khi thông tin hợp lệ').check();
   await page.getByRole('tab', { name: 'Tổng quan', exact: true }).click();
   await page
     .getByLabel('Tên địa điểm / quán ăn', { exact: true })
     .fill('Địa điểm V3 đã tự lưu fixture');
   await expect(
-    page.getByRole('status').filter({ hasText: 'Đã lưu đề xuất' }),
+    page.getByRole('status').filter({ hasText: 'Đã lưu bản chỉnh sửa' }),
   ).toBeVisible({ timeout: 10000 });
-  const result = await page.request.get('/api/v1/admin/places?q=V3');
-  expect((await result.json()).data.items[0].name).toBe(
-    'Địa điểm V3 đã tự lưu fixture',
-  );
+  await expect
+    .poll(async () => {
+      const result = await page.request.get('/api/v1/admin/places?q=V3');
+      expect(result.ok()).toBe(true);
+      return (await result.json()).data.items[0]?.name;
+    })
+    .toBe('Địa điểm V3 đã tự lưu fixture');
   await page.screenshot({
     path: 'test-results/catalog-evidence/v3-editor.png',
     fullPage: true,
@@ -511,7 +521,7 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
   await page.getByRole('button', { name: 'Bản đồ', exact: true }).click();
   await expect(page.locator('.admin-cluster')).toHaveCount(1);
   const fullMap = page.getByRole('region', {
-    name: 'Bản đồ toàn bộ catalog theo bộ lọc',
+    name: 'Bản đồ địa điểm theo bộ lọc',
   });
   await expect(fullMap.getByRole('alert')).toContainText(
     'Chưa tải được nền OpenStreetMap',
@@ -558,7 +568,9 @@ test('V3 dashboard, filters, editor autosave, map, sources and persisted setting
   await page
     .getByRole('link', { name: 'Lịch sử & phê duyệt', exact: true })
     .click();
-  await page.getByRole('button', { name: /^Chờ phê duyệt/ }).click();
+  await page
+    .getByRole('button', { name: 'Việc chờ duyệt', exact: true })
+    .click();
   await expect(page.getByLabel('Loại việc')).toBeVisible();
   await page.screenshot({
     path: 'test-results/catalog-evidence/v3-review-queue.png',
@@ -581,7 +593,7 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
     .fill('Browser-fixture-2026!');
   await page.getByRole('button', { name: /^Đăng nhập/ }).click();
   await expect(
-    page.getByRole('heading', { name: 'Tổng quan dữ liệu', exact: true }),
+    page.getByRole('heading', { name: 'Tổng quan', exact: true }),
   ).toBeVisible();
   await page
     .getByLabel('Khu vực quản lý')
@@ -623,6 +635,20 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
     publicRevision: number;
   };
   expect(initial.publicRevision).toBeGreaterThan(0);
+  // Let the independent fixture image worker finish before taking a full DTO
+  // snapshot. Its pending -> ready transition is unrelated to policy dry-run.
+  await expect
+    .poll(
+      async () => {
+        const response = await page.request.get(
+          `/api/v1/admin/places/${initial.id}`,
+        );
+        expect(response.ok()).toBe(true);
+        return (await response.json()).data.place.photoSearch?.state;
+      },
+      { timeout: 25000 },
+    )
+    .toBe('ready');
   const publicPath = '/api/v1/places?destinationId=000000000000000000000004';
   const publicBefore = await (await page.request.get(publicPath)).json();
   const adminBefore = (
@@ -638,9 +664,7 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
   await page
     .getByLabel('Khu vực xem trước')
     .selectOption('000000000000000000000004');
-  await page
-    .getByRole('button', { name: 'Tạo phiên bản quy tắc', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Thêm quy tắc', exact: true }).click();
   const policyName = `Quy tắc mô phỏng fixture ${suffix}`;
   await page.getByLabel('Tên quy tắc', { exact: true }).fill(policyName);
   await page
@@ -654,9 +678,7 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
       response.url().endsWith('/api/v1/admin/v3/policies') &&
       response.request().method() === 'POST',
   );
-  await page
-    .getByRole('button', { name: 'Lưu phiên bản quy tắc', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Lưu quy tắc', exact: true }).click();
   const policyResponse = await policyResponsePromise;
   expect(policyResponse.ok()).toBe(true);
   const policy = (await policyResponse.json()).data as {
@@ -676,7 +698,7 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
       response.request().method() === 'POST',
   );
   await page
-    .getByRole('button', { name: 'Mô phỏng tác động', exact: true })
+    .getByRole('button', { name: 'Xem trước ảnh hưởng', exact: true })
     .click();
   const simulationResponse = await simulationPromise;
   expect(simulationResponse.ok()).toBe(true);
@@ -710,7 +732,7 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
     publicBefore,
   );
   const simulationHeading = page.getByRole('heading', {
-    name: `Kết quả mô phỏng · ${policyName} · bản ${policy.version}`,
+    name: `Thay đổi dự kiến · ${policyName} · bản ${policy.version}`,
     exact: true,
   });
   await simulationHeading.scrollIntoViewIfNeeded();
@@ -729,7 +751,7 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
   await page.getByLabel('Giới thiệu ngắn').fill(proposalDescription);
   await page.getByRole('button', { name: 'Lưu đề xuất', exact: true }).click();
   await expect(
-    page.getByRole('status').filter({ hasText: 'Đã lưu đề xuất' }),
+    page.getByRole('status').filter({ hasText: 'Đã lưu bản chỉnh sửa' }),
   ).toBeVisible();
   const staged = (
     await (await page.request.get(`/api/v1/admin/places/${initial.id}`)).json()

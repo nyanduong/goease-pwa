@@ -20,6 +20,8 @@ Thanh điều hướng mobile: Khám phá → Chuyến đi → Trang chủ → �
 
 GoEase được viết mới hoàn toàn: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Phát triển bằng MongoDB local; Atlas là bước sau khi bản local hoàn thành. Mobile tương lai sử dụng cùng REST API và contracts thuần TypeScript.
 
+Giao diện dùng utility Tailwind trong JSX và `@apply` cho các component hiện có, giữ nguyên thứ tự style và breakpoint. CSS còn giữ font/theme, gradient, hiệu ứng và màn đọc offline độc lập; xem [quy ước styling và kiểm chứng chuyển đổi](docs/TAILWIND-STYLING.md).
+
 **Planner Việt Nam:** Goe dùng catalog published của điểm đến được chọn trên toàn Việt Nam, một điểm đến/chuyến trong 1–7 ngày; dữ liệu phải đủ giá/giờ/bữa ăn, thiếu thì báo rõ trước khi dùng lượt AI. Có bộ lọc 3 miền/8 vùng và quản lý điểm đến trong Cài đặt admin, gồm Miền Tây thuộc miền Nam. Chưa reset hoặc nhập dữ liệu toàn quốc. Xem [hướng dẫn chuẩn bị nhập theo vùng](docs/VIETNAM-PLANNER.md).
 
 Ảnh giao diện và tài liệu được lưu trên Cloudinary trong `goease/app` và `goease/docs`, không còn binary ảnh trong checkout. Package `@goease/media` chứa URL công khai; key/secret chỉ nằm trong `server/.env` cho công cụ upload. Xem [quản lý ảnh và kiểm tra CDN](docs/CLOUDINARY-MEDIA.md); chạy `npm run media:verify` để đối chiếu lại toàn bộ bản gốc.

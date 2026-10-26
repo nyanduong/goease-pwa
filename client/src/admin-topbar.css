@@ -1,158 +1,89 @@
+@reference './styles.css';
+
 /* One header for every admin section. The editor keeps its dedicated masthead. */
 .admin-topbar.admin-unified-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 24px;
-  height: 80px;
-  min-height: 80px;
-  padding: 12px 28px;
+  @apply flex items-center flex-nowrap gap-[24px] h-[80px] min-h-[80px] py-[12px] px-[28px];
   background: #fffefb;
   border-bottom: 1px solid #e8e9e3;
 }
 .admin-header-identity {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  min-width: 0;
+  @apply flex items-center gap-[13px] min-w-0;
   flex: 1;
 }
 .admin-header-page-icon {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
+  @apply grid place-items-center w-[42px] h-[42px] shrink-0;
   background: #eaf5f2;
   border: 1px solid #dbeee8;
-  border-radius: 12px;
-  color: #087e83;
+  @apply rounded-[12px] text-[#087e83];
 }
 .admin-header-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-  font-size: 14px;
+  @apply flex items-center gap-[9px] min-w-0 text-[length:14px];
 }
 .admin-header-breadcrumb a {
-  color: #71848a;
-  white-space: nowrap;
+  @apply text-[#71848a] whitespace-nowrap;
 }
 .admin-header-breadcrumb svg {
-  color: #9bacb0;
-  flex-shrink: 0;
+  @apply text-[#9bacb0] shrink-0;
 }
 .admin-header-breadcrumb [aria-current] {
-  color: #214a55;
-  font-weight: 700;
+  @apply text-[#214a55] font-bold;
 }
 .admin-header-identity > div > small {
-  display: block;
-  margin-top: 5px;
-  color: #8a999c;
-  font-size: 14px;
+  @apply block mt-[5px] text-[#8a999c] text-[length:14px];
 }
 .admin-header-context {
-  flex-shrink: 0;
+  @apply shrink-0;
 }
 .admin-header-scope {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  padding: 8px 12px;
+  @apply flex items-center gap-[10px] m-0 py-[8px] px-[12px];
   border: 1px solid #dce8e5;
   background: #f8fbf9;
-  border-radius: 9px;
-  color: #27818a;
+  @apply rounded-[9px] text-[#27818a];
 }
 .admin-header-scope > span {
-  display: block;
-  min-width: 0;
+  @apply block min-w-0;
 }
 .admin-header-scope small {
-  display: block;
-  color: #778b91;
-  font-size: 14px;
-  line-height: 1.4;
+  @apply block text-[#778b91] text-[length:14px] leading-[1.4];
 }
 .admin-unified-header .admin-header-scope select {
-  display: block;
-  min-width: 190px;
-  max-width: 230px;
+  @apply block min-w-[190px] max-w-[230px];
   border: 0;
-  border-radius: 0;
-  padding: 2px 24px 0 0;
+  @apply rounded-none pt-[2px] pr-[24px] pb-0 pl-0;
   background-color: transparent;
-  color: #204e58;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.5;
-  height: auto;
+  @apply text-[#204e58] text-[length:14px] font-semibold leading-[1.5] h-auto;
 }
 .admin-header-context-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  color: #72858a;
+  @apply inline-flex items-center gap-[8px] py-[9px] px-[12px] text-[#72858a];
   background: #f5f7f5;
   border: 1px solid #e8ece8;
-  border-radius: 20px;
-  font-size: 14px;
+  @apply rounded-[20px] text-[length:14px];
 }
 .admin-header-account {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding-left: 20px;
+  @apply flex items-center gap-[18px] pl-[20px];
   border-left: 1px solid #e6ebe6;
-  flex-shrink: 0;
+  @apply shrink-0;
 }
 .admin-header-inbox {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  color: #38636b;
+  @apply grid place-items-center w-[36px] h-[36px] rounded-[10px] text-[#38636b];
 }
 .admin-header-inbox:hover {
   background: #eaf5f2;
-  color: #007f87;
+  @apply text-[#007f87];
 }
 .admin-header-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
+  @apply flex items-center gap-[10px] min-w-0;
 }
 .admin-header-avatar {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 50%;
+  @apply grid place-items-center w-[36px] h-[36px] shrink-0 rounded-[50%];
   background: #f0e2ca;
-  color: #876637;
-  font-size: 14px;
+  @apply text-[#876637] text-[length:14px];
 }
 .admin-header-profile strong {
-  display: block;
-  max-width: 150px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: #294f58;
-  font-size: 14px;
+  @apply block max-w-[150px] overflow-hidden whitespace-nowrap text-ellipsis text-[#294f58] text-[length:14px];
 }
 .admin-header-profile small {
-  display: block;
-  color: #8a999c;
-  font-size: 14px;
-  margin-top: 3px;
+  @apply block text-[#8a999c] text-[length:14px] mt-[3px];
 }
 .admin-unified-header :is(a, select):focus-visible {
   outline: 3px solid #008c95;
@@ -160,78 +91,59 @@
 }
 @media (max-width: 1100px) {
   .admin-topbar.admin-unified-header {
-    gap: 15px;
-    padding-inline: 20px;
+    @apply gap-[15px] px-[20px];
   }
   .admin-header-profile > div {
-    display: none;
+    @apply hidden;
   }
   .admin-header-account {
-    gap: 8px;
-    padding-left: 12px;
+    @apply gap-[8px] pl-[12px];
   }
 }
 @media (max-width: 700px) {
   .admin-topbar.admin-unified-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    height: auto;
-    min-height: 76px;
-    gap: 12px;
-    padding: 14px 16px;
+    @apply grid grid-cols-[minmax(0,_1fr)_auto] h-auto min-h-[76px] gap-[12px] py-[14px] px-[16px];
   }
   .admin-header-identity {
-    gap: 9px;
+    @apply gap-[9px];
   }
   .admin-header-page-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
+    @apply w-[34px] h-[34px] rounded-[9px];
   }
   .admin-header-breadcrumb {
-    font-size: 14px;
-    gap: 5px;
+    @apply text-[length:14px] gap-[5px];
   }
   .admin-header-breadcrumb > a,
   .admin-header-breadcrumb > svg {
-    display: none;
+    @apply hidden;
   }
   .admin-header-identity > div > small {
-    font-size: 14px;
-    margin-top: 3px;
+    @apply text-[length:14px] mt-[3px];
   }
   .admin-header-account {
-    grid-column: 2;
-    grid-row: 1;
+    @apply col-[2] row-[1];
     border: 0;
-    padding: 0;
-    gap: 5px;
+    @apply p-0 gap-[5px];
   }
   .admin-header-avatar {
-    width: 30px;
-    height: 30px;
-    font-size: 14px;
+    @apply w-[30px] h-[30px] text-[length:14px];
   }
   .admin-header-inbox {
-    width: 30px;
-    height: 30px;
+    @apply w-[30px] h-[30px];
   }
   .admin-header-context {
-    grid-column: 1 / -1;
-    min-width: 0;
+    @apply col-[1_/_-1] min-w-0;
   }
   .admin-header-context:has(.admin-header-context-label) {
-    display: none;
+    @apply hidden;
   }
   .admin-header-scope {
-    padding: 8px 12px;
+    @apply py-[8px] px-[12px];
   }
   .admin-header-scope > span {
     flex: 1;
   }
   .admin-unified-header .admin-header-scope select {
-    width: 100%;
-    max-width: none;
-    min-width: 0;
+    @apply w-full max-w-none min-w-0;
   }
 }

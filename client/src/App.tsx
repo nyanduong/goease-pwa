@@ -574,7 +574,7 @@ export function App() {
 
   return (
     <div
-      className={`app-shell ${
+      className={`app-shell flex min-h-screen flex-col ${
         isWelcome
           ? 'welcome-shell'
           : isPlaceDetail

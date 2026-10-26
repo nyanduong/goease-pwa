@@ -242,7 +242,7 @@ test('sources distinguish provider status from saved places, expose details and 
   await expect(card).toContainText('Geoapify');
   await page.getByRole('link', { name: 'Tổng quan', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Tổng quan dữ liệu' }),
+    page.getByRole('heading', { name: 'Tổng quan', exact: true }),
   ).toBeVisible();
   await expect(page.locator('.admin-kpi').first().locator('strong')).toHaveText(
     String(realOverview.total),
