@@ -570,6 +570,9 @@ button:disabled {
 .journey-cover {
   @apply h-[190px] rounded-[16px];
 }
+.destination-photo-empty {
+  @apply grid w-full h-full place-items-center bg-goease-soft text-goease-muted text-[length:12px];
+}
 .journey-view-tabs {
   @apply gap-0;
   border-bottom: 1px solid var(--line);

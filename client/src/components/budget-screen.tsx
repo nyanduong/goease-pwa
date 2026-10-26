@@ -1,3 +1,4 @@
+import { DestinationPhoto } from './destination-photo';
 import { images } from '@goease/media';
 import { useEffect, useState } from 'react';
 import {
@@ -28,6 +29,7 @@ const categories = [
   { key: 'other', label: 'Khác', color: '#95a7ab', Icon: Shapes },
 ] as const;
 type BudgetProps = {
+  destinationSlug?: string | undefined;
   summary?: BudgetSummary;
   destinationName: string;
   days: number;
@@ -44,6 +46,7 @@ type BudgetProps = {
 };
 
 export function BudgetScreen({
+  destinationSlug,
   destinationName,
   days,
   travelers,
@@ -130,14 +133,7 @@ export function BudgetScreen({
   return (
     <section className="budget-screen" aria-label="Chi phí dự kiến chuyến đi">
       <div className="budget-landscape">
-        <img
-          src={
-            /hội an/i.test(destinationName)
-              ? images.exploreHoian
-              : images.welcomeHalongBay
-          }
-          alt="Ảnh phong cảnh minh họa AI"
-        />
+        <DestinationPhoto name={destinationName} slug={destinationSlug} />
         <span className="budget-context">
           <MapPin size={15} />
           {destinationName} · {days} ngày · {travelers} người
@@ -376,11 +372,13 @@ export function BudgetScreen({
 }
 
 export function TripBudget({
+  destinationSlug,
   draft,
   destinationName,
   onAdjust,
   onReview,
 }: {
+  destinationSlug?: string | undefined;
   draft: TripInput;
   destinationName: string;
   onAdjust: () => void;
@@ -445,6 +443,7 @@ export function TripBudget({
     );
   return (
     <BudgetScreen
+      destinationSlug={destinationSlug}
       summary={result.budget}
       destinationName={destinationName}
       days={draft.days.length}

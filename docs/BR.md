@@ -2,6 +2,8 @@
 
 ## CAT-20 — hiển thị ảnh trên giao diện khách, 26/10/2026
 
+Ảnh chuyến (danh sách/chi tiết/Chi phí) dùng bìa theo slug của điểm đến; thiếu/lỗi ảnh hiện placeholder, không mượn bìa tỉnh khác. Ảnh điểm dừng ưu tiên bìa images của đúng placeId/destinationId, không dùng imageUrl legacy nếu danh mục images đã rỗng. Không đổi schema/registry/DTO; đây là quy tắc chọn ảnh hiển thị theo yêu cầu owner.
+
 Owner yêu cầu bỏ nhãn/thông báo “Ảnh minh họa AI” và chú thích minh họa đi kèm trên giao diện khách; quyết định này thay yêu cầu gắn nhãn public trong các ghi nhận trước. Metadata kind/source/credit/license và nhãn quản trị giữ nguyên; không gọi ảnh minh họa là ảnh chụp đã xác minh. Ghi công và giấy phép của ảnh thật vẫn hiển thị. Thẻ điểm dừng lấy bìa catalog theo placeId thay ảnh mặc định suy từ tên/điểm đến; thiếu ảnh hiện placeholder, lỗi lấy catalog có thử lại. Không đổi REST DTO, schema MongoDB, registry hoặc dữ liệu chuyến.
 
 ## AI-02 / TRIP-08 / CAT-23 — demo Đà Nẵng và nghỉ cà phê, 26/10/2026

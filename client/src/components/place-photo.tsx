@@ -39,14 +39,16 @@ export function PlacePhoto({
 }) {
   const [failed, setFailed] = useState('');
   const cover = place.images?.[0];
+  const imageUrl =
+    cover?.url ?? (place.images === undefined ? place.imageUrl : '');
   return (
     <span className="place-real-photo">
-      {place.imageUrl && failed !== place.imageUrl ? (
+      {imageUrl && failed !== imageUrl ? (
         <img
-          src={place.imageUrl}
+          src={imageUrl}
           alt={place.name}
           loading="lazy"
-          onError={() => setFailed(place.imageUrl)}
+          onError={() => setFailed(imageUrl)}
         />
       ) : (
         <span

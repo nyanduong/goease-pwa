@@ -1,5 +1,13 @@
 # Gemini planner — local customer MVP (2026-10-23)
 
+## Rà nguồn ảnh chuyến trên các điểm đến — 26/10/2026
+
+Danh sách chuyến, bìa chi tiết và tab Chi phí dùng chung DestinationPhoto/destinationCover. Slug của destinationId có ưu tiên tuyệt đối; không dùng tên chứa Hội An/Sa Pa để thay ảnh của một tỉnh khác. Legacy không có slug chỉ thử tên chuẩn hóa chính xác. Thiếu URL hoặc tải lỗi hiển thị “Chưa có ảnh điểm đến”, không lấy ảnh tỉnh khác hoặc mascot làm bìa. Tab Chi phí trước đây còn fallback Hạ Long đã được sửa. Thẻ điểm dừng lấy images[0].url trước; images rỗng không được dùng imageUrl legacy mồ côi. Shared/offline hiện không hiển thị ảnh bìa/thumbnail, nên không có fallback ảnh cần thay ở hai bản đọc đó. Banner chung Trang chủ/đăng nhập và thumbnail quản trị không thuộc ảnh của một chuyến cụ thể.
+
+Audit chỉ đọc local: 35 bản ghi destination (gồm bản demo), 13 bìa cấu hình đều HTTP200; không có điểm đến public thiếu bìa. 40 POI public đều có bìa và imageUrl khớp images[0].url; không có URL ảnh goease/app dùng làm ảnh POI. Đây là kiểm chứng ánh xạ dữ liệu, không xác nhận lại pixels/tên cơ sở/quyền ảnh của toàn bộ thư viện. Receipt ignored `.local/trip-photo-audit-20261026.json`. Không đổi catalog/trip DB, không gọi AI.
+
+Kiểm tra tự động `node --import tsx --test tests/destination-cover.test.ts` đạt: mọi slug cấu hình vẫn lấy đúng bìa dù tên legacy sai; slug không biết và tên chứa nhiều địa danh không lấy bìa tỉnh khác. Chrome: ảnh ở trang chi tiết và tab Chi phí Cần Thơ cùng URL can-tho-v1 và tải thành công; ảnh bằng chứng `.local/trip-photo-audit-budget-20261026.jpg`. Chưa mở riêng từng chuyến của cả 13 tỉnh trên browser; audit toàn scope dùng dữ liệu và test ánh xạ.
+
 ## Sửa lỗi tạo lịch Cần Thơ — 26/10/2026
 
 Hai lượt thất bại lúc 10:47 và 10:48 (giờ Việt Nam) lưu AI_INVALID_OUTPUT, provider Fulldichvu/Haiku, prompt vietnam-rank-v2. Không lưu phản hồi gốc nên không thể chứng minh nội dung chính xác của hai lượt cũ. Tái hiện trực tiếp phát hiện danh sách có mã quán lặp; lượt tiếp theo phát hiện model chép sai ObjectId. Không đổi thông báo để che lỗi.

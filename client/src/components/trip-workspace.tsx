@@ -1,6 +1,7 @@
 import { confirmAction } from '../confirmation';
 import { PlacePhoto } from './place-photo';
-import { images, destinationCovers } from '@goease/media';
+import { images } from '@goease/media';
+import { DestinationPhoto } from './destination-photo';
 import { TripManagement } from './trip-management';
 import { TripOffline } from './trip-offline';
 import { Sheet } from './journey-sheet';
@@ -16,7 +17,6 @@ import {
   useRef,
   useState,
   type ReactNode,
-  type SyntheticEvent,
 } from 'react';
 import {
   ArrowLeft,
@@ -64,27 +64,6 @@ const TripMap = lazy(() =>
 
 const shortDate = (date: string) =>
   date.slice(5).split('-').reverse().join('/');
-const travelImage = (name: string, slug?: string) => {
-  const nameSlug = name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/gi, 'd')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-');
-  return (
-    destinationCovers[slug ?? nameSlug] ??
-    (/hội an/i.test(name)
-      ? images.exploreHoian
-      : /sa pa/i.test(name)
-        ? images.destinationSapa
-        : images.goeMascot)
-  );
-};
-const onCoverError = (event: SyntheticEvent<HTMLImageElement>) => {
-  if (event.currentTarget.src !== images.goeMascot)
-    event.currentTarget.src = images.goeMascot;
-};
 const tastes = [
   { code: 'food', label: 'Ẩm thực', Icon: Utensils },
   { code: 'culture', label: 'Văn hóa', Icon: Landmark },
@@ -243,15 +222,13 @@ export function JourneyList({
               onClick={() => onNavigate(`/trips/${trip.id}`)}
             >
               <div className="journey-saved-cover">
-                <img
-                  src={travelImage(
-                    trip.destinationName,
+                <DestinationPhoto
+                  name={trip.destinationName}
+                  slug={
                     destinations.find(
                       (d) => d.id === trip.destinations[0]?.destinationId,
-                    )?.slug,
-                  )}
-                  alt={trip.destinationName}
-                  onError={onCoverError}
+                    )?.slug
+                  }
                 />
                 <span>
                   <MapPin size={12} />
@@ -988,10 +965,9 @@ export function TripWorkspace({
               <>
                 {loaded && (
                   <div className="journey-cover">
-                    <img
-                      src={travelImage(destinationName, destination?.slug)}
-                      alt={destinationName}
-                      onError={onCoverError}
+                    <DestinationPhoto
+                      name={destinationName}
+                      slug={destination?.slug}
                     />
                   </div>
                 )}
@@ -1062,6 +1038,7 @@ export function TripWorkspace({
                 )}
                 {costView === 'estimate' || !loaded ? (
                   <TripBudget
+                    destinationSlug={destination?.slug}
                     draft={draft}
                     destinationName={destinationName}
                     onAdjust={() => openField('budget')}
