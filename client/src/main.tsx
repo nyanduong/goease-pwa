@@ -14,6 +14,7 @@ import './confirmation.css';
 import './admin-v1.css';
 import './admin-controls.css';
 import './destination-picker.css';
+import './customer-ui.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

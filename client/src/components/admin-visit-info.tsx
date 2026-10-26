@@ -1,11 +1,5 @@
 import { AdminPriceTerms } from './admin-price-terms';
-import {
-  Clock3,
-  Banknote,
-  CheckCircle2,
-  Search,
-  ArrowRight,
-} from 'lucide-react';
+import { Clock3, Banknote, CheckCircle2, Search, ArrowRight } from '../icons';
 import { useEffect, useRef, useState } from 'react';
 import {
   visitPriceLabel,

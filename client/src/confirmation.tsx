@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertTriangle, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Trash2, X } from './icons';
 
 type ConfirmationOptions = {
   title: string;

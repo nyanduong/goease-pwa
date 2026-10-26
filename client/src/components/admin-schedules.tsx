@@ -8,7 +8,7 @@ import {
   Search,
   ShieldCheck,
   X,
-} from 'lucide-react';
+} from '../icons';
 import type {
   CatalogOperationsDto,
   CatalogScheduleInput,

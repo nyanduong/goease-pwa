@@ -1,7 +1,7 @@
 import { confirmAction } from '../confirmation';
 import { PlaceGalleryPhoto, PlacePhoto } from './place-photo';
 import { images } from '@goease/media';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { catalogCost } from '@goease/contracts';
 import {
   ArrowLeft,
@@ -21,7 +21,9 @@ import {
   Sun,
   Utensils,
   X,
-} from 'lucide-react';
+  SlidersHorizontal,
+} from '../icons';
+import { LoadingSkeleton, ScreenHeader } from './customer-shell';
 import type {
   PlaceDto,
   SavedPlacesDto,
@@ -35,6 +37,9 @@ import { PlacePlanning } from './place-planning';
 import { SourceCredit } from './source-credit';
 import { DestinationRegions } from './destination-regions';
 const labels = { food: 'Ẩm thực', culture: 'Văn hóa', nature: 'Thiên nhiên' };
+const PlacesMap = lazy(() =>
+  import('./places-map').then((module) => ({ default: module.PlacesMap })),
+);
 const icons = { food: Utensils, culture: Landmark, nature: Leaf };
 const message = (e: unknown) =>
   e instanceof Error ? e.message : 'Chưa kết nối được. Vui lòng thử lại.';
@@ -196,40 +201,7 @@ export function ExplorePage({
     );
   return (
     <div className={`explore-page ${savedOnly ? 'saved-places-page' : ''}`}>
-      {!savedOnly && (
-        <button className="explore-back" onClick={() => onNavigate('/')}>
-          <ArrowLeft size={20} />
-          Khám phá
-        </button>
-      )}
-      <header className="explore-heading">
-        <h1>
-          {savedOnly ? (
-            'Những nơi đã lưu.'
-          ) : (
-            <>
-              Một Việt Nam
-              <br />
-              của riêng bạn.
-            </>
-          )}
-        </h1>
-        <p>
-          {savedOnly
-            ? 'Chọn nơi đã lưu và thêm vào hành trình của bạn.'
-            : 'Tìm nơi hợp gu, lưu cho chuyến tới.'}
-        </p>
-      </header>
-      {!savedOnly && (
-        <DestinationRegions
-          region={region}
-          subregion={subregion}
-          onChange={(r, s) => {
-            setRegion(r);
-            setSubregion(s);
-          }}
-        />
-      )}
+      <ScreenHeader title={savedOnly ? 'Đã lưu' : 'Khám phá'} />
       <label className="explore-search">
         <Search size={20} />
         <input
@@ -256,15 +228,36 @@ export function ExplorePage({
           </button>
         ))}
       </div>
-      <div className="explore-view" aria-label="Cách hiển thị">
-        <button aria-pressed={view === 'list'} onClick={() => setView('list')}>
-          <List size={17} />
-          Danh sách
-        </button>
-        <button aria-pressed={view === 'map'} onClick={() => setView('map')}>
-          <Map size={17} />
-          Bản đồ
-        </button>
+      <div className="explore-display-tools">
+        {!savedOnly && (
+          <details className="explore-region-filter">
+            <summary>
+              <SlidersHorizontal size={20} aria-hidden="true" />
+              Khu vực{region ? ' · Đã lọc' : ''}
+            </summary>
+            <DestinationRegions
+              region={region}
+              subregion={subregion}
+              onChange={(r, s) => {
+                setRegion(r);
+                setSubregion(s);
+              }}
+            />
+          </details>
+        )}
+        <div className="explore-view" aria-label="Cách hiển thị">
+          <button
+            aria-pressed={view === 'list'}
+            onClick={() => setView('list')}
+          >
+            <List size={17} />
+            Danh sách
+          </button>
+          <button aria-pressed={view === 'map'} onClick={() => setView('map')}>
+            <Map size={17} />
+            Bản đồ
+          </button>
+        </div>
       </div>
       {error && (
         <div className="explore-status" role="alert">
@@ -296,9 +289,7 @@ export function ExplorePage({
         </section>
       )}
       {loading ? (
-        <p className="explore-status" role="status">
-          Đang tìm những nơi thú vị…
-        </p>
+        <LoadingSkeleton label="Đang tìm những nơi thú vị…" rows={3} />
       ) : !items.length ? (
         <p className="explore-status">
           {savedOnly
@@ -309,17 +300,19 @@ export function ExplorePage({
         </p>
       ) : view === 'map' ? (
         <section className="explore-map">
-          <iframe
-            title="Bản đồ khu vực Hội An"
-            src="https://www.openstreetmap.org/export/embed.html?bbox=108.30%2C15.86%2C108.35%2C15.91&layer=mapnik"
-            loading="lazy"
-          />
-          <p>Bản đồ khu vực Hội An · OpenStreetMap</p>
+          <Suspense
+            fallback={<LoadingSkeleton label="Đang mở bản đồ…" rows={3} />}
+          >
+            <PlacesMap
+              places={items}
+              onOpen={(id) => onNavigate(`/places/${id}`)}
+            />
+          </Suspense>
           <p>Chọn một nơi để xem vị trí trên Google Maps.</p>
           {items.map((p) => (
             <a
               key={p.id}
-              href={mapUrl(`${p.name} Hội An`)}
+              href={mapUrl(`${p.name} ${p.destinationName}`)}
               target="_blank"
               rel="noreferrer"
             >
@@ -346,18 +339,47 @@ export function ExplorePage({
                     )
                   }
                 >
-                  <PlacePhoto place={p} compact />
+                  <PlacePhoto place={p} compact showCredit={false} />
                   <span className="explore-category">
                     <Icon size={13} />
                     {labels[p.category]}
                   </span>
                   <span className="explore-card-copy">
                     <strong>{p.name}</strong>
-                    {i === 0 && !category && !query && (
-                      <small>{p.subtitle}</small>
-                    )}
                   </span>
                 </button>
+                {p.images?.[0] && (
+                  <details className="photo-source">
+                    <summary>
+                      {p.images[0].kind === 'ai_illustration'
+                        ? 'Ảnh minh họa AI'
+                        : 'Nguồn ảnh'}
+                    </summary>
+                    <p>
+                      <a
+                        href={p.images[0].sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {p.images[0].credit}
+                      </a>{' '}
+                      · {p.images[0].license}
+                      {p.images[0].licenseUrl && (
+                        <>
+                          {' '}
+                          ·{' '}
+                          <a
+                            href={p.images[0].licenseUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Giấy phép
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  </details>
+                )}
                 <button
                   className="explore-save"
                   aria-label={`${states[p.id]?.saved ? 'Bỏ lưu' : 'Lưu'} ${p.name}`}
@@ -367,7 +389,7 @@ export function ExplorePage({
                 >
                   <Bookmark
                     size={18}
-                    fill={states[p.id]?.saved ? 'currentColor' : 'none'}
+                    weight={states[p.id]?.saved ? 'fill' : 'regular'}
                   />
                 </button>
                 {savedOnly && (
@@ -677,7 +699,7 @@ export function PlaceDetail({
           disabled={busy || (signedIn && !state)}
           onClick={() => void update(!state?.saved)}
         >
-          <Bookmark size={22} fill={state?.saved ? 'currentColor' : 'none'} />
+          <Bookmark size={22} weight={state?.saved ? 'fill' : 'regular'} />
         </button>
       </div>
       <div className="place-body">
@@ -685,7 +707,7 @@ export function PlaceDetail({
           {place.destinationName} · {labels[place.category]}
         </p>
         <h1>{place.name}</h1>
-        {!!place.images?.length && (
+        {place.images && place.images.length > 1 && (
           <div className="place-source-gallery">
             {place.images.map((image, i) => (
               <PlaceGalleryPhoto
@@ -711,34 +733,38 @@ export function PlaceDetail({
             {place.bestTimeLabel}
           </span>
         </div>
-        <p className="place-description">{place.description}</p>
-        {place.descriptionSource && (
-          <small className="place-description-credit">
-            {place.descriptionSource.translated
-              ? 'Dịch và biên tập từ '
-              : 'Trích/biên tập từ '}
-            <a
-              href={place.descriptionSource.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {new URL(place.descriptionSource.sourceUrl).hostname ===
-              'en.wikivoyage.org'
-                ? 'Wikivoyage'
-                : 'Wikipedia'}{' '}
-              · {place.descriptionSource.title}
-            </a>{' '}
-            ·{' '}
-            <a
-              href="https://creativecommons.org/licenses/by-sa/4.0/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {place.descriptionSource.license}
-            </a>
-          </small>
-        )}
-        <aside className="place-tip">
+        <details className="place-about">
+          <summary>Giới thiệu địa điểm</summary>
+          <p className="place-description">{place.description}</p>
+          {place.descriptionSource && (
+            <small className="place-description-credit">
+              {place.descriptionSource.translated
+                ? 'Dịch và biên tập từ '
+                : 'Trích/biên tập từ '}
+              <a
+                href={place.descriptionSource.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {new URL(place.descriptionSource.sourceUrl).hostname ===
+                'en.wikivoyage.org'
+                  ? 'Wikivoyage'
+                  : 'Wikipedia'}{' '}
+                · {place.descriptionSource.title}
+              </a>{' '}
+              ·{' '}
+              <a
+                href="https://creativecommons.org/licenses/by-sa/4.0/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {place.descriptionSource.license}
+              </a>
+            </small>
+          )}
+        </details>
+        <details className="place-tip">
+          <summary>Gợi ý khi ghé thăm</summary>
           <img src={images.goeMascot} alt="Goe" />
           <div>
             <h2>
@@ -747,25 +773,32 @@ export function PlaceDetail({
             </h2>
             <p>{place.tip}</p>
           </div>
-        </aside>
-        <section className="place-highlights">
-          <h2>Một vòng ghé thăm</h2>
-          {place.highlights.map((h) => (
-            <a
-              href={mapUrl(h.query)}
-              target="_blank"
-              rel="noreferrer"
-              key={h.name}
-            >
-              <MapPin size={16} />
-              {h.name}
-              <ChevronRight size={16} />
-            </a>
-          ))}
-        </section>
-        <PlacePlanning place={place} />
-        <section className="place-notes">
-          <h2>Ghi chú của bạn</h2>
+        </details>
+        {place.highlights.length > 0 && (
+          <section className="place-highlights">
+            <h2>Điểm ghé thăm</h2>
+            {place.highlights.map((h) => (
+              <a
+                href={mapUrl(h.query)}
+                target="_blank"
+                rel="noreferrer"
+                key={h.name}
+              >
+                <MapPin size={16} />
+                {h.name}
+                <ChevronRight size={16} />
+              </a>
+            ))}
+          </section>
+        )}
+        {place.planning && (
+          <details className="place-planning-disclosure">
+            <summary>Giá và giờ hoạt động</summary>
+            <PlacePlanning place={place} />
+          </details>
+        )}
+        <details className="place-notes">
+          <summary>Ghi chú của bạn</summary>
           <label>
             <Pencil size={17} />
             <textarea
@@ -799,7 +832,7 @@ export function PlaceDetail({
               Đăng nhập để ghi chú
             </button>
           )}
-        </section>
+        </details>
         {error && (
           <div className="explore-status" role="alert">
             {error}
@@ -854,7 +887,7 @@ export function PlaceDetail({
           disabled={busy || (signedIn && !state)}
           onClick={() => void update(!state?.saved)}
         >
-          <Bookmark size={23} fill={state?.saved ? 'currentColor' : 'none'} />
+          <Bookmark size={23} weight={state?.saved ? 'fill' : 'regular'} />
         </button>
       </div>
       {sheet && (

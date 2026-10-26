@@ -70,7 +70,7 @@ export function SharedTripPage() {
   }, [trip]);
   const selected = trip?.days[day];
   return (
-    <main className="shared-trip-page">
+    <main className="shared-trip-page customer-ui customer-focused">
       <a href="/" aria-label="GoEase trang chủ">
         <Brand />
       </a>

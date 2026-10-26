@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ChevronRight, Search } from 'lucide-react';
+import { Check, ChevronRight, Search } from '../icons';
 import type { DestinationDto } from '@goease/contracts';
 import { Sheet } from './journey-sheet';
 import { DestinationRegions, matchesRegion } from './destination-regions';

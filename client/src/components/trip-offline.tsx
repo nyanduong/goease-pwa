@@ -19,8 +19,8 @@ export function TripOffline({ id, unsaved }: { id: string; unsaved: boolean }) {
     };
   }, [id]);
   return (
-    <section className="trip-management" aria-label="Lịch trình offline">
-      <h2>Mang lịch trình theo bạn</h2>
+    <details className="trip-offline" aria-label="Lịch trình offline">
+      <summary>Bản offline</summary>
       <p>
         Chỉ xem lịch, ghi chú và chi phí dự kiến. Dữ liệu lưu trên trình duyệt
         này và được xóa khi đăng xuất.
@@ -70,6 +70,6 @@ export function TripOffline({ id, unsaved }: { id: string; unsaved: boolean }) {
         <a href="/offline.html">Mở lịch trình offline</a>
       </div>
       {error && <p role="alert">{error}</p>}
-    </section>
+    </details>
   );
 }

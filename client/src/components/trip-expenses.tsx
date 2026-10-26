@@ -217,11 +217,11 @@ export function TripExpenses({
   );
   return (
     <section className="trip-expenses" aria-label="Chi tiêu thực tế">
-      <header>
-        <span className="journey-eyebrow">CHI TIÊU CỦA CHUYẾN ĐI</span>
-        <h1>Mình đã chi bao nhiêu?</h1>
-        <p>Ghi tổng tiền đã chi cho cả nhóm bằng VND.</p>
-      </header>
+      {!summaryOnly && (
+        <header>
+          <h1>Chi tiêu thực tế</h1>
+        </header>
+      )}
       {unsaved && (
         <p className="expense-warning">
           Có thay đổi lịch hoặc ngân sách chưa lưu. So sánh bên dưới dùng phiên
@@ -255,34 +255,37 @@ export function TripExpenses({
                   : `Ngân sách còn lại ${moneyText(data.actual.remainingMinor)}`}
             </b>
           </div>
-          <dl className="expense-comparison">
-            <div>
-              <dt>Ngân sách cả nhóm</dt>
-              <dd>
-                {data.budget.budgetMinor === null
-                  ? 'Chưa đặt'
-                  : moneyText(data.budget.budgetMinor)}
-              </dd>
-            </div>
-            <div>
-              <dt>Chi phí dự kiến đã biết</dt>
-              <dd>{moneyText(data.budget.knownEstimatedMinor)}</dd>
-            </div>
-            <div>
-              <dt>Đã chi − chi phí dự kiến đã biết</dt>
-              <dd>
-                {data.actual.differenceFromEstimateMinor > 0 ? '+' : ''}
-                {moneyText(data.actual.differenceFromEstimateMinor)}
-              </dd>
-            </div>
-          </dl>
-          <p className="expense-caption">
-            {data.budget.missingCostCount > 0
-              ? `${data.budget.missingCostCount} điểm dừng chưa có giá dự kiến. `
-              : ''}
-            Chỉ gồm khoản chi bạn đã nhập; chênh lệch âm chưa có nghĩa chuyến đi
-            tiết kiệm.
-          </p>
+          <details className="expense-analysis">
+            <summary>So sánh với dự kiến</summary>
+            <dl className="expense-comparison">
+              <div>
+                <dt>Ngân sách cả nhóm</dt>
+                <dd>
+                  {data.budget.budgetMinor === null
+                    ? 'Chưa đặt'
+                    : moneyText(data.budget.budgetMinor)}
+                </dd>
+              </div>
+              <div>
+                <dt>Chi phí dự kiến đã biết</dt>
+                <dd>{moneyText(data.budget.knownEstimatedMinor)}</dd>
+              </div>
+              <div>
+                <dt>Đã chi − chi phí dự kiến đã biết</dt>
+                <dd>
+                  {data.actual.differenceFromEstimateMinor > 0 ? '+' : ''}
+                  {moneyText(data.actual.differenceFromEstimateMinor)}
+                </dd>
+              </div>
+            </dl>
+            <p className="expense-caption">
+              {data.budget.missingCostCount > 0
+                ? `${data.budget.missingCostCount} điểm dừng chưa có giá dự kiến. `
+                : ''}
+              Chỉ gồm khoản chi bạn đã nhập; chênh lệch âm chưa có nghĩa chuyến
+              đi tiết kiệm.
+            </p>
+          </details>
           <div className="expense-categories" aria-label="Chi tiêu theo nhóm">
             {data.actual.categories.map((c) => (
               <div key={c.key}>

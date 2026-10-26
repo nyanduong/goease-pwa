@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { images } from '@goease/media';
 import { Sheet } from './journey-sheet';
-import { Camera } from 'lucide-react';
+import { Camera } from '../icons';
 
 export function AvatarPicker({
   avatarUrl,
@@ -132,6 +132,8 @@ export function AvatarPicker({
           <small>
             {emailVerified ? 'Email đã xác minh' : 'Email chưa xác minh'}
           </small>
+        </div>
+        <div className="avatar-picker-actions">
           <button
             type="button"
             className="button button-outline"
@@ -157,11 +159,14 @@ export function AvatarPicker({
           e.target.value = '';
         }}
       />
-      <small>
-        JPG, PNG hoặc WebP, tối đa 5 MB. Bạn có thể kéo và phóng to ảnh trước
-        khi lưu. Ảnh đại diện được lưu công khai trên Cloudinary khi bấm Lưu hồ
-        sơ.
-      </small>
+      <small>JPG, PNG hoặc WebP · Tối đa 5 MB</small>
+      <details className="avatar-picker-help">
+        <summary>Lưu ý về ảnh đại diện</summary>
+        <p>
+          Bạn có thể kéo và phóng to ảnh trước khi lưu. Ảnh được lưu công khai
+          trên Cloudinary khi bấm Lưu hồ sơ.
+        </p>
+      </details>
       {error && <p role="alert">{error}</p>}
       {file && <small>Ảnh mới chưa lưu. Bấm Lưu hồ sơ để cập nhật.</small>}
       {image && (

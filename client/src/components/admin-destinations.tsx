@@ -13,7 +13,7 @@ import {
   Info,
   Lightbulb,
   Search,
-} from 'lucide-react';
+} from '../icons';
 import { api, ApiFailure } from '../api';
 import { AdminProvinceImport } from './admin-province-import';
 

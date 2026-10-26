@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Database, Pause, Play, RefreshCw } from 'lucide-react';
+import { Database, Pause, Play, RefreshCw } from '../icons';
 import type { EnrichmentDto, EnrichmentItemState } from '@goease/contracts';
 import { api } from '../api';
 

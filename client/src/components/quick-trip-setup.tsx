@@ -1,9 +1,8 @@
-import { images } from '@goease/media';
 import { useState } from 'react';
 import type { DestinationDto, TripInput } from '@goease/contracts';
 import { withDays } from '../trip-draft';
 import { AiPlanner } from './ai-planner';
-import { MapPin, ChevronDown } from 'lucide-react';
+import { MapPin, ChevronDown } from '../icons';
 import { DestinationPicker } from './destination-picker';
 
 export function QuickTripSetup({
@@ -60,9 +59,7 @@ export function QuickTripSetup({
   return (
     <div className="quick-setup">
       <div className="quick-intro">
-        <img src={images.goeMascot} alt="" />
-        <h1>Bạn muốn đi đâu?</h1>
-        <p>Chọn tỉnh/thành, số ngày và số người. Goe xếp lịch giúp bạn.</p>
+        <h1 className="sr-only">Thông tin chuyến đi</h1>
       </div>
       <fieldset className="quick-fields" disabled={generating}>
         <legend className="sr-only">Thông tin để lên lịch</legend>
@@ -83,7 +80,6 @@ export function QuickTripSetup({
             </span>
             <ChevronDown size={18} aria-hidden="true" />
           </button>
-          <small>Goe kiểm tra dữ liệu điểm đến khi lập lịch.</small>
         </div>
         {!destinations.length && (
           <p role="status">
@@ -92,7 +88,7 @@ export function QuickTripSetup({
           </p>
         )}
         <div className="quick-question">
-          <h2>Đi bao lâu?</h2>
+          <h2>Số ngày</h2>
           <div className="quick-options" role="group" aria-label="Số ngày">
             {[1, 2, 3].map((n) => (
               <button
@@ -129,12 +125,12 @@ export function QuickTripSetup({
               </select>
             </label>
           )}
-          <p className="quick-hint">
-            Chưa cần chốt ngày đi. Bạn chọn ngày khi lưu lịch.
-          </p>
+          <small className="quick-hint">
+            Chọn ngày khởi hành khi lưu chuyến.
+          </small>
         </div>
         <div className="quick-question">
-          <h2>Đi mấy người?</h2>
+          <h2>Số người</h2>
           <div className="quick-options" role="group" aria-label="Đi cùng">
             {[1, 2].map((n) => (
               <button
@@ -290,31 +286,33 @@ export function QuickTripSetup({
           đồng.
         </p>
       )}
-      <fieldset className="quick-action" disabled={!valid}>
-        <AiPlanner
-          draft={withDays({
-            ...draft,
-            title:
-              draft.title.trim() ||
-              `${destination?.name ?? 'Chuyến đi'} ${duration} ngày`,
-          })}
-          immediatePreview
-          onApply={onPreview}
-          onBusyChange={(v) => {
-            setGenerating(v);
-            onBusyChange(v);
-          }}
-        />
-      </fieldset>
-      {destination && (
-        <button
-          className="quick-manual"
-          disabled={generating || !valid}
-          onClick={onManual}
-        >
-          Tự chọn điểm dừng
-        </button>
-      )}
+      <div className="quick-actions">
+        <fieldset className="quick-action" disabled={!valid}>
+          <AiPlanner
+            draft={withDays({
+              ...draft,
+              title:
+                draft.title.trim() ||
+                `${destination?.name ?? 'Chuyến đi'} ${duration} ngày`,
+            })}
+            immediatePreview
+            onApply={onPreview}
+            onBusyChange={(v) => {
+              setGenerating(v);
+              onBusyChange(v);
+            }}
+          />
+        </fieldset>
+        {destination && (
+          <button
+            className="quick-manual"
+            disabled={generating || !valid}
+            onClick={onManual}
+          >
+            Tự chọn điểm dừng
+          </button>
+        )}
+      </div>
     </div>
   );
 }

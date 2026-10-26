@@ -30,7 +30,7 @@ import {
   Database,
   Settings,
   CalendarClock,
-} from 'lucide-react';
+} from '../icons';
 
 const tabs = {
   overview: 'Tổng quan',

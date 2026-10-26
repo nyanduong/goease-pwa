@@ -5,7 +5,7 @@ import type {
   ImageCandidate,
 } from '@goease/contracts';
 import { api } from '../api';
-import { Image as ImageIcon, X, Check, RefreshCw } from 'lucide-react';
+import { Image as ImageIcon, X, Check, RefreshCw } from '../icons';
 import {
   approvedCover,
   approvedPhoto,

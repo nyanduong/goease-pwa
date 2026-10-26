@@ -7,7 +7,7 @@ import {
   ArrowUpRight,
   X,
   Expand,
-} from 'lucide-react';
+} from '../icons';
 import {
   catalogImageCover,
   catalogCapabilities,

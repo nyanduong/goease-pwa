@@ -7,9 +7,10 @@ import {
   Map,
   Search,
   Compass,
-  Plus,
   Wallet,
-} from 'lucide-react';
+  MapPin,
+} from '../icons';
+import { LoadingSkeleton } from './customer-shell';
 import type { DestinationDto, TripDto, UserDto } from '@goease/contracts';
 import { DestinationRegions, matchesRegion } from './destination-regions';
 import { DestinationPicker } from './destination-picker';
@@ -103,8 +104,7 @@ export function HomeDiscovery({
       name: d.name,
       subtitle: d.summary || 'Khám phá theo cách của bạn',
       category: known?.category ?? 'Khám phá',
-      image:
-        destinationCovers[d.slug ?? ''] ?? known?.image ?? images.goeMascot,
+      image: destinationCovers[d.slug ?? ''] ?? known?.image,
       destination: d,
     };
   });
@@ -152,12 +152,7 @@ export function HomeDiscovery({
             <p className="discovery-greeting">
               Xin chào{user ? `, ${user.displayName}` : ''},
             </p>
-            <h1>
-              Sẵn sàng cho
-              <br />
-              hành trình mới?
-            </h1>
-            <p>Những chuyến đi tuyệt vời luôn bắt đầu bằng một kế hoạch tốt.</p>
+            <h1>Đi đâu hôm nay?</h1>
           </div>
           <span className="discovery-slogan">
             Just go.
@@ -167,11 +162,11 @@ export function HomeDiscovery({
           <div className="discovery-start">
             <button
               data-start-trip
-              className="button button-primary"
-              onClick={() => onStart()}
+              className="button home-destination-search"
+              onClick={() => setShowAllDestinations(true)}
             >
-              <Plus size={20} aria-hidden="true" /> Tạo chuyến đi{' '}
-              <ArrowRight size={18} aria-hidden="true" />
+              <Search size={18} aria-hidden="true" /> Tìm điểm đến
+              <ChevronRight size={18} aria-hidden="true" />
             </button>
           </div>
         </section>
@@ -179,7 +174,7 @@ export function HomeDiscovery({
       {mode === 'home' && (
         <section className="discovery-trips" aria-label="Chuyến đi của bạn">
           <div className="discovery-section-heading">
-            <h2>Chuyến đi của bạn</h2>
+            <h2>Chuyến đi gần đây</h2>
             <button onClick={() => onNavigate(user ? '/trips' : '/login')}>
               Xem tất cả <ArrowRight size={14} />
             </button>
@@ -199,9 +194,7 @@ export function HomeDiscovery({
               <ChevronRight size={18} />
             </button>
           ) : tripsStatus === 'loading' ? (
-            <p className="discovery-empty" role="status">
-              Đang tải chuyến đi…
-            </p>
+            <LoadingSkeleton label="Đang tải chuyến đi…" rows={2} />
           ) : tripsStatus === 'error' ? (
             <div className="discovery-empty" role="alert">
               Chưa tải được chuyến đi.{' '}
@@ -234,7 +227,8 @@ export function HomeDiscovery({
                   <span>
                     <strong>{trip.title}</strong>
                     <small>
-                      {trip.destinationName} · {trip.travelers.totalCount} người
+                      {trip.destinationName} ·{' '}
+                      {trip.startDate.split('-').reverse().join('/')}
                     </small>
                   </span>
                   <ChevronRight size={18} />
@@ -249,82 +243,71 @@ export function HomeDiscovery({
           className="discovery-shortcuts"
           aria-labelledby="discovery-shortcuts-title"
         >
-          <h2 id="discovery-shortcuts-title">Khám phá cùng GoEase</h2>
+          <h2 id="discovery-shortcuts-title" className="sr-only">
+            Truy cập nhanh
+          </h2>
           <div>
             <button onClick={() => onNavigate(user ? '/trips' : '/login')}>
-              <Wallet aria-hidden="true" size={25} />
-              <span>
-                Quản lý
-                <br />
-                chuyến đi
-              </span>
+              <Wallet aria-hidden="true" size={21} />
+              <span>Chuyến đi</span>
             </button>
             <button onClick={() => onNavigate('/explore')}>
-              <Compass aria-hidden="true" size={25} />
-              <span>
-                Gợi ý<br />
-                địa phương
-              </span>
+              <Compass aria-hidden="true" size={21} />
+              <span>Địa điểm</span>
             </button>
             <button onClick={() => onNavigate(user ? '/goe' : '/login')}>
-              <Map aria-hidden="true" size={25} />
-              <span>
-                Lên lịch
-                <br />
-                cùng Goe
-              </span>
+              <img src={images.goeMascot} alt="" width={24} height={24} />
+              <span>Hỏi Goe</span>
             </button>
           </div>
         </section>
       )}
-      <section className="discovery-intro">
-        <p className="discovery-eyebrow">KHÁM PHÁ VIỆT NAM CÙNG GOEASE</p>
-        <IntroHeading>
-          {mode === 'saved' ? (
-            'Những nơi bạn muốn đến.'
-          ) : mode === 'explore' ? (
-            'Một nơi mới, một niềm vui.'
-          ) : (
-            <>Tìm một nơi bạn muốn đến</>
-          )}
-        </IntroHeading>
-        <label className="discovery-search">
-          <Search size={20} aria-hidden="true" />
-          <input
-            type="search"
-            aria-label="Tìm điểm đến ở Việt Nam"
-            placeholder="Tìm điểm đến ở Việt Nam"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </label>
-      </section>
       <section
         className="discovery-destinations"
         aria-labelledby="discovery-destinations-title"
       >
-        <h2 id="discovery-destinations-title">
-          {mode === 'saved' ? 'Điểm đến đã lưu' : 'Đi gần hay đi xa?'}
-        </h2>
-        <div className="discovery-filters" aria-label="Loại điểm đến">
-          {['Tất cả', 'Thiên nhiên', 'Văn hóa'].map((c) => (
-            <button
-              key={c}
-              aria-pressed={category === c}
-              onClick={() => setCategory(c)}
-            >
-              {c}
-            </button>
-          ))}
+        <div className="discovery-section-heading">
+          <IntroHeading id="discovery-destinations-title">
+            {mode === 'saved' ? 'Điểm đến đã lưu' : 'Điểm đến'}
+          </IntroHeading>
+          <button onClick={() => setShowAllDestinations(true)}>
+            Xem tất cả <ChevronRight size={15} />
+          </button>
         </div>
-        <DestinationRegions
-          region={region}
-          subregion={subregion}
-          onChange={(r, s) => {
-            setRegion(r);
-            setSubregion(s);
-          }}
-        />
+        <details className="home-destination-filters">
+          <summary>
+            <Search size={16} /> Tìm và lọc điểm đến
+          </summary>
+          <label className="discovery-search">
+            <Search size={18} />
+            <input
+              type="search"
+              aria-label="Tìm điểm đến ở Việt Nam"
+              placeholder="Tìm tỉnh/thành"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+          <div className="discovery-filters" aria-label="Loại điểm đến">
+            {['Tất cả', 'Thiên nhiên', 'Văn hóa'].map((c) => (
+              <button
+                key={c}
+                aria-pressed={category === c}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+          <DestinationRegions
+            region={region}
+            subregion={subregion}
+            onChange={(r, s) => {
+              setRegion(r);
+              setSubregion(s);
+            }}
+          />
+        </details>
         {saveError && (
           <p role="status" className="discovery-empty">
             {saveError}
@@ -349,21 +332,28 @@ export function HomeDiscovery({
                         : `${d.name} · Chưa hỗ trợ lập lịch`
                     }
                   >
-                    <img
-                      src={d.image}
-                      alt={`${d.name} — ảnh minh họa tạo bằng AI`}
-                      loading="lazy"
-                      decoding="async"
-                      onError={(event) => {
-                        if (event.currentTarget.src !== images.goeMascot)
-                          event.currentTarget.src = images.goeMascot;
-                      }}
-                    />
+                    {d.image ? (
+                      <img
+                        src={d.image}
+                        alt={`${d.name} — ảnh minh họa tạo bằng AI`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span
+                        className="discovery-destination-placeholder"
+                        aria-hidden="true"
+                      >
+                        <MapPin size={32} weight="regular" />
+                      </span>
+                    )}
                     <span className="discovery-card-caption">
                       <strong>{d.name}</strong>
                       <span>
                         {destination
-                          ? d.subtitle
+                          ? d.destination.tourismAreas
+                              ?.slice(0, 2)
+                              .join(' · ') || ''
                           : 'Sắp có · Chưa hỗ trợ lập lịch'}
                       </span>
                     </span>
@@ -376,7 +366,7 @@ export function HomeDiscovery({
                   >
                     <Bookmark
                       size={18}
-                      fill={saved.includes(d.slug) ? 'currentColor' : 'none'}
+                      weight={saved.includes(d.slug) ? 'fill' : 'regular'}
                     />
                   </button>
                 </article>
@@ -390,28 +380,13 @@ export function HomeDiscovery({
               : 'Chưa tìm thấy điểm đến phù hợp.'}
           </p>
         )}
-        {mode === 'home' && visible.length > 4 && (
-          <div className="discovery-all-destinations">
-            <span>
-              Hiển thị {displayed.length}/{visible.length} tỉnh/thành
-            </span>
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={showAllDestinations}
-              onClick={() => setShowAllDestinations(true)}
-            >
-              Xem tất cả tỉnh/thành <ArrowRight size={17} aria-hidden="true" />
-            </button>
-          </div>
-        )}
         {mode === 'saved' && (
           <p className="discovery-storage-note">
             Điểm đến được lưu trên trình duyệt này.
           </p>
         )}
       </section>
-      {mode === 'home' && showAllDestinations && (
+      {showAllDestinations && (
         <DestinationPicker
           destinations={cards
             .filter((c) => category === 'Tất cả' || category === c.category)

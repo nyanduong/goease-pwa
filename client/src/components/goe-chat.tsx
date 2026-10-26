@@ -1,15 +1,7 @@
 import { images } from '@goease/media';
 import { plannerTiming } from '@goease/contracts';
 import { useEffect, useRef, useState } from 'react';
-import {
-  ArrowLeft,
-  CalendarDays,
-  Check,
-  Coins,
-  Leaf,
-  Send,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, Check, Coins, Leaf, Send, X, Info } from '../icons';
 import type { TripDto, GoeProposal, GoeRequest } from '@goease/contracts';
 import { api } from '../api';
 import { canRecoverAi } from '../ai-errors';
@@ -206,15 +198,7 @@ export function GoeChat({
           <small>Bạn đồng hành chuyến đi</small>
         </div>
       </header>
-      <div className="goe-context-chip">
-        <CalendarDays size={16} />
-        Đang xem: {contextName}
-      </div>
-      <h1>
-        Mình cùng
-        <br />
-        điều chỉnh nhé.<i aria-hidden="true">✦</i>
-      </h1>
+      <h1 className="sr-only">Trò chuyện với Goe</h1>
       {!signedIn ? (
         <p className="goe-context-notice">
           Đăng nhập để Goe đọc chuyến đi của bạn.{' '}
@@ -247,7 +231,11 @@ export function GoeChat({
         </div>
       ) : null}
       {trip && (
-        <div className="goe-context-panel">
+        <details
+          className="goe-context-panel goe-context-disclosure"
+          key={trip.id}
+        >
+          <summary>{contextName}</summary>
           <label>
             Ngày đang xem{' '}
             <select
@@ -283,30 +271,39 @@ export function GoeChat({
           >
             Chọn chuyến đi khác
           </button>
-          <p>
-            Nhịp{' '}
-            {
+          <details className="goe-pace-details">
+            <summary>Nhịp độ và cách Goe đề xuất</summary>
+            <p>
+              Nhịp{' '}
               {
-                relaxed: 'Thư thả',
-                balanced: 'Vừa phải',
-                active: 'Khám phá nhiều',
-              }[trip.preferences.pace]
-            }
-            : Goe xếp tối đa{' '}
-            {Math.max(
-              { relaxed: 2, balanced: 3, active: 6 }[trip.preferences.pace],
-              Math.min(6, day?.activities.length ?? 0),
-            )}{' '}
-            điểm/ngày. Nếu đã đủ điểm, Goe có thể đề xuất thay một điểm để thêm
-            nơi mới. Bạn sẽ xem và xác nhận trước khi lưu.
-          </p>
-        </div>
+                {
+                  relaxed: 'Thư thả',
+                  balanced: 'Vừa phải',
+                  active: 'Khám phá nhiều',
+                }[trip.preferences.pace]
+              }
+              : Goe xếp tối đa{' '}
+              {Math.max(
+                { relaxed: 2, balanced: 3, active: 6 }[trip.preferences.pace],
+                Math.min(6, day?.activities.length ?? 0),
+              )}{' '}
+              điểm/ngày. Nếu đã đủ điểm, Goe có thể đề xuất thay một điểm để
+              thêm nơi mới. Bạn sẽ xem và xác nhận trước khi lưu.
+            </p>
+          </details>
+        </details>
       )}
-      <p className="goe-demo-note">
-        Khi gửi, nội dung tin nhắn, lịch theo mã địa điểm, ngày đi, số người,
-        ngân sách và sở thích được gửi tới dịch vụ AI của Goe. Không gửi tên tài
-        khoản hay ghi chú riêng. Đừng nhập thông tin nhạy cảm.
-      </p>
+      <details className="goe-privacy">
+        <summary>
+          <Info size={21} />
+          <span className="sr-only">Goe sử dụng thông tin nào?</span>
+        </summary>
+        <p className="goe-demo-note">
+          Khi gửi, nội dung tin nhắn, lịch theo mã địa điểm, ngày đi, số người,
+          ngân sách và sở thích được gửi tới dịch vụ AI của Goe. Không gửi tên
+          tài khoản hay ghi chú riêng. Đừng nhập thông tin nhạy cảm.
+        </p>
+      </details>
       {error && !preview && (
         <div role="alert" className="goe-context-notice">
           <p>{error}</p>
@@ -349,8 +346,8 @@ export function GoeChat({
           <img src={images.goeMascot} alt="" />
           <div className="goe-chat-bubble">
             <p>
-              Bạn muốn đi thư thả hơn, đổi điểm dừng hay thêm một món ăn? Mình
-              sẽ đề xuất cho ngày đang xem; bạn xác nhận rồi mới lưu.
+              Bạn muốn thay đổi gì trong lịch trình? Mình sẽ gửi đề xuất để bạn
+              xem trước.
             </p>
           </div>
         </div>

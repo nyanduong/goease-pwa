@@ -7,7 +7,7 @@ import {
   RefreshCw,
   Search,
   TriangleAlert,
-} from 'lucide-react';
+} from '../icons';
 import {
   visitProgressStates,
   type VisitProgressDto,

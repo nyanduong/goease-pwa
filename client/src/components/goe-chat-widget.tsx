@@ -12,24 +12,35 @@ import { GoeChat } from './goe-chat';
 type Position = { x: number; y: number };
 type Dock = { side: 'left' | 'right'; ratio: number };
 const positionKey = 'goease:goe-position:v1';
+const launcherSize = 48;
 
 function bounds() {
-  const nav = document
-    .querySelector('.mobile-bottom-nav')
-    ?.getBoundingClientRect();
+  const bars = [
+    ...document.querySelectorAll(
+      '.mobile-bottom-nav, .journey-save-bar, .quick-keep-bar, .quick-actions, .quick-action, .place-bottom',
+    ),
+  ]
+    .filter((node) =>
+      ['fixed', 'sticky'].includes(getComputedStyle(node).position),
+    )
+    .map((node) => node.getBoundingClientRect())
+    .filter(
+      (rect) =>
+        rect.height > 0 && rect.top > 0 && rect.top < window.innerHeight,
+    );
   const viewport = window.visualViewport;
   const left = (viewport?.offsetLeft ?? 0) + 12;
   const top = (viewport?.offsetTop ?? 0) + 12;
   const right = left + (viewport?.width ?? window.innerWidth) - 24;
   const bottom = Math.min(
     (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 12,
-    nav?.height ? nav.top - 12 : Infinity,
+    ...bars.map((rect) => rect.top - 12),
   );
   return {
     left,
-    right: Math.max(left, right - 60),
+    right: Math.max(left, right - launcherSize),
     top,
-    bottom: Math.max(top, bottom - 60),
+    bottom: Math.max(top, bottom - launcherSize),
   };
 }
 
@@ -114,16 +125,35 @@ export function GoeChatWidget({
             : 1,
         };
       }
-      setPosition({
+      const next = {
         x: limits[dock.current.side],
         y: limits.top + dock.current.ratio * (limits.bottom - limits.top),
-      });
+      };
+      setPosition((previous) =>
+        previous?.x === next.x && previous.y === next.y ? previous : next,
+      );
     };
     fit();
     window.addEventListener('resize', fit);
     window.visualViewport?.addEventListener('resize', fit);
     window.visualViewport?.addEventListener('scroll', fit);
+    // Routes and bottom actions can change without a viewport resize.
+    let frame = 0;
+    const scheduleFit = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(fit);
+    };
+    const observer = new MutationObserver(scheduleFit);
+    observer.observe(document.getElementById('root') ?? document.body, {
+      childList: true,
+      subtree: true,
+    });
+    const resize = new ResizeObserver(scheduleFit);
+    resize.observe(document.body);
     return () => {
+      observer.disconnect();
+      resize.disconnect();
+      cancelAnimationFrame(frame);
       window.removeEventListener('resize', fit);
       window.visualViewport?.removeEventListener('resize', fit);
       window.visualViewport?.removeEventListener('scroll', fit);
@@ -135,12 +165,12 @@ export function GoeChatWidget({
     const element = panel.current;
     const place = () => {
       const limits = bounds();
-      const right = limits.right + 60;
-      const bottom = limits.bottom + 60;
+      const right = limits.right + launcherSize;
+      const bottom = limits.bottom + launcherSize;
       const gap = 12;
-      const onLeft = position.x + 30 < (limits.left + right) / 2;
+      const onLeft = position.x + launcherSize / 2 < (limits.left + right) / 2;
       const sideRoom = onLeft
-        ? right - position.x - 60 - gap
+        ? right - position.x - launcherSize - gap
         : position.x - gap - limits.left;
       let width = Math.min(400, right - limits.left);
       let maxHeight = Math.min(560, bottom - limits.top);
@@ -148,21 +178,27 @@ export function GoeChatWidget({
       let y: number;
       if (sideRoom >= 300) {
         width = Math.min(width, sideRoom);
-        x = onLeft ? position.x + 60 + gap : position.x - width - gap;
+        x = onLeft ? position.x + launcherSize + gap : position.x - width - gap;
         const height = Math.min(element.scrollHeight + 2, maxHeight);
-        y = clamp(position.y + 30 - height / 2, limits.top, bottom - height);
+        y = clamp(
+          position.y + launcherSize / 2 - height / 2,
+          limits.top,
+          bottom - height,
+        );
       } else {
         const above = position.y - gap - limits.top;
-        const below = bottom - position.y - 60 - gap;
+        const below = bottom - position.y - launcherSize - gap;
         const openAbove = above >= below;
         maxHeight = Math.max(1, Math.min(maxHeight, openAbove ? above : below));
         const height = Math.min(element.scrollHeight + 2, maxHeight);
         x = clamp(
-          onLeft ? position.x : position.x + 60 - width,
+          onLeft ? position.x : position.x + launcherSize - width,
           limits.left,
           right - width,
         );
-        y = openAbove ? position.y - gap - height : position.y + 60 + gap;
+        y = openAbove
+          ? position.y - gap - height
+          : position.y + launcherSize + gap;
       }
       const next = {
         left: x,
@@ -170,8 +206,9 @@ export function GoeChatWidget({
         right: 'auto',
         bottom: 'auto',
         width,
+        height: maxHeight,
         maxHeight,
-        transformOrigin: `${clamp(position.x + 30 - x, 0, width)}px ${clamp(position.y + 30 - y, 0, maxHeight)}px`,
+        transformOrigin: `${clamp(position.x + launcherSize / 2 - x, 0, width)}px ${clamp(position.y + launcherSize / 2 - y, 0, maxHeight)}px`,
       };
       setChatStyle((previous) =>
         JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
@@ -202,7 +239,9 @@ export function GoeChatWidget({
       suppressClick.current = true;
       const limits = bounds();
       const side =
-        current.current.x + 30 < window.innerWidth / 2 ? 'left' : 'right';
+        current.current.x + launcherSize / 2 < window.innerWidth / 2
+          ? 'left'
+          : 'right';
       const y = clamp(current.current.y, limits.top, limits.bottom);
       dock.current = {
         side,

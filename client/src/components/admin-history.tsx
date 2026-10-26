@@ -11,7 +11,7 @@ import {
   ChevronRight,
   X,
   MapPin,
-} from 'lucide-react';
+} from '../icons';
 
 import { useRef, useState } from 'react';
 import type { CatalogHistoryDto, CatalogHistoryQuery } from '@goease/contracts';

@@ -33,9 +33,11 @@ export function PlaceGalleryPhoto({
 export function PlacePhoto({
   place,
   compact = false,
+  showCredit = true,
 }: {
   place: Pick<PlaceDto, 'name' | 'imageUrl' | 'images'>;
   compact?: boolean;
+  showCredit?: boolean;
 }) {
   const [failed, setFailed] = useState('');
   const cover = place.images?.[0];
@@ -59,7 +61,7 @@ export function PlacePhoto({
           Chưa có ảnh thật
         </span>
       )}
-      {cover && cover.kind !== 'ai_illustration' && (
+      {cover && showCredit && cover.kind !== 'ai_illustration' && (
         <small title={`${cover.credit} · ${cover.license}`}>
           {compact ? (
             <>

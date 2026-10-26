@@ -1,6 +1,6 @@
 import { plannerTiming } from '@goease/contracts';
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles } from '../icons';
 import type { PlannerProposal, TripInput } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
 import { canRecoverAi } from '../ai-errors';

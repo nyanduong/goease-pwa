@@ -1,0 +1,18 @@
+# Redesign tasks
+
+Only mark DONE after its acceptance and checks are recorded. Shared evidence goes
+in QA_REPORT.md; phase/status in PROGRESS.md. Baseline `9ce30dc`.
+
+| ID  | Module / description                                          | Files                                                   | Depends | Acceptance                                                                | State / checks                                         |
+| --- | ------------------------------------------------------------- | ------------------------------------------------------- | ------- | ------------------------------------------------------------------------- | ------------------------------------------------------ |
+| C01 | Inventory, audit, tokens and navigation plan                  | docs/ui-redesign/*                                      | —       | Actual routes/handlers/brand documented                                   | [x] DONE — source + baseline screenshot audit          |
+| C02 | Phosphor aliases; remove duplicate pack                       | icons.ts, client/package.json, package-lock, imports    | C01     | One pack, supported exports, no broken SVG/bookmark                       | [x] DONE — imports, SVG render, build/lint pass        |
+| C03 | Customer shell, bottom nav, fields, notices, sheets, viewport | App, ui, journey-sheet, customer CSS                    | C01,C02 | 44px primary actions; compact chips; focus/safe area/reduced motion       | [x] DONE — current UI/local browser review             |
+| C04 | Welcome/auth/OTP/recovery                                     | auth, password-recovery, registration-verification, CSS | C03     | Existing validation, all controls reachable on 360px                      | [x] DONE — current UI/local browser review             |
+| C05 | Home, search, Explore, detail, saved                          | home-discovery, explore, place-photo, CSS               | C03     | Clear cards, names do not collapse, filters accessible                    | [x] DONE — current UI/local browser review             |
+| C06 | Quick setup, AI/manual preview, activity/day forms            | quick-trip-setup, trip-workspace, CSS                   | C03,C05 | Required fields unchanged; suggestions readable; actions reachable        | [x] DONE — current UI/local browser review             |
+| C07 | Saved trip, management, timeline, map                         | trip-workspace, trip-management, sharing, trash, CSS    | C06     | All old actions and guards remain available                               | [x] DONE — current UI/local browser review             |
+| C08 | Budget, expenses, summary                                     | budget-screen, trip-expenses, CSS                       | C07     | Calculations unchanged; readable totals/forms/lists                       | [x] DONE — current UI/local browser review             |
+| C09 | Goe/chat/widget                                               | goe-chat, goe-chat-widget, CSS                          | C03,C07 | Context and proposal behavior preserved, composer reachable               | [x] DONE — current UI/local browser review             |
+| C10 | Profile/security, shared page and offline                     | account-page, shared-trip-page, offline.css             | C03     | Real features only; no credentials or production mutations for QA         | [x] DONE — current UI/local browser review             |
+| C11 | Cross-module responsive/functional/static QA                  | QA_REPORT + evidence                                    | C02–C10 | Six required phone sizes + tablet; lint/type/build/tests; limits explicit | [ ] BLOCKED — local QA pass; device/live gates pending |

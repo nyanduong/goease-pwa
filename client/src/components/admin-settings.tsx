@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { AdminSettings, DestinationDto } from '@goease/contracts';
-import { ArrowRight, Info } from 'lucide-react';
+import { ArrowRight, Info } from '../icons';
 import { api } from '../api';
 import { AdminDestinations } from './admin-destinations';
 import { AdminRegionSettings } from './admin-region-settings';

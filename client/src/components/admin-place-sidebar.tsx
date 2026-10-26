@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleAlert, MapPin, NotebookPen } from 'lucide-react';
+import { CheckCircle2, CircleAlert, MapPin, NotebookPen } from '../icons';
 import {
   adminPlaceInputSchema,
   catalogToday,

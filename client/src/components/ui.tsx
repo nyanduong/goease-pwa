@@ -1,5 +1,6 @@
 import { images } from '@goease/media';
 import { cloneElement, useId, type ReactElement, type ReactNode } from 'react';
+import { CheckCircle2, AlertCircle } from '../icons';
 
 export function Field({
   label,
@@ -8,7 +9,10 @@ export function Field({
   className = '',
 }: {
   label: string;
-  children: ReactElement<{ id?: string }>;
+  children: ReactElement<{
+    id?: string;
+    'aria-describedby'?: string | undefined;
+  }>;
   hint?: string;
   className?: string;
 }) {
@@ -16,8 +20,14 @@ export function Field({
   return (
     <div className={`field ${className}`}>
       <label htmlFor={id}>{label}</label>
-      {cloneElement(children, { id })}
-      {hint && <small>{hint}</small>}
+      {cloneElement(children, {
+        id,
+        'aria-describedby':
+          [children.props['aria-describedby'], hint ? `${id}-hint` : '']
+            .filter(Boolean)
+            .join(' ') || undefined,
+      })}
+      {hint && <small id={`${id}-hint`}>{hint}</small>}
     </div>
   );
 }
@@ -36,8 +46,8 @@ export function Notice({
       className={`notice ${error ? 'notice-error' : ''} ${className}`}
       role={error ? 'alert' : 'status'}
     >
-      <span className="notice-icon grid place-items-center" aria-hidden="true">
-        {error ? '!' : '✓'}
+      <span className="notice-icon" aria-hidden="true">
+        {error ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
       </span>
       <div className="notice-text min-w-0 flex-1 [overflow-wrap:anywhere]">
         {children}

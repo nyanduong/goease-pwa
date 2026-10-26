@@ -40,7 +40,7 @@ import {
   Map,
   ChevronLeft,
   ChevronRight,
-} from 'lucide-react';
+} from '../icons';
 const AdminPlaceImport = lazy(() =>
   import('./admin-place-import').then((v) => ({ default: v.AdminPlaceImport })),
 );

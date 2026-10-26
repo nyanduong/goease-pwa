@@ -11,11 +11,11 @@
   },
   "dependencies": {
     "@goease/contracts": "*",
+    "@goease/media": "*",
+    "@phosphor-icons/react": "2.1.10",
     "leaflet": "1.9.4",
-    "lucide-react": "1.61.0",
     "react": "19.3.1",
-    "react-dom": "19.3.1",
-    "@goease/media": "*"
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",

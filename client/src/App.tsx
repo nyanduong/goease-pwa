@@ -20,15 +20,12 @@ import {
 } from './components/admin-workspace';
 import { ExplorePage, PlaceDetail, placeActivity } from './components/explore';
 import { AccountAvatar } from './components/account-avatar';
-import { Compass, Map, House, Bookmark, UserRound } from 'lucide-react';
-import { HomeDiscovery } from './components/home-discovery';
 import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from 'react';
+  AppBottomNavigation,
+  useMobileViewport,
+} from './components/customer-shell';
+import { HomeDiscovery } from './components/home-discovery';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   tripInputSchema,
   type DestinationDto,
@@ -56,6 +53,7 @@ export const errorText = (e: unknown) =>
   e instanceof Error ? e.message : 'Có lỗi xảy ra. Hãy thử lại.';
 
 export function App() {
+  const keyboardOpen = useMobileViewport();
   const [online, setOnline] = useState(navigator.onLine);
   const [path, setPath] = useState(location.pathname);
   const [user, setUser] = useState<UserDto | null>(null);
@@ -550,18 +548,6 @@ export function App() {
   const isPlaceDetail = path.startsWith('/places/');
   const isExplore = path === '/explore';
   const isDiscovery = ['/', '/explore', '/saved', '/goe'].includes(path);
-  const mobileNavIndex =
-    path === '/explore'
-      ? 0
-      : path.startsWith('/trips') || path === '/budget'
-        ? 1
-        : path === '/saved'
-          ? 3
-          : path === '/account'
-            ? 4
-            : path === '/'
-              ? 2
-              : null;
   const setOnboardingSeen = (seen: boolean) => {
     setWelcomeSeenInMemory(seen);
     try {
@@ -571,10 +557,36 @@ export function App() {
     }
   };
   const markWelcomeSeen = () => setOnboardingSeen(true);
+  function logout() {
+    try {
+      beginOfflineLogout();
+    } catch {
+      setMessage(
+        'Chưa xóa được dữ liệu offline. Hãy xóa dữ liệu trang trong cài đặt trình duyệt.',
+      );
+      return;
+    }
+    setUser(null);
+    setList([]);
+    setLoaded(null);
+    setDraft(initialDraft());
+    void finishOfflineLogout()
+      .then(() => {
+        setUser(null);
+        setExpiredSession(false);
+        setOnboardingSeen(true);
+        setList([]);
+        setLoaded(null);
+        setDraft(initialDraft());
+        history.replaceState({}, '', '/');
+        setPath('/');
+      })
+      .catch(() => location.replace('/offline.html'));
+  }
 
   return (
     <div
-      className={`app-shell flex min-h-screen flex-col ${
+      className={`app-shell customer-ui ${keyboardOpen ? 'is-keyboard-open' : ''} ${isEditor || isPlaceDetail || path === '/budget' ? 'customer-focused' : ''} ${
         isWelcome
           ? 'welcome-shell'
           : isPlaceDetail
@@ -645,32 +657,7 @@ export function App() {
                       <button
                         type="button"
                         className="button button-subtle button-small"
-                        onClick={() => {
-                          try {
-                            beginOfflineLogout();
-                          } catch {
-                            setMessage(
-                              'Chưa xóa được dữ liệu offline. Hãy xóa dữ liệu trang trong cài đặt trình duyệt.',
-                            );
-                            return;
-                          }
-                          setUser(null);
-                          setList([]);
-                          setLoaded(null);
-                          setDraft(initialDraft());
-                          void finishOfflineLogout()
-                            .then(() => {
-                              setUser(null);
-                              setExpiredSession(false);
-                              setOnboardingSeen(true);
-                              setList([]);
-                              setLoaded(null);
-                              setDraft(initialDraft());
-                              history.replaceState({}, '', '/');
-                              setPath('/');
-                            })
-                            .catch(() => location.replace('/offline.html'));
-                        }}
+                        onClick={logout}
                       >
                         Đăng xuất
                       </button>
@@ -951,7 +938,7 @@ export function App() {
           sessionStatus === 'loading' ? (
             <Notice>Đang kiểm tra phiên…</Notice>
           ) : user ? (
-            <AccountPage key={user.id} onSaved={setUser} />
+            <AccountPage key={user.id} onSaved={setUser} onLogout={logout} />
           ) : (
             <Notice>
               Đăng nhập để quản lý hồ sơ. {link('/login', 'Đăng nhập')}
@@ -1124,48 +1111,14 @@ export function App() {
       {!isAuth &&
         !isWelcome &&
         !isPlaceDetail &&
-        path !== '/trips/new' &&
+        !isEditor &&
+        path !== '/budget' &&
         path !== '/admin' && (
-          <nav className="mobile-bottom-nav" aria-label="Điều hướng di động">
-            {mobileNavIndex !== null && (
-              <span
-                aria-hidden="true"
-                className="mobile-nav-indicator"
-                style={{ '--nav-index': mobileNavIndex } as CSSProperties}
-              >
-                <span key={mobileNavIndex} />
-              </span>
-            )}
-            {[
-              { to: '/explore', label: 'Khám phá', Icon: Compass },
-              { to: '/trips', label: 'Chuyến đi', Icon: Map },
-              { to: '/', label: 'Trang chủ', Icon: House },
-              { to: '/saved', label: 'Đã lưu', Icon: Bookmark },
-              { to: '/account', label: 'Tài khoản', Icon: UserRound },
-            ].map(({ to, label, Icon }) => (
-              <a
-                key={to}
-                href={to}
-                aria-current={
-                  path === to ||
-                  (to === '/trips' &&
-                    (path.startsWith('/trips') || path === '/budget'))
-                    ? 'page'
-                    : undefined
-                }
-                className={`mobile-nav-item ${to === '/' ? 'mobile-nav-home' : ''} ${path === to || (to === '/trips' && (path.startsWith('/trips') || path === '/budget')) ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  go(!user && to !== '/' ? '/login' : to);
-                }}
-              >
-                <span className="bottom-nav-icon">
-                  <Icon size={22} strokeWidth={1.6} aria-hidden="true" />
-                </span>
-                <span>{label}</span>
-              </a>
-            ))}
-          </nav>
+          <AppBottomNavigation
+            path={path}
+            signedIn={Boolean(user)}
+            onNavigate={go}
+          />
         )}
       {!isAuth && !isWelcome && path !== '/admin' && path !== '/goe' && (
         <GoeChatWidget

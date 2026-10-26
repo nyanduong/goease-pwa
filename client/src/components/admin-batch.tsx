@@ -6,7 +6,7 @@ import {
   type BulkPreviewInput,
 } from '@goease/contracts';
 import { api } from '../api';
-import { Archive, ArrowRight, CheckSquare } from 'lucide-react';
+import { Archive, ArrowRight, CheckSquare } from '../icons';
 
 export function AdminBatch({
   selected,

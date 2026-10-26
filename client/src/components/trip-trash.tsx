@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Trash2 } from '../icons';
 import type { TripDto, TripTrashDto, TrashedTripDto } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
 
@@ -101,11 +101,9 @@ export function TripTrash({
         <Trash2 size={21} />
       </header>
       <div className="journey-list-heading">
-        <span className="journey-eyebrow">KẾ HOẠCH VẪN Ở ĐÂY</span>
-        <h1>Trở lại hành trình.</h1>
+        <h1 className="sr-only">Chuyến đi đã xóa</h1>
         <p>
-          Khôi phục nguyên lịch trình, ghi chú, chi phí dự kiến và các khoản đã
-          chi. Các link chia sẻ cũ vẫn bị thu hồi.
+          Khôi phục lịch trình và chi tiêu. Các link chia sẻ cũ vẫn bị thu hồi.
         </p>
       </div>
       {!signedIn ? (

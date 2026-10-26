@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlaskConical, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { FlaskConical, LockKeyhole, ShieldCheck } from '../icons';
 import type { CatalogPolicyDto, PolicySimulation } from '@goease/contracts';
 import { api } from '../api';
 

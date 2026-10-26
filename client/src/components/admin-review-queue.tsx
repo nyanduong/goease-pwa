@@ -6,7 +6,7 @@ import {
   ChevronRight,
   ListChecks,
   Search,
-} from 'lucide-react';
+} from '../icons';
 import {
   needsPlaceDescription,
   catalogImageCover,

@@ -7,7 +7,7 @@ import {
   RefreshCw,
   ShieldCheck,
   TriangleAlert,
-} from 'lucide-react';
+} from '../icons';
 import type { AdminOverview, AdminSourceStatus } from '@goease/contracts';
 import { api } from '../api';
 import { Sheet } from './journey-sheet';

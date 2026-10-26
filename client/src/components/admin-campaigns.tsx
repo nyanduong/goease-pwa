@@ -11,7 +11,7 @@ import {
   Info,
   RefreshCw,
   Search,
-} from 'lucide-react';
+} from '../icons';
 import type {
   AdminSettings,
   AdminSourceStatus,

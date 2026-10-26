@@ -1,6 +1,6 @@
 import { images } from '@goease/media';
 import { useState, type ReactNode } from 'react';
-import { ImageOff } from 'lucide-react';
+import { ImageOff } from '../icons';
 import { catalogImageCover, type AdminPlaceDto } from '@goease/contracts';
 
 export function PhotoSearchStatus({ place }: { place: AdminPlaceDto }) {

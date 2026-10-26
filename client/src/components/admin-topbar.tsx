@@ -1,10 +1,4 @@
-import {
-  Bell,
-  ChevronRight,
-  Globe2,
-  MapPin,
-  type LucideIcon,
-} from 'lucide-react';
+import { Bell, ChevronRight, Globe2, MapPin, type AppIcon } from '../icons';
 import type { DestinationDto } from '@goease/contracts';
 
 export function AdminTopbar({
@@ -22,7 +16,7 @@ export function AdminTopbar({
   onScope: (value: string) => void;
   name: string;
   pageLabel: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   scopeHint?: string;
   contextLabel?: string;
 }) {
