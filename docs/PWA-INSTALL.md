@@ -5,6 +5,16 @@ Source lives in `client/public/install/`; Vite copies it unchanged into the
 production artifact. This public installation screen shares the application's
 root manifest identity and service worker. No account or database change is needed.
 
+PWA icons (192/512 PNG), Apple touch icons (180 PNG), and the installation-page
+logo use the same GoEase logo artwork as the website favicon (`goease-logo-webp`),
+with square white padding. The Goe mascot is not the app icon. Existing installed
+icons may retain the previous artwork until the browser updates the app metadata.
+The logo correction was applied to the hosted manifest and both HTML entry points.
+Verified after the correction: all three hosted pages HTTP 200 with the logo URL;
+192/512/180 icons HTTP 200 with matching PNG dimensions; client build and formatting
+pass. Edge reported zero manifest/installability errors and the existing simulated
+installation checks passed. Physical-device icon refresh remains unverified.
+
 The install button appears when `beforeinstallprompt` is available and calls its
 `prompt()` directly from a user click. A browser prompt cannot be initiated on the
 landing origin for the app origin, and a second click on the installation screen
