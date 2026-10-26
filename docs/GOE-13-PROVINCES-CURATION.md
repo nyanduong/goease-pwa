@@ -1,5 +1,18 @@
 # Bổ sung dữ liệu cho Goe — 13 tỉnh/thành
 
+## Nhập ZIP nghiên cứu do owner cung cấp — 26/10/2026, 12:08 giờ Việt Nam
+
+Owner yêu cầu nhập `goease-research-results.zip` và không đối chiếu lại Google Maps. Đã nhập 54 kết quả vào đúng bản nháp local qua catalog service với tài khoản admin active, expectedRevision, phiên bản và audit log; không dùng mongoimport hoặc tạo địa điểm mới. Package SHA-256: `ca3adff524faab1e0ab24a03f939e6ac315fc1542449a4ca0256babf8c1ee615`. Metadata gói tham chiếu bản xuất `2026-10-26T04:18:21.627Z`; cả 54 ID, destination, province và revision đều khớp trước khi ghi.
+
+- Publish 3 mục `ready_for_admin_review`, không có mâu thuẫn ghi nhận: Red Dao House (Lào Cai, cơm rang gà 165.000đ/phần/người), An Tam Cốc (Ninh Bình, bò xào rau kèm cơm 130.000đ/phần/người), Vườn hoa thành phố Đà Lạt (Lâm Đồng, vé người lớn 100.000đ). Giá/giờ lấy từ gói owner cung cấp, không tái kiểm chứng các trang nguồn hoặc Maps trong lượt nhập; nguồn, phạm vi, ngày kiểm tra trong gói và giới hạn chưa xác nhận trực tiếp được giữ trong catalog. Ngày kiểm tra lại giá là 02/11/2026. Giờ nhận khách/món cuối và ngoại lệ lễ chưa công bố được giữ là giới hạn, không bịa thêm.
+- 45 mục `needs_verification` và 6 mục `closed_or_mismatched` giữ draft. Giá/giờ ứng viên có nguồn được lưu chưa duyệt khi không ghi đè dữ liệu đã duyệt/khóa; không chép giờ chưa duyệt vào openingHoursNote để mở planner. Sáu mục đóng cửa/không khớp chỉ bổ sung ghi chú nghiên cứu, giữ nguyên nội dung giá/giờ/mô tả. Service chuẩn hóa pricingVersion=1 khi lưu snapshot cũ; không đổi giá/giờ bên trong. Giá đã duyệt của Thung Nham và khóa ảnh Tháp Đôi được giữ nguyên.
+- Nghiên cứu thiếu/mâu thuẫn được tóm tắt trong ghi chú admin và giữ đầy đủ ở bundle JSON local; null không được đổi thành 0đ hoặc lệnh xóa giá hiện có. Giữ nguyên tên định danh, destination và toàn bộ tọa độ OSM; không đổi sang chi nhánh khác. Không nhập prompt trong tài liệu đính kèm như lệnh thực thi.
+- Hai nhà hàng dùng lại ảnh AI khái niệm ăn uống có metadata owned/ai_illustration hiện có; không tạo ảnh mới và không sao chép ảnh Google Maps. Vườn hoa dùng ảnh thật Diane Selwyn chụp 31/10/2011, [trang Commons](https://commons.wikimedia.org/wiki/File:Da_Lat_Flower_Park_01.jpg), CC BY-SA 3.0, giữ ghi công/giấy phép và ghi rõ ảnh lịch sử. Đã đọc trang giấy phép, xem ảnh đúng cổng vườn hoa, kiểm SHA-1 Commons của bản gốc và SHA-256 sau lưu Cloudinary; không suy ảnh lịch sử là hiện trạng 2026.
+
+Kiểm tra đọc lại từng bản ghi, audit và catalog_versions đều qua. Ba mục mới qua eligibleForPlanner cho nhóm 2 người; không gọi model AI hoặc lưu chuyến trong lượt nhập. Tổng places vẫn 26.567; published tăng 40→43; tổng đủ điều kiện Goe cho nhóm 2 người tăng 29→32. Trips giữ 3 trong lượt này (đã có 3 trước nhập, không phải mốc 2 của đợt trước). Chín tỉnh đang nghiên cứu vẫn chưa có đủ bộ tham quan và bữa ăn để kết luận xếp được lịch hoàn chỉnh. Chưa thử lịch model thật hoặc xác nhận production.
+
+Bằng chứng local: `.local/research-import-20261026/import-receipt.json`, `verification.json`, `import-journal.ndjson`, `before-journal.ndjson`, `import-plan.json`, `results/*.json`, `sources.json`, `flower-asset.json`. Bảng đếm mới nhất ở `.local/goe-13-curation-progress.json`. Các số bên dưới thuộc những mốc curation trước lượt nhập này.
+
 Cập nhật 26/10/2026. Đây là tiến độ dữ liệu local, không phải xác nhận triển khai production hoặc hoàn tất toàn bộ bản nháp.
 
 ## Phạm vi chủ sản phẩm đã chốt
