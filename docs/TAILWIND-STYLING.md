@@ -86,8 +86,10 @@ providers were not retested for this styling-only change.
 
 ## Browser-test repair follow-up — 26/10/2026
 
-Only six browser spec files and this verification note changed in the follow-up;
-the application UI, CSS, server, contracts and business behavior were kept intact.
+The follow-up changes browser specs, their test-only fixture server and this
+verification note; it does not modify application UI, CSS, runtime server,
+contracts or business behavior.
+
 The eight affected scenarios now use the current headings, action labels,
 72-pixel desktop header and destination-picker dialog. The enrichment filter
 uses a combobox locator so it cannot accidentally match the similarly labelled
@@ -100,3 +102,22 @@ assertion. The four-place bulk workflow explicitly scopes itself to Đà Nẵng 
 places created by other scenarios in other provinces do not change its selection.
 Publication isolation, revision conflicts, restore behavior, authorization,
 provider-failure handling, persistence and responsive checks remain covered.
+
+Running the complete catalog suite also exposed shared fixture state: the
+settings and import/publication scenarios both expected a fresh Cao Bằng import.
+Settings now uses an independent synthetic Lai Châu provider result, keeping
+Cao Bằng available for the publication workflow without deleting test records or
+loosening import-count assertions. The gallery expectation follows the existing
+five-image limit and verifies the selected cover through `aria-pressed`. It opens
+the Photos tab explicitly and checks dialog centering against the root layout
+width, retaining the two-pixel tolerance while accounting for the admin's
+reserved scrollbar gutter.
+
+Final verification observed: `npm run test:catalog-browser` passed **16/16**
+scenarios together, including all eight previously failing scenarios. The run
+used `MONGOD_BINARY` pointing to the installed MongoDB 8.2 binary,
+`E2E_API_PORT=3091` and `E2E_WEB_PORT=5191`; the existing harness owned its
+replica-set database on port 27021. It did not use the application database or
+live providers. `npm run typecheck`, `npm run lint`, Prettier checks for the
+changed test/document files and `git diff --check` also passed. Unrelated full
+application unit/integration suites were not rerun for these test-only repairs.

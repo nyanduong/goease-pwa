@@ -72,9 +72,11 @@ test('enable province automatically imports drafts, restores progress and leads 
       exact: true,
     })
     .click();
+  await page.getByRole('tab', { name: /Ảnh địa điểm/ }).click();
   const photos = page.getByRole('region', { name: 'Ảnh gợi ý Wikimedia' });
   await photos.scrollIntoViewIfNeeded();
-  await expect(photos.locator('figure')).toHaveCount(6, { timeout: 30000 });
+  // Current gallery keeps one cover and at most four additional images.
+  await expect(photos.locator('figure')).toHaveCount(5, { timeout: 30000 });
   await expect(photos.locator('figure').first()).toHaveClass('is-cover');
   const overview = page.getByRole('tab', { name: 'Tổng quan', exact: true });
   await overview.focus();
@@ -97,7 +99,7 @@ test('enable province automatically imports drafts, restores progress and leads 
   ).toHaveAttribute('aria-selected', 'true');
   await expect(source).toBeFocused();
   await source.fill(originalSource);
-  await overview.click();
+  await page.getByRole('tab', { name: /Ảnh địa điểm/ }).click();
   await expect(photos.locator('img').first()).toHaveAttribute(
     'src',
     /^https:\/\/res\.cloudinary\.com\//,
@@ -113,13 +115,19 @@ test('enable province automatically imports drafts, restores progress and leads 
     { width: 390, height: 844 },
   ]) {
     await page.setViewportSize(viewport);
+    // Admin reserves a scrollbar gutter; dialogs center in the available
+    // layout viewport rather than including that reserved strip.
+    const layoutViewport = await page.evaluate(() => ({
+      width: document.documentElement.getBoundingClientRect().width,
+      height: document.documentElement.clientHeight,
+    }));
     const bounds = await page.getByRole('dialog').boundingBox();
     expect(bounds).not.toBeNull();
     expect(
-      Math.abs(bounds!.x + bounds!.width / 2 - viewport.width / 2),
+      Math.abs(bounds!.x + bounds!.width / 2 - layoutViewport.width / 2),
     ).toBeLessThan(2);
     expect(
-      Math.abs(bounds!.y + bounds!.height / 2 - viewport.height / 2),
+      Math.abs(bounds!.y + bounds!.height / 2 - layoutViewport.height / 2),
     ).toBeLessThan(2);
     expect(bounds!.y).toBeGreaterThanOrEqual(15);
     expect(bounds!.x).toBeGreaterThanOrEqual(15);
@@ -140,7 +148,9 @@ test('enable province automatically imports drafts, restores progress and leads 
   await page.setViewportSize({ width: 1366, height: 900 });
   await page.getByRole('button', { name: 'Đóng xem ảnh' }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
-  await expect(photos.getByText(/Đã chọn ảnh bìa/)).toBeVisible();
+  await expect(
+    photos.getByRole('button', { name: /^Chọn làm bìa:/ }).first(),
+  ).toHaveAttribute('aria-pressed', 'true');
   await photos
     .getByRole('button', { name: /^Chọn làm bìa:/ })
     .nth(1)

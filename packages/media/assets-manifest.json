@@ -925,6 +925,114 @@
       "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984024/goease/app/destinations/hue-v1-png.png",
       "width": 1122,
       "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/ha-noi-v1.png",
+      "sha256": "edd2c1168c0336fd01fb14d14752ec508dc60bf8387dba618d616d2733e648a0",
+      "bytes": 2501172,
+      "publicId": "goease/app/destinations/ha-noi-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "59ec8b8e753253e389687bbecbbc4d93",
+      "version": 1792984092,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984092/goease/app/destinations/ha-noi-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/hai-phong-v1.png",
+      "sha256": "67843d250d2a248cd8a4d64c0d7f4ec76ec4bdea48c1b18cced715c4c99d27fd",
+      "bytes": 2861090,
+      "publicId": "goease/app/destinations/hai-phong-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "2645a3a560e49e1b1569e6c521bc5e85",
+      "version": 1792984094,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984094/goease/app/destinations/hai-phong-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/ho-chi-minh-v1.png",
+      "sha256": "0166b2352021d4771e22218ac4c10d3b46ad6b9da6f159d8c5ab1190bf280350",
+      "bytes": 3110897,
+      "publicId": "goease/app/destinations/ho-chi-minh-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "4d11ce321ad5ede4f74f2c0947e2cb9c",
+      "version": 1792984096,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984096/goease/app/destinations/ho-chi-minh-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/khanh-hoa-v1.png",
+      "sha256": "2187b73f3d9f6092e1b485262937ea95cb4ee5f3787cd0caf96338dc3d4afdd9",
+      "bytes": 3099146,
+      "publicId": "goease/app/destinations/khanh-hoa-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "85a09cc3f7d62b9aa339f602cb151c8a",
+      "version": 1792984160,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984160/goease/app/destinations/khanh-hoa-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/lao-cai-v1.png",
+      "sha256": "f7ddfa48dcd7339d13592251037b2540d5d827cbc5aec17ee13c6e7095681893",
+      "bytes": 3145425,
+      "publicId": "goease/app/destinations/lao-cai-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "cf4e31355400af83f38bcdf7dc76cd99",
+      "version": 1792984162,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984162/goease/app/destinations/lao-cai-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/lam-dong-v1.png",
+      "sha256": "00d87a2157222adfed5cc486454d4f2517323e9f9c9f6a452bd1b4afc8e3c0f5",
+      "bytes": 3122833,
+      "publicId": "goease/app/destinations/lam-dong-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "43aa552c5187a981dba8bc23df90d7f8",
+      "version": 1792984165,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984165/goease/app/destinations/lam-dong-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/ninh-binh-v1.png",
+      "sha256": "5fc10a6b98447c36b21ac555bbddcf76426dd5f870cce15e21f49c269211c8eb",
+      "bytes": 3050905,
+      "publicId": "goease/app/destinations/ninh-binh-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "79d93d00fd1b056b70cf4126a6b5363a",
+      "version": 1792984226,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984226/goease/app/destinations/ninh-binh-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/quang-ninh-v1.png",
+      "sha256": "6152f06a91e50ccbce7eb29138d460e4a468fb192efe2d9368f728ac1e49029f",
+      "bytes": 2542327,
+      "publicId": "goease/app/destinations/quang-ninh-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "5d0390c05dac50f0ff44b4333cbea064",
+      "version": 1792984229,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984229/goease/app/destinations/quang-ninh-v1-png.png",
+      "width": 1122,
+      "height": 1402
+    },
+    {
+      "sourcePath": "client/public/images/destinations/da-nang-v1.png",
+      "sha256": "a7887732ce532bd06e2796766650153fba13ec3d1b5d52919d59dcb1f38f8972",
+      "bytes": 2572061,
+      "publicId": "goease/app/destinations/da-nang-v1-png",
+      "assetFolder": "goease/app/destinations",
+      "assetId": "a409668b2e25cd790b5836461e1020de",
+      "version": 1792984232,
+      "url": "https://res.cloudinary.com/dqc4hufot/image/upload/v1792984232/goease/app/destinations/da-nang-v1-png.png",
+      "width": 1122,
+      "height": 1402
     }
   ]
 }

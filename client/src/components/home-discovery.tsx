@@ -103,7 +103,8 @@ export function HomeDiscovery({
       name: d.name,
       subtitle: d.summary || 'Khám phá theo cách của bạn',
       category: known?.category ?? 'Khám phá',
-      image: destinationCovers[d.slug] ?? known?.image ?? images.goeMascot,
+      image:
+        destinationCovers[d.slug ?? ''] ?? known?.image ?? images.goeMascot,
       destination: d,
     };
   });
@@ -390,7 +391,9 @@ export function HomeDiscovery({
           </p>
         )}
         {visible.length > 0 && (
-          <p className="discovery-storage-note">Ảnh điểm đến là ảnh minh họa AI.</p>
+          <p className="discovery-storage-note">
+            Ảnh điểm đến là ảnh minh họa AI.
+          </p>
         )}
         {mode === 'home' && visible.length > 4 && (
           <div className="discovery-all-destinations">

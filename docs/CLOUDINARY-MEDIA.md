@@ -1,5 +1,15 @@
 # Cloudinary media — 24/10/2026
 
+## Ảnh thẻ tỉnh/thành customer — 26/10/2026
+
+Owner yêu cầu 13 ảnh riêng cho 13 tỉnh/thành đang published: An Giang, Cần Thơ, Gia Lai, Huế, Hà Nội, Hải Phòng, Hồ Chí Minh, Khánh Hòa, Lào Cai, Lâm Đồng, Ninh Bình, Quảng Ninh và Đà Nẵng. Tạo bằng công cụ image_gen tích hợp, phong cảnh minh họa không chữ, khung dọc 4:5; prompt đầy đủ ở `packages/media/destination-generation-manifest.json`.
+
+Ảnh gốc lưu Cloudinary `goease/app/destinations/<slug>-v1-png`; metadata/checksum nằm trong `assets-manifest.json`. `destinationCovers` trong `@goease/media` ánh xạ slug sang URL CDN có `f_auto,q_auto,w_900,c_limit`, dùng ở thẻ tỉnh/thành trên Trang chủ customer. Ảnh tải lười, có Goe dự phòng khi lỗi và nhãn hiển thị “Ảnh điểm đến là ảnh minh họa AI.” Bản gốc local và bằng chứng UI giữ trong `.local/destination-covers/` (ignored); sourcePath trong manifest là tên nguồn logic, binary không đưa vào Git.
+
+Không đổi schema/DTO/API, publication, MongoDB, ảnh POI hoặc snapshot chuyến; `coverAssetId`/`media_assets` vẫn là thiết kế chưa triển khai. Tỉnh mới bật chưa có mapping tiếp tục dùng fallback hiện có. Bộ lọc danh mục giữ nguyên hành vi.
+
+Kiểm chứng: upload 13/13 và GET checksum từng ảnh đạt; `npm run media:verify` đạt 86/86 ảnh trong manifest. Typecheck, lint, build, format các file thuộc task và 118 unit tests đạt. Edge headless trên API local thật kiểm tra tìm lần lượt 13 tỉnh/thành, URL riêng đúng slug và ảnh tải thành công; chụp giao diện 390px/1440px. Build vẫn có cảnh báo chunk >500kB hiện hữu. Chưa deploy public hoặc chạy lại toàn bộ integration/E2E; không sửa dữ liệu MongoDB trong task này.
+
 Theo yêu cầu owner, code mới nhất từ `nyan/admin-operations-v2` được fast-forward vào `main` trước khi chuyển ảnh. Toàn bộ 73 binary ảnh đang được Git theo dõi (56.8 MB thập phân) đã upload: 22 ảnh app và 51 ảnh tài liệu. Không xóa lịch sử Git; ảnh gốc vẫn có thể phục hồi từ commit trước.
 
 ## Tổ chức và sử dụng

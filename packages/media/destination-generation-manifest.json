@@ -1,0 +1,85 @@
+{
+  "generatedAt": "2026-10-26",
+  "method": "built-in image_gen",
+  "usage": "AI destination illustrations only, not documentary venue photos.",
+  "destinations": [
+    {
+      "slug": "an-giang",
+      "name": "An Giang",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Tra Su flooded cajuput forest, a small wooden rowing boat on emerald water beneath tall green trees, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/an-giang-v1.png"
+    },
+    {
+      "slug": "can-tho",
+      "name": "Cần Thơ",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Cai Rang floating market on the Mekong river at sunrise, wooden produce boats carrying tropical fruit, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/can-tho-v1.png"
+    },
+    {
+      "slug": "gia-lai",
+      "name": "Gia Lai",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Bien Ho T'Nung volcanic lake near Pleiku, deep blue water surrounded by pine forest and rolling highlands, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/gia-lai-v1.png"
+    },
+    {
+      "slug": "hue",
+      "name": "Huế",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Ngo Mon gate of Hue Imperial City, traditional Vietnamese tiled royal roofs, lotus pond and warm late afternoon light, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/hue-v1.png"
+    },
+    {
+      "slug": "ha-noi",
+      "name": "Hà Nội",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Turtle Tower on a tiny green island in Hoan Kiem lake, Hanoi, peaceful morning reflections and trees, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/ha-noi-v1.png"
+    },
+    {
+      "slug": "hai-phong",
+      "name": "Hải Phòng",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Lan Ha Bay near Cat Ba, limestone karst islands with lush green vegetation, turquoise sea and a small wooden boat, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/hai-phong-v1.png"
+    },
+    {
+      "slug": "ho-chi-minh",
+      "name": "Hồ Chí Minh",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Ho Chi Minh City central post office, yellow French colonial facade, arched windows and leafy boulevard in soft morning light, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/ho-chi-minh-v1.png"
+    },
+    {
+      "slug": "khanh-hoa",
+      "name": "Khánh Hòa",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Nha Trang coastline, clear turquoise sea, curved sandy beach, palm trees and distant green islands, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/khanh-hoa-v1.png"
+    },
+    {
+      "slug": "lao-cai",
+      "name": "Lào Cai",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Muong Hoa valley near Sa Pa, sweeping golden rice terraces with green mountain ridges and morning mist, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/lao-cai-v1.png"
+    },
+    {
+      "slug": "lam-dong",
+      "name": "Lâm Đồng",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Da Lat highlands, Xuan Huong lake with pine forest, gentle hills, blooming flowers and soft morning mist, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/lam-dong-v1.png"
+    },
+    {
+      "slug": "ninh-binh",
+      "name": "Ninh Bình",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Trang An, a small rowing boat on a winding emerald river between towering limestone cliffs and green rice paddies, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/ninh-binh-v1.png"
+    },
+    {
+      "slug": "quang-ninh",
+      "name": "Quảng Ninh",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Ha Long Bay, layered limestone karst towers, emerald water, one small traditional boat in golden morning haze, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/quang-ninh-v1.png"
+    },
+    {
+      "slug": "da-nang",
+      "name": "Đà Nẵng",
+      "prompt": "Use case: illustration-story. Asset type: GoEase customer destination cover, portrait 4:5 composition suitable for cropping into a narrow mobile card. Create a polished travel editorial illustration of Da Nang Dragon Bridge over the Han river, recognisable golden dragon-shaped bridge, modern riverside skyline and distant mountains at blue hour, Vietnam. Soft painterly digital illustration with detailed believable geography and architecture, warm natural light, fresh teal greens and gentle golden highlights, premium inviting travel mood. Full bleed scenic view, main landmark in upper and central two thirds, lower quarter visually calm for a white text overlay added by the app. One cohesive landscape, no collage, no border, no text, no logos, no mascot, no watermark. This is an AI illustration, not a documentary photo.",
+      "sourcePath": "client/public/images/destinations/da-nang-v1.png"
+    }
+  ]
+}
