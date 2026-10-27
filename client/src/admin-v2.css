@@ -1882,3 +1882,213 @@ body:has(.admin-desktop-shell) .app-confirmation .app-confirmation-cancel {
 .admin-desktop-shell .settings-province-table :is(th, td).admin-cell-actions {
   width: 36%;
 }
+
+/* Region-first province picker with accent-insensitive name search. */
+.admin-desktop-shell .admin-area-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 230px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #dce3ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #243149;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.admin-desktop-shell .admin-area-trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-desktop-shell .admin-area-trigger svg {
+  flex-shrink: 0;
+}
+.admin-desktop-shell .admin-area-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(460px, calc(100vw - 24px));
+  max-height: min(620px, calc(100dvh - 32px));
+  padding: 0;
+  border: 1px solid #dfe5ed;
+  border-radius: 14px;
+  background: #fff;
+  color: #172139;
+  box-shadow: 0 24px 80px #17213930;
+}
+.admin-desktop-shell .admin-area-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.admin-area-dialog::backdrop {
+  background: #101b3266;
+}
+.admin-desktop-shell .admin-area-dialog > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 18px 20px 12px;
+}
+.admin-desktop-shell .admin-area-dialog h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+}
+.admin-desktop-shell .admin-area-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  background: #f1f4f8;
+  color: #52617b;
+  border: 0;
+  border-radius: 7px;
+}
+.admin-desktop-shell .admin-area-controls {
+  flex-shrink: 0;
+  padding: 0 20px;
+}
+.admin-desktop-shell .admin-area-regions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  padding: 4px;
+  margin-bottom: 12px;
+  border-radius: 9px;
+  background: #f0f3f8;
+}
+.admin-desktop-shell .admin-area-regions button {
+  padding: 8px 4px;
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #52617b;
+  background: transparent;
+}
+.admin-desktop-shell .admin-area-regions button[aria-pressed='true'] {
+  background: #243149;
+  color: #fff;
+}
+.admin-desktop-shell .admin-area-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 10px;
+  min-height: 42px;
+  border: 1px solid #cbd5e3;
+  border-radius: 8px;
+  color: #63718a;
+}
+.admin-desktop-shell .admin-area-search:focus-within {
+  outline: 2px solid #c5a04d;
+  outline-offset: 1px;
+}
+.admin-desktop-shell .admin-area-dialog .admin-area-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: 0;
+  box-shadow: none;
+  font-size: 14px;
+}
+.admin-desktop-shell .admin-area-dialog .admin-area-search input:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+.admin-desktop-shell .admin-area-search button {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: #63718a;
+  min-height: 28px;
+}
+.admin-desktop-shell .admin-area-all {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 10px 6px;
+  min-height: 40px;
+  border: 0;
+  border-bottom: 1px solid #e5eaf1;
+  border-radius: 0;
+  background: #fff;
+  color: #52617b;
+  font-size: 13px;
+}
+.admin-desktop-shell .admin-area-results {
+  overflow-y: auto;
+  padding: 5px 14px 14px;
+}
+.admin-desktop-shell .admin-area-results > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 8px;
+  min-height: 60px;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: #fff;
+  color: #243149;
+}
+.admin-desktop-shell .admin-area-results > button > span:first-child {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+}
+.admin-desktop-shell .admin-area-results strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.admin-desktop-shell .admin-area-results small {
+  font-size: 12px;
+  color: #63718a;
+}
+
+.admin-desktop-shell .admin-area-results > button[aria-pressed='true'] {
+  background: #f0f4fa;
+}
+.admin-desktop-shell .admin-area-results > button:hover {
+  background: #f5f7fa;
+}
+.admin-desktop-shell .admin-area-results > button:focus-visible {
+  outline: 2px solid #a98024;
+  outline-offset: -2px;
+}
+.admin-desktop-shell .admin-area-selected {
+  flex-shrink: 0;
+}
+.admin-desktop-shell .admin-area-empty {
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 14px;
+}
+.admin-desktop-shell .admin-area-empty button {
+  border: 1px solid #d5ddeb;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: #fff;
+  color: #243149;
+}
+@media (max-width: 760px) {
+  .admin-desktop-shell .admin-area-trigger {
+    max-width: 155px;
+  }
+}

@@ -48,3 +48,9 @@ Delivery target: V2-ui-admin only, as requested by the owner; main is unchanged.
 - Brand reference update: replaced the light inset brand card with a full-width dark blue header, subtle geometric background, white GoEase title and pale subtitle. Verified 255px edge-to-edge brand width on the mobile drawer and desktop rendering.
 
 - Removed duplicate page-title counts and the province header count already represented by list filters; removed the Ctrl K search badge. Search and its keyboard shortcut remain available.
+
+## Region picker
+
+- Replaced the long admin area select with a shared dialog: three region filters, accent-insensitive province-name search, all-area reset and keyboard selection.
+- Removed the earlier vehicle-registration-number aliases and labels at the owner's request. Administrative IDs and backend filtering are unchanged.
+- Browser checks: southern region list; `vinh long` and `ha noi` search; Enter applies the chosen province; `64` returns no province; 375×667 dialog remains within the viewport.

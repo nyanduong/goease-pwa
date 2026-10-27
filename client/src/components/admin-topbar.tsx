@@ -1,10 +1,10 @@
+import { AdminAreaPicker } from './admin-area-picker';
 import { useEffect, useRef, useState } from 'react';
 import { adminSections } from '../admin-navigation-config';
 import {
   Bell,
   ChevronRight,
   Globe2,
-  MapPin,
   Search,
   List,
   type AppIcon,
@@ -185,24 +185,11 @@ export function AdminTopbar({
       </form>
       <div className="admin-header-context">
         {scopeHint ? (
-          <label className="admin-header-scope">
-            <MapPin size={18} aria-hidden="true" />
-            <span>
-              <small>{scopeHint}</small>
-              <select
-                aria-label="Khu vực quản lý"
-                value={scope}
-                onChange={(e) => onScope(e.target.value)}
-              >
-                <option value="">Tất cả khu vực</option>
-                {destinations.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </span>
-          </label>
+          <AdminAreaPicker
+            destinations={destinations}
+            value={scope}
+            onChange={onScope}
+          />
         ) : (
           <span className="admin-header-context-label">
             <Globe2 size={16} aria-hidden="true" />
