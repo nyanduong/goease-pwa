@@ -15,6 +15,7 @@ import './admin-v1.css';
 import './admin-controls.css';
 import './destination-picker.css';
 import './customer-ui.css';
+import './admin-v2.css';
 
 if (
   import.meta.env.PROD &&

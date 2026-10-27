@@ -1,3 +1,4 @@
+import { AdminPageHelp } from './admin-page-help';
 import { confirmAction } from '../confirmation';
 import {
   synchronizeSharedPrice,
@@ -455,9 +456,7 @@ export function AdminCatalog({
   const isDirty =
     !!form &&
     (!saved || JSON.stringify(form) !== JSON.stringify(formFromDto(saved)));
-  const destinationName =
-    destinations.find((d) => d.id === form?.destinationId)?.name ??
-    'Chưa chọn tỉnh / thành phố';
+
   async function save(
     publicationStatus: AdminPlaceInput['publicationStatus'],
     intent: 'save' | 'publish' = 'save',
@@ -549,11 +548,6 @@ export function AdminCatalog({
                 ? 'Chỉnh sửa địa điểm'
                 : 'Thêm địa điểm / quán ăn'
               : 'Địa điểm'
-          }
-          meta={
-            overview
-              ? `${overview.total.toLocaleString('vi-VN')} địa điểm`
-              : undefined
           }
           illustrated={false}
           actions={
@@ -1007,24 +1001,13 @@ export function AdminCatalog({
             <div>
               <div className="place-title-row">
                 <h1>{form.name || 'Thêm địa điểm mới'}</h1>
+                <AdminPageHelp
+                  title={saved ? 'Chỉnh sửa địa điểm' : 'Thêm địa điểm mới'}
+                />
                 <span className="place-status-badge">
                   {statusText[saved?.publicationStatus ?? 'draft']}
                 </span>
               </div>
-              <p>
-                {destinationName} ·{' '}
-                {form.venueType === 'place'
-                  ? 'Điểm tham quan'
-                  : form.venueType === 'restaurant'
-                    ? 'Quán ăn cụ thể'
-                    : 'Gợi ý món ăn'}{' '}
-                ·{' '}
-                {form.category === 'culture'
-                  ? 'Văn hóa'
-                  : form.category === 'nature'
-                    ? 'Thiên nhiên'
-                    : 'Ăn uống'}
-              </p>
             </div>
             <div className="place-editor-save-state">
               <span>

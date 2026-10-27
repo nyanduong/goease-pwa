@@ -1,3 +1,4 @@
+import { AdminPageHelp } from './admin-page-help';
 import { images } from '@goease/media';
 import { useState, type ReactNode } from 'react';
 import { ImageOff } from '../icons';
@@ -108,7 +109,6 @@ export function AdminPageHeader({
   illustrated = true,
   greeting = false,
   actions,
-  meta,
 }: {
   title: string;
   description?: string;
@@ -116,26 +116,17 @@ export function AdminPageHeader({
   illustrated?: boolean;
   greeting?: boolean;
   actions?: ReactNode;
-  meta?: ReactNode;
 }) {
   void illustrated;
   void greeting;
+  void region;
   return (
     <header className="admin-page-heading admin-reference-heading">
       <div className="admin-heading-copy">
-        {![
-          'Việt Nam',
-          'Tất cả khu vực',
-          'tất cả khu vực',
-          'Toàn hệ thống',
-        ].includes(region) && (
-          <span className="admin-scope-caption">{region}</span>
-        )}
         <div className="admin-title-line">
           <h1>{title}</h1>
-          {meta && <span className="admin-title-meta">{meta}</span>}
+          <AdminPageHelp title={title} description={description} />
         </div>
-        {description && <p>{description}</p>}
       </div>
       {actions}
     </header>
