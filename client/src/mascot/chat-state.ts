@@ -1,4 +1,4 @@
-import type { MascotController } from './controller';
+import type { MascotController } from './controller.js';
 
 export type ChatVisualState =
   'idle' | 'listening' | 'planning' | 'waiting' | 'success' | 'error';

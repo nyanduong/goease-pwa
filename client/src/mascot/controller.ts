@@ -1,4 +1,4 @@
-import { animations, randomActions, type MascotAction } from './manifest';
+import { animations, randomActions, type MascotAction } from './manifest.js';
 
 export type MascotSnapshot = Readonly<{
   action: MascotAction;
