@@ -33,12 +33,8 @@ export function sharedPriceBudget(
     reasons.push('Nêu dịch vụ chưa bao gồm; ghi “Không có” nếu phù hợp.');
   if (!t?.checkedAt || t.checkedAt > today)
     reasons.push('Cần ngày xác nhận hợp lệ, không ở tương lai.');
-  if (
-    !t?.reviewAfter ||
-    t.reviewAfter < today ||
-    (!!t.checkedAt && t.reviewAfter < t.checkedAt)
-  )
-    reasons.push('Giá cần có thời hạn kiểm tra còn hiệu lực.');
+  if (!t?.reviewAfter || (!!t.checkedAt && t.reviewAfter < t.checkedAt))
+    reasons.push('Giá cần có ngày kiểm tra lại hợp lệ.');
   const min = t?.minTravelers ?? 1,
     max = t?.maxTravelers ?? (price.unit === 'group' ? undefined : 1000);
   if (max === undefined)

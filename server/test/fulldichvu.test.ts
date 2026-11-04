@@ -122,7 +122,7 @@ test('ranking mode requests IDs only and rejects invented output fields or dupli
       'fetch',
       async (_url: unknown, init?: RequestInit) => {
         const request = JSON.parse(String(init?.body));
-        assert.equal(request.max_tokens, 4096);
+        assert.equal(request.max_tokens, 8192);
         assert.match(
           request.messages[0].content,
           /server handles opening hours/,
@@ -249,4 +249,50 @@ test('provider config defaults to Google; invalid provider/model never leaks sec
     () => parseConfig({ ...env, FULLDICHVU_MODEL: 'https://secret-key' }),
     /^Error: Invalid environment: FULLDICHVU_MODEL$/,
   );
+});
+
+test('ranking sends only compact catalog data and trip preferences', async () => {
+  const ids = [1, 2, 3, 4].map((n) => `10000000000000000000000${n}`);
+  const stub = mock.method(
+    globalThis,
+    'fetch',
+    async (_url: unknown, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body));
+      const payload = JSON.parse(request.messages[1].content);
+      assert.equal(request.max_tokens, 8192);
+      assert.equal(payload.days, 2);
+      assert.deepEqual(payload.preferences, { pace: 'relaxed' });
+      for (const excluded of [
+        'PRIVATE_NOTES',
+        'PRIVATE_TITLE',
+        'PRICE_SOURCE',
+        'LONG_DESCRIPTION',
+      ])
+        assert.ok(!String(init?.body).includes(excluded));
+      assert.equal(payload.catalog[0].location.length, 180);
+      return Response.json(
+        completion(JSON.stringify({ placeIds: ['P01', 'P02', 'P03', 'P04'] })),
+      );
+    },
+  );
+  try {
+    const result = await plannerProvider(config)({
+      selectionOnly: true,
+      dates: ['2026-11-05', '2026-11-06'],
+      preferences: { pace: 'relaxed' },
+      notes: 'PRIVATE_NOTES',
+      title: 'PRIVATE_TITLE',
+      catalog: ids.map((id) => ({
+        id,
+        name: 'Địa điểm',
+        category: 'nature',
+        location: 'x'.repeat(500),
+        referenceCost: { sourceUrl: 'PRICE_SOURCE' },
+        description: 'LONG_DESCRIPTION',
+      })),
+    });
+    assert.deepEqual(result, { placeIds: ids });
+  } finally {
+    stub.mock.restore();
+  }
 });

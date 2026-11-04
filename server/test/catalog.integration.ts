@@ -542,8 +542,9 @@ test(
         p.referencePrice!.maxTravelers = 10;
         clone.days[0]!.activities[0]!.estimatedCost = catalogCost(p);
         assert.equal(calculateBudget(clone).missingCostCount, 0);
+        p.referencePrice!.checkedAt = '1999-01-01';
         p.referencePrice!.reviewAfter = '2000-01-01';
-        assert.equal(catalogCost(p).amountMinor, null);
+        assert.equal(catalogCost(p).amountMinor, 0);
         assert.equal(catalogCost({}).amountMinor, null);
       });
       await t.test(
