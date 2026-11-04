@@ -1,3 +1,4 @@
+import { AdminPageHelp } from './admin-page-help';
 import { useEffect, useState } from 'react';
 import type { AdminSettings, DestinationDto } from '@goease/contracts';
 import { ArrowRight, Info } from '../icons';
@@ -72,8 +73,10 @@ export function AdminSettingsPage({
   return (
     <section className="admin-v2-content admin-settings-page">
       <header className="settings-heading">
-        <h1>Cài đặt</h1>
-        <p>Chọn nơi khách có thể khám phá và thiết lập cách quản lý dữ liệu.</p>
+        <div className="admin-title-line">
+          <h1>Cài đặt</h1>
+          <AdminPageHelp title="Cài đặt" />
+        </div>
       </header>
       <div className="settings-tabs" role="tablist" aria-label="Nhóm cài đặt">
         {tabs.map((item, index) => (

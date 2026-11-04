@@ -1,3 +1,4 @@
+import { adminSections } from '../admin-navigation-config';
 import { AdminVisitProgress } from './admin-visit-progress';
 import { AdminSources } from './admin-sources';
 import { AdminSettingsPage } from './admin-settings';
@@ -32,17 +33,9 @@ import {
   CalendarClock,
 } from '../icons';
 
-const tabs = {
-  overview: 'Tổng quan',
-  work: 'Cần kiểm tra',
-  places: 'Địa điểm',
-  automatic: 'Đợt thu thập',
-  progress: 'Tiến trình lấy dữ liệu',
-  history: 'Lịch sử & phê duyệt',
-  sources: 'Nguồn dữ liệu',
-  settings: 'Cài đặt',
-  rules: 'Tự động cập nhật',
-};
+const tabs = Object.fromEntries(
+  adminSections.map(({ key, label }) => [key, label]),
+) as Record<(typeof adminSections)[number]['key'], string>;
 const navIcons = {
   overview: LayoutDashboard,
   work: ListTodo,
@@ -87,10 +80,8 @@ export function AdminNavigation() {
 }
 export function AdminWorkspace({
   destinations: initialDestinations,
-  name = 'Admin',
 }: {
   destinations: DestinationDto[];
-  name?: string;
 }) {
   const [destinations, setDestinations] = useState(initialDestinations);
   const [destinationReload, setDestinationReload] = useState(0);
@@ -293,7 +284,6 @@ export function AdminWorkspace({
         destinations={destinations}
         scope={scope}
         onScope={setScope}
-        name={name}
         pageLabel={tabs[tab]}
         icon={navIcons[tab]}
         {...(tab === 'rules' ||
@@ -419,7 +409,9 @@ export function AdminWorkspace({
 
           {error && (
             <div className="admin-alert" role="alert">
-              {error}{' '}
+              {error === 'An unexpected error occurred'
+                ? 'Chưa tải được dữ liệu. Vui lòng thử lại sau.'
+                : error}{' '}
               <button onClick={() => void refresh()}>Thử tải lại</button>
             </div>
           )}

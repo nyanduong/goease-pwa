@@ -485,13 +485,19 @@ export function App() {
   if (user?.isAdmin)
     return (
       <div className="admin-desktop-shell">
-        <aside className="admin-sidebar">
-          <a href="/admin">
-            <Brand />
+        <aside className="admin-sidebar" id="admin-sidebar">
+          <a
+            className="admin-sidebar-brand"
+            href="/admin"
+            aria-label="GoEase · Quản trị"
+          >
+            <img src={images.logo} alt="" />
+            <span>
+              <strong>GoEase</strong>
+              <small>Quản trị</small>
+            </span>
           </a>
-          <p>QUẢN TRỊ</p>
           <AdminNavigation />
-          <span>{user.displayName}</span>
           <button
             className="button button-outline"
             onClick={() => {
@@ -518,11 +524,7 @@ export function App() {
         </aside>
         <main className="admin-desktop-main">
           {message && <Notice>{message}</Notice>}
-          <AdminCatalog
-            key={user.id}
-            destinations={destinations}
-            name={user.displayName}
-          />
+          <AdminCatalog key={user.id} destinations={destinations} />
         </main>
       </div>
     );

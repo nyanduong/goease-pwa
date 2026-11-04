@@ -12,42 +12,42 @@ Yêu cầu Google Maps là điều kiện owner đã chốt. **Gate Google mới
 
 ## Phân bổ ứng viên
 
-| Tỉnh/thành | Ứng viên | Tham quan | Ăn | Cà phê | Có ứng viên bìa | Có giới thiệu | Cụm ưu tiên |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Hà Nội | 40 | 20 | 14 | 6 | 13 | 6 | Trung tâm Hà Nội |
-| Cao Bằng | 20 | 10 | 7 | 3 | 0 | 0 | Thành phố Cao Bằng |
-| Tuyên Quang | 20 | 10 | 7 | 3 | 0 | 0 | Hà Giang |
-| Điện Biên | 20 | 10 | 7 | 3 | 0 | 0 | Điện Biên Phủ |
-| Lai Châu | 20 | 10 | 7 | 3 | 1 | 0 | Lai Châu |
-| Sơn La | 20 | 10 | 7 | 3 | 0 | 0 | Mộc Châu |
-| Lào Cai | 20 | 10 | 7 | 3 | 2 | 1 | Sa Pa |
-| Thái Nguyên | 20 | 10 | 7 | 3 | 0 | 0 | Thái Nguyên |
-| Lạng Sơn | 20 | 10 | 7 | 3 | 0 | 0 | Lạng Sơn |
-| Quảng Ninh | 20 | 10 | 7 | 3 | 1 | 0 | Hạ Long |
-| Bắc Ninh | 20 | 10 | 7 | 3 | 1 | 0 | Bắc Ninh |
-| Phú Thọ | 20 | 10 | 7 | 3 | 0 | 0 | Việt Trì |
-| Hải Phòng | 20 | 10 | 7 | 3 | 0 | 0 | Trung tâm Hải Phòng |
-| Hưng Yên | 20 | 10 | 7 | 3 | 0 | 0 | Phố Hiến |
-| Ninh Bình | 20 | 10 | 7 | 3 | 1 | 1 | Ninh Bình – Tam Cốc |
-| Thanh Hóa | 20 | 10 | 7 | 3 | 0 | 0 | Thanh Hóa |
-| Nghệ An | 20 | 10 | 7 | 3 | 0 | 0 | Vinh |
-| Hà Tĩnh | 20 | 10 | 7 | 3 | 0 | 0 | Hà Tĩnh |
-| Quảng Trị | 20 | 10 | 7 | 3 | 2 | 0 | Đồng Hới |
-| Huế | 20 | 10 | 7 | 3 | 2 | 0 | Trung tâm Huế |
-| Đà Nẵng | 40 | 20 | 14 | 6 | 11 | 4 | Trung tâm Đà Nẵng; Hội An |
-| Quảng Ngãi | 20 | 10 | 7 | 3 | 0 | 0 | Quảng Ngãi |
-| Gia Lai | 20 | 10 | 7 | 3 | 3 | 0 | Quy Nhơn |
-| Khánh Hòa | 20 | 10 | 7 | 3 | 5 | 0 | Nha Trang |
-| Đắk Lắk | 20 | 10 | 7 | 3 | 0 | 0 | Buôn Ma Thuột |
-| Lâm Đồng | 20 | 10 | 7 | 3 | 6 | 1 | Đà Lạt |
-| Đồng Nai | 20 | 10 | 7 | 3 | 0 | 0 | Biên Hòa |
-| Hồ Chí Minh | 40 | 20 | 14 | 6 | 11 | 2 | Trung tâm TP.HCM |
-| Tây Ninh | 20 | 10 | 7 | 3 | 0 | 0 | Tây Ninh |
-| Đồng Tháp | 20 | 10 | 7 | 3 | 0 | 0 | Cao Lãnh |
-| Vĩnh Long | 20 | 10 | 7 | 3 | 0 | 0 | Vĩnh Long |
-| An Giang | 20 | 10 | 7 | 3 | 0 | 0 | Châu Đốc |
-| Cần Thơ | 20 | 10 | 7 | 3 | 3 | 0 | Ninh Kiều – Cần Thơ |
-| Cà Mau | 20 | 10 | 7 | 3 | 0 | 0 | Thành phố Cà Mau |
+| Tỉnh/thành  | Ứng viên | Tham quan |  Ăn | Cà phê | Có ứng viên bìa | Có giới thiệu | Cụm ưu tiên               |
+| ----------- | -------: | --------: | --: | -----: | --------------: | ------------: | ------------------------- |
+| Hà Nội      |       40 |        20 |  14 |      6 |              13 |             6 | Trung tâm Hà Nội          |
+| Cao Bằng    |       20 |        10 |   7 |      3 |               0 |             0 | Thành phố Cao Bằng        |
+| Tuyên Quang |       20 |        10 |   7 |      3 |               0 |             0 | Hà Giang                  |
+| Điện Biên   |       20 |        10 |   7 |      3 |               0 |             0 | Điện Biên Phủ             |
+| Lai Châu    |       20 |        10 |   7 |      3 |               1 |             0 | Lai Châu                  |
+| Sơn La      |       20 |        10 |   7 |      3 |               0 |             0 | Mộc Châu                  |
+| Lào Cai     |       20 |        10 |   7 |      3 |               2 |             1 | Sa Pa                     |
+| Thái Nguyên |       20 |        10 |   7 |      3 |               0 |             0 | Thái Nguyên               |
+| Lạng Sơn    |       20 |        10 |   7 |      3 |               0 |             0 | Lạng Sơn                  |
+| Quảng Ninh  |       20 |        10 |   7 |      3 |               1 |             0 | Hạ Long                   |
+| Bắc Ninh    |       20 |        10 |   7 |      3 |               1 |             0 | Bắc Ninh                  |
+| Phú Thọ     |       20 |        10 |   7 |      3 |               0 |             0 | Việt Trì                  |
+| Hải Phòng   |       20 |        10 |   7 |      3 |               0 |             0 | Trung tâm Hải Phòng       |
+| Hưng Yên    |       20 |        10 |   7 |      3 |               0 |             0 | Phố Hiến                  |
+| Ninh Bình   |       20 |        10 |   7 |      3 |               1 |             1 | Ninh Bình – Tam Cốc       |
+| Thanh Hóa   |       20 |        10 |   7 |      3 |               0 |             0 | Thanh Hóa                 |
+| Nghệ An     |       20 |        10 |   7 |      3 |               0 |             0 | Vinh                      |
+| Hà Tĩnh     |       20 |        10 |   7 |      3 |               0 |             0 | Hà Tĩnh                   |
+| Quảng Trị   |       20 |        10 |   7 |      3 |               2 |             0 | Đồng Hới                  |
+| Huế         |       20 |        10 |   7 |      3 |               2 |             0 | Trung tâm Huế             |
+| Đà Nẵng     |       40 |        20 |  14 |      6 |              11 |             4 | Trung tâm Đà Nẵng; Hội An |
+| Quảng Ngãi  |       20 |        10 |   7 |      3 |               0 |             0 | Quảng Ngãi                |
+| Gia Lai     |       20 |        10 |   7 |      3 |               3 |             0 | Quy Nhơn                  |
+| Khánh Hòa   |       20 |        10 |   7 |      3 |               5 |             0 | Nha Trang                 |
+| Đắk Lắk     |       20 |        10 |   7 |      3 |               0 |             0 | Buôn Ma Thuột             |
+| Lâm Đồng    |       20 |        10 |   7 |      3 |               6 |             1 | Đà Lạt                    |
+| Đồng Nai    |       20 |        10 |   7 |      3 |               0 |             0 | Biên Hòa                  |
+| Hồ Chí Minh |       40 |        20 |  14 |      6 |              11 |             2 | Trung tâm TP.HCM          |
+| Tây Ninh    |       20 |        10 |   7 |      3 |               0 |             0 | Tây Ninh                  |
+| Đồng Tháp   |       20 |        10 |   7 |      3 |               0 |             0 | Cao Lãnh                  |
+| Vĩnh Long   |       20 |        10 |   7 |      3 |               0 |             0 | Vĩnh Long                 |
+| An Giang    |       20 |        10 |   7 |      3 |               0 |             0 | Châu Đốc                  |
+| Cần Thơ     |       20 |        10 |   7 |      3 |               3 |             0 | Ninh Kiều – Cần Thơ       |
+| Cà Mau      |       20 |        10 |   7 |      3 |               0 |             0 | Thành phố Cà Mau          |
 
 Có ứng viên bìa chỉ tính metadata/observation hiện có, chưa chứng nhận ảnh đúng địa điểm, giấy phép hoặc URL còn hoạt động. Khoảng cách là đường thẳng tới điểm neo biên tập, không phải tuyến đường/giờ di chuyển. 20 mục quá ngưỡng gợi ý(35kmtham quan/15kmăn-cà phê), cần thay hoặc chia tuyến trước demo. Các cụm tỉnh sau sáp nhập không đại diện phủ toàn tỉnh.
 

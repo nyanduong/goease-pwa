@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Database,
-  Info,
   Lightbulb,
   Search,
 } from '../icons';
@@ -187,31 +186,8 @@ export function AdminDestinations() {
         <header className="settings-province-heading">
           <div>
             <h2>Hiển thị tỉnh/thành</h2>
-            <p>
-              Bật để khách chọn khi tạo chuyến và xem các địa điểm đã xuất bản.
-            </p>
           </div>
-          <span className="settings-count">
-            {loading
-              ? 'Đang tải danh mục…'
-              : error
-                ? 'Chưa tải được danh mục'
-                : `${enabledCount} đang bật / ${rows.length} tỉnh, thành`}
-          </span>
         </header>
-        <div className="settings-visibility-note">
-          <Info size={22} />
-          <div>
-            <p>
-              <strong>Khi bật:</strong> GoEase bắt đầu lấy địa điểm tham quan
-              vào bản nháp.
-            </p>
-            <p>
-              <strong>Khi tắt:</strong> Ẩn tỉnh/thành và địa điểm bên trong; giữ
-              dữ liệu và chuyến đã lưu.
-            </p>
-          </div>
-        </div>
         <fieldset
           className="settings-province-filters"
           disabled={busy || !!pending}
@@ -349,10 +325,14 @@ export function AdminDestinations() {
                 <table className="settings-province-table">
                   <thead>
                     <tr>
-                      <th>Tỉnh / thành phố</th>
-                      <th>Hiển thị cho khách</th>
-                      <th>Lấy địa điểm</th>
-                      <th>Thao tác</th>
+                      <th scope="col">Tỉnh / thành phố</th>
+                      <th scope="col">Miền du lịch</th>
+                      <th scope="col" className="admin-cell-switch">
+                        Hiển thị
+                      </th>
+                      <th scope="col" className="admin-cell-actions">
+                        Thao tác
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -360,22 +340,30 @@ export function AdminDestinations() {
                       <tr key={d.id}>
                         <td>
                           <strong>{d.name}</strong>
-                          <small>
+                        </td>
+                        <td className="admin-province-region">
+                          <span>
                             {travelRegions.find(
                               (r) => r.code === travelRegionOf(d.tourismRegion),
                             )?.name ?? 'Chưa phân miền'}
-                          </small>
+                          </span>
                           {!!d.tourismAreas?.length && (
                             <small>Khu vực: {d.tourismAreas.join(', ')}</small>
                           )}
                         </td>
-                        <td>
+                        <td className="admin-cell-switch">
                           <button
                             className="settings-province-switch"
                             type="button"
                             role="switch"
                             aria-checked={d.publicationStatus === 'published'}
                             aria-label={'Hiển thị ' + d.name}
+                            title={
+                              (d.publicationStatus === 'published'
+                                ? 'Tắt hiển thị '
+                                : 'Bật hiển thị ') + d.name
+                            }
+                            aria-busy={busy && pending?.id === d.id}
                             disabled={busy || !!pending || !d.provinceCode}
                             onClick={async () => {
                               const enabled =
@@ -412,7 +400,7 @@ export function AdminDestinations() {
                             >
                               <span />
                             </span>
-                            <span>
+                            <span className="sr-only">
                               {busy && pending?.id === d.id
                                 ? 'Đang lưu…'
                                 : d.publicationStatus === 'published'
@@ -421,34 +409,36 @@ export function AdminDestinations() {
                             </span>
                           </button>
                         </td>
-                        <td>
-                          {d.publicationStatus === 'published' ? (
+                        <td className="admin-cell-actions">
+                          <div className="admin-row-actions">
                             <button
                               className="journey-outline"
-                              disabled={busy || !!pending}
+                              disabled={
+                                busy ||
+                                !!pending ||
+                                d.publicationStatus !== 'published'
+                              }
+                              title={
+                                d.publicationStatus === 'published'
+                                  ? `Lấy địa điểm tại ${d.name}`
+                                  : 'Bật hiển thị tỉnh/thành để lấy địa điểm'
+                              }
                               onClick={() =>
                                 setImportTarget({ destination: d })
                               }
                             >
                               Lấy địa điểm
                             </button>
-                          ) : (
-                            <span className="settings-disabled-hint">
-                              Bật hiển thị để lấy dữ liệu
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          {d.publicationStatus === 'published' ? (
-                            <a
-                              className="settings-progress-link"
-                              href={'#automatic?destinationId=' + d.id}
-                            >
-                              Xem tiến trình <ArrowRight size={16} />
-                            </a>
-                          ) : (
-                            <span className="settings-disabled-hint">—</span>
-                          )}
+                            {d.publicationStatus === 'published' && (
+                              <a
+                                className="settings-progress-link"
+                                href={'#automatic?destinationId=' + d.id}
+                                aria-label={`Xem tiến trình ${d.name}`}
+                              >
+                                Xem tiến trình <ArrowRight size={16} />
+                              </a>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -1,3 +1,10 @@
+import {
+  MapPin,
+  NotebookPen,
+  ListChecks,
+  CheckCircle2,
+  ChevronRight,
+} from '../icons';
 import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
 import { catalogQuality } from '@goease/contracts';
 import { useEffect, useState } from 'react';
@@ -92,6 +99,7 @@ export function AdminDashboard({
 
                 link: href('status=all'),
                 tone: 'blue',
+                Icon: MapPin,
               },
               {
                 title: 'Địa điểm nháp',
@@ -99,6 +107,7 @@ export function AdminDashboard({
 
                 link: href('status=draft'),
                 tone: 'amber',
+                Icon: NotebookPen,
               },
               {
                 title: 'Cần kiểm tra',
@@ -106,6 +115,7 @@ export function AdminDashboard({
 
                 link: '#work',
                 tone: 'orange',
+                Icon: ListChecks,
               },
               {
                 title: 'Đã xuất bản',
@@ -113,12 +123,19 @@ export function AdminDashboard({
 
                 link: href('status=published'),
                 tone: 'green',
+                Icon: CheckCircle2,
               },
             ].map((k) => (
               <a className={`admin-kpi ${k.tone}`} href={k.link} key={k.title}>
+                <span className="admin-kpi-symbol" aria-hidden="true">
+                  <k.Icon size={26} />
+                </span>
                 <div>
                   <span>{k.title}</span>
                   <strong>{k.value.toLocaleString('vi-VN')}</strong>
+                  <small>
+                    Xem danh sách <ChevronRight size={12} />
+                  </small>
                 </div>
               </a>
             ))}
@@ -186,6 +203,7 @@ export function AdminDashboard({
                   </p>
                 )}
               </section>
+              <StatusDistribution data={data} />
               <details className="admin-panel admin-overview-map">
                 <summary>Xem địa điểm trên bản đồ</summary>
                 <div className="admin-panel-title">
@@ -326,6 +344,69 @@ function Quality({ data }: { data: AdminOverview }) {
           khả năng khám phá, Goe và ngân sách được kiểm tra riêng.
         </p>
       </details>
+    </section>
+  );
+}
+
+function StatusDistribution({ data }: { data: AdminOverview }) {
+  const draftEnd = data.total ? (data.draft / data.total) * 100 : 0;
+  const publishedEnd = data.total
+    ? ((data.draft + data.published) / data.total) * 100
+    : 0;
+  const gradient = data.total
+    ? `conic-gradient(#e6b642 0 ${draftEnd}%, #468bed ${draftEnd}% ${publishedEnd}%, #a4afbe ${publishedEnd}% 100%)`
+    : '#edf0f4';
+  return (
+    <section className="admin-panel admin-status-distribution">
+      <div className="admin-panel-title">
+        <h2>Trạng thái địa điểm</h2>
+        <a href="#places" aria-label="Xem danh sách địa điểm">
+          <ChevronRight size={18} />
+        </a>
+      </div>
+      <div className="admin-distribution-body">
+        <div
+          className="admin-distribution-donut"
+          style={{ background: gradient }}
+          role="img"
+          aria-label={`${data.draft} bản nháp, ${data.published} đã xuất bản, ${data.archived} đã lưu trữ`}
+        >
+          <div>
+            <strong>{data.total.toLocaleString('vi-VN')}</strong>
+            <small>Địa điểm</small>
+          </div>
+        </div>
+        <ul>
+          {[
+            {
+              label: 'Bản nháp',
+              count: data.draft,
+              color: '#e6b642',
+              status: 'draft',
+            },
+            {
+              label: 'Đã xuất bản',
+              count: data.published,
+              color: '#468bed',
+              status: 'published',
+            },
+            {
+              label: 'Đã lưu trữ',
+              count: data.archived,
+              color: '#a4afbe',
+              status: 'archived',
+            },
+          ].map((row) => (
+            <li key={row.status}>
+              <a href={`#places?status=${row.status}`}>
+                <i style={{ background: row.color }} aria-hidden="true" />
+                <span>{row.label}</span>
+                <strong>{row.count.toLocaleString('vi-VN')}</strong>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }

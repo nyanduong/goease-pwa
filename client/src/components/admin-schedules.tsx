@@ -1,3 +1,4 @@
+import { AdminPageHelp } from './admin-page-help';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   CalendarClock,
@@ -163,8 +164,10 @@ export function AdminSchedules({
     <section className="admin-v2-content admin-schedules">
       <div className="schedule-page-heading">
         <div>
-          <h1>Tự động cập nhật</h1>
-          <p>Quản lý lịch lấy dữ liệu cho từng khu vực.</p>
+          <div className="admin-title-line">
+            <h1>Tự động cập nhật</h1>
+            <AdminPageHelp title="Tự động cập nhật" />
+          </div>
         </div>
         {tab === 'schedules' && items.length > 0 && (
           <button
@@ -308,15 +311,15 @@ export function AdminSchedules({
                           : 'Chưa có lần chạy tiếp theo'}
                       </small>
                     </div>
-                    <span
-                      className={`schedule-status ${s.enabled ? 'is-on' : ''}`}
-                    >
-                      {s.enabled ? 'Đang bật' : 'Tạm dừng'}
-                    </span>
                     <button
                       className="schedule-toggle"
                       role="switch"
                       aria-checked={s.enabled}
+                      title={
+                        s.enabled
+                          ? 'Tạm dừng lịch cập nhật'
+                          : 'Bật lịch cập nhật'
+                      }
                       aria-label={`Tự động cập nhật ${name(s.destinationId)}`}
                       disabled={busy || !!error || (!s.enabled && !connected)}
                       onClick={() => {

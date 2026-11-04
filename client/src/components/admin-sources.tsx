@@ -1,3 +1,4 @@
+import { AdminPageHelp } from './admin-page-help';
 import { useEffect, useState } from 'react';
 import {
   ArrowRight,
@@ -118,8 +119,10 @@ export function AdminSources({
     <section className="admin-v2-content admin-sources-page">
       <header className="sources-heading">
         <div>
-          <h1>Nguồn dữ liệu</h1>
-          <p>Nơi GoEase lấy thông tin địa điểm.</p>
+          <div className="admin-title-line">
+            <h1>Nguồn dữ liệu</h1>
+            <AdminPageHelp title="Nguồn dữ liệu" />
+          </div>
         </div>
         <button
           className="journey-outline"
