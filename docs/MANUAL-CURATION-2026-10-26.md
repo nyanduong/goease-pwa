@@ -10,18 +10,18 @@ Thời điểm UTC: 2026-10-25T19:00:52.374Z. 34/34 tỉnh thành đã bật; jo
 
 Đã bổ sung 5 địa điểm mới: Dinh Độc Lập, Công viên Thủ Lệ, Thung Nham, Bảo tàng Đà Nẵng và Mỹ Sơn. Bảng gồm cả 5 mục đã hoàn thiện trước đó để kiểm tra liên tục.
 
-| Địa điểm | Trạng thái hiện tại | Giá nguồn VND | Bìa HTTP 200 | Qua validation field xuất bản | Goe lịch/ngân sách |
-| --- | --- | ---: | --- | --- | --- |
-| Bảo tàng Nghệ thuật Điêu khắc Chăm Đà Nẵng | published | 60000 | Có | Có | Có |
-| Nhà tù Hoả Lò | published | 50000 | Có | Có | Có |
-| Bảo tàng Chứng tích Chiến tranh | published | 60000 | Có | Có | Có |
-| Bảo tàng Dân tộc học Việt Nam | published | 40000 | Có | Có | Có |
-| Di San Vô Giá | published | 0 | Có | Có | Có |
-| Dinh Độc Lập | draft | 40000 | Có | Có | Có |
-| Công viên Thủ Lệ | draft | 50000 | Có | Có | Có |
-| Thung Nham Bird Park | draft | 250000 | Có | Có | Chưa |
-| Bảo tàng Đà Nẵng | published | 50000 | Có | Có | Có |
-| Thánh địa Mỹ Sơn | draft | 100000 | Có | Có | Chưa |
+| Địa điểm                                   | Trạng thái hiện tại | Giá nguồn VND | Bìa HTTP 200 | Qua validation field xuất bản | Goe lịch/ngân sách |
+| ------------------------------------------ | ------------------- | ------------: | ------------ | ----------------------------- | ------------------ |
+| Bảo tàng Nghệ thuật Điêu khắc Chăm Đà Nẵng | published           |         60000 | Có           | Có                            | Có                 |
+| Nhà tù Hoả Lò                              | published           |         50000 | Có           | Có                            | Có                 |
+| Bảo tàng Chứng tích Chiến tranh            | published           |         60000 | Có           | Có                            | Có                 |
+| Bảo tàng Dân tộc học Việt Nam              | published           |         40000 | Có           | Có                            | Có                 |
+| Di San Vô Giá                              | published           |             0 | Có           | Có                            | Có                 |
+| Dinh Độc Lập                               | draft               |         40000 | Có           | Có                            | Có                 |
+| Công viên Thủ Lệ                           | draft               |         50000 | Có           | Có                            | Có                 |
+| Thung Nham Bird Park                       | draft               |        250000 | Có           | Có                            | Chưa               |
+| Bảo tàng Đà Nẵng                           | published           |         50000 | Có           | Có                            | Có                 |
+| Thánh địa Mỹ Sơn                           | draft               |        100000 | Có           | Có                            | Chưa               |
 
 Đọc lại audit/version và URL nguồn cho cả 10 mục; giờ được đối chiếu, ngày kiểm tra26/10, reviewAfter02/11/2026. Field validation không xác nhận ảnh đúng địa điểm hoặc đủ mọi loại nhóm/ngày lễ. Thung Nham và Mỹ Sơn vẫn restricted cho ngân sách vì điều kiện nhóm/quốc tịch; không coi giá cơ bản là giá áp dụng mọi khách.
 
@@ -29,13 +29,11 @@ Thời điểm UTC: 2026-10-25T19:00:52.374Z. 34/34 tỉnh thành đã bật; jo
 
 ## Nguồn và điều kiện
 
-
 - [Dinh Độc Lập](https://dinhdoclap.gov.vn/gio-tham-quan/): vé chỉ vào Dinh40.000đ khác vé tổng hợp80.000đ, giờ07:00–18:00; không gộp Nhà trưng bày/xe điện vào giá cơ bản.
 - [Vườn thú Hà Nội](https://vuonthuhanoi.com/): vé trên1,3m50.000đ; khung trưng bày động vật08:00–16:00 khác giờ công viên theo mùa.
 - [Thung Nham](https://thungnham.com/dich-vu/ve-tham-quan-thung-nham/):250.000đ từ1,3m, có thuyền vườn chim và Hang Bụt, giờ mùa hè07:00–18:00/mùa đông07:30–17:30. Có điều kiện tối thiểu3vé/thuyền lúc vắng cho khách lẻ dưới2người; giữ audience=restricted, chưa dùng làm ngân sách chung cho mọi nhóm.
 - [Bảo tàng Đà Nẵng cơ sở1](https://baotangdanang.vn/thong-bao-gia-ve-tham-quan-bao-tang-da-nang-ap-dung-tu-ngay-03-7-2025): đã đọc ảnh bảng phí chính thức50.000đ, giờ08:00–17:00, địa chỉ31Trần Phú. Giữ rõ đối tượng miễn/giảm và ngày miễn. Ảnh Commons Bảo tàng Đà Nẵng.jpeg chụp04/03/2018 thuộc cơ sở cũ; chưa dùng cho cơ sở mới.
 - [Cổng vé Mỹ Sơn](https://mysonticketonline.vn/information):100.000đ khách Việt Nam,150.000đ khách nước ngoài; bán vé06:00–17:30, tham quan06:00–18:00. Audience=restricted để không suy giá Việt Nam cho mọi khách khi Goe chưa có ngữ cảnh quốc tịch. Hostname www lỗi certificate name mismatch; dùng đúng hostname không-www có TLS hợp lệ, không bỏ qua kiểm tra chứng chỉ.
-
 
 ## Đối chiếu hàng loạt bổ sung
 
