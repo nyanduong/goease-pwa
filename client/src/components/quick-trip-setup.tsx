@@ -1,3 +1,4 @@
+import { TripDatePicker } from './trip-date-picker';
 import { useState, useEffect } from 'react';
 import { useMascot } from '../mascot/context';
 import type { DestinationDto, TripInput } from '@goease/contracts';
@@ -115,11 +116,9 @@ export function QuickTripSetup({
         <div className="customer-trip-dates">
           <label className="journey-field">
             Ngày khởi hành
-            <input
-              type="date"
+            <TripDatePicker
               value={draft.startDate}
-              onChange={(event) => {
-                const date = event.target.value;
+              onChange={(date) => {
                 if (!date || !Number.isFinite(Date.parse(date))) return;
                 onChange(
                   withDays({

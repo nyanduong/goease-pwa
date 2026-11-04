@@ -1,10 +1,13 @@
+import { useState } from 'react';
+import { Sheet } from '../components/journey-sheet';
 import { Settings } from '../customer-icons';
 import { useMascot } from './context';
 
-export function MascotSettings() {
+export function MascotSettings({ compact = false }: { compact?: boolean }) {
+  const [open, setOpen] = useState(false);
   const { preferences, update } = useMascot();
-  return (
-    <details className="mascot-settings">
+  const contents = (
+    <details className="mascot-settings" open>
       <summary aria-label="Tùy chọn linh vật Goe">
         <Settings size={18} />
         <span>Tùy chọn Goe</span>
@@ -39,5 +42,24 @@ export function MascotSettings() {
         </label>
       </div>
     </details>
+  );
+  return compact ? (
+    <>
+      <button
+        type="button"
+        className="goe-settings-icon"
+        aria-label="Cài đặt Goe"
+        onClick={() => setOpen(true)}
+      >
+        <Settings size={18} />
+      </button>
+      {open && (
+        <Sheet title="Cài đặt Goe" onClose={() => setOpen(false)}>
+          {contents}
+        </Sheet>
+      )}
+    </>
+  ) : (
+    contents
   );
 }

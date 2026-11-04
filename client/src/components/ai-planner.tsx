@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import { plannerTiming } from '@goease/contracts';
 import { useEffect, useRef, useState } from 'react';
 import { Sparkles } from '../icons';
@@ -101,12 +102,16 @@ export function AiPlanner({
           <h2>
             <Sparkles size={19} /> Để Goe xếp lịch giúp bạn
           </h2>
-          <p>
-            Goe chọn điểm dừng và giờ đi từ những nơi có đủ giá và giờ hoạt
-            động. Khả năng xếp lịch phụ thuộc dữ liệu tại điểm đến. Khi bấm tạo,
-            ngày đi, số người, ngân sách và sở thích được gửi tới dịch vụ AI
-            được cấu hình cho Goe. Tên, email và ghi chú riêng không được gửi.
-          </p>
+          <AppInfo title="Cách Goe tạo lịch">
+            {' '}
+            <p>
+              Goe chọn điểm dừng và giờ đi từ những nơi có đủ giá và giờ hoạt
+              động. Khả năng xếp lịch phụ thuộc dữ liệu tại điểm đến. Khi bấm
+              tạo, ngày đi, số người, ngân sách và sở thích được gửi tới dịch vụ
+              AI được cấu hình cho Goe. Tên, email và ghi chú riêng không được
+              gửi.
+            </p>
+          </AppInfo>
         </>
       )}
       <button
@@ -144,16 +149,19 @@ export function AiPlanner({
               Kiểm tra kết quả đang chờ
             </button>
           )}
-          <p>
-            {quotaReached
-              ? 'Hôm nay đã hết lượt tạo lịch. Bạn có thể tự chọn điểm dừng hoặc quay lại vào ngày mai.'
-              : catalogUnavailable
-                ? 'GoEase cần bổ sung địa điểm phù hợp cho chuyến này. Bấm tạo lại với cùng thông tin sẽ chưa giải quyết được. Bạn có thể giữ thông tin hoặc tự chọn điểm dừng.'
-                : immediatePreview
-                  ? 'Thử lại bằng nút tạo lịch, hoặc chọn “Tự chọn điểm dừng” bên dưới.'
-                  : 'Bạn có thể tạo lại, hoặc quay về lịch trình để tự chỉnh.'}{' '}
-            Thông tin bạn chọn vẫn được giữ.
-          </p>
+          <AppInfo title="Vì sao chưa tạo được lịch?">
+            {' '}
+            <p>
+              {quotaReached
+                ? 'Hôm nay đã hết lượt tạo lịch. Bạn có thể tự chọn điểm dừng hoặc quay lại vào ngày mai.'
+                : catalogUnavailable
+                  ? 'GoEase cần bổ sung địa điểm phù hợp cho chuyến này. Bấm tạo lại với cùng thông tin sẽ chưa giải quyết được. Bạn có thể giữ thông tin hoặc tự chọn điểm dừng.'
+                  : immediatePreview
+                    ? 'Thử lại bằng nút tạo lịch, hoặc chọn “Tự chọn điểm dừng” bên dưới.'
+                    : 'Bạn có thể tạo lại, hoặc quay về lịch trình để tự chỉnh.'}{' '}
+              Thông tin bạn chọn vẫn được giữ.
+            </p>
+          </AppInfo>
         </div>
       )}
       {proposal && (

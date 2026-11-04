@@ -570,3 +570,8 @@ Ngày `reviewAfter` là nhắc việc biên tập cho admin, không phải ngày
 ## AI-02 — đầu vào xếp hạng gọn, 04/11/2026
 
 Tạo lịch mới qua FULLDICHVU chỉ gửi mã tạm P01..P30, tên/loại/vị trí rút gọn, khả năng phục vụ bữa ăn/café và sở thích, số ngày. Không gửi giá, nguồn giá, ghi chú hoặc tên chuyến. AI chỉ xếp mã; server kiểm mã và dựng lịch/giờ/chi phí. Giữ chặn phản hồi bị cắt, sai JSON, mã lạ; không tự thử lại hoặc đổi provider. Giới hạn đầu ra 8192 sau khi thử thật ghi nhận phản hồi JSON dưới 100 ký tự nhưng completion_tokens sát 4096. Không thêm tham số tắt thinking khi chưa xác nhận gateway hỗ trợ. Không đổi model hoặc quota.
+
+
+## AUTH-OTP-01 — đổi mật khẩu khi đã đăng nhập, 04/11/2026
+
+Mọi đổi mật khẩu `/me/password` phải có mã email 6 chữ số được phát qua `/me/password/otp`, ngoài mật khẩu hiện tại hợp lệ. Mã có hiệu lực 10 phút, gửi lại sau 60 giây, tối đa 5 lần thử; gắn phiên và mật khẩu mới đã yêu cầu. Không lưu mã rõ hoặc mật khẩu rõ. Mã dùng một lần trong cùng transaction đổi mật khẩu/thu hồi phiên khác/audit; lỗi audit phải rollback cả việc dùng mã. Receipt idempotency của phiên hiện tại vẫn cho phép thử lại cùng thao tác khi mất phản hồi. Không có bypass khi SMTP chưa cấu hình hoặc gửi thất bại. Mail dùng cùng transport SMTP hiện có nhưng tiêu đề/nội dung riêng cho đổi mật khẩu. Tài khoản Google-only không được tạo mật khẩu bằng luồng này.

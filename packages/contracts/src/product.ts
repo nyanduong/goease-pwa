@@ -278,6 +278,10 @@ export const profileUpdateSchema = z.strictObject({
 });
 export const passwordChangeSchema = z
   .strictObject({
+    otp: z
+      .string()
+      .regex(/^\d{6}$/)
+      .optional(),
     currentPassword: z.string().min(1).max(128),
     newPassword: z.string().min(12).max(128),
   })

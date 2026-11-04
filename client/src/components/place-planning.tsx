@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import {
   visitPriceLabel,
   visitInfoForEditor,
@@ -168,18 +169,20 @@ export function ActivityCatalogInfo({
   }, [placeId, retry]);
   if (error)
     return (
-      <p className="journey-sheet-note">
-        Chưa tải được thông tin tham khảo. Nội dung điểm dừng vẫn được giữ.{' '}
-        <button
-          type="button"
-          onClick={() => {
-            setError(false);
-            setRetry((v) => v + 1);
-          }}
-        >
-          Thử lại
-        </button>
-      </p>
+      <AppInfo title="Thông tin cần biết">
+        <p>
+          Chưa tải được thông tin tham khảo. Nội dung điểm dừng vẫn được giữ.{' '}
+          <button
+            type="button"
+            onClick={() => {
+              setError(false);
+              setRetry((v) => v + 1);
+            }}
+          >
+            Thử lại
+          </button>
+        </p>
+      </AppInfo>
     );
   if (!place) return <p role="status">Đang tải thông tin địa điểm…</p>;
   return (

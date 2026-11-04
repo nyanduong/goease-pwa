@@ -157,6 +157,21 @@ export function authModels(connection: Connection) {
         default: null,
       },
       passwordChangeKey: { type: String, default: null },
+      passwordOtp: {
+        type: new Schema(
+          {
+            hash: String,
+            nonce: String,
+            requestHash: String,
+            expiresAt: Date,
+            sentAt: Date,
+            attempts: { type: Number, default: 0 },
+          },
+          { _id: false },
+        ),
+        default: null,
+        select: false,
+      },
     },
     {
       collection: 'auth_sessions',

@@ -1,7 +1,7 @@
 export function SourceCredit({ expanded = false }: { expanded?: boolean }) {
+  if (!expanded) return null;
   return (
-    <details className="place-source-credit" open={expanded}>
-      <summary>Bản quyền dữ liệu</summary>
+    <section className="place-source-credit">
       <small>
         Powered by{' '}
         <a href="https://www.geoapify.com/" target="_blank" rel="noreferrer">
@@ -24,6 +24,6 @@ export function SourceCredit({ expanded = false }: { expanded?: boolean }) {
           ODbL
         </a>
       </small>
-    </details>
+    </section>
   );
 }

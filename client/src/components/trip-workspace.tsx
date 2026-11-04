@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import { confirmAction } from '../confirmation';
 import { PlacePhoto } from './place-photo';
 import { images } from '@goease/media';
@@ -735,11 +736,13 @@ export function TripWorkspace({
             </button>
           ))}
         </div>
-        <p className="journey-sheet-note">
-          Goe gợi ý tối đa{' '}
-          {{ relaxed: 4, balanced: 5, active: 6 }[draft.preferences.pace]} điểm
-          mỗi ngày theo nhịp này. Bạn vẫn có thể tự thêm điểm sau.
-        </p>
+        <AppInfo title="Thông tin cần biết">
+          <p>
+            Goe gợi ý tối đa{' '}
+            {{ relaxed: 4, balanced: 5, active: 6 }[draft.preferences.pace]}{' '}
+            điểm mỗi ngày theo nhịp này. Bạn vẫn có thể tự thêm điểm sau.
+          </p>
+        </AppInfo>
       </section>
     </>
   );
@@ -820,6 +823,7 @@ export function TripWorkspace({
             onDatesConfirmed={() => setDatesConfirmed(true)}
             onManual={nextStep}
             onPreview={(value) => {
+              setDatesConfirmed(true);
               onChange(value);
               setStep(2);
               setTab('schedule');
@@ -886,9 +890,9 @@ export function TripWorkspace({
               <ArrowRight size={19} />
             </button>
             {!loaded && (
-              <p className="journey-caption">
-                Chọn điểm dừng từ gợi ý của GoEase, rồi tự xếp lịch.
-              </p>
+              <AppInfo title="Thông tin cần biết">
+                <p>Chọn điểm dừng từ gợi ý của GoEase, rồi tự xếp lịch.</p>
+              </AppInfo>
             )}
           </>
         ) : (
@@ -909,15 +913,14 @@ export function TripWorkspace({
                     ? `${shortDate(draft.startDate)}–${shortDate(draft.endDate)}`
                     : 'Chưa chốt ngày đi'}
                 </p>
-                <details>
-                  <summary>Lưu ý về lịch trình</summary>
+                <AppInfo title="Lưu ý về lịch trình">
                   <p>
                     Lịch dành cho ngày trọn vẹn; bạn có thể đổi giờ theo lúc đến
                     và về. Thời gian đi đường là ước tính. Giá chưa có được giữ
                     là “Chưa rõ”; chỗ ở và di chuyển chưa thêm không nằm trong
                     chi phí dự kiến. Lịch này chưa được lưu vào tài khoản.
                   </p>
-                </details>
+                </AppInfo>
               </div>
             )}
             <>
@@ -1051,13 +1054,12 @@ export function TripWorkspace({
                   />
                 ) : loaded ? (
                   <section aria-label="Ghi lại chi tiêu">
-                    <details className="expense-help">
-                      <summary>Ghi chi tiêu là tùy chọn</summary>
+                    <AppInfo title="Cách tính chi phí">
                       <p>
                         Tùy chọn: ghi những khoản bạn đã trả để tiện xem lại.
                         Bạn không cần ghi chi tiêu để tiếp tục chuyến đi.
                       </p>
-                    </details>
+                    </AppInfo>
                     <TripExpenses
                       key={loaded.id}
                       tripId={loaded.id}
@@ -1498,10 +1500,12 @@ export function TripWorkspace({
                   />
                 </label>
               </details>
-              <p className="journey-sheet-note">
-                Lưu kế hoạch riêng vào tài khoản. Chưa đặt phòng, vé hoặc dịch
-                vụ.
-              </p>
+              <AppInfo title="Thông tin cần biết">
+                <p>
+                  Lưu kế hoạch riêng vào tài khoản. Chưa đặt phòng, vé hoặc dịch
+                  vụ.
+                </p>
+              </AppInfo>
               {error && (
                 <p role="alert" className="journey-error">
                   {error}
@@ -1879,11 +1883,13 @@ export function TripWorkspace({
             setReplacing(null);
           }}
         >
-          <p className="journey-sheet-note">
-            {replacing
-              ? `Thay ${replacing.title}, giữ khung giờ hiện tại. Dùng giá tham khảo mới nếu có.`
-              : `${destinationName} · Ngày ${dayIndex + 1}. Giá tham khảo có thể chỉnh sửa.`}
-          </p>
+          <AppInfo title="Thông tin cần biết">
+            <p>
+              {replacing
+                ? `Thay ${replacing.title}, giữ khung giờ hiện tại. Dùng giá tham khảo mới nếu có.`
+                : `${destinationName} · Ngày ${dayIndex + 1}. Giá tham khảo có thể chỉnh sửa.`}
+            </p>
+          </AppInfo>
           {placesStatus === 'loading' ? (
             <p role="status">Đang tìm gợi ý…</p>
           ) : placesStatus === 'error' ? (

@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import { confirmAction } from '../confirmation';
 import { PlaceGalleryPhoto, PlacePhoto } from './place-photo';
 import { images } from '@goease/media';
@@ -376,7 +377,7 @@ export function ExplorePage({
             const Icon = icons[p.category];
             return (
               <article
-                className={`explore-card ${i === 0 && !category && !query ? 'featured' : ''}`}
+                className={`explore-card ${savedOnly ? 'saved-place-card' : ''} ${i === 0 && !category && !query ? 'featured' : ''}`}
                 key={p.id}
               >
                 <button
@@ -407,12 +408,7 @@ export function ExplorePage({
                   </span>
                 </div>
                 {p.images?.[0] && (
-                  <details className="photo-source">
-                    <summary>
-                      {p.images[0].kind === 'ai_illustration'
-                        ? 'Ảnh minh họa AI'
-                        : 'Nguồn ảnh'}
-                    </summary>
+                  <AppInfo title="Nguồn ảnh">
                     <p>
                       <a
                         href={p.images[0].sourceUrl}
@@ -436,7 +432,7 @@ export function ExplorePage({
                         </>
                       )}
                     </p>
-                  </details>
+                  </AppInfo>
                 )}
                 <button
                   className="explore-save"
@@ -848,8 +844,7 @@ export function PlaceDetail({
             </small>
           )}
         </details>
-        <details className="place-tip" id="place-advice">
-          <summary>Gợi ý khi ghé thăm</summary>
+        <AppInfo id="place-advice" title="Lưu ý địa điểm">
           <img src={images.goeMascot} alt="Goe" />
           <div>
             <h2>
@@ -858,7 +853,7 @@ export function PlaceDetail({
             </h2>
             <p>{place.tip}</p>
           </div>
-        </details>
+        </AppInfo>
         {place.highlights.length > 0 && (
           <section className="place-highlights">
             <h2>Điểm ghé thăm</h2>
@@ -882,8 +877,7 @@ export function PlaceDetail({
             <PlacePlanning place={place} />
           </details>
         )}
-        <details className="place-notes">
-          <summary>Ghi chú của bạn</summary>
+        <AppInfo title="Ghi chú của bạn" icon={<Pencil size={18} />}>
           <label>
             <Pencil size={17} />
             <textarea
@@ -917,7 +911,7 @@ export function PlaceDetail({
               Đăng nhập để ghi chú
             </button>
           )}
-        </details>
+        </AppInfo>
         {error && (
           <div className="explore-status" role="alert">
             {error}
@@ -1051,11 +1045,6 @@ export function PlaceDetail({
                 </button>
               </>
             )}
-            {!tripsLoading && !trips.length && !error && (
-              <p>
-                Chưa có chuyến đi phù hợp. Bạn có thể tạo bản nháp mới bên trên.
-              </p>
-            )}
             {error && (
               <p role="alert">
                 {error}{' '}
@@ -1064,10 +1053,6 @@ export function PlaceDetail({
                 </button>
               </p>
             )}
-            <p className="place-source">
-              Chỉ hiện chuyến đi của bạn tại {place.destinationName}. Bản nháp
-              mới cần được lưu trong màn chỉnh sửa.
-            </p>
           </section>
         </div>
       )}

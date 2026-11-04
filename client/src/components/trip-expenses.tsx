@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import { confirmAction } from '../confirmation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
@@ -278,13 +279,15 @@ export function TripExpenses({
                 </dd>
               </div>
             </dl>
-            <p className="expense-caption">
-              {data.budget.missingCostCount > 0
-                ? `${data.budget.missingCostCount} điểm dừng chưa có giá dự kiến. `
-                : ''}
-              Chỉ gồm khoản chi bạn đã nhập; chênh lệch âm chưa có nghĩa chuyến
-              đi tiết kiệm.
-            </p>
+            <AppInfo title="Thông tin cần biết">
+              <p>
+                {data.budget.missingCostCount > 0
+                  ? `${data.budget.missingCostCount} điểm dừng chưa có giá dự kiến. `
+                  : ''}
+                Chỉ gồm khoản chi bạn đã nhập; chênh lệch âm chưa có nghĩa
+                chuyến đi tiết kiệm.
+              </p>
+            </AppInfo>
           </details>
           <div className="expense-categories" aria-label="Chi tiêu theo nhóm">
             {data.actual.categories.map((c) => (
@@ -449,10 +452,12 @@ export function TripExpenses({
                 />
               </label>
             </fieldset>
-            <p className="expense-caption">
-              Nhập tổng khoản chi, không nhân thêm số người. Có thể ghi khoản
-              chi trước hoặc sau ngày đi.
-            </p>
+            <AppInfo title="Thông tin cần biết">
+              <p>
+                Nhập tổng khoản chi, không nhân thêm số người. Có thể ghi khoản
+                chi trước hoặc sau ngày đi.
+              </p>
+            </AppInfo>
             {feedback}
             <button
               className="button button-primary"

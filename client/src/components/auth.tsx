@@ -63,6 +63,7 @@ export function AuthPage({
 
       {/* Form card column */}
       <div className="auth-card">
+        <nav className="auth-back">{link('/', '‹', 'auth-back-link')}</nav>
         <div className="customer-auth-brand">
           <Brand />
           <img className="auth-companion" src={images.goeMascot} alt="" />

@@ -35,7 +35,14 @@ test(
       },
     };
     const logger = createLogger('test', (v) => logs.push(v));
+    let passwordOtp = '';
     const product = createProduct(harness.connection, config, {
+      passwordChangeEmail: {
+        configured: true,
+        send: async (m) => {
+          passwordOtp = m.code;
+        },
+      },
       resetEmail: sender,
       logger,
     });
@@ -261,11 +268,26 @@ test(
           assert.equal(
             (
               await call(
+                '/me/password/otp',
+                'POST',
+                {
+                  currentPassword: 'Recovery-new-password-2026',
+                  newPassword: 'Changed-in-account-2026',
+                },
+                session,
+              )
+            ).status,
+            200,
+          );
+          assert.equal(
+            (
+              await call(
                 '/me/password',
                 'POST',
                 {
                   currentPassword: 'Recovery-new-password-2026',
                   newPassword: 'Changed-in-account-2026',
+                  otp: passwordOtp,
                 },
                 session,
               )

@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, RotateCcw, Trash2 } from '../customer-icons';
 import type { TripDto, TripTrashDto, TrashedTripDto } from '@goease/contracts';
@@ -102,9 +103,12 @@ export function TripTrash({
       </header>
       <div className="journey-list-heading">
         <h1 className="sr-only">Chuyến đi đã xóa</h1>
-        <p>
-          Khôi phục lịch trình và chi tiêu. Các link chia sẻ cũ vẫn bị thu hồi.
-        </p>
+        <AppInfo title="Về khôi phục chuyến đi">
+          <p>
+            Khôi phục cả lịch trình và chi tiêu. Link chia sẻ cũ không được mở
+            lại.
+          </p>
+        </AppInfo>
       </div>
       {!signedIn ? (
         <div className="journey-empty">

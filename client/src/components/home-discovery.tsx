@@ -1,5 +1,5 @@
+import { Brand } from './ui';
 import { Bell } from '../customer-icons';
-import { AccountAvatar } from './account-avatar';
 import { images, destinationCovers } from '@goease/media';
 import { useState } from 'react';
 import {
@@ -168,13 +168,10 @@ export function HomeDiscovery({
           <div className="discovery-banner-copy">
             <button
               className="customer-home-profile"
-              onClick={() => onNavigate(user ? '/account' : '/login')}
+              aria-label="GoEase · Trang chủ"
+              onClick={() => onNavigate('/')}
             >
-              <AccountAvatar user={user} />
-              <span>
-                <small>Xin chào,</small>
-                <strong>{user?.displayName ?? 'Bạn muốn đi đâu?'}</strong>
-              </span>
+              <Brand />
             </button>
             <button
               className="customer-home-saved"
@@ -202,17 +199,19 @@ export function HomeDiscovery({
               Khám phá ngay <ArrowRight size={15} />
             </button>
           </span>
-          <div className="discovery-start">
-            <button
-              data-start-trip
-              className="button home-destination-search"
-              onClick={() => setShowAllDestinations(true)}
-            >
-              <Search size={18} aria-hidden="true" /> Bạn muốn đi đâu?
-              <ChevronRight size={18} aria-hidden="true" />
-            </button>
-          </div>
         </section>
+      )}
+      {mode === 'home' && (
+        <div className="discovery-start">
+          <button
+            data-start-trip
+            className="button home-destination-search"
+            onClick={() => setShowAllDestinations(true)}
+          >
+            <Search size={18} aria-hidden="true" /> Bạn muốn đi đâu?
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </div>
       )}
       {mode === 'home' && (
         <nav

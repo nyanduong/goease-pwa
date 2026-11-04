@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import { createTravelAssistant } from '../mascot/ai-service';
 import { MascotRenderer } from '../mascot/renderer';
 import { MascotSettings } from '../mascot/settings';
@@ -6,13 +7,13 @@ import { syncChatState, type ChatVisualState } from '../mascot/chat-state';
 import { images } from '@goease/media';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Plus,
   ArrowLeft,
   Check,
   Coins,
   Leaf,
   Send,
   X,
-  Info,
 } from '../customer-icons';
 import type { TripDto, GoeProposal, GoeRequest } from '@goease/contracts';
 import { api } from '../api';
@@ -219,8 +220,35 @@ export function GoeChat({
           <strong>Goe AI</strong>
           <small>Bạn đồng hành chuyến đi</small>
         </div>
+        <div className="goe-header-tools">
+          <button
+            type="button"
+            aria-label="Phiên chat mới"
+            disabled={busy || preview}
+            onClick={() => {
+              setLines([]);
+              setProposal(null);
+              setInput('');
+              setError('');
+              setTripId('');
+              setDayIndex(0);
+              generationKey.current = null;
+              applyKey.current = '';
+              setRetry((v) => v + 1);
+              if (!embedded) history.replaceState({}, '', '/goe');
+            }}
+          >
+            <Plus size={20} />
+          </button>
+          <MascotSettings compact />
+          <AppInfo title="Thông tin gửi cho Goe">
+            <p>
+              Goe dùng lịch trình, số người và sở thích để đề xuất thay đổi. Chỉ
+              áp dụng sau khi bạn xác nhận. Không nhập thông tin nhạy cảm.
+            </p>
+          </AppInfo>
+        </div>
       </header>
-      <MascotSettings />
       <h1 className="sr-only">Trò chuyện với Goe</h1>
       {!signedIn ? (
         <p className="goe-context-notice">
@@ -294,8 +322,7 @@ export function GoeChat({
           >
             Chọn chuyến đi khác
           </button>
-          <details className="goe-pace-details">
-            <summary>Nhịp độ và cách Goe đề xuất</summary>
+          <AppInfo title="Cách Goe xếp lịch">
             <p>
               Nhịp{' '}
               {
@@ -313,21 +340,10 @@ export function GoeChat({
               điểm/ngày. Nếu đã đủ điểm, Goe có thể đề xuất thay một điểm để
               thêm nơi mới. Bạn sẽ xem và xác nhận trước khi lưu.
             </p>
-          </details>
+          </AppInfo>
         </details>
       )}
-      <details className="goe-privacy">
-        <summary>
-          <Info size={21} />
-          <span className="sr-only">Goe sử dụng thông tin nào?</span>
-        </summary>
-        <p className="goe-demo-note">
-          Chưa có thời tiết hoặc giá trực tiếp. Chi phí thiếu vẫn được ghi rõ.
-          Khi gửi, nội dung tin nhắn, lịch theo mã địa điểm, ngày đi, số người,
-          ngân sách và sở thích được gửi tới dịch vụ AI của Goe. Không gửi tên
-          tài khoản hay ghi chú riêng. Đừng nhập thông tin nhạy cảm.
-        </p>
-      </details>
+
       {error && !preview && (
         <div role="alert" className="goe-context-notice">
           <p>{error}</p>
