@@ -98,13 +98,27 @@ const valid = () => ({
   ],
 });
 
-test('Goe rejects missing, stale, incomplete and oversized prices and unknown hours before selection', () => {
+test('Goe rejects missing, incomplete and oversized prices and unknown hours before selection', () => {
   assert.equal(eligibleForPlanner(place, 4), true);
+  assert.equal(
+    eligibleForPlanner(
+      {
+        ...place,
+        referencePrice: {
+          ...place.referencePrice!,
+          checkedAt: '1999-01-01',
+          reviewAfter: '2000-01-01',
+        },
+      },
+      4,
+    ),
+    true,
+  );
   const invalid: PlaceDto[] = [
     { ...place, referencePrice: null },
     {
       ...place,
-      referencePrice: { ...place.referencePrice!, reviewAfter: '2000-01-01' },
+      referencePrice: { ...place.referencePrice!, checkedAt: '2099-12-31' },
     },
     {
       ...place,

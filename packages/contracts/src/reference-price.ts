@@ -56,7 +56,6 @@ export function priceReady(
     !!price.inclusions?.trim() &&
     !!price.exclusions?.trim() &&
     price.checkedAt <= catalogToday() &&
-    price.reviewAfter >= catalogToday() &&
     travelers >= (price.minTravelers ?? 1) &&
     travelers <= price.maxTravelers
   );

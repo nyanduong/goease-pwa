@@ -401,8 +401,8 @@ export function ReviewDetail({
                 <p>
                   Giá kiểm tra lần cuối ngày {r.place.referencePrice?.checkedAt}
                   ; đến hạn ngày {r.place.referencePrice?.reviewAfter}. Giá này
-                  không dùng cho dự toán mới. Mở địa điểm để cập nhật hoặc bỏ
-                  giá chưa rõ.
+                  vẫn dùng cho chi phí ước tính. Mở địa điểm để kiểm tra, cập
+                  nhật hoặc bỏ giá chưa rõ.
                 </p>
               )}
             </div>

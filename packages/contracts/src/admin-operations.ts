@@ -1,3 +1,4 @@
+import { catalogToday } from './reference-price.js';
 import { z } from 'zod';
 import { priceReady, approvedCover, type AdminPlaceDto } from './catalog.js';
 
@@ -75,7 +76,8 @@ export function catalogQuality(
     });
   if (
     p.referencePrice &&
-    !priceReady(p.referencePrice, p.referencePrice.minTravelers ?? 1)
+    (!priceReady(p.referencePrice, p.referencePrice.minTravelers ?? 1) ||
+      p.referencePrice.reviewAfter < catalogToday())
   )
     issues.push({
       code: 'price',

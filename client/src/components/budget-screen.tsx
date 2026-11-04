@@ -128,13 +128,13 @@ export function BudgetScreen({
         .join(',')
     : '#e4e8dd 0deg 360deg';
   return (
-    <section className="budget-screen" aria-label="Chi phí dự kiến chuyến đi">
+    <section className="budget-screen" aria-label="Chi phí ước tính chuyến đi">
       <header className="budget-heading">
         <span className="budget-context">
           <MapPin size={15} />
           {destinationName} · {days} ngày · {travelers} người
         </span>
-        <h1 className="sr-only">Chi phí dự kiến</h1>
+        <h1 className="sr-only">Chi phí ước tính</h1>
       </header>
       {demo && (
         <p className="mvp-demo-label">BẢN XEM TRƯỚC · SỐ LIỆU MINH HỌA</p>
@@ -156,7 +156,7 @@ export function BudgetScreen({
           </span>
         </div>
         <div className="budget-total-copy">
-          <span className="budget-eyebrow">Tổng dự kiến đã biết · cả nhóm</span>
+          <span className="budget-eyebrow">Chi phí ước tính · cả nhóm</span>
           <strong
             className={`budget-total ${!hasPrices ? 'budget-no-price' : ''}`}
           >

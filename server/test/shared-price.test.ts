@@ -137,3 +137,20 @@ test('restoring a different price cannot bypass either alias of the price lock',
   );
   assert.equal((reverse.referencePrice as ReferencePrice).amountMinor, 40000);
 });
+
+test('overdue editorial review remains an estimate without customer confirmation', () => {
+  const overdue = {
+    ...price,
+    terms: {
+      ...price.terms,
+      checkedAt: '1999-01-01',
+      reviewAfter: '2000-01-01',
+    },
+  };
+  const result = sharedPriceBudget(overdue, 'place');
+  assert.ok(result.referencePrice);
+  assert.equal(result.referencePrice.amountMinor, 40000);
+  assert.equal(priceReady(result.referencePrice, 2), true);
+  assert.deepEqual(result.reasons, []);
+  assert.equal(priceReady(result.referencePrice, 11), false);
+});
