@@ -28,7 +28,6 @@ Schema đã triển khai: photo.selection optional enum automatic/admin; reviewe
 
 Cập nhật tương tác ảnh: nút **Chọn làm bìa** trên thumbnail chọn ngay trong form; **Lưu đề xuất** giữ thay đổi. Bấm trực tiếp thumbnail chỉ mở ảnh lớn trên nền tối, không có khung/thông tin/nút chọn ảnh trong viewer. Bấm ngoài, × hoặc Escape để đóng và giữ bìa hiện tại. Thay các hướng dẫn chọn ảnh qua hộp thoại ở trên. Đã kiểm tra component thật trên trình duyệt desktop/mobile với API ảnh fixture, không khởi tạo DB test do giới hạn dung lượng ổ đĩa.
 
-
 ## Giá & giờ mở cửa — đơn giản hóa thao tác (25/10/2026)
 
 Tab này hiện có hai khối: Giờ mở cửa và Giá tham khảo. Dòng tìm nguồn gọn ở đầu; bỏ ô giờ bị lặp. Giờ gợi ý dùng nút **Dùng giờ này**; giá có lựa chọn **Chưa rõ giá / Miễn phí / Có thu phí**, điều kiện và nguồn kiểm tra, nút **Xác nhận giá này**, cùng xem trước nhãn khách sẽ thấy. Sửa dữ liệu nguồn bỏ trạng thái xác nhận để admin đọc lại. Giá chưa rõ không tự thành miễn phí; giá miễn phí nhập tay vẫn cần nguồn và xác nhận theo contract hiện có.
@@ -38,6 +37,5 @@ Tab này hiện có hai khối: Giờ mở cửa và Giá tham khảo. Dòng tì
 Lưu đề xuất và xuất bản vẫn là hai bước hiện hành. Không tự xác nhận, xuất bản, đổi giá ngân sách hoặc ghi đè giờ admin đã nhập khi kết quả mới đến. Không thêm schema/collection. Sửa validator URL để dữ liệu đang nhập dở trả lỗi validation thay vì ném exception làm trắng trang.
 
 Kiểm chứng: browser test tests/admin-visit-editor.spec.ts dùng API + MongoDB test riêng, nguồn fixture; kiểm tra chưa rõ/miễn phí/có phí, xác nhận nguồn, sửa bỏ xác nhận, lưu/readback, budget độc lập và responsive. Ảnh kiểm tra tại test-results/catalog-evidence/visit-practical-empty.png và visit-practical-confirmed.png.
-
 
 CAT-23 cập nhật: bỏ hoàn toàn form giá ngân sách riêng. Giá tham khảo có một ô số tiền, đơn vị, điều kiện; cùng giá này dùng hiển thị/tính ngân sách khi đủ điều kiện. Điều kiện nhóm/vé gói nằm trong chính khối giá; thông báo đủ/chưa đủ điều kiện ngay tại đó. Giá legacy tự đưa vào form, không nhập lại. Hướng dẫn hiện hành: [SHARED-PLACE-PRICE](SHARED-PLACE-PRICE.md).
