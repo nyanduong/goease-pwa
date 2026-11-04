@@ -1,5 +1,4 @@
 import { createTravelAssistant } from '../client/src/mascot/ai-service.js';
-import type { api } from '../client/src/api.js';
 import { spriteFrameAt } from '../client/src/mascot/sprite-timing.js';
 import { companionChatLayout } from '../client/src/mascot/placement.js';
 import { test } from 'node:test';
@@ -209,7 +208,7 @@ test('all thirty actions have real registered sprite rows within the sheet', () 
 
 test('AI adapter preserves consent, revision, idempotency, and timeout without exposing keys', async () => {
   const calls: { path: string; options?: RequestInit }[] = [];
-  const request: typeof api = async <T>(
+  const request: Parameters<typeof createTravelAssistant>[0] = async <T>(
     path: string,
     options?: RequestInit,
   ) => {
