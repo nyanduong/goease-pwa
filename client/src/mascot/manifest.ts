@@ -1,4 +1,4 @@
-import { atlasRegistration } from './atlas-registration';
+import { atlasRegistration } from './atlas-registration.js';
 export const actionIds = [
   'idle',
   'blink',

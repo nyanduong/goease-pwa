@@ -4,7 +4,7 @@ import {
   type GoeRequest,
   type TripDto,
 } from '@goease/contracts';
-import type { api } from '../api';
+type AssistantRequest = <T>(path: string, options?: RequestInit) => Promise<T>;
 
 export interface TravelAssistantService {
   capabilities: { generalChat: boolean; streaming: boolean };
@@ -24,7 +24,7 @@ export interface TravelAssistantService {
 }
 
 export function createTravelAssistant(
-  request: typeof api,
+  request: AssistantRequest,
 ): TravelAssistantService {
   return {
     capabilities: { generalChat: false, streaming: false },
