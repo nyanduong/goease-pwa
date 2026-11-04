@@ -26,7 +26,6 @@ export function CustomerNotifications() {
       <div className="customer-notification-empty">
         <Bell size={28} />
         <h2>Chưa có thông báo</h2>
-        <p>Tính năng thông báo đang được chuẩn bị.</p>
       </div>
     </section>
   );

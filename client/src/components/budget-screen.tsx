@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
@@ -247,12 +248,8 @@ export function BudgetScreen({
             )}
         </ul>
       </section>
-      <details className="budget-detail-info">
-        <summary>
-          {missing
-            ? `${missing} lượt dừng chưa rõ giá · Chi tiết`
-            : 'Chi tiết và nguồn dữ liệu'}
-        </summary>{' '}
+      <AppInfo title="Chi tiết và nguồn chi phí">
+        {' '}
         <details className="budget-incomplete">
           <summary>
             {missing > 0
@@ -375,7 +372,7 @@ export function BudgetScreen({
             </p>
           )}
         </details>
-      </details>
+      </AppInfo>
       <button className="budget-adjust" onClick={onAdjust}>
         <SlidersHorizontal size={17} />
         Điều chỉnh ngân sách

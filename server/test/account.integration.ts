@@ -22,7 +22,17 @@ test(
       MONGODB_URI: `mongodb://127.0.0.1:27021/${harness.connection.name}?replicaSet=${harness.setName}`,
       AUTH_MAX_ATTEMPTS: '100',
     });
-    const product = createProduct(harness.connection, config);
+    let passwordCode = '';
+    let mailFailure = false;
+    const product = createProduct(harness.connection, config, {
+      passwordChangeEmail: {
+        configured: true,
+        send: async (message) => {
+          if (mailFailure) throw new Error('Test mail delivery failure');
+          passwordCode = message.code;
+        },
+      },
+    });
     await product.initialize();
     await seedDestinations(product.trips.models.Destination);
     const logs: string[] = [];
@@ -34,7 +44,7 @@ test(
     ).listen(0, '127.0.0.1');
     await once(server, 'listening');
     const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1`;
-    const call = (
+    const rawCall = (
       path: string,
       method = 'GET',
       body?: unknown,
@@ -54,6 +64,46 @@ test(
         },
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
+    // Existing transaction tests now issue a real challenge through the API.
+    const issued = new Map<
+      string,
+      Promise<{ otp?: string; response?: Response }>
+    >();
+    const call = async (
+      path: string,
+      method = 'GET',
+      body?: unknown,
+      cookie = '',
+      key: string = randomUUID(),
+      reqId: string = randomUUID(),
+    ): Promise<Response> => {
+      if (path != '/me/password' || !cookie)
+        return rawCall(path, method, body, cookie, key, reqId);
+      if (!issued.has(key))
+        issued.set(
+          key,
+          (async () => {
+            await harness.connection
+              .collection('auth_sessions')
+              .updateMany(
+                { 'passwordOtp.sentAt': { $exists: true } },
+                { $set: { 'passwordOtp.sentAt': new Date(0) } },
+              );
+            const r = await rawCall('/me/password/otp', 'POST', body, cookie);
+            return r.ok ? { otp: passwordCode } : { response: r };
+          })(),
+        );
+      const challenge = await issued.get(key)!;
+      if (challenge.response) return challenge.response;
+      return rawCall(
+        path,
+        method,
+        { ...(body as object), otp: challenge.otp },
+        cookie,
+        key,
+        reqId,
+      );
+    };
     try {
       const register = async (name: string) => {
         const r = await call('/auth/register', 'POST', {
@@ -72,6 +122,161 @@ test(
         assert.equal(r.status, 200);
         return ((await r.json()) as { data: AccountDto }).data;
       };
+      await t.test(
+        'password change requires a session-bound, expiring, limited, one-use email OTP',
+        async () => {
+          const c = await register('otp-check'),
+            info = await read(c);
+          const payload = {
+            currentPassword: 'Expense-test-only-2026',
+            newPassword: randomUUID(),
+          };
+          assert.equal(
+            (await rawCall('/me/password/otp', 'POST', payload)).status,
+            401,
+          );
+          assert.equal(
+            (await rawCall('/me/password', 'POST', payload, c)).status,
+            400,
+          );
+          assert.equal(
+            (
+              await rawCall(
+                '/me/password/otp',
+                'POST',
+                { ...payload, currentPassword: 'wrong' },
+                c,
+              )
+            ).status,
+            400,
+          );
+          const issue = () => rawCall('/me/password/otp', 'POST', payload, c);
+          mailFailure = true;
+          assert.equal((await issue()).status, 503);
+          assert.equal(
+            await harness.connection
+              .collection('auth_sessions')
+              .countDocuments({
+                'passwordOtp.hash': { $exists: true },
+              }),
+            0,
+          );
+          mailFailure = false;
+          assert.equal((await issue()).status, 200);
+          const old = passwordCode;
+          assert.equal((await issue()).status, 429);
+          assert.equal(
+            (await rawCall('/me/password', 'POST', { ...payload, otp: old }, b))
+              .status,
+            400,
+          );
+          assert.equal(
+            (
+              await rawCall(
+                '/me/password',
+                'POST',
+                {
+                  ...payload,
+                  newPassword: randomUUID(),
+                  otp: old,
+                },
+                c,
+              )
+            ).status,
+            400,
+          );
+          const sessions = harness.connection.collection('auth_sessions');
+          await sessions.updateMany(
+            {
+              userId: new (await import('mongoose')).Types.ObjectId(
+                info.user.id,
+              ),
+            },
+            {
+              $set: {
+                'passwordOtp.expiresAt': new Date(0),
+                'passwordOtp.sentAt': new Date(0),
+              },
+            },
+          );
+          assert.equal(
+            (await rawCall('/me/password', 'POST', { ...payload, otp: old }, c))
+              .status,
+            400,
+          );
+          assert.equal((await issue()).status, 200);
+          const wrong = passwordCode === '111111' ? '222222' : '111111';
+          for (let i = 0; i < 5; i++)
+            assert.equal(
+              (
+                await rawCall(
+                  '/me/password',
+                  'POST',
+                  { ...payload, otp: wrong },
+                  c,
+                )
+              ).status,
+              400,
+            );
+          assert.equal(
+            (
+              await rawCall(
+                '/me/password',
+                'POST',
+                { ...payload, otp: passwordCode },
+                c,
+              )
+            ).status,
+            400,
+          );
+          await sessions.updateMany(
+            {
+              userId: new (await import('mongoose')).Types.ObjectId(
+                info.user.id,
+              ),
+            },
+            { $set: { 'passwordOtp.sentAt': new Date(0) } },
+          );
+          assert.equal((await issue()).status, 200);
+          const code = passwordCode,
+            key = randomUUID();
+          assert.equal(
+            (
+              await rawCall(
+                '/me/password',
+                'POST',
+                { ...payload, otp: code },
+                c,
+                key,
+              )
+            ).status,
+            200,
+          );
+          assert.equal(
+            (
+              await rawCall(
+                '/me/password',
+                'POST',
+                { ...payload, otp: code },
+                c,
+                key,
+              )
+            ).status,
+            200,
+          );
+          assert.equal(
+            (
+              await rawCall(
+                '/me/password',
+                'POST',
+                { ...payload, otp: code },
+                c,
+              )
+            ).status,
+            400,
+          );
+        },
+      );
       const original = await read(a),
         other = await read(b);
       const login = async (password: string) =>
@@ -200,7 +405,12 @@ test(
             .collection('audit_logs')
             .find({ action: 'password.changed' })
             .toArray();
-          assert.equal(audits.length, 1);
+          assert.equal(
+            audits.filter(
+              (row) => String(row.actor?.userId) === original.user.id,
+            ).length,
+            1,
+          );
           const users = await product.auth.models.User.findById(
             original.user.id,
           );

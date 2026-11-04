@@ -1,7 +1,12 @@
 import nodemailer from 'nodemailer';
 import type { Config } from '../../config.js';
 
-export type RegistrationEmail = { to: string; code: string; minutes: number };
+export type RegistrationEmail = {
+  to: string;
+  code: string;
+  minutes: number;
+  purpose?: 'password_change';
+};
 export type RegistrationEmailSender = {
   configured: boolean;
   send: (message: RegistrationEmail) => Promise<void>;
@@ -40,8 +45,11 @@ export function registrationEmailSender(
         const result = await transport.sendMail({
           from: { name: 'GoEase', address: config.MAIL_FROM! },
           to: [{ address: message.to, name: '' }],
-          subject: 'Mã xác nhận đăng ký GoEase',
-          text: `Mã xác nhận đăng ký GoEase của bạn là: ${message.code}\n\nMã có hiệu lực ${message.minutes} phút và chỉ dùng một lần. Không chia sẻ mã này với người khác.\nNếu bạn không yêu cầu đăng ký, hãy bỏ qua email này.`,
+          subject:
+            message.purpose === 'password_change'
+              ? 'Mã xác thực đổi mật khẩu GoEase'
+              : 'Mã xác nhận đăng ký GoEase',
+          text: `Mã xác nhận ${message.purpose === 'password_change' ? 'đổi mật khẩu' : 'đăng ký'} GoEase của bạn là: ${message.code}\n\nMã có hiệu lực ${message.minutes} phút và chỉ dùng một lần. Không chia sẻ mã này với người khác.\nNếu bạn không yêu cầu thao tác này, hãy bỏ qua email này.`,
         });
         if (result.accepted.length !== 1 || result.rejected.length)
           throw new Error('Rejected');

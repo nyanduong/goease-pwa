@@ -1,3 +1,5 @@
+import { AppInfo } from './app-info';
+import { DataCredits } from './data-credits';
 import { MascotSettings } from '../mascot/settings';
 import { Bell, LogOut } from '../customer-icons';
 import { confirmAction } from '../confirmation';
@@ -11,13 +13,15 @@ import {
 } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
 import {
+  Pencil,
+  Globe2,
+  ArrowLeft,
+  Settings,
   UserRound,
   Bookmark,
   Map,
   ChevronRight,
   Mail,
-  CalendarDays,
-  RefreshCw,
   ShieldCheck,
   LockKeyhole,
   KeyRound,
@@ -29,10 +33,12 @@ import { AvatarPicker } from './avatar-picker';
 import { AccountAvatar } from './account-avatar';
 import { useAutomaticRetry } from '../use-automatic-retry';
 export function AccountPage({
+  page = 'overview',
   onSaved,
   onLogout,
   onNavigate,
 }: {
+  page?: 'overview' | 'profile' | 'password' | 'preferences' | 'credits';
   onNavigate: (path: string) => void;
   onSaved: (user: UserDto) => void;
   onLogout?: () => void;
@@ -53,6 +59,9 @@ export function AccountPage({
     [passwordNotice, setPasswordNotice] = useState(''),
     [passwordBusy, setPasswordBusy] = useState(false),
     [uncertain, setUncertain] = useState(false);
+  const [otp, setOtp] = useState(''),
+    [otpSent, setOtpSent] = useState(false),
+    [resendAt, setResendAt] = useState(0);
   const pending = useRef<{ key: string; body: string } | null>(null);
   const [avatarFile, setAvatarFile] = useState<Blob | null>(null);
   const uploadedAvatar = useRef<{ file: Blob; url: string } | null>(null);
@@ -176,9 +185,35 @@ export function AccountPage({
         );
         return;
       }
+      if (!otpSent) {
+        setPasswordBusy(true);
+        setPasswordError('');
+        try {
+          await api('/me/password/otp', {
+            method: 'POST',
+            body: JSON.stringify(parsed.data),
+          });
+          setOtpSent(true);
+          setResendAt(Date.now() + 60000);
+          setPasswordNotice(
+            'Đã gửi mã xác thực về email tài khoản. Mã có hiệu lực 10 phút.',
+          );
+        } catch (e) {
+          setPasswordError(
+            e instanceof Error ? e.message : 'Chưa gửi được mã.',
+          );
+        } finally {
+          setPasswordBusy(false);
+        }
+        return;
+      }
+      if (!/^\d{6}$/.test(otp)) {
+        setPasswordError('Nhập mã xác thực 6 chữ số.');
+        return;
+      }
       pending.current = {
         key: crypto.randomUUID(),
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({ ...parsed.data, otp }),
       };
     }
     setPasswordBusy(true);
@@ -192,6 +227,8 @@ export function AccountPage({
       });
       pending.current = null;
       setUncertain(false);
+      setOtp('');
+      setOtpSent(false);
       setOldPassword('');
       setNewPassword('');
       setConfirmation('');
@@ -225,247 +262,372 @@ export function AccountPage({
     );
   if (!data) return null;
   return (
-    <section className="account-page">
+    <section className="account-page" data-page={page}>
       <header className="account-heading">
-        <h1>Tài khoản</h1>
+        {page !== 'overview' && (
+          <button
+            type="button"
+            className="account-back"
+            aria-label="Quay lại tài khoản"
+            onClick={async () => {
+              const dirty =
+                avatarFile ||
+                oldPassword ||
+                newPassword ||
+                confirmation ||
+                name !== data.user.displayName ||
+                avatar !== (data.user.avatarUrl ?? '');
+              if (profileBusy || passwordBusy) return;
+              if (
+                dirty &&
+                !(await confirmAction(
+                  'Thay đổi chưa được lưu. Bạn muốn rời trang?',
+                  {
+                    title: 'Bỏ thay đổi?',
+                    confirmLabel: 'Rời trang',
+                    cancelLabel: 'Tiếp tục chỉnh sửa',
+                    tone: 'warning',
+                  },
+                ))
+              )
+                return;
+              onNavigate('/account');
+            }}
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
+        <h1>
+          {page === 'credits'
+            ? 'Bản quyền dữ liệu'
+            : page === 'profile'
+              ? 'Chỉnh sửa hồ sơ'
+              : page === 'password'
+                ? 'Đổi mật khẩu'
+                : page === 'preferences'
+                  ? 'Tùy chọn Goe'
+                  : 'Tài khoản'}
+        </h1>
       </header>
-      <div className="account-identity">
-        <AccountAvatar user={data.user} />
-        <div>
-          <strong>{data.user.displayName}</strong>
-          <span>{data.user.email}</span>
-          <small>
-            {data.user.emailVerified
-              ? 'Email đã xác minh'
-              : 'Email chưa xác minh'}
-          </small>
-        </div>
-      </div>
-      <nav className="customer-account-links" aria-label="Nội dung của tôi">
-        <a
-          href="/trips"
-          onClick={(event) => {
-            event.preventDefault();
-            onNavigate('/trips');
-          }}
-        >
-          <Map size={20} />
-          <span>Chuyến đi của tôi</span>
-          <ChevronRight size={17} />
-        </a>
-        <a
-          href="/saved"
-          onClick={(event) => {
-            event.preventDefault();
-            onNavigate('/saved');
-          }}
-        >
-          <Bookmark size={20} />
-          <span>Địa điểm đã lưu</span>
-          <ChevronRight size={17} />
-        </a>
-        <a
-          href="/notifications"
-          onClick={(event) => {
-            event.preventDefault();
-            onNavigate('/notifications');
-          }}
-        >
-          <Bell size={20} />
-          <span>Thông báo</span>
-          <ChevronRight size={17} />
-        </a>
-      </nav>
-      <details className="account-profile-editor account-settings-row">
-        <summary>
-          <UserRound size={20} />
-          <span>
-            Hồ sơ cá nhân<small>Tên, email và ảnh đại diện</small>
-          </span>
-        </summary>
-        <form
-          className="expense-form account-card account-profile-card"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void saveProfile();
-          }}
-        >
-          <h2 className="sr-only">Hồ sơ cá nhân</h2>
-          <fieldset disabled={profileBusy}>
-            <AvatarPicker
-              displayName={data.user.displayName}
-              emailVerified={data.user.emailVerified}
-              avatarUrl={avatar}
-              file={avatarFile}
-              disabled={profileBusy}
-              onCrop={(file) => {
-                setAvatarFile(file);
-                uploadedAvatar.current = null;
-                setProfileError('');
-                setProfileNotice('');
-              }}
-              onReset={() => {
-                setAvatar('');
-                setAvatarFile(null);
-                uploadedAvatar.current = null;
-              }}
-            />
-            <label>
-              <span>
-                <UserRound size={15} /> Tên hiển thị
-              </span>
-              <input
-                required
-                maxLength={100}
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </label>
-            <label>
-              <span>
-                <Mail size={15} /> Email (cố định)
-              </span>
-              <input type="email" readOnly value={data.user.email} />
-            </label>
-            <div className="account-date-fields">
-              <label>
-                <span>
-                  <CalendarDays size={15} /> Ngày tham gia
-                </span>
-                <input readOnly value={accountDate(data.createdAt)} />
-              </label>
-              <label>
-                <span>
-                  <RefreshCw size={15} /> Cập nhật lần cuối
-                </span>
-                <input readOnly value={accountDate(data.updatedAt)} />
-              </label>
+      {page === 'overview' && (
+        <>
+          <button
+            type="button"
+            className="account-identity"
+            aria-label="Chỉnh sửa hồ sơ cá nhân"
+            onClick={() => onNavigate('/account/profile')}
+          >
+            <AccountAvatar user={data.user} />
+            <div>
+              <strong>{data.user.displayName}</strong>
+
+              <small>
+                {data.user.emailVerified
+                  ? 'Email đã xác minh'
+                  : 'Email chưa xác minh'}
+              </small>
             </div>
-          </fieldset>
-          {profileError && (
-            <p role="alert">
-              {profileError}{' '}
-              <button
-                type="button"
-                onClick={async () => {
-                  if (
-                    await confirmAction(
-                      'Tải hồ sơ mới và bỏ thay đổi đang nhập?',
-                      {
-                        title: 'Tải lại dữ liệu đã lưu?',
-                        confirmLabel: 'Tải lại dữ liệu',
-                        cancelLabel: 'Giữ nội dung đang nhập',
-                        tone: 'warning',
-                      },
-                    )
-                  )
-                    setReload((v) => v + 1);
+            <Pencil className="account-edit-icon" size={18} />
+          </button>
+          <nav className="customer-account-links" aria-label="Nội dung của tôi">
+            <a
+              href="/trips"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate('/trips');
+              }}
+            >
+              <Map size={20} />
+              <span>Chuyến đi của tôi</span>
+              <ChevronRight size={17} />
+            </a>
+            <a
+              href="/saved"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate('/saved');
+              }}
+            >
+              <Bookmark size={20} />
+              <span>Địa điểm đã lưu</span>
+              <ChevronRight size={17} />
+            </a>
+            <a
+              href="/notifications"
+              onClick={(event) => {
+                event.preventDefault();
+                onNavigate('/notifications');
+              }}
+            >
+              <Bell size={20} />
+              <span>Thông báo</span>
+              <ChevronRight size={17} />
+            </a>
+          </nav>
+          <nav
+            className="customer-account-links account-settings-links"
+            aria-label="Cài đặt tài khoản"
+          >
+            {[
+              {
+                path: '/account/profile',
+                label: 'Chỉnh sửa hồ sơ',
+                Icon: UserRound,
+              },
+              {
+                path: '/account/password',
+                label: 'Đổi mật khẩu',
+                Icon: ShieldCheck,
+              },
+              {
+                path: '/account/credits',
+                label: 'Bản quyền dữ liệu',
+                Icon: Globe2,
+              },
+              {
+                path: '/account/preferences',
+                label: 'Tùy chọn Goe',
+                Icon: Settings,
+              },
+            ].map(({ path, label, Icon }) => (
+              <a
+                key={path}
+                href={path}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate(path);
                 }}
               >
-                Tải lại hồ sơ
-              </button>
-            </p>
-          )}
-          {profileNotice && <p role="status">{profileNotice}</p>}
-          <button
-            className="journey-primary"
-            disabled={profileBusy}
-            type="submit"
+                <Icon size={20} />
+                <span>{label}</span>
+                <ChevronRight size={17} />
+              </a>
+            ))}
+          </nav>
+        </>
+      )}
+      {page === 'profile' && (
+        <section className="account-profile-editor">
+          <form
+            className="expense-form account-card account-profile-card"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void saveProfile();
+            }}
           >
-            {profileBusy ? 'Đang lưu…' : 'Lưu hồ sơ'}
-          </button>
-        </form>
-      </details>
-      <details className="account-security-group">
-        <summary>
-          <ShieldCheck size={22} aria-hidden="true" />
-          <span>
-            Bảo mật tài khoản<small>Đổi mật khẩu đăng nhập</small>
-          </span>
-        </summary>
-        <form
-          className="expense-form account-card account-security-card"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void changePassword();
-          }}
-        >
-          <header className="account-security-heading">
-            <span className="account-security-icon">
-              <ShieldCheck size={26} />
-            </span>
-            <div>
-              <h2>Đổi mật khẩu</h2>
-              <p>Tăng cường bảo mật tài khoản</p>
-            </div>
-          </header>
-          {data.canChangePassword ? (
-            <>
-              <p>
-                Các phiên đăng nhập khác sẽ bị thu hồi sau khi đổi mật khẩu.
-              </p>
-              <fieldset disabled={passwordBusy || uncertain}>
+            <h2 className="sr-only">Hồ sơ cá nhân</h2>
+            <fieldset disabled={profileBusy}>
+              <AvatarPicker
+                displayName={name}
+                emailVerified={data.user.emailVerified}
+                avatarUrl={avatar}
+                file={avatarFile}
+                disabled={profileBusy}
+                onCrop={(file) => {
+                  setAvatarFile(file);
+                  uploadedAvatar.current = null;
+                  setProfileError('');
+                  setProfileNotice('');
+                }}
+                onReset={() => {
+                  setAvatar('');
+                  setAvatarFile(null);
+                  uploadedAvatar.current = null;
+                }}
+              />
+              <label>
+                <span>
+                  <UserRound size={15} /> Tên hiển thị
+                </span>
                 <input
-                  hidden
-                  readOnly
-                  autoComplete="username"
-                  value={data.user.email}
+                  required
+                  maxLength={100}
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                 />
-                <PasswordField
-                  label="Mật khẩu hiện tại"
-                  value={oldPassword}
-                  onChange={setOldPassword}
-                  autoComplete="current-password"
-                  Icon={LockKeyhole}
-                />
-                <PasswordField
-                  label="Mật khẩu mới"
-                  value={newPassword}
-                  onChange={setNewPassword}
-                  autoComplete="new-password"
-                  Icon={KeyRound}
-                  minLength={12}
-                />
-                <PasswordField
-                  label="Xác nhận mật khẩu mới"
-                  value={confirmation}
-                  onChange={setConfirmation}
-                  autoComplete="new-password"
-                  Icon={CircleCheck}
-                  minLength={12}
-                />
-              </fieldset>
-              {passwordError && <p role="alert">{passwordError}</p>}
-              {uncertain && (
-                <p role="alert">
-                  Chưa rõ kết quả. Thử lại cùng thao tác; nếu rời trang, hãy thử
-                  đăng nhập bằng mật khẩu mới trước.
-                </p>
-              )}
-              {passwordNotice && <p role="status">{passwordNotice}</p>}
-              <button
-                className="journey-primary"
-                disabled={passwordBusy}
-                type="submit"
-              >
-                {passwordBusy
-                  ? 'Đang đổi…'
-                  : uncertain
-                    ? 'Thử lại đổi mật khẩu'
-                    : 'Đổi mật khẩu'}
-              </button>
-            </>
-          ) : (
-            <p>
-              Bạn đăng nhập bằng Google và chưa có mật khẩu GoEase. Quản lý mật
-              khẩu tại tài khoản Google.
-            </p>
-          )}
-        </form>
-      </details>
-      <MascotSettings />
-      {onLogout && (
+              </label>
+              <label>
+                <span>
+                  <Mail size={15} /> Email (cố định)
+                </span>
+                <input type="email" readOnly value={data.user.email} />
+              </label>
+            </fieldset>
+            {profileError && (
+              <p role="alert">
+                {profileError}{' '}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (
+                      await confirmAction(
+                        'Tải hồ sơ mới và bỏ thay đổi đang nhập?',
+                        {
+                          title: 'Tải lại dữ liệu đã lưu?',
+                          confirmLabel: 'Tải lại dữ liệu',
+                          cancelLabel: 'Giữ nội dung đang nhập',
+                          tone: 'warning',
+                        },
+                      )
+                    )
+                      setReload((v) => v + 1);
+                  }}
+                >
+                  Tải lại hồ sơ
+                </button>
+              </p>
+            )}
+            {profileNotice && <p role="status">{profileNotice}</p>}
+            <button
+              className="journey-primary account-save"
+              disabled={profileBusy}
+              type="submit"
+            >
+              {profileBusy
+                ? 'Đang lưu…'
+                : avatarFile
+                  ? 'Lưu hồ sơ và ảnh đại diện'
+                  : 'Lưu thay đổi'}
+            </button>
+          </form>
+        </section>
+      )}
+      {page === 'password' && (
+        <section className="account-security-group">
+          <form
+            className="expense-form account-card account-security-card"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void changePassword();
+            }}
+          >
+            <header className="account-security-heading">
+              <span className="account-security-icon">
+                <ShieldCheck size={26} />
+              </span>
+              <div>
+                <h2>Đổi mật khẩu</h2>
+                <p>Tăng cường bảo mật tài khoản</p>
+              </div>
+            </header>
+            {data.canChangePassword ? (
+              <>
+                <AppInfo title="Sau khi đổi mật khẩu">
+                  <p>
+                    Các phiên đăng nhập khác sẽ bị thu hồi; phiên hiện tại được
+                    giữ.
+                  </p>
+                </AppInfo>
+                <fieldset disabled={passwordBusy || uncertain}>
+                  <input
+                    hidden
+                    readOnly
+                    autoComplete="username"
+                    value={data.user.email}
+                  />
+                  <PasswordField
+                    label="Mật khẩu hiện tại"
+                    value={oldPassword}
+                    onChange={(v) => {
+                      setOldPassword(v);
+                      setOtpSent(false);
+                      setOtp('');
+                      setPasswordNotice('');
+                    }}
+                    autoComplete="current-password"
+                    Icon={LockKeyhole}
+                  />
+                  <PasswordField
+                    label="Mật khẩu mới"
+                    value={newPassword}
+                    onChange={(v) => {
+                      setNewPassword(v);
+                      setOtpSent(false);
+                      setOtp('');
+                      setPasswordNotice('');
+                    }}
+                    autoComplete="new-password"
+                    Icon={KeyRound}
+                    minLength={12}
+                  />
+                  <PasswordField
+                    label="Xác nhận mật khẩu mới"
+                    value={confirmation}
+                    onChange={setConfirmation}
+                    autoComplete="new-password"
+                    Icon={CircleCheck}
+                    minLength={12}
+                  />
+                  {otpSent && (
+                    <label>
+                      <span>Mã xác thực email</span>
+                      <input
+                        aria-label="Mã xác thực email"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6}
+                        value={otp}
+                        onChange={(e) =>
+                          setOtp(e.target.value.replace(/\D/g, ''))
+                        }
+                      />
+                    </label>
+                  )}
+                </fieldset>
+                {passwordError && <p role="alert">{passwordError}</p>}
+                {uncertain && (
+                  <p role="alert">
+                    Chưa rõ kết quả. Thử lại cùng thao tác; nếu rời trang, hãy
+                    thử đăng nhập bằng mật khẩu mới trước.
+                  </p>
+                )}
+                {passwordNotice && <p role="status">{passwordNotice}</p>}
+                <button
+                  className="journey-primary"
+                  disabled={passwordBusy}
+                  type="submit"
+                >
+                  {passwordBusy
+                    ? 'Đang đổi…'
+                    : uncertain
+                      ? 'Thử lại đổi mật khẩu'
+                      : otpSent
+                        ? 'Xác nhận đổi mật khẩu'
+                        : 'Gửi mã xác thực'}
+                </button>
+                {otpSent && (
+                  <button
+                    type="button"
+                    disabled={passwordBusy}
+                    onClick={() => {
+                      if (Date.now() < resendAt) {
+                        setPasswordError(
+                          'Vui lòng đợi 60 giây trước khi gửi lại.',
+                        );
+                        return;
+                      }
+                      setOtpSent(false);
+                      setOtp('');
+                      setPasswordNotice('Nhấn Gửi mã xác thực để nhận mã mới.');
+                    }}
+                  >
+                    Gửi lại mã
+                  </button>
+                )}
+              </>
+            ) : (
+              <p>
+                Bạn đăng nhập bằng Google và chưa có mật khẩu GoEase. Quản lý
+                mật khẩu tại tài khoản Google.
+              </p>
+            )}
+          </form>
+        </section>
+      )}
+      {page === 'preferences' && <MascotSettings />}
+      {page === 'credits' && <DataCredits />}
+      {page === 'overview' && onLogout && (
         <button type="button" className="account-logout" onClick={onLogout}>
           <LogOut size={17} /> Đăng xuất
         </button>
@@ -474,17 +636,6 @@ export function AccountPage({
   );
 }
 
-function accountDate(value: string | undefined) {
-  if (!value || !Number.isFinite(Date.parse(value))) return 'Chưa có thông tin';
-  return new Intl.DateTimeFormat('vi-VN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(new Date(value));
-}
 function PasswordField({
   label,
   value,

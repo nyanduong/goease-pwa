@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import { useEffect, useRef, useState } from 'react';
 import { images } from '@goease/media';
 import { Sheet } from './journey-sheet';
@@ -159,16 +160,19 @@ export function AvatarPicker({
           e.target.value = '';
         }}
       />
-      <small>JPG, PNG hoặc WebP · Tối đa 5 MB</small>
-      <details className="avatar-picker-help">
-        <summary>Lưu ý về ảnh đại diện</summary>
+
+      <AppInfo title="Về ảnh đại diện">
         <p>
-          Bạn có thể kéo và phóng to ảnh trước khi lưu. Ảnh được lưu công khai
-          trên Cloudinary khi bấm Lưu hồ sơ.
+          Bạn có thể kéo và phóng to ảnh trước khi lưu. Bấm Lưu thay đổi sau khi
+          căn chỉnh để cập nhật ảnh đại diện.
         </p>
-      </details>
+      </AppInfo>
       {error && <p role="alert">{error}</p>}
-      {file && <small>Ảnh mới chưa lưu. Bấm Lưu hồ sơ để cập nhật.</small>}
+      {file && (
+        <small>
+          Ảnh mới đang xem trước. Bấm Lưu hồ sơ và ảnh đại diện để cập nhật.
+        </small>
+      )}
       {image && (
         <Sheet
           title="Căn chỉnh ảnh đại diện"

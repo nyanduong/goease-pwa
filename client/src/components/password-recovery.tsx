@@ -80,6 +80,9 @@ export function PasswordRecovery({
         <Goe size="large" />
       </div>
       <div className="auth-card">
+        <nav className="auth-back" aria-label="Quay lại GoEase">
+          {link('/', '‹', 'auth-back-link')}
+        </nav>
         <div className="customer-auth-brand">
           <Brand />
         </div>

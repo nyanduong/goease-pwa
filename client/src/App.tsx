@@ -912,12 +912,23 @@ export function App() {
           </MascotProvider>
         ) : path === '/notifications' ? (
           <CustomerNotifications />
-        ) : path === '/account' ? (
+        ) : path === '/account' || path.startsWith('/account/') ? (
           sessionStatus === 'loading' ? (
             <Notice>Đang kiểm tra phiên…</Notice>
           ) : user ? (
             <AccountPage
-              key={user.id}
+              key={`${user.id}:${path}`}
+              page={
+                path === '/account/credits'
+                  ? 'credits'
+                  : path === '/account/profile'
+                    ? 'profile'
+                    : path === '/account/password'
+                      ? 'password'
+                      : path === '/account/preferences'
+                        ? 'preferences'
+                        : 'overview'
+              }
               onSaved={setUser}
               onLogout={logout}
               onNavigate={go}

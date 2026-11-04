@@ -123,6 +123,7 @@ export function createProduct(
   connection: Connection,
   config: Config,
   dependencies: {
+    passwordChangeEmail?: RegistrationEmailSender;
     resetEmail?: ResetEmailSender;
     registrationEmail?: RegistrationEmailSender;
     logger?: Logger;
@@ -137,7 +138,12 @@ export function createProduct(
   } = {},
 ) {
   const audit = businessAudit(connection, config.NODE_ENV);
-  const auth = authService(connection, config, audit);
+  const auth = authService(
+    connection,
+    config,
+    audit,
+    dependencies.passwordChangeEmail ?? registrationEmailSender(config),
+  );
   const registration = emailRegistration(
     connection,
     config,
@@ -256,6 +262,7 @@ export function createProduct(
       '/me/profile',
       '/me/avatar',
       '/me/password',
+      '/me/password/otp',
       '/auth/register',
       '/auth/registration/verify',
       '/auth/login',
@@ -477,6 +484,15 @@ export function createProduct(
     res.json({
       ok: true,
       data: await auth.updateProfile(req, parse(profileUpdateSchema, req.body)),
+    }),
+  );
+  router.post('/me/password/otp', async (req, res) =>
+    res.json({
+      ok: true,
+      data: await auth.requestPasswordOtp(
+        req,
+        parse(passwordChangeSchema, req.body),
+      ),
     }),
   );
   router.post('/me/password', async (req, res) =>

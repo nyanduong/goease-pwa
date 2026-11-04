@@ -4,6 +4,7 @@ export * from './icons';
 
 // SVG geometry supplied in the customer's React reference. Customer-only adapter.
 const paths: Record<string, ReactNode> = {
+  navigation: <path d="m21 3-7 18-3-8-8-3 18-7Z" />,
   arrowLeft: (
     <>
       <path d="m15 18-6-6 6-6" />
@@ -36,7 +37,7 @@ const paths: Record<string, ReactNode> = {
   ),
   bell: (
     <>
-      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+      <path d="M18 8a6 6 0 0 0-12 0v4c0 2-1 3-2 5h16c-1-2-2-3-2-5V8M10 21h4" />
     </>
   ),
   user: (
@@ -64,7 +65,7 @@ const paths: Record<string, ReactNode> = {
     </>
   ),
   heart: (
-    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
+    <path d="M20.4 5.6a5.1 5.1 0 0 0-7.2 0L12 6.8l-1.2-1.2a5.1 5.1 0 0 0-7.2 7.2L12 21l8.4-8.2a5.1 5.1 0 0 0 0-7.2Z" />
   ),
   star: (
     <path d="m12 2 3.1 6.5 7.1 1-5.1 5 .9 7-6-3.3-6.2 3.3 1.1-7-5.1-5 7-1z" />
@@ -338,3 +339,5 @@ export const Island = icon('island');
 
 export const Suitcase = icon('suitcase');
 export const LogOut = icon('logout');
+
+export const NavigationArrow = icon('navigation');

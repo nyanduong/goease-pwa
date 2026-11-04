@@ -324,6 +324,12 @@
           "UUID string?",
           "null",
           "Last password change receipt on this session; replay validates new password hash; no request/password stored."
+        ],
+        [
+          "passwordOtp",
+          "subdocument (hash, nonce, requestHash, expiresAt, sentAt, attempts)",
+          "Tùy chọn; riêng tư",
+          "AUTH-OTP-01: OTP đổi mật khẩu gắn phiên; requestHash là Argon2id, không có mã/mật khẩu rõ."
         ]
       ],
       "indexes": "Unique sessionTokenHash; {userId,revokedAt,lastSeenAt:-1}; TTL expiresAt (expireAfterSeconds:0).",

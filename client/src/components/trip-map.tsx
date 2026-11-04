@@ -1,3 +1,5 @@
+import { NavigationArrow } from '../customer-icons';
+import { AppInfo } from './app-info';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -163,6 +165,17 @@ export function TripMap<A extends SharedActivity>({
   return (
     <section className="trip-map-section" aria-label="Bản đồ lịch trình">
       <header>
+        <AppInfo title="Về bản đồ hành trình">
+          <p>Số trên bản đồ là thứ tự điểm dừng trong lịch.</p>
+          <p>
+            Nét đứt nối vị trí tham khảo, chưa phải đường đi hoặc thời gian di
+            chuyển thực tế.
+          </p>
+          <p>
+            Nhấn biểu tượng mũi tên cạnh địa điểm để mở chỉ đường trên Google
+            Maps. Kiểm tra lối vào trước khi đi.
+          </p>
+        </AppInfo>
         <h2>Những điểm mình sẽ ghé</h2>
         <p>
           {located.length}/{activities.length} điểm có vị trí tham khảo
@@ -191,10 +204,6 @@ export function TripMap<A extends SharedActivity>({
               </button>
             </p>
           )}
-          <p className="trip-map-hint">
-            Số là thứ tự trong lịch. Nét đứt nối điểm tham khảo, chưa phải đường
-            đi thực tế hoặc thời gian di chuyển.
-          </p>
         </>
       )}
       {!loading && !located.length && (
@@ -216,11 +225,12 @@ export function TripMap<A extends SharedActivity>({
                 lối vào phù hợp.
               </p>
               <a
+                aria-label={`Chỉ đường đến ${activeStop.activity.title}`}
                 href={directions(activeStop.point)}
                 target="_blank"
                 rel="noreferrer"
               >
-                Chỉ đường đến khu vực ↗
+                <NavigationArrow size={20} />
               </a>{' '}
               <a
                 href={activeStop.point.sourceUrl}
@@ -269,7 +279,7 @@ export function TripMap<A extends SharedActivity>({
                 rel="noreferrer"
                 aria-label={`Chỉ đường đến ${s.activity.title}`}
               >
-                Chỉ đường ↗
+                <NavigationArrow size={20} />
               </a>
             ) : (
               <a
@@ -278,7 +288,7 @@ export function TripMap<A extends SharedActivity>({
                 rel="noreferrer"
                 aria-label={`Tìm ${s.activity.title} trên Google Maps`}
               >
-                Tìm trên Google Maps ↗
+                <NavigationArrow size={20} />
               </a>
             )}
           </li>

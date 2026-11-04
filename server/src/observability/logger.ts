@@ -46,6 +46,7 @@ const fieldsSchema = z.object({
       '/api/v1/me/profile',
       '/api/v1/me/avatar',
       '/api/v1/me/password',
+      '/api/v1/me/password/otp',
       '/api/v1/auth/register',
       '/api/v1/auth/registration/verify',
       '/api/v1/auth/login',

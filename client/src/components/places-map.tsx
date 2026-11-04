@@ -1,3 +1,4 @@
+import { AppInfo } from './app-info';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -87,10 +88,12 @@ export function PlacesMap({
         role="region"
         aria-label="Bản đồ các địa điểm đang xem"
       />
-      <p className="customer-map-caption">
-        {points.length}/{places.length} địa điểm đang xem có tọa độ. Chạm ghim
-        để mở chi tiết.
-      </p>
+      <AppInfo title="Thông tin cần biết">
+        <p>
+          {points.length}/{places.length} địa điểm đang xem có tọa độ. Chạm ghim
+          để mở chi tiết.
+        </p>
+      </AppInfo>
       {tileError && (
         <div className="notice notice-error" role="alert">
           Chưa tải được nền bản đồ. Ghim dùng tọa độ đã có; bạn vẫn có thể mở

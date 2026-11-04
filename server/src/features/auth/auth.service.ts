@@ -1,5 +1,9 @@
+import {
+  registrationEmailSender,
+  type RegistrationEmailSender,
+} from './registration-email.js';
 import { accountAvatarUrl } from './avatar.js';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomInt } from 'node:crypto';
 import { hash, verify, Algorithm } from '@node-rs/argon2';
 import { Types, type ClientSession, type Connection } from 'mongoose';
 import type { Request, Response } from 'express';
@@ -31,6 +35,7 @@ export function authService(
   connection: Connection,
   config: Config,
   audit: ReturnType<typeof businessAudit>,
+  passwordEmail: RegistrationEmailSender = registrationEmailSender(config),
 ) {
   const models = authModels(connection);
   const { User, Identity, Session } = models;
@@ -251,13 +256,137 @@ export function authService(
       });
       return this.account(req);
     },
-    async changePassword(
+    async requestPasswordOtp(
       req: Request,
       value: { currentPassword: string; newPassword: string },
+    ) {
+      const account = await requireAccount(req);
+      limit(req, `password-otp:${account.user._id}`);
+      if (!passwordEmail.configured)
+        throw new HttpError(
+          503,
+          'EMAIL_NOT_CONFIGURED',
+          'Chưa cấu hình gửi mã xác thực.',
+        );
+      const identity = await Identity.findOne({
+        userId: account.user._id,
+        provider: 'password',
+        unlinkedAt: null,
+      }).select('+passwordHash');
+      if (
+        !identity?.passwordHash ||
+        !(await verify(identity.passwordHash, value.currentPassword))
+      )
+        throw new HttpError(
+          400,
+          'PASSWORD_INCORRECT',
+          'Mật khẩu hiện tại chưa đúng.',
+        );
+      const code = String(randomInt(100000, 1000000)),
+        nonce = opaqueToken(),
+        now = new Date(),
+        expiresAt = new Date(Date.now() + 600000);
+      const requestHash = await hash(value.newPassword, argonOptions);
+      const updated = await Session.findOneAndUpdate(
+        {
+          _id: account.session._id,
+          revokedAt: null,
+          $or: [
+            { passwordOtp: null },
+            { 'passwordOtp.sentAt': { $lte: new Date(Date.now() - 60000) } },
+          ],
+        },
+        {
+          $set: {
+            passwordOtp: {
+              hash: tokenHash(`${nonce}:${code}`),
+              nonce,
+              requestHash,
+              expiresAt,
+              sentAt: now,
+              attempts: 0,
+            },
+          },
+        },
+      );
+      if (!updated)
+        throw new HttpError(
+          429,
+          'OTP_COOLDOWN',
+          'Đợi 60 giây trước khi gửi lại mã.',
+        );
+      try {
+        await passwordEmail.send({
+          to: account.user.emailNormalized,
+          code,
+          minutes: 10,
+          purpose: 'password_change',
+        });
+      } catch {
+        await Session.updateOne(
+          { _id: account.session._id, 'passwordOtp.nonce': nonce },
+          { $unset: { passwordOtp: 1 } },
+        );
+        throw new HttpError(
+          503,
+          'OTP_DELIVERY_FAILED',
+          'Chưa gửi được mã xác thực. Hãy thử lại.',
+        );
+      }
+      return {
+        sent: true,
+        expiresAt: expiresAt.toISOString(),
+        resendAfterSeconds: 60,
+      };
+    },
+    async changePassword(
+      req: Request,
+      value: {
+        currentPassword: string;
+        newPassword: string;
+        otp?: string | undefined;
+      },
       key: string,
     ) {
       const account = await requireAccount(req);
       limit(req, `password-change:${account.user._id}`);
+      const receipt = await Session.exists({
+        _id: account.session._id,
+        passwordChangeKey: key,
+      });
+      let otpHash: string | undefined;
+      let requestHash: string | undefined;
+      if (!receipt) {
+        if (!value.otp)
+          throw new HttpError(
+            400,
+            'OTP_REQUIRED',
+            'Nhập mã xác thực đã gửi về email.',
+          );
+        const attempt = await Session.findOneAndUpdate(
+          {
+            _id: account.session._id,
+            'passwordOtp.expiresAt': { $gt: new Date() },
+            'passwordOtp.attempts': { $lt: 5 },
+          },
+          { $inc: { 'passwordOtp.attempts': 1 } },
+          { returnDocument: 'after' },
+        ).select('+passwordOtp');
+        const challenge = attempt?.passwordOtp;
+        if (
+          !challenge?.nonce ||
+          !challenge.requestHash ||
+          !(await verify(challenge.requestHash, value.newPassword)) ||
+          challenge.hash !== tokenHash(`${challenge.nonce}:${value.otp}`)
+        )
+          throw new HttpError(
+            400,
+            'OTP_INVALID',
+            'Mã không đúng, đã hết hạn hoặc đã dùng. Hãy yêu cầu mã mới nếu cần.',
+          );
+        otpHash = challenge.hash;
+        requestHash = challenge.requestHash;
+      }
       const passwordHash = await hash(value.newPassword, argonOptions);
       const reqId = requestId(),
         operationId = randomUUID();
@@ -290,6 +419,22 @@ export function authService(
             400,
             'PASSWORD_INCORRECT',
             'Mật khẩu hiện tại chưa đúng.',
+          );
+        const consumed = await Session.updateOne(
+          {
+            _id: current._id,
+            'passwordOtp.hash': otpHash ?? '',
+            'passwordOtp.requestHash': requestHash ?? '',
+            'passwordOtp.expiresAt': { $gt: new Date() },
+          },
+          { $unset: { passwordOtp: 1 } },
+          { session: tx },
+        );
+        if (consumed.modifiedCount !== 1)
+          throw new HttpError(
+            400,
+            'OTP_INVALID',
+            'Mã đã hết hạn hoặc đã dùng.',
           );
         identity.passwordHash = passwordHash;
         identity.passwordChangedAt = new Date();
