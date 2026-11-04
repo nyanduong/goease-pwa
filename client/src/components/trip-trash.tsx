@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, RotateCcw, Trash2 } from '../icons';
+import { ArrowLeft, RotateCcw, Trash2 } from '../customer-icons';
 import type { TripDto, TripTrashDto, TrashedTripDto } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
 

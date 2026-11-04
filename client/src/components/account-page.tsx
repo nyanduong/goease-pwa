@@ -1,3 +1,5 @@
+import { MascotSettings } from '../mascot/settings';
+import { Bell, LogOut } from '../customer-icons';
 import { confirmAction } from '../confirmation';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -10,6 +12,9 @@ import {
 import { api, ApiFailure } from '../api';
 import {
   UserRound,
+  Bookmark,
+  Map,
+  ChevronRight,
   Mail,
   CalendarDays,
   RefreshCw,
@@ -19,14 +24,16 @@ import {
   CircleCheck,
   Eye,
   EyeOff,
-} from '../icons';
+} from '../customer-icons';
 import { AvatarPicker } from './avatar-picker';
 import { AccountAvatar } from './account-avatar';
 import { useAutomaticRetry } from '../use-automatic-retry';
 export function AccountPage({
   onSaved,
   onLogout,
+  onNavigate,
 }: {
+  onNavigate: (path: string) => void;
   onSaved: (user: UserDto) => void;
   onLogout?: () => void;
 }) {
@@ -234,6 +241,41 @@ export function AccountPage({
           </small>
         </div>
       </div>
+      <nav className="customer-account-links" aria-label="Nội dung của tôi">
+        <a
+          href="/trips"
+          onClick={(event) => {
+            event.preventDefault();
+            onNavigate('/trips');
+          }}
+        >
+          <Map size={20} />
+          <span>Chuyến đi của tôi</span>
+          <ChevronRight size={17} />
+        </a>
+        <a
+          href="/saved"
+          onClick={(event) => {
+            event.preventDefault();
+            onNavigate('/saved');
+          }}
+        >
+          <Bookmark size={20} />
+          <span>Địa điểm đã lưu</span>
+          <ChevronRight size={17} />
+        </a>
+        <a
+          href="/notifications"
+          onClick={(event) => {
+            event.preventDefault();
+            onNavigate('/notifications');
+          }}
+        >
+          <Bell size={20} />
+          <span>Thông báo</span>
+          <ChevronRight size={17} />
+        </a>
+      </nav>
       <details className="account-profile-editor account-settings-row">
         <summary>
           <UserRound size={20} />
@@ -422,9 +464,10 @@ export function AccountPage({
           )}
         </form>
       </details>
+      <MascotSettings />
       {onLogout && (
         <button type="button" className="account-logout" onClick={onLogout}>
-          Đăng xuất
+          <LogOut size={17} /> Đăng xuất
         </button>
       )}
     </section>

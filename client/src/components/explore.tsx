@@ -22,7 +22,7 @@ import {
   Utensils,
   X,
   SlidersHorizontal,
-} from '../icons';
+} from '../customer-icons';
 import { LoadingSkeleton, ScreenHeader } from './customer-shell';
 import type {
   PlaceDto,
@@ -52,12 +52,21 @@ export function ExplorePage({
   onNavigate,
   savedOnly = false,
 }: NavProps & { savedOnly?: boolean }) {
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('');
+  const [query, setQuery] = useState(
+    () => new URLSearchParams(location.search).get('q')?.slice(0, 100) ?? '',
+  );
+  const [category, setCategory] = useState(() => {
+    const initial = new URLSearchParams(location.search).get('category');
+    return initial && ['nature', 'culture', 'food'].includes(initial)
+      ? initial
+      : '';
+  });
   const [region, setRegion] = useState(''),
     [subregion, setSubregion] = useState('');
   const [view, setView] = useState<'list' | 'map'>('list');
   const [items, setItems] = useState<PlaceDto[]>([]);
+  const [mapPlaceId, setMapPlaceId] = useState('');
+  const mapPlace = items.find((place) => place.id === mapPlaceId);
   const [states, setStates] = useState<Record<string, PlaceStateDto>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -303,11 +312,50 @@ export function ExplorePage({
           <Suspense
             fallback={<LoadingSkeleton label="Đang mở bản đồ…" rows={3} />}
           >
-            <PlacesMap
-              places={items}
-              onOpen={(id) => onNavigate(`/places/${id}`)}
-            />
+            <PlacesMap places={items} onOpen={setMapPlaceId} />
           </Suspense>
+          {mapPlace && (
+            <section
+              className="customer-map-preview"
+              aria-label={`Xem nhanh ${mapPlace.name}`}
+            >
+              <button
+                type="button"
+                className="customer-map-preview-close"
+                aria-label="Đóng xem nhanh địa điểm"
+                onClick={() => setMapPlaceId('')}
+              >
+                <X size={17} />
+              </button>
+              <div className="customer-map-preview-main">
+                <PlacePhoto place={mapPlace} compact />
+                <div>
+                  <h2>{mapPlace.name}</h2>
+                  <p>
+                    <MapPin size={13} />
+                    {mapPlace.destinationName}
+                  </p>
+                  <small>{mapPlace.durationLabel}</small>
+                </div>
+              </div>
+              <div className="customer-map-preview-actions">
+                <a
+                  href={mapUrl(`${mapPlace.name} ${mapPlace.destinationName}`)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <MapPin size={16} />
+                  Chỉ đường
+                </a>
+                <button
+                  type="button"
+                  onClick={() => onNavigate(`/places/${mapPlace.id}`)}
+                >
+                  Xem chi tiết <ArrowRight size={14} />
+                </button>
+              </div>
+            </section>
+          )}
           <p>Chọn một nơi để xem vị trí trên Google Maps.</p>
           {items.map((p) => (
             <a
@@ -340,14 +388,24 @@ export function ExplorePage({
                   }
                 >
                   <PlacePhoto place={p} compact showCredit={false} />
-                  <span className="explore-category">
-                    <Icon size={13} />
-                    {labels[p.category]}
-                  </span>
                   <span className="explore-card-copy">
                     <strong>{p.name}</strong>
+                    <small className="customer-place-location">
+                      <MapPin size={12} />
+                      {p.destinationName}
+                    </small>
                   </span>
                 </button>
+                <div className="customer-place-tags">
+                  <span>
+                    <Icon size={11} />
+                    {labels[p.category]}
+                  </span>
+                  <span>
+                    <Clock size={11} />
+                    {p.durationLabel}
+                  </span>
+                </div>
                 {p.images?.[0] && (
                   <details className="photo-source">
                     <summary>
@@ -416,7 +474,13 @@ export function ExplorePage({
           Khám phá địa điểm để lưu →
         </button>
       )}
-      <p className="explore-image-credit">Ảnh minh họa được tạo bằng AI.</p>
+      {items.some((p) =>
+        p.images?.some((image) => image.kind === 'ai_illustration'),
+      ) && (
+        <p className="explore-image-credit">
+          Một số ảnh minh họa được tạo bằng AI; nguồn cụ thể ở từng địa điểm.
+        </p>
+      )}
       {items.some((p) => p.source) && <SourceCredit />}
     </div>
   );
@@ -437,6 +501,7 @@ export function PlaceDetail({
   const openedAuto = useRef(false);
   const [addedPath, setAddedPath] = useState('');
   const [place, setPlace] = useState<PlaceDto | null>(null);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [state, setState] = useState<PlaceStateDto | null>(null);
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
@@ -707,6 +772,11 @@ export function PlaceDetail({
           {place.destinationName} · {labels[place.category]}
         </p>
         <h1>{place.name}</h1>
+        <nav className="place-section-nav" aria-label="Thông tin địa điểm">
+          <a href="#place-introduction">Tổng quan</a>
+          <a href="#place-advice">Gợi ý ghé thăm</a>
+          {place.planning && <a href="#place-pricing">Giá & giờ</a>}
+        </nav>
         {place.images && place.images.length > 1 && (
           <div className="place-source-gallery">
             {place.images.map((image, i) => (
@@ -733,9 +803,24 @@ export function PlaceDetail({
             {place.bestTimeLabel}
           </span>
         </div>
-        <details className="place-about">
+        <details className="place-about" id="place-introduction" open>
           <summary>Giới thiệu địa điểm</summary>
-          <p className="place-description">{place.description}</p>
+          <p
+            id="place-description-text"
+            className={`place-description ${descriptionExpanded || place.description.length <= 220 ? 'is-expanded' : ''}`}
+          >
+            {place.description}
+          </p>
+          {place.description.length > 220 && (
+            <button
+              className="place-read-more"
+              aria-expanded={descriptionExpanded}
+              aria-controls="place-description-text"
+              onClick={() => setDescriptionExpanded((value) => !value)}
+            >
+              {descriptionExpanded ? 'Thu gọn' : 'Đọc thêm'}
+            </button>
+          )}
           {place.descriptionSource && (
             <small className="place-description-credit">
               {place.descriptionSource.translated
@@ -763,7 +848,7 @@ export function PlaceDetail({
             </small>
           )}
         </details>
-        <details className="place-tip">
+        <details className="place-tip" id="place-advice">
           <summary>Gợi ý khi ghé thăm</summary>
           <img src={images.goeMascot} alt="Goe" />
           <div>
@@ -792,7 +877,7 @@ export function PlaceDetail({
           </section>
         )}
         {place.planning && (
-          <details className="place-planning-disclosure">
+          <details className="place-planning-disclosure" id="place-pricing">
             <summary>Giá và giờ hoạt động</summary>
             <PlacePlanning place={place} />
           </details>

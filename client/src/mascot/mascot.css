@@ -1,0 +1,225 @@
+.mascot-renderer {
+  display: inline-grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  pointer-events: none;
+  transform-origin: 50% 85%;
+}
+.mascot-renderer > img,
+.mascot-sprite {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+.mascot-image-fallback {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: #fff;
+  background: #007b81;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: 700;
+}
+.customer-ui .goe-chat-launcher > .mascot-renderer {
+  width: 48px;
+  height: 48px;
+}
+.customer-ui .customer-goe-identity > .mascot-renderer {
+  width: 32px;
+  height: 32px;
+}
+.customer-ui .mascot-settings {
+  border: 1px solid #e8edf1;
+  border-radius: 12px;
+  background: #f7f9fb;
+  margin-bottom: 12px;
+}
+.customer-ui .mascot-settings > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 12px;
+  font-size: 12px;
+  color: #596d7d;
+  cursor: pointer;
+  list-style: none;
+}
+.customer-ui .mascot-settings > summary::after {
+  content: '+';
+  margin-left: auto;
+}
+.customer-ui .mascot-settings[open] > summary::after {
+  content: '−';
+}
+.customer-ui .mascot-settings-options {
+  padding: 0 12px 8px;
+}
+.customer-ui .mascot-settings-options > label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  gap: 12px;
+  font-size: 12px;
+  color: #506475;
+}
+.customer-ui .mascot-settings-options input {
+  appearance: none;
+  width: 36px;
+  height: 22px;
+  min-height: 22px;
+  border: 0;
+  border-radius: 20px;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  background: #cbd4dd;
+  position: relative;
+  flex: 0 0 auto;
+  transition: background-color 180ms;
+}
+.customer-ui .mascot-settings-options input::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 2px;
+  top: 2px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 4px #12333c26;
+  transition: transform 180ms;
+}
+.customer-ui .mascot-settings-options input:checked {
+  background: #00838a;
+}
+.customer-ui .mascot-settings-options input:checked::after {
+  transform: translateX(14px);
+}
+.customer-ui .mascot-settings-options input:focus-visible {
+  outline: 2px solid #007b81;
+  outline-offset: 3px;
+}
+.customer-ui .goe-chat-page > .mascot-settings {
+  margin: 0 0 8px;
+}
+.customer-ui .goe-chat-page > .mascot-settings > summary {
+  padding: 7px 10px;
+  font-size: 11px;
+}
+.customer-ui .mascot-restore {
+  position: fixed;
+  z-index: 40;
+  right: max(12px, calc((100vw - 430px) / 2 + 12px));
+  bottom: calc(var(--customer-bottom-space, 60px) + 12px);
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid #dce7ec;
+  border-radius: 20px;
+  background: #ffffffed;
+  color: #007b81;
+  font-size: 11px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mascot-renderer[data-renderer='static-fallback'][data-motion='breathe']
+    > img {
+    animation: mascot-breathe 4s ease-in-out infinite;
+  }
+  .mascot-renderer[data-renderer='static-fallback'][data-motion='sway'] > img {
+    animation: mascot-sway 1.6s ease-in-out infinite;
+  }
+  .mascot-renderer[data-renderer='static-fallback'][data-motion='nod'] > img {
+    animation: mascot-nod 1.6s ease-in-out infinite;
+  }
+  .mascot-renderer[data-renderer='static-fallback'][data-motion='hop'] > img {
+    animation: mascot-hop 800ms ease-in-out 2;
+  }
+  .mascot-renderer[data-renderer='static-fallback'][data-motion='tilt'] > img {
+    animation: mascot-tilt 1.6s ease-in-out infinite;
+  }
+  .mascot-renderer[data-renderer='static-fallback'][data-motion='pulse'] > img {
+    animation: mascot-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes mascot-breathe {
+    50% {
+      transform: translateY(-1px) scale(1.015);
+    }
+  }
+  @keyframes mascot-sway {
+    25% {
+      transform: rotate(-4deg);
+    }
+    75% {
+      transform: rotate(4deg);
+    }
+  }
+  @keyframes mascot-nod {
+    50% {
+      transform: translateY(2px) rotate(2deg);
+    }
+  }
+  @keyframes mascot-hop {
+    35% {
+      transform: translateY(-5px) rotate(-3deg);
+    }
+    70% {
+      transform: translateY(0) scale(1.03, 0.97);
+    }
+  }
+  @keyframes mascot-tilt {
+    40% {
+      transform: rotate(-5deg);
+    }
+    75% {
+      transform: rotate(3deg);
+    }
+  }
+  @keyframes mascot-pulse {
+    50% {
+      transform: scale(1.035);
+    }
+  }
+}
+.mascot-preview {
+  padding: 16px 16px 100px;
+}
+.mascot-preview h1 {
+  margin-top: 20px;
+}
+.mascot-preview-stage {
+  display: grid;
+  place-items: center;
+  width: 180px;
+  height: 180px;
+  margin: 25px auto;
+  background: linear-gradient(145deg, #f0f8ff, #fdfaff);
+  border-radius: 26px;
+}
+.mascot-preview-stage .mascot-renderer {
+  width: 160px;
+  height: 160px;
+}
+.mascot-preview > p {
+  text-align: center;
+  font-size: 12px;
+}
+.mascot-preview-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.mascot-preview-actions button {
+  min-height: 40px;
+  font-size: 11px;
+  border: 1px solid #dfe9ef;
+  background: white;
+  color: #5f7185;
+}
+.mascot-preview-actions button[data-asset-status='reviewed'] {
+  background: #e9f7f7;
+  color: #00757b;
+}
