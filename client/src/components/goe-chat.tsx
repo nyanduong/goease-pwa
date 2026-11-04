@@ -1,11 +1,25 @@
+import { createTravelAssistant } from '../mascot/ai-service';
+import { MascotRenderer } from '../mascot/renderer';
+import { MascotSettings } from '../mascot/settings';
+import { useMascot } from '../mascot/context';
+import { syncChatState, type ChatVisualState } from '../mascot/chat-state';
 import { images } from '@goease/media';
-import { plannerTiming } from '@goease/contracts';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, Coins, Leaf, Send, X, Info } from '../icons';
+import {
+  ArrowLeft,
+  Check,
+  Coins,
+  Leaf,
+  Send,
+  X,
+  Info,
+} from '../customer-icons';
 import type { TripDto, GoeProposal, GoeRequest } from '@goease/contracts';
 import { api } from '../api';
 import { canRecoverAi } from '../ai-errors';
 import { moneyText } from '../trip-draft';
+
+const assistant = createTravelAssistant(api);
 
 type Line = { id: number; role: 'user' | 'goe'; text: string };
 export function GoeChat({
@@ -23,6 +37,10 @@ export function GoeChat({
   onClose?: () => void;
   onApplied?: () => void;
 }) {
+  const { controller } = useMascot();
+  const [operation, setOperation] = useState<'planning' | 'waiting'>(
+    'planning',
+  );
   const params = new URLSearchParams(embedded ? '' : location.search);
   const [tripId, setTripId] = useState(
     initialTripId ?? params.get('trip') ?? '',
@@ -41,6 +59,21 @@ export function GoeChat({
     [proposal, setProposal] = useState<GoeProposal | null>(null);
   const [preview, setPreview] = useState(false);
   const [recoverable, setRecoverable] = useState(false);
+  const visualState: ChatVisualState = busy
+    ? operation
+    : error
+      ? 'error'
+      : proposal
+        ? 'success'
+        : input.trim()
+          ? 'listening'
+          : 'idle';
+  useEffect(() => {
+    const channel = embedded ? 'chat-embedded' : 'chat-page';
+    syncChatState(controller, channel, visualState);
+    return () => controller.setChannel(channel, null);
+  }, [controller, embedded, visualState]);
+
   const dialog = useRef<HTMLDialogElement>(null);
   const sequence = useRef(0),
     generationKey = useRef<{
@@ -115,20 +148,13 @@ export function GoeChat({
         };
     if (!request) return;
     generationKey.current = request;
+    setOperation('planning');
     setBusy(true);
     setError('');
     setProposal(null);
     if (!recover) add('user', request.body.message);
     try {
-      const result = await api<GoeProposal>(
-        `/trips/${request.tripId}/goe-proposal`,
-        {
-          method: 'POST',
-          headers: { 'Idempotency-Key': request.key },
-          body: JSON.stringify(request.body),
-          signal: AbortSignal.timeout(plannerTiming.clientTimeoutMs),
-        },
-      );
+      const result = await assistant.proposeDay(request);
       setProposal(result);
       applyKey.current = crypto.randomUUID();
       setInput('');
@@ -149,20 +175,16 @@ export function GoeChat({
   }
   async function apply() {
     if (!proposal || !trip || busy) return;
+    setOperation('waiting');
     setBusy(true);
     setError('');
     try {
-      const result = await api<{ trip: TripDto }>(
-        `/trips/${trip.id}/goe-apply`,
-        {
-          method: 'POST',
-          headers: { 'Idempotency-Key': applyKey.current },
-          body: JSON.stringify({
-            runId: proposal.runId,
-            expectedRevision: proposal.baseRevision,
-          }),
-        },
-      );
+      const result = await assistant.applyDay({
+        tripId: trip.id,
+        key: applyKey.current,
+        runId: proposal.runId,
+        revision: proposal.baseRevision,
+      });
       setTrip(result.trip);
       setPreview(false);
       setProposal(null);
@@ -192,12 +214,13 @@ export function GoeChat({
         >
           {embedded ? <X size={21} /> : <ArrowLeft size={21} />}
         </button>
-        <img src={images.goeMascot} alt="Goe" />
-        <div>
-          <strong>Goe</strong>
+        <div className="customer-goe-identity">
+          <MascotRenderer />
+          <strong>Goe AI</strong>
           <small>Bạn đồng hành chuyến đi</small>
         </div>
       </header>
+      <MascotSettings />
       <h1 className="sr-only">Trò chuyện với Goe</h1>
       {!signedIn ? (
         <p className="goe-context-notice">
@@ -299,6 +322,7 @@ export function GoeChat({
           <span className="sr-only">Goe sử dụng thông tin nào?</span>
         </summary>
         <p className="goe-demo-note">
+          Chưa có thời tiết hoặc giá trực tiếp. Chi phí thiếu vẫn được ghi rõ.
           Khi gửi, nội dung tin nhắn, lịch theo mã địa điểm, ngày đi, số người,
           ngân sách và sở thích được gửi tới dịch vụ AI của Goe. Không gửi tên
           tài khoản hay ghi chú riêng. Đừng nhập thông tin nhạy cảm.
@@ -386,9 +410,6 @@ export function GoeChat({
           </div>
         )}
       </div>
-      <p className="goe-consider">
-        Chưa có thời tiết hoặc giá trực tiếp. Chi phí thiếu vẫn được ghi rõ.
-      </p>
       <div className="goe-composer-area">
         <div className="goe-quick-prompts">
           <button

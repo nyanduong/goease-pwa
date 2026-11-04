@@ -6,7 +6,7 @@ import {
 } from '@goease/contracts';
 import { api } from '../api';
 import type { Link } from '../App';
-import { Field, Goe, Notice } from './ui';
+import { Brand, Field, Goe, Notice } from './ui';
 
 export function PasswordRecovery({
   reset,
@@ -80,6 +80,9 @@ export function PasswordRecovery({
         <Goe size="large" />
       </div>
       <div className="auth-card">
+        <div className="customer-auth-brand">
+          <Brand />
+        </div>
         <div className="auth-card-header">
           <h1>{reset ? 'Đặt lại mật khẩu' : 'Quên mật khẩu?'}</h1>
           <p>

@@ -1,0 +1,2665 @@
+/* Customer V2: compact travel app surfaces, derived from the supplied reference.
+   Deliberately scoped so admin and backend behavior remain untouched. */
+.customer-ui.customer-v2 {
+  --customer-bg: #fff;
+  --customer-surface: #fff;
+  --customer-text: #172e37;
+  --customer-muted: #73828c;
+  --customer-border: #e7ecef;
+  --primary-fill: #00757b;
+  --teal-fill: #00757b;
+  --paper: #fff;
+  --paper-card: #fff;
+  --paper-subtle: #f5f8f9;
+  --paper-card-warm: #fff;
+  --ink: #172e37;
+  --muted: #73828c;
+  --line: #e7ecef;
+  --soft: #f1f5f6;
+  --soft-hover: #e7f3f3;
+  --soft-card: #f5f8f9;
+  --accent-soft: #e8f6f6;
+  --teal: #00757b;
+  --teal-dark: #005d64;
+  --accent: #00757b;
+  --honey: #f99432;
+  --orange: #f99432;
+  --customer-nav-height: 64px;
+  --customer-bottom-space: calc(64px + env(safe-area-inset-bottom, 0px));
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  background: #fff;
+  color: #172e37;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.customer-ui.customer-v2 :is(h1, h2, h3, strong) {
+  color: #172e37;
+}
+.customer-ui.customer-v2 h1 {
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.customer-ui.customer-v2 h2 {
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 650;
+  letter-spacing: -0.2px;
+}
+.customer-ui.customer-v2 h3 {
+  font-size: 15px;
+  font-weight: 650;
+}
+.customer-ui.customer-v2 :is(button, .button) {
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 11px;
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+.customer-ui.customer-v2 :is(button, .button):active:not(:disabled) {
+  transform: scale(0.98);
+}
+.customer-ui.customer-v2
+  :is(
+    .button-primary,
+    .journey-primary,
+    .budget-adjust,
+    .quick-action > button,
+    .place-bottom .button-primary
+  ) {
+  color: #fff;
+  background: linear-gradient(110deg, #00858b, #00646d);
+  border: 1px solid transparent;
+  box-shadow: 0 4px 12px #00757b14;
+  min-height: 44px;
+}
+.customer-ui.customer-v2
+  :is(.button-primary, .journey-primary)
+  :is(span, strong, svg) {
+  color: inherit;
+}
+.customer-ui.customer-v2 :is(.button-outline, .journey-outline) {
+  background: #fff;
+  border-color: #d8e5e8;
+  color: #00757b;
+}
+.customer-ui.customer-v2
+  :is(input, select, textarea):where(
+    :not([type='checkbox']):not([type='radio']):not([type='file']):not(
+        [type='range']
+      )
+  ) {
+  min-height: 44px;
+  border: 1px solid #e1e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #273d48;
+  padding: 10px 12px;
+  font-size: 14px;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 :is(input, textarea)::placeholder {
+  color: #97a2aa;
+}
+.customer-ui.customer-v2 :is(input, select, textarea):focus-visible {
+  outline: 2px solid #6bbbc0;
+  outline-offset: 2px;
+}
+.customer-ui.customer-v2
+  :is(
+    .discovery-search,
+    .explore-search,
+    .destination-search,
+    .destination-picker-search,
+    .input-with-action,
+    .account-password-input
+  ):focus-within {
+  outline: 2px solid #6bbbc0;
+  outline-offset: 2px;
+}
+.customer-ui.customer-v2
+  :is(
+    .discovery-search,
+    .explore-search,
+    .destination-search,
+    .destination-picker-search,
+    .input-with-action,
+    .account-password-input
+  )
+  input {
+  background: transparent;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+.customer-ui.customer-v2
+  :is(
+    .discovery-search,
+    .explore-search,
+    .destination-search,
+    .destination-picker-search,
+    .input-with-action,
+    .account-password-input
+  )
+  input:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+.customer-ui.customer-v2
+  :is(.field, .journey-field)
+  > :is(label, span:first-child) {
+  font-size: 12px;
+  font-weight: 600;
+}
+.customer-ui.customer-v2 .site-header {
+  background: #fff;
+  border-color: #edf0f2;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .header-inner {
+  min-height: 62px;
+}
+.customer-ui.customer-v2 .site-footer {
+  display: none;
+}
+.customer-ui.customer-v2 .brand-name {
+  font-family: inherit;
+  font-weight: 750;
+  letter-spacing: -0.8px;
+}
+.customer-ui.customer-v2 .brand-mark {
+  width: 32px;
+  height: 32px;
+}
+.customer-ui.customer-v2 .customer-screen-header {
+  margin-bottom: 16px;
+  padding-bottom: 0;
+}
+.customer-ui.customer-v2 .customer-screen-header h1 {
+  font-size: 21px;
+}
+.customer-ui.customer-v2 .screen-create {
+  min-height: 38px;
+  padding: 8px 12px;
+}
+.customer-ui.customer-v2
+  :is(.journey-list, .account-page, .explore-page, .goe-chat-page) {
+  max-width: 980px;
+  margin-inline: auto;
+}
+/* Welcome: genuine app onboarding, no device chrome or fake status bar. */
+.customer-ui.customer-v2.welcome-shell {
+  padding: 0;
+  background: #e8f3f5;
+}
+.customer-ui.customer-v2 .welcome-main {
+  padding: 0;
+}
+.customer-ui.customer-v2 .welcome-page {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: max(24px, env(safe-area-inset-top, 0px)) 24px
+    max(24px, env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  background: #00515e;
+  border-radius: 0;
+}
+.customer-ui.customer-v2 .welcome-page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    #00343e20 0%,
+    #00343e38 30%,
+    #00343ed6 66%,
+    #00343e 100%
+  );
+}
+.customer-ui.customer-v2 .welcome-page > .welcome-landscape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  z-index: -2;
+  opacity: 1;
+  mask-image: none;
+}
+.customer-ui.customer-v2 .welcome-hero {
+  position: static;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 390px;
+  height: auto;
+  padding: 110px 0 26px;
+  background: transparent;
+}
+.customer-ui.customer-v2 .welcome-heading {
+  position: static;
+  text-align: center;
+  padding: 0;
+}
+.customer-ui.customer-v2 .welcome-heading .brand {
+  justify-content: center;
+}
+.customer-ui.customer-v2 .welcome-heading .brand-name {
+  color: #fff;
+  font-size: 31px;
+}
+.customer-ui.customer-v2 .welcome-heading .brand-mark {
+  width: 42px;
+  height: 42px;
+}
+.customer-ui.customer-v2 .welcome-subtitle {
+  color: #e0eff2;
+  font-size: 13px;
+  margin: 9px 0 0;
+}
+.customer-ui.customer-v2 .welcome-message {
+  text-align: center;
+  margin-top: 90px;
+}
+.customer-ui.customer-v2 .welcome-message h1 {
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.6px;
+}
+.customer-ui.customer-v2 .welcome-message p {
+  color: #d7e9ec;
+  font-size: 13px;
+  margin: 14px 0 0;
+}
+.customer-ui.customer-v2 .welcome-actions {
+  width: 100%;
+  position: static;
+  padding: 0;
+  background: transparent;
+  text-align: center;
+}
+.customer-ui.customer-v2 .welcome-actions .button-primary {
+  width: 100%;
+  min-height: 46px;
+  color: #fff;
+  background: linear-gradient(100deg, #ffac46, #ff8533);
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .welcome-explore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #ffffff55;
+  border-radius: 12px;
+  background: #ffffff13;
+  color: #fff;
+  font-size: 12px;
+  text-decoration: none;
+  margin-top: 10px;
+}
+.customer-ui.customer-v2 .welcome-explore strong {
+  color: inherit;
+}
+.customer-ui.customer-v2 .welcome-actions > small {
+  color: #c1dce0;
+  font-size: 10px;
+  display: block;
+  margin-top: 12px;
+}
+/* Authentication retains real OTP and password recovery flows. */
+.customer-ui.customer-v2 .auth-layout {
+  gap: 48px;
+  align-items: center;
+  padding-block: 24px;
+}
+.customer-ui.customer-v2 .auth-card {
+  padding: 28px;
+  background: #fff;
+  border: 1px solid #e7ecef;
+  box-shadow: 0 8px 30px #164d5610;
+  border-radius: 20px;
+}
+.customer-ui.customer-v2 .customer-auth-brand {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 20px;
+}
+.customer-ui.customer-v2 .customer-auth-brand .brand-name {
+  font-size: 29px;
+}
+.customer-ui.customer-v2 .auth-card-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.customer-ui.customer-v2 .auth-card-header .eyebrow {
+  display: none;
+}
+.customer-ui.customer-v2 .auth-card-header h2 {
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 700;
+}
+.customer-ui.customer-v2 .auth-card-sub {
+  font-size: 13px;
+  color: #73828c;
+  max-width: 290px;
+  margin: 8px auto 0;
+}
+.customer-ui.customer-v2 .customer-auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #e7ecef;
+  margin: 0 0 22px;
+}
+.customer-ui.customer-v2 .customer-auth-tabs a {
+  padding: 11px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #73828c;
+  text-align: center;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.customer-ui.customer-v2 .customer-auth-tabs a.is-active {
+  border-color: #00757b;
+  color: #00757b;
+}
+.customer-ui.customer-v2 .auth-card form {
+  gap: 15px;
+}
+.customer-ui.customer-v2 .auth-card .auth-switch {
+  font-size: 12px;
+  text-align: center;
+  margin-top: 16px;
+}
+.customer-ui.customer-v2 .auth-story h1 {
+  font-family: inherit;
+  font-size: 34px;
+  font-weight: 700;
+}
+.customer-ui.customer-v2 .auth-mascot-card {
+  background: #edf8f8;
+  border: 1px solid #e1eff0;
+  box-shadow: none;
+}
+/* Home hierarchy: photo header, fast categories, featured destinations, saved trips. */
+.customer-ui.customer-v2:has(.discovery-home) > .site-header {
+  display: none;
+}
+.customer-ui.customer-v2 .discovery-home {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 0;
+}
+.customer-ui.customer-v2 .discovery-banner {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-height: 200px;
+  padding: 28px 20px 42px;
+  border-radius: 0 0 24px 24px;
+  overflow: hidden;
+  background: #135956;
+}
+.customer-ui.customer-v2 .discovery-banner::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(180deg, #003a4250, #003a4230);
+}
+.customer-ui.customer-v2 .discovery-landscape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+  opacity: 1;
+  mask-image: none;
+}
+.customer-ui.customer-v2 .discovery-banner-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: static;
+  padding: 0;
+}
+.customer-ui.customer-v2 .customer-home-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  padding: 0;
+  text-align: left;
+}
+.customer-ui.customer-v2 .customer-home-profile .account-avatar {
+  width: 38px;
+  height: 38px;
+  border: 2px solid #ffffffc4;
+  border-radius: 50%;
+}
+.customer-ui.customer-v2 .customer-home-profile > span {
+  display: grid;
+  gap: 1px;
+}
+.customer-ui.customer-v2 .customer-home-profile small {
+  color: #ecf5f6;
+  font-size: 11px;
+}
+.customer-ui.customer-v2 .customer-home-profile strong {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 650;
+}
+.customer-ui.customer-v2 .customer-home-saved {
+  width: 36px;
+  min-height: 36px;
+  padding: 6px;
+  border: 1px solid #ffffff50;
+  border-radius: 50%;
+  background: #ffffff14;
+  color: #fff;
+}
+.customer-ui.customer-v2 .discovery-slogan {
+  display: none;
+}
+.customer-ui.customer-v2 .discovery-start {
+  position: static;
+  width: 100%;
+  padding: 0;
+  margin-top: 24px;
+}
+.customer-ui.customer-v2 .home-destination-search {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #fff;
+  color: #73828c;
+  border: 1px solid #e5ebed;
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 12px #003f4b10;
+  font-size: 13px;
+  justify-content: flex-start;
+}
+.customer-ui.customer-v2 .home-destination-search > svg:last-child {
+  margin-left: auto;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  position: relative;
+  z-index: 1;
+  gap: 6px;
+  margin: -24px 14px 10px;
+  padding: 13px 8px;
+  border: 1px solid #e9eef0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 5px 20px #0b596a08;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button > span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #e7f8f5;
+  color: #14a493;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button:nth-child(2) > span {
+  background: #fff5e7;
+  color: #f3a324;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button:nth-child(3) > span {
+  background: #fff0e9;
+  color: #ee8550;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button:nth-child(4) > span {
+  background: #e9f6ff;
+  color: #359cd2;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts strong {
+  font-size: 11px;
+  font-weight: 550;
+}
+.customer-ui.customer-v2 .discovery-home .discovery-destinations {
+  order: 2;
+}
+.customer-ui.customer-v2 .discovery-home .discovery-trips {
+  order: 3;
+}
+.customer-ui.customer-v2 .discovery-section-heading {
+  margin: 18px 0 12px;
+}
+.customer-ui.customer-v2 .discovery-section-heading h2 {
+  font-size: 17px;
+  font-weight: 700;
+}
+.customer-ui.customer-v2 .discovery-section-heading button {
+  padding: 0;
+  min-height: 30px;
+  font-size: 11px;
+  color: #00757b;
+  background: transparent;
+  border: 0;
+}
+.customer-ui.customer-v2 .discovery-trips {
+  padding: 0 16px 20px;
+}
+.customer-ui.customer-v2 .discovery-destinations {
+  padding: 0 16px 12px;
+}
+.customer-ui.customer-v2 .discovery-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.customer-ui.customer-v2 .discovery-card {
+  position: relative;
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #edf4f4;
+}
+.customer-ui.customer-v2 .discovery-card:first-child {
+  grid-column: 1/-1;
+}
+.customer-ui.customer-v2 .discovery-card-open {
+  display: block;
+  position: relative;
+  width: 100%;
+  min-height: 140px;
+  height: 150px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.customer-ui.customer-v2 .discovery-card:first-child .discovery-card-open {
+  height: 190px;
+}
+.customer-ui.customer-v2 .discovery-card-open::after {
+  content: '';
+  position: absolute;
+  inset: 25% 0 0;
+  background: linear-gradient(180deg, transparent, #0b2f3ad9);
+  pointer-events: none;
+}
+.customer-ui.customer-v2 .discovery-card-open img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.customer-ui.customer-v2 .discovery-card-caption {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1;
+  display: grid;
+  gap: 3px;
+  color: #fff;
+  background: transparent;
+  padding: 0;
+}
+.customer-ui.customer-v2 .discovery-card-caption strong {
+  color: #fff;
+  font-size: 16px;
+}
+.customer-ui.customer-v2 .discovery-card-caption > span {
+  color: #e3eff0;
+  font-size: 11px;
+}
+.customer-ui.customer-v2 .discovery-bookmark {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 32px;
+  padding: 5px;
+  border: 1px solid #ffffff65;
+  border-radius: 50%;
+  color: #fff;
+  background: #15364235;
+}
+.customer-ui.customer-v2 .discovery-bookmark[aria-pressed='true'] {
+  color: #fff;
+  background: #00757b;
+}
+.customer-ui.customer-v2 .discovery-destination-placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  background: linear-gradient(135deg, #77b9bb, #245d67);
+  color: #e8f8f6;
+}
+.customer-ui.customer-v2 .discovery-trip-empty {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  background: #f6f9fa;
+  border: 1px solid #e7ecef;
+  border-radius: 14px;
+  text-align: left;
+}
+.customer-ui.customer-v2 .discovery-trip-empty strong {
+  font-size: 13px;
+}
+.customer-ui.customer-v2 .discovery-trip-empty small {
+  font-size: 11px;
+  color: #73828c;
+}
+/* Explore and map details. Photos remain tied to the actual catalog. */
+.customer-ui.customer-v2 .explore-toolbar {
+  border: 0;
+  background: #fff;
+  box-shadow: none;
+  gap: 10px;
+}
+.customer-ui.customer-v2 .explore-filters {
+  gap: 7px;
+}
+.customer-ui.customer-v2 .explore-filters button {
+  padding: 7px 12px;
+  min-height: 34px;
+  font-size: 12px;
+  border-radius: 9px;
+  background: #f3f6f7;
+  color: #657681;
+  border: 0;
+}
+.customer-ui.customer-v2 .explore-filters button[aria-pressed='true'] {
+  background: #00757b;
+  color: #fff;
+}
+.customer-ui.customer-v2 .explore-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.customer-ui.customer-v2 .explore-card {
+  border: 1px solid #e7ecef;
+  border-radius: 15px;
+  box-shadow: 0 3px 12px #27475405;
+  background: #fff;
+  overflow: hidden;
+}
+.customer-ui.customer-v2 .explore-card-open {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 220px;
+  padding: 0;
+  background: #edf4f5;
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.customer-ui.customer-v2 .explore-card-copy {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 40px 14px 14px;
+  background: linear-gradient(180deg, transparent, #092f3acc);
+}
+.customer-ui.customer-v2 .explore-card-copy strong {
+  font-size: 17px;
+  color: #fff;
+  font-weight: 650;
+}
+.customer-ui.customer-v2 .explore-save {
+  width: 34px;
+  min-height: 34px;
+  padding: 6px;
+  border-radius: 50%;
+  background: #ffffffd9;
+  color: #00757b;
+}
+.customer-ui.customer-v2 .explore-category {
+  border: 0;
+  background: #ffffffed;
+  color: #38575f;
+  font-size: 11px;
+}
+.customer-ui.customer-v2 .place-hero {
+  height: 290px;
+  border-radius: 0 0 22px 22px;
+  overflow: hidden;
+}
+.customer-ui.customer-v2 .place-body {
+  position: relative;
+  margin: -22px auto 0;
+  padding: 22px 20px;
+  border-radius: 22px 22px 0 0;
+  background: #fff;
+}
+.customer-ui.customer-v2 .place-body h1 {
+  font-size: 23px;
+}
+.customer-ui.customer-v2 .place-meta {
+  padding: 12px 0;
+  border-bottom: 1px solid #e7ecef;
+  gap: 12px;
+}
+.customer-ui.customer-v2 .place-about {
+  border: 0;
+  padding: 16px 0;
+}
+.customer-ui.customer-v2 .place-description {
+  font-size: 13px;
+  color: #6c7c86;
+  line-height: 1.7;
+}
+.customer-ui.customer-v2 .place-bottom {
+  background: #fff;
+  border-top: 1px solid #e7ecef;
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 16px #123f4805;
+}
+.customer-ui.customer-v2 .customer-map-canvas {
+  min-height: 360px;
+  border-radius: 16px;
+}
+/* Trip creation and itinerary use compact fields and an image-led summary. */
+.customer-ui.customer-v2 .journey-list {
+  padding: 20px 16px;
+}
+.customer-ui.customer-v2 .journey-phase-tabs {
+  background: #f2f5f6;
+  border: 0;
+  padding: 4px;
+  border-radius: 11px;
+}
+.customer-ui.customer-v2 .journey-phase-tabs button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  padding: 8px;
+}
+.customer-ui.customer-v2 .journey-saved-card {
+  border: 1px solid #e7ecef;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .journey-saved-cover {
+  height: 145px;
+}
+.customer-ui.customer-v2 .journey-saved-copy {
+  padding: 14px;
+}
+.customer-ui.customer-v2 .journey-empty {
+  border: 1px solid #e7ecef;
+  border-radius: 16px;
+  padding: 24px 18px;
+  background: #f8fafb;
+}
+.customer-ui.customer-v2 .journey-workspace {
+  background: #fff;
+  border-color: #e7ecef;
+}
+.customer-ui.customer-v2 .journey-top {
+  min-height: 60px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #edf0f2;
+  background: #fff;
+}
+.customer-ui.customer-v2 .journey-top > div > strong {
+  font-size: 15px;
+}
+.customer-ui.customer-v2 .journey-top button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-height: 36px;
+  padding: 6px;
+  border: 0;
+  border-radius: 50%;
+  background: #f4f7f8;
+}
+.customer-ui.customer-v2 .planning-steps {
+  margin: 16px 0;
+}
+.customer-ui.customer-v2 .planning-steps li strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.customer-ui.customer-v2 .planning-steps li > span {
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  background: #edf3f4;
+}
+.customer-ui.customer-v2 .planning-steps li[aria-current='step'] > span {
+  background: #00757b;
+  color: #fff;
+}
+.customer-ui.customer-v2 .quick-setup {
+  padding: 4px 16px 16px;
+}
+.customer-ui.customer-v2 .quick-destination-select {
+  background: #f7fafb;
+  border: 1px solid #e1e8eb;
+  border-radius: 12px;
+  min-height: 50px;
+}
+.customer-ui.customer-v2 .quick-question h2 {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.customer-ui.customer-v2 .quick-options {
+  gap: 7px;
+}
+.customer-ui.customer-v2 .quick-options > button {
+  min-height: 39px;
+  padding: 8px 12px;
+  font-size: 12px;
+  background: #f3f6f7;
+  border: 1px solid #edf0f2;
+  border-radius: 10px;
+  color: #60717d;
+}
+.customer-ui.customer-v2 .quick-options > button[aria-pressed='true'] {
+  color: #00757b;
+  background: #e6f5f5;
+  border-color: #8ccbd0;
+}
+.customer-ui.customer-v2 .quick-preferences {
+  border: 1px solid #e7ecef;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+.customer-ui.customer-v2 .quick-actions {
+  background: #fff;
+  border-top: 1px solid #edf0f2;
+  padding-top: 12px;
+}
+.customer-ui.customer-v2 .journey-cover {
+  height: 200px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.customer-ui.customer-v2 .journey-view-tabs {
+  display: flex;
+  gap: 4px;
+  background: #f3f6f7;
+  border-radius: 10px;
+  padding: 4px;
+}
+.customer-ui.customer-v2 .journey-view-tabs button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #73828c;
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .journey-view-tabs button[aria-pressed='true'] {
+  background: #fff;
+  color: #00757b;
+  box-shadow: 0 2px 6px #113d4708;
+}
+.customer-ui.customer-v2 .journey-day-tabs button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .journey-day-tabs button[aria-pressed='true'] {
+  background: #00757b;
+  color: #fff;
+}
+.customer-ui.customer-v2 .journey-stop {
+  border: 0;
+  padding: 12px 0 12px 18px;
+  background: #fff;
+}
+.customer-ui.customer-v2 .journey-stop-open {
+  border: 0;
+  padding: 0;
+  background: #fff;
+}
+.customer-ui.customer-v2 .journey-stop-photo {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.customer-ui.customer-v2 .journey-stop-open strong {
+  font-size: 14px;
+}
+.customer-ui.customer-v2 .journey-stop-open small {
+  font-size: 12px;
+  color: #73828c;
+}
+.customer-ui.customer-v2 .journey-add-stop {
+  border: 0;
+  background: #e7f5f5;
+  color: #00757b;
+  border-radius: 10px;
+  font-size: 12px;
+  min-height: 38px;
+}
+/* Real cost breakdown; never use the reference's made-up totals or percentages. */
+.customer-ui.customer-v2 .budget-green-card {
+  text-align: center;
+  padding: 24px 16px 16px;
+  border: 0;
+  background: #fff;
+  border-radius: 0;
+  color: #172e37;
+}
+.customer-ui.customer-v2 .budget-total {
+  color: #00757b;
+  font-size: 32px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+.customer-ui.customer-v2 .budget-eyebrow {
+  color: #73828c;
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .budget-per-person {
+  color: #73828c;
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .budget-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 16px;
+  background: #fff;
+  border: 0;
+}
+.customer-ui.customer-v2 .budget-donut {
+  width: 184px;
+  height: 184px;
+  flex: 0 0 auto;
+  margin: auto;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .budget-breakdown ul {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+.customer-ui.customer-v2 .budget-breakdown li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf0f2;
+  font-size: 13px;
+}
+.customer-ui.customer-v2 .budget-breakdown li b {
+  margin-left: auto;
+  font-size: 13px;
+  color: #273d48;
+}
+.customer-ui.customer-v2 .budget-breakdown li > svg {
+  display: none;
+}
+.customer-ui.customer-v2 .budget-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.customer-ui.customer-v2 .budget-adjust {
+  width: 100%;
+  border-radius: 12px;
+}
+/* Goe conversation is styled around actual server responses and existing proposals. */
+.customer-ui.customer-v2 .goe-chat-page {
+  background: #fff;
+}
+.customer-ui.customer-v2 .goe-chat-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #edf0f2;
+  background: #fff;
+}
+.customer-ui.customer-v2 .goe-chat-header strong {
+  font-size: 15px;
+}
+.customer-ui.customer-v2 .goe-chat-messages {
+  padding: 18px 14px;
+  background: #fff;
+  gap: 18px;
+}
+.customer-ui.customer-v2 .goe-chat-bubble {
+  background: #f0f4f6;
+  border: 0;
+  border-radius: 4px 16px 16px 16px;
+  color: #314853;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .goe-chat-line.user .goe-chat-bubble {
+  background: #d9f3f7;
+  color: #174754;
+  border-radius: 16px 4px 16px 16px;
+}
+.customer-ui.customer-v2 .goe-proposal {
+  border: 1px solid #e5edef;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+  box-shadow: 0 4px 12px #17475006;
+}
+.customer-ui.customer-v2 .goe-composer-area {
+  background: #fff;
+  border-top: 1px solid #edf0f2;
+  padding: 10px 12px;
+}
+.customer-ui.customer-v2 .goe-composer {
+  background: #f1f5f6;
+  border: 1px solid #e8edef;
+  border-radius: 22px;
+  padding: 4px 6px 4px 12px;
+}
+.customer-ui.customer-v2 .goe-composer textarea {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 7px 0;
+  min-height: 36px;
+  font-size: 13px;
+}
+.customer-ui.customer-v2 .goe-composer button {
+  min-height: 36px;
+  width: 36px;
+  border: 0;
+  border-radius: 50%;
+  padding: 8px;
+  color: #fff;
+  background: #00757b;
+}
+.customer-ui.customer-v2 .goe-quick-prompts button {
+  background: #e8f6f6;
+  color: #00757b;
+  font-size: 11px;
+  border-radius: 18px;
+  min-height: 32px;
+  padding: 7px 12px;
+}
+/* Personal area uses simple destination rows and expandable settings. */
+.customer-ui.customer-v2 .account-page {
+  padding: 20px 16px;
+}
+.customer-ui.customer-v2 .account-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 0 24px;
+  border: 0;
+  background: #fff;
+}
+.customer-ui.customer-v2 .account-identity .account-avatar {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+}
+.customer-ui.customer-v2 .account-identity > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.customer-ui.customer-v2 .account-identity strong {
+  font-size: 19px;
+  font-weight: 700;
+}
+.customer-ui.customer-v2 .account-identity span {
+  font-size: 12px;
+  color: #73828c;
+  overflow-wrap: anywhere;
+}
+.customer-ui.customer-v2 .account-identity small {
+  justify-self: start;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #e5f5f4;
+  color: #00757b;
+  font-size: 10px;
+}
+.customer-ui.customer-v2 .customer-account-links {
+  margin: 0 0 16px;
+  border: 1px solid #e7ecef;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.customer-ui.customer-v2 .customer-account-links a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 14px;
+  background: #fff;
+  color: #4f6370;
+  text-decoration: none;
+  border-bottom: 1px solid #edf0f2;
+  font-size: 13px;
+}
+.customer-ui.customer-v2 .customer-account-links a:last-child {
+  border-bottom: 0;
+}
+.customer-ui.customer-v2 .customer-account-links a > span {
+  flex: 1;
+}
+.customer-ui.customer-v2 :is(.account-settings-row, .account-security-group) {
+  border: 1px solid #e7ecef;
+  border-radius: 13px;
+  background: #fff;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.customer-ui.customer-v2
+  :is(.account-settings-row, .account-security-group)
+  > summary {
+  min-height: 56px;
+  padding: 14px;
+  color: #4f6370;
+  background: #fff;
+  font-size: 13px;
+}
+.customer-ui.customer-v2
+  :is(.account-settings-row, .account-security-group)
+  > summary
+  small {
+  font-size: 11px;
+  color: #8b979e;
+}
+.customer-ui.customer-v2 .account-profile-card {
+  border: 0;
+  border-top: 1px solid #edf0f2;
+  border-radius: 0;
+  background: #fafcfc;
+  padding: 16px;
+}
+.customer-ui.customer-v2 .account-logout {
+  background: #fff3f2;
+  color: #dc5a54;
+  border: 0;
+  border-radius: 11px;
+  width: 100%;
+  min-height: 44px;
+  font-size: 13px;
+}
+/* Calm, compact persistent navigation; Goe is an actual route, not a mock action. */
+.customer-ui.customer-v2 .customer-bottom-navigation {
+  background: #fff;
+  border-top: 1px solid #edf0f2;
+  box-shadow: 0 -4px 16px #19485306;
+  padding: 6px 8px max(6px, env(safe-area-inset-bottom, 0px));
+  height: var(--customer-bottom-space);
+}
+.customer-ui.customer-v2 .customer-bottom-navigation::before {
+  display: none;
+}
+.customer-ui.customer-v2 .mobile-nav-item {
+  position: relative;
+  min-height: 50px;
+  gap: 4px;
+  padding: 4px 0;
+  background: transparent;
+  color: #87959c;
+  font-size: 10px;
+  font-weight: 500;
+}
+.customer-ui.customer-v2 .mobile-nav-item .bottom-nav-icon {
+  width: 28px;
+  height: 26px;
+  border-radius: 0;
+  background: transparent;
+}
+.customer-ui.customer-v2 .mobile-nav-item .bottom-nav-icon svg {
+  width: 21px;
+  height: 21px;
+}
+.customer-ui.customer-v2 .mobile-nav-item.active {
+  color: #00757b;
+  font-weight: 650;
+}
+.customer-ui.customer-v2 .mobile-nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  width: 24px;
+  height: 2px;
+  border-radius: 0 0 3px 3px;
+  background: #f99432;
+}
+.customer-ui.customer-v2 .mobile-nav-item[href='/goe'] .bottom-nav-icon {
+  width: 32px;
+  height: 30px;
+  border-radius: 10px;
+  background: #e7f5f5;
+  color: #00757b;
+}
+@media (min-width: 761px) {
+  .customer-ui.customer-v2 .discovery-home {
+    max-width: 1080px;
+    margin: auto;
+  }
+  .customer-ui.customer-v2 .discovery-banner {
+    border-radius: 0 0 24px 24px;
+    min-height: 240px;
+  }
+  .customer-ui.customer-v2 .customer-home-shortcuts {
+    max-width: 600px;
+    width: calc(100% - 48px);
+    margin: -28px auto 10px;
+  }
+  .customer-ui.customer-v2 .discovery-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .customer-ui.customer-v2 .discovery-card:first-child {
+    grid-column: auto;
+  }
+  .customer-ui.customer-v2 .discovery-card .discovery-card-open {
+    height: 220px;
+  }
+}
+@media (max-width: 760px) {
+  .customer-ui.customer-v2 .auth-site-header {
+    display: none;
+  }
+  .customer-ui.customer-v2 .auth-layout {
+    display: block;
+    padding: 22px 0;
+    margin: 0 auto;
+    max-width: 430px;
+  }
+  .customer-ui.customer-v2 .auth-story {
+    display: none;
+  }
+  .customer-ui.customer-v2 .auth-card {
+    padding: 22px 20px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .customer-ui.customer-v2 .auth-card-header h2 {
+    font-size: 19px;
+  }
+  .customer-ui.customer-v2 .explore-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .customer-ui.customer-v2 .explore-card-open {
+    height: 210px;
+  }
+  .customer-ui.customer-v2 .place-hero {
+    height: 250px;
+  }
+  .customer-ui.customer-v2 .place-body {
+    padding: 20px 16px;
+  }
+  .customer-ui.customer-v2 .journey-workspace {
+    border: 0;
+    border-radius: 0;
+  }
+  .customer-ui.customer-v2 .journey-top {
+    border-radius: 0;
+  }
+  .customer-ui.customer-v2
+    :is(input, select, textarea):where(
+      :not([type='checkbox']):not([type='radio']):not([type='file']):not(
+          [type='range']
+        )
+    ) {
+    font-size: 16px;
+  }
+}
+@media (max-height: 700px) {
+  .customer-ui.customer-v2 .welcome-hero {
+    min-height: 320px;
+    padding-top: 70px;
+  }
+  .customer-ui.customer-v2 .welcome-message {
+    margin-top: 60px;
+  }
+  .customer-ui.customer-v2 .welcome-message h1 {
+    font-size: 23px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .customer-ui.customer-v2 *,
+  .customer-ui.customer-v2 *::before,
+  .customer-ui.customer-v2 *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+/* Home owns its full-width header and avoids repeating the same shortcuts. */
+.customer-ui.customer-v2:has(.discovery-home) > .main-content-wrap {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+.customer-ui.customer-v2 .discovery-home .discovery-banner {
+  margin: 0;
+}
+.customer-ui.customer-v2 .discovery-home .discovery-section-heading {
+  margin-top: 12px;
+}
+.customer-ui.customer-v2 .discovery-home .discovery-destinations {
+  padding-top: 0;
+}
+.customer-ui.customer-v2 .discovery-home {
+  padding: 0 0 20px;
+}
+.customer-ui.customer-v2 .discovery-banner {
+  height: 200px;
+}
+.customer-ui.customer-v2 .discovery-card-open::after {
+  display: block;
+}
+.customer-ui.customer-v2 .discovery-destination-placeholder {
+  width: 100%;
+  height: 100%;
+}
+.customer-ui.customer-v2 .discovery-card-open > img {
+  border-radius: 0;
+}
+.customer-ui.customer-v2 .journey-stop-open {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  text-align: left;
+  min-width: 0;
+}
+.customer-ui.customer-v2 .journey-stop-open > span:last-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.customer-ui.customer-v2 .journey-sheet {
+  background: #fff;
+  border: 1px solid #e5edef;
+  border-radius: 20px 20px 0 0;
+}
+.customer-ui.customer-v2 .journey-sheet > header {
+  background: #fff;
+  border-bottom: 1px solid #edf0f2;
+  padding-bottom: 12px;
+}
+.customer-ui.customer-v2 .journey-sheet > header h2 {
+  font-size: 17px;
+}
+.customer-ui.customer-v2 .journey-sheet > header > button {
+  width: 34px;
+  min-height: 34px;
+  padding: 6px;
+  border-radius: 50%;
+  background: #f1f6f7;
+  border: 0;
+}
+.customer-ui.customer-v2 .journey-place-options > article {
+  align-items: center;
+  padding: 14px 0;
+}
+.customer-ui.customer-v2 .journey-stop-dot {
+  background: #00a0a6;
+}
+.customer-ui.customer-v2 .journey-workspace[data-view='cost'] .planning-steps {
+  display: none;
+}
+.customer-ui.customer-v2
+  .journey-workspace[data-view='cost']
+  .quick-result-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  margin: 0;
+}
+.customer-ui.customer-v2
+  .journey-workspace[data-view='cost']
+  .quick-result-intro
+  > :is(h1, p) {
+  display: none;
+}
+.customer-ui.customer-v2
+  .journey-workspace[data-view='cost']
+  .quick-result-intro
+  > details {
+  font-size: 12px;
+}
+.customer-ui.customer-v2
+  .journey-workspace[data-view='cost']
+  .quick-result-intro
+  > details[open] {
+  width: 100%;
+}
+.customer-ui.customer-v2
+  .journey-workspace[data-view='cost']
+  .quick-result-intro {
+  padding: 6px 0;
+}
+.customer-ui.customer-v2
+  .journey-workspace[data-view='cost']
+  .budget-green-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px 8px;
+  margin-bottom: 4px;
+}
+.customer-ui.customer-v2
+  .journey-workspace[data-view='cost']
+  .budget-green-card
+  :is(p, small) {
+  margin: 0;
+}
+.customer-ui.customer-v2 .journey-workspace[data-view='cost'] .budget-total {
+  margin: 2px 0;
+}
+.customer-ui.customer-v2
+  .journey-workspace[data-view='cost']
+  .budget-breakdown {
+  padding-top: 8px;
+}
+.customer-ui.customer-v2 .goe-composer input {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  min-height: 36px;
+  padding: 7px 0;
+  font-size: 13px;
+  outline: 0;
+}
+.customer-ui.customer-v2 .goe-composer input:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .goe-composer:focus-within {
+  outline: 2px solid #6bbbc0;
+  outline-offset: 2px;
+}
+.customer-ui.customer-v2 .journey-stop {
+  padding: 12px 44px 12px 16px;
+}
+.customer-ui.customer-v2 .journey-stop-open > .journey-stop-photo {
+  grid-column: 1;
+  grid-row: 1;
+}
+.customer-ui.customer-v2 .journey-stop-open > span:last-child {
+  grid-column: 2;
+  grid-row: 1;
+}
+.customer-ui.customer-v2 .journey-timeline {
+  position: relative;
+}
+.customer-ui.customer-v2 .journey-timeline::before {
+  display: block;
+  content: '';
+  position: absolute;
+  top: 28px;
+  bottom: 24px;
+  left: 3px;
+  width: 1px;
+  background: #d7eaeb;
+}
+.customer-ui.customer-v2 .journey-stop-dot {
+  display: block;
+  position: absolute;
+  top: 26px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: #00a0a6;
+}
+body:has(.customer-v2) .app-confirmation {
+  background: #fff;
+  border-color: #e7ecef;
+  border-radius: 16px;
+  color: #172e37;
+}
+body:has(.customer-v2) .app-confirmation h2 {
+  font-family: Inter, 'Segoe UI', sans-serif;
+  font-size: 19px;
+}
+body:has(.customer-v2) .app-confirmation p {
+  font-size: 14px;
+  color: #73828c;
+}
+body:has(.customer-v2)
+  .app-confirmation:not(.is-danger)
+  .app-confirmation-accept {
+  background: #00757b;
+  color: #fff;
+  border-color: #00757b;
+}
+.customer-ui.customer-v2 .journey-saved-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+}
+.customer-ui.customer-v2 .journey-saved-cover {
+  width: 100%;
+  height: 170px;
+  min-height: 0;
+}
+.customer-ui.customer-v2 .journey-saved-copy {
+  padding: 14px;
+}
+.customer-ui.customer-v2 .journey-saved-copy h3 {
+  font-size: 16px;
+  margin: 7px 0;
+}
+.customer-ui.customer-v2 .trip-phase-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 0 14px;
+  border: 0;
+  border-radius: 11px;
+  background: #f2f6f7;
+}
+.customer-ui.customer-v2 .trip-phase-tabs button {
+  flex: 1;
+  padding: 8px 4px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #73828c;
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .trip-phase-tabs button[aria-pressed='true'] {
+  background: #fff;
+  color: #00757b;
+  box-shadow: 0 2px 5px #17465008;
+}
+.customer-ui.customer-v2 .journey-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 0;
+  padding: 16px 0;
+}
+.customer-ui.customer-v2 .journey-overview .journey-cover {
+  order: -1;
+  width: 100%;
+  height: 170px;
+  margin: 0 0 6px;
+}
+.customer-ui.customer-v2 .journey-overview > h1 {
+  font-size: 20px;
+}
+.customer-ui.customer-v2 .journey-overview > p {
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .trip-saved-label {
+  display: inline-flex;
+  margin: 0 0 0 8px;
+}
+@media (min-width: 761px) {
+  .customer-ui.customer-v2:has(.discovery-home) > .site-header {
+    display: block;
+  }
+  .customer-ui.customer-v2 .journey-saved-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .customer-ui.customer-v2 .journey-overview .journey-cover {
+    height: 240px;
+  }
+}
+.customer-ui.customer-v2 .budget-donut > span {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  background: #fff;
+}
+.customer-ui.customer-v2 .budget-donut > span strong {
+  font-size: 19px;
+}
+.customer-ui.customer-v2 .budget-donut > span small {
+  font-size: 11px;
+}
+/* Catalog list-link styles must not leak into Leaflet's mandatory attribution. */
+.customer-ui.customer-v2 .customer-map-canvas .leaflet-control-attribution {
+  display: block;
+  max-width: 100%;
+  padding: 2px 4px;
+  font:
+    10px/1.35 Arial,
+    sans-serif;
+  background: #ffffffe6;
+  white-space: normal;
+}
+.customer-ui.customer-v2 .customer-map-canvas .leaflet-control-attribution a {
+  display: inline;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #0078a8;
+  font: inherit;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .customer-map-canvas .leaflet-control-zoom a {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  margin: 0;
+  font:
+    700 20px/30px Arial,
+    sans-serif;
+  display: block;
+  border-radius: 0;
+  color: #38575d;
+  background: #fff;
+}
+.customer-ui.customer-v2 .discovery-banner::before {
+  display: none;
+}
+.customer-ui.customer-v2 .discovery-banner-copy {
+  width: 100%;
+  max-width: none;
+}
+@media (min-width: 761px) {
+  .customer-ui.customer-v2 .discovery-card:first-child .discovery-card-open {
+    height: 220px;
+  }
+}
+/* Reference fidelity pass: shared SVG stroke, tighter rhythm and original palette. */
+.customer-ui.customer-v2 {
+  --customer-text: #172e37;
+  --customer-secondary: #00757b;
+  --customer-border: #e9eef0;
+  --primary-fill: #00757b;
+  --customer-bg: #fff;
+}
+.customer-ui.customer-v2
+  :is(.button-primary, .journey-primary, .budget-adjust) {
+  background: linear-gradient(110deg, #007b81, #00616a);
+  border-radius: 12px;
+  font-weight: 650;
+  box-shadow: 0 4px 10px #006c7312;
+}
+.customer-ui.customer-v2 .welcome-page::after {
+  background: linear-gradient(
+    180deg,
+    #006a8d22 0%,
+    #00566c44 30%,
+    #00323fe6 72%,
+    #002d39 100%
+  );
+}
+.customer-ui.customer-v2 .welcome-message h1 {
+  font-size: 25px;
+  line-height: 1.3;
+}
+.customer-ui.customer-v2 .customer-auth-wordmark {
+  display: inline-flex;
+  align-items: center;
+  font-size: 31px;
+  letter-spacing: -1.5px;
+  line-height: 1.2;
+}
+.customer-ui.customer-v2 .customer-auth-wordmark b:first-child {
+  color: #ff8f28;
+}
+.customer-ui.customer-v2 .customer-auth-wordmark b:last-child {
+  color: #006d75;
+}
+.customer-ui.customer-v2 .auth-card .auth-switch {
+  text-decoration: none;
+}
+.customer-ui.customer-v2 .discovery-banner {
+  height: 170px;
+  min-height: 170px;
+  padding: 24px 16px 32px;
+  border-radius: 0;
+}
+.customer-ui.customer-v2 .discovery-banner::after {
+  background: linear-gradient(180deg, #002c3b50, #002d3b35);
+}
+.customer-ui.customer-v2 .customer-home-profile .account-avatar {
+  width: 34px;
+  height: 34px;
+}
+.customer-ui.customer-v2 .customer-home-profile strong {
+  font-size: 13px;
+}
+.customer-ui.customer-v2 .customer-home-profile small {
+  font-size: 10px;
+}
+.customer-ui.customer-v2 .discovery-start {
+  margin-top: 18px;
+}
+.customer-ui.customer-v2.app-shell .discovery-start .home-destination-search {
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts {
+  margin: -12px 0 0;
+  padding: 16px 12px 12px;
+  border: 0;
+  border-radius: 20px 20px 0 0;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button > span {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button:first-child > span {
+  color: #11b3a8;
+  background: #e5f7f3;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button:nth-child(2) > span {
+  color: #ff9d0a;
+  background: #fff4e6;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button:nth-child(3) > span {
+  color: #ff7b3c;
+  background: #fff0e8;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts button:nth-child(4) > span {
+  color: #28a1df;
+  background: #eaf7ff;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts strong {
+  font-size: 10px;
+  font-weight: 550;
+}
+.customer-ui.customer-v2 .discovery-home .discovery-section-heading {
+  margin: 14px 0 12px;
+}
+.customer-ui.customer-v2 .discovery-section-heading h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.customer-ui.customer-v2 .discovery-cards {
+  gap: 9px;
+}
+.customer-ui.customer-v2 .discovery-card {
+  border-radius: 12px;
+}
+.customer-ui.customer-v2 .discovery-card-open {
+  height: 130px;
+  min-height: 130px;
+  border-radius: 12px;
+}
+.customer-ui.customer-v2 .discovery-card:first-child .discovery-card-open {
+  height: 180px;
+}
+.customer-ui.customer-v2 .discovery-card-caption {
+  left: 11px;
+  bottom: 11px;
+}
+.customer-ui.customer-v2 .discovery-card-caption strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+.customer-ui.customer-v2
+  .discovery-card:first-child
+  .discovery-card-caption
+  strong {
+  font-size: 17px;
+}
+.customer-ui.customer-v2 .discovery-bookmark {
+  background: #15364232;
+  border: 1px solid #ffffff70;
+}
+.customer-ui.customer-v2 .explore-search {
+  border-radius: 12px;
+  min-height: 44px;
+  background: #fff;
+  border: 1px solid #edf0f2;
+}
+.customer-ui.customer-v2 .explore-card-open {
+  height: 200px;
+}
+.customer-ui.customer-v2 .explore-card {
+  border-radius: 14px;
+  border: 0;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .explore-card-copy {
+  padding: 36px 13px 13px;
+  display: grid;
+  gap: 5px;
+}
+.customer-ui.customer-v2 .explore-card-copy strong {
+  font-size: 16px;
+}
+.customer-ui.customer-v2 .customer-place-location {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  color: #e6f2f3;
+  font-size: 11px;
+}
+.customer-ui.customer-v2 .explore-category {
+  font-size: 10px;
+  border-radius: 20px;
+  background: #ffffffef;
+}
+.customer-ui.customer-v2 .explore-save {
+  color: #fff;
+  border: 1px solid #ffffff70;
+  background: #1f455140;
+  width: 30px;
+  min-height: 30px;
+  padding: 5px;
+}
+.customer-ui.customer-v2 .customer-bottom-navigation {
+  box-shadow: 0 -3px 15px #06404706;
+}
+.customer-ui.customer-v2 .mobile-nav-item {
+  font-size: 10px;
+  color: #7e8c94;
+  font-weight: 500;
+}
+.customer-ui.customer-v2 .mobile-nav-item .bottom-nav-icon {
+  width: 26px;
+  height: 25px;
+}
+.customer-ui.customer-v2 .mobile-nav-item .bottom-nav-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.customer-ui.customer-v2 .mobile-nav-item[href='/goe'] .bottom-nav-icon {
+  width: 26px;
+  height: 25px;
+  background: transparent;
+  border-radius: 0;
+}
+.customer-ui.customer-v2 .mobile-nav-item.active::before {
+  width: 24px;
+  height: 2px;
+  background: #fb9636;
+}
+.customer-ui.customer-v2 .customer-account-links {
+  border: 0;
+  border-radius: 12px;
+  background: #f5f6f9;
+}
+.customer-ui.customer-v2 .customer-account-links a {
+  padding: 15px 12px;
+  background: #f5f6f9;
+  color: #485565;
+  border-bottom: 1px solid #e9edf2;
+}
+.customer-ui.customer-v2 :is(.account-settings-row, .account-security-group) {
+  border: 0;
+  border-radius: 12px;
+  background: #f5f6f9;
+}
+.customer-ui.customer-v2
+  :is(.account-settings-row, .account-security-group)
+  > summary {
+  background: #f5f6f9;
+  color: #485565;
+}
+.customer-ui.customer-v2 .account-logout {
+  background: #f4f5f8;
+  color: #f05d58;
+  text-align: center;
+}
+.customer-ui.customer-v2 .customer-map-preview {
+  position: fixed;
+  z-index: 45;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--customer-bottom-space) + 12px);
+  width: min(440px, calc(100% - 24px));
+  max-height: 50dvh;
+  overflow-y: auto;
+  margin: 0 auto;
+  padding: 16px;
+  border: 1px solid #e7ecef;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 40px #173e4c26;
+}
+.customer-ui.customer-v2 .customer-map-preview-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-height: 28px;
+  padding: 5px;
+  border: 0;
+  border-radius: 50%;
+  color: #7b8b95;
+  background: #f4f7f8;
+}
+.customer-ui.customer-v2 .customer-map-preview-main {
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: start;
+  padding-right: 14px;
+}
+.customer-ui.customer-v2 .customer-map-preview-main > .place-real-photo {
+  display: contents;
+}
+.customer-ui.customer-v2 .customer-map-preview-main .place-real-photo > img {
+  position: static;
+  width: 66px;
+  height: 66px;
+  object-fit: cover;
+  border-radius: 10px;
+  grid-column: 1;
+  grid-row: 1;
+}
+.customer-ui.customer-v2 .customer-map-preview-main .place-real-photo > small {
+  position: static;
+  grid-column: 1/-1;
+  grid-row: 2;
+  padding: 0;
+  margin: 0;
+  font-size: 9px;
+  color: #7b8b95;
+  background: #fff;
+}
+.customer-ui.customer-v2 .customer-map-preview-main > div {
+  grid-column: 2;
+  grid-row: 1;
+}
+.customer-ui.customer-v2 .customer-map-preview-main h2 {
+  font-size: 15px;
+  padding-right: 8px;
+}
+.customer-ui.customer-v2 .customer-map-preview-main p {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #7b8b95;
+  font-size: 11px;
+  margin: 7px 0 3px;
+}
+.customer-ui.customer-v2 .customer-map-preview-main small {
+  font-size: 11px;
+  color: #7b8b95;
+}
+.customer-ui.customer-v2 .customer-map-preview-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.customer-ui.customer-v2 .customer-map-preview-actions :is(a, button) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 10px;
+  margin: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #e8f6f6;
+  color: #00757b;
+  font-size: 12px;
+  text-decoration: none;
+}
+.customer-ui.customer-v2 .customer-map-preview-actions button {
+  background: #00757b;
+  color: #fff;
+}
+@media (min-width: 761px) {
+  .customer-ui.customer-v2 .discovery-banner {
+    height: 230px;
+    min-height: 230px;
+  }
+  .customer-ui.customer-v2 .customer-home-shortcuts {
+    width: min(600px, calc(100% - 40px));
+    margin: -24px auto 0;
+    border-radius: 18px;
+    box-shadow: 0 4px 16px #123f4b0a;
+  }
+  .customer-ui.customer-v2 .discovery-card:first-child .discovery-card-open {
+    height: 220px;
+  }
+}
+.customer-ui.customer-v2 .explore-card .place-real-photo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.customer-ui.customer-v2 .explore-card .place-real-photo > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+}
+.customer-ui.customer-v2 .explore-card .place-photo-empty {
+  height: 100%;
+}
+.customer-ui.customer-v2 .customer-place-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 0 3px;
+}
+.customer-ui.customer-v2 .customer-place-tags > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 7px;
+  border-radius: 20px;
+  background: #f1f4f7;
+  color: #74818f;
+  font-size: 10px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .customer-ui.customer-v2
+    :is(
+      .discovery-page,
+      .explore-page,
+      .journey-list,
+      .account-page,
+      .auth-layout,
+      .goe-chat-page
+    ) {
+    animation: customer-reference-fade 180ms ease-out;
+  }
+  .customer-ui.customer-v2 .journey-sheet[open] {
+    animation: customer-reference-sheet 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .customer-ui.customer-v2 .mobile-nav-item .bottom-nav-icon {
+    transition:
+      color 150ms ease,
+      transform 150ms ease;
+  }
+  .customer-ui.customer-v2 .mobile-nav-item.active .bottom-nav-icon {
+    transform: translateY(-1px);
+  }
+  @keyframes customer-reference-fade {
+    from {
+      opacity: 0.6;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes customer-reference-sheet {
+    from {
+      opacity: 0.7;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+/* Match the reference's mobile canvas at every preview width. No device bezel. */
+body:has(.customer-ui.customer-v2) {
+  background: #eaf1f5;
+}
+.customer-ui.customer-v2 {
+  width: min(100%, 430px);
+  max-width: 430px;
+  min-height: 100dvh;
+  margin-inline: auto;
+  overflow-x: clip;
+  box-shadow: 0 0 36px #163d4c0b;
+  --customer-nav-height: 60px;
+  --customer-bottom-space: calc(60px + env(safe-area-inset-bottom, 0px));
+}
+.customer-ui.customer-v2 > .site-header,
+.customer-ui.customer-v2 .auth-site-header,
+.customer-ui.customer-v2 .auth-story {
+  display: none;
+}
+.customer-ui.customer-v2
+  :is(
+    .main-content-wrap,
+    .journey-main,
+    .explore-main,
+    .place-main,
+    .discovery-home,
+    .account-page,
+    .journey-list,
+    .goe-chat-page
+  ) {
+  width: 100%;
+  max-width: 430px;
+  min-width: 0;
+  margin-inline: auto;
+}
+.customer-ui.customer-v2 .customer-bottom-navigation {
+  display: grid;
+  position: fixed;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: min(100%, 430px);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  padding: 5px 7px max(5px, env(safe-area-inset-bottom, 0px));
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .mobile-nav-item {
+  min-height: 49px;
+  gap: 3px;
+  padding: 4px 0;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #83909e;
+  border: 0;
+  border-radius: 0;
+}
+.customer-ui.customer-v2 .mobile-nav-item.active {
+  color: #00777e;
+  font-weight: 600;
+}
+.customer-ui.customer-v2 .mobile-nav-item::before,
+.customer-ui.customer-v2 .mobile-nav-item.active::before {
+  display: none;
+}
+.customer-ui.customer-v2 .mobile-nav-item .bottom-nav-icon,
+.customer-ui.customer-v2 .mobile-nav-item[href='/goe'] .bottom-nav-icon {
+  width: 23px;
+  height: 23px;
+  background: transparent;
+  color: inherit;
+}
+.customer-ui.customer-v2 .mobile-nav-item .bottom-nav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.customer-ui.customer-v2 .discovery-banner {
+  height: 180px;
+  min-height: 180px;
+  border-radius: 0;
+}
+.customer-ui.customer-v2 .customer-home-shortcuts {
+  width: calc(100% - 20px);
+  margin: -12px 10px 0;
+  border-radius: 16px;
+}
+.customer-ui.customer-v2 .discovery-cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.customer-ui.customer-v2 .discovery-card:first-child {
+  grid-column: 1 / -1;
+}
+.customer-ui.customer-v2 .discovery-card:first-child .discovery-card-open {
+  height: 180px;
+}
+.customer-ui.customer-v2
+  .discovery-card:not(:first-child)
+  .discovery-card-open {
+  height: 124px;
+}
+.customer-ui.customer-v2 .explore-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.customer-ui.customer-v2 .auth-layout {
+  display: block;
+  padding: 22px 0;
+  max-width: 430px;
+  margin: auto;
+}
+.customer-ui.customer-v2 .auth-card {
+  padding: 22px 20px;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+.customer-ui.customer-v2 .journey-workspace {
+  border: 0;
+  border-radius: 0;
+}
+.customer-ui.customer-v2 .journey-top {
+  border-radius: 0;
+}
+.customer-ui.customer-v2 :is(.quick-actions, .place-bottom) {
+  width: min(100%, 430px);
+  max-width: 430px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+.customer-ui.customer-v2 .customer-map-preview {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(406px, calc(100% - 24px));
+}
+.customer-ui.customer-v2 .quick-preferences {
+  border: 0;
+  padding: 0;
+}
+.customer-ui.customer-v2 .quick-preferences > h2 {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.customer-ui.customer-v2 .quick-preferences > .quick-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.customer-ui.customer-v2 .quick-preferences > .quick-options > button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 68px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  padding: 9px 3px;
+  background: #f3f5f8;
+  color: #687484;
+  font-size: 10px;
+}
+.customer-ui.customer-v2
+  .quick-preferences
+  > .quick-options
+  > button[aria-pressed='true'] {
+  background: #e8f6f6;
+  color: #00757b;
+  border-color: #aad9dc;
+}
+.customer-ui.customer-v2 .customer-people-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 9px;
+  min-height: 44px;
+  background: #f7f8fa;
+  border: 1px solid #e8edf1;
+  border-radius: 10px;
+}
+.customer-ui.customer-v2 .customer-people-stepper > span {
+  flex: 1;
+  font-size: 13px;
+}
+.customer-ui.customer-v2 .customer-people-stepper > button {
+  padding: 5px;
+  min-height: 30px;
+  width: 32px;
+  background: white;
+  color: #647585;
+  border: 1px solid #e4eaef;
+  border-radius: 7px;
+}
+.customer-ui.customer-v2 .customer-notifications {
+  padding: 0 16px 80px;
+}
+.customer-ui.customer-v2 .customer-notification-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.customer-ui.customer-v2 .customer-notification-tabs button {
+  border: 0;
+  background: #f1f3f7;
+  color: #687487;
+  padding: 9px 4px;
+  font-size: 11px;
+  border-radius: 9px;
+}
+.customer-ui.customer-v2
+  .customer-notification-tabs
+  button[aria-pressed='true'] {
+  background: #00777e;
+  color: #fff;
+}
+.customer-ui.customer-v2 .customer-notification-empty {
+  padding: 70px 10px;
+  text-align: center;
+  color: #8b98a6;
+}
+.customer-ui.customer-v2 .customer-notification-empty svg {
+  padding: 13px;
+  box-sizing: content-box;
+  border-radius: 18px;
+  background: #e9f6f6;
+  color: #07838a;
+}
+.customer-ui.customer-v2 .customer-notification-empty h2 {
+  margin: 16px 0 6px;
+  font-size: 15px;
+}
+.customer-ui.customer-v2 .customer-notification-empty p {
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .journey-setup .planning-steps {
+  display: none;
+}
+.customer-ui.customer-v2 .journey-setup .quick-header-note {
+  visibility: hidden;
+}
+.customer-ui.customer-v2 .journey-setup .journey-fieldset {
+  padding: 12px 16px 110px;
+}
+.customer-ui.customer-v2 .quick-fields {
+  display: grid;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+.customer-ui.customer-v2
+  .quick-fields
+  :is(.journey-field, .quick-question, .quick-destination-field) {
+  margin: 0;
+}
+.customer-ui.customer-v2
+  .quick-fields
+  :is(.journey-field, .quick-question h2, #quick-destination-label) {
+  font-size: 12px;
+  font-weight: 600;
+}
+.customer-ui.customer-v2
+  .quick-fields
+  :is(input, select, .quick-destination-select) {
+  min-height: 42px;
+  height: 42px;
+  padding: 9px 11px;
+  font-size: 13px;
+  font-weight: 400;
+  border: 1px solid #e7ecef;
+  background: #fbfcfd;
+  border-radius: 10px;
+}
+.customer-ui.customer-v2 .customer-trip-dates {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.customer-ui.customer-v2 .customer-trip-dates input {
+  min-width: 0;
+  width: 100%;
+}
+.customer-ui.customer-v2 .customer-trip-more {
+  border-top: 1px solid #eef1f4;
+  padding-top: 10px;
+}
+.customer-ui.customer-v2 .customer-trip-more > summary {
+  padding: 5px 0;
+  font-size: 11px;
+  color: #748393;
+  cursor: pointer;
+}
+.customer-ui.customer-v2 .customer-trip-more[open] > .journey-field {
+  margin-top: 14px;
+}
+.customer-ui.customer-v2 .quick-preferences > .quick-options {
+  margin-bottom: 12px;
+}
+.customer-ui.customer-v2 .journey-setup .quick-setup {
+  padding: 0 0 70px;
+}
+.customer-ui.customer-v2 .journey-setup .journey-fieldset {
+  padding-inline: 0;
+}
+.customer-ui.customer-v2 .journey-saved-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.customer-ui.customer-v2 .journey-overview {
+  position: relative;
+  padding-top: 0;
+}
+.customer-ui.customer-v2 .journey-overview .journey-cover {
+  width: calc(100% + 32px);
+  max-width: none;
+  height: 185px;
+  margin-inline: -16px;
+  border-radius: 0;
+}
+.customer-ui.customer-v2 .journey-overview > h1 {
+  font-size: 18px;
+  margin-top: 3px;
+}
+.customer-ui.customer-v2 .journey-view-tabs {
+  padding: 0;
+  background: white;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 1px solid #e7ecef;
+  gap: 0;
+}
+.customer-ui.customer-v2 .journey-view-tabs button {
+  min-height: 42px;
+  border-radius: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font-size: 11px;
+  background: white;
+  color: #7a8795;
+  box-shadow: none;
+}
+.customer-ui.customer-v2 .journey-view-tabs button[aria-pressed='true'] {
+  background: #eef9f9;
+  color: #00777e;
+  border-bottom-color: #00777e;
+  box-shadow: none;
+}
+.customer-ui.customer-v2
+  .journey-workspace[data-view='cost']
+  .journey-view-tabs {
+  display: none;
+}
+.customer-ui.customer-v2 .budget-heading {
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.customer-ui.customer-v2 .budget-green-card {
+  padding: 12px 0;
+  margin-bottom: 0;
+}
+.customer-ui.customer-v2 .budget-total {
+  font-size: 29px;
+}
+.customer-ui.customer-v2 .customer-budget-comparison {
+  margin-top: 8px;
+  text-align: left;
+}
+.customer-ui.customer-v2 .customer-budget-comparison > summary {
+  text-align: center;
+  color: #748393;
+  cursor: pointer;
+  font-size: 11px;
+}
+.customer-ui.customer-v2 .budget-breakdown {
+  gap: 16px;
+  padding-top: 8px;
+}
+.customer-ui.customer-v2 .budget-donut {
+  width: 160px;
+  height: 160px;
+  margin-inline: auto;
+}
+.customer-ui.customer-v2 .budget-donut > span {
+  width: 96px;
+  height: 96px;
+}
+.customer-ui.customer-v2 .budget-breakdown li {
+  min-height: 33px;
+  padding-block: 7px;
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .budget-breakdown li b {
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .customer-account-links a {
+  min-height: 48px;
+  padding-block: 12px;
+  font-size: 12px;
+}
+.customer-ui.customer-v2 .customer-people-count {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 4px;
+}
+.customer-ui.customer-v2 .customer-people-count > input {
+  width: 45px;
+  min-width: 0;
+  min-height: 28px;
+  height: 28px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline-offset: 2px;
+  appearance: textfield;
+  text-align: right;
+}
+.customer-ui.customer-v2
+  .customer-people-count
+  > input::-webkit-inner-spin-button,
+.customer-ui.customer-v2
+  .customer-people-count
+  > input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.customer-ui.customer-v2 .customer-people-count > span {
+  font-size: 13px;
+  font-weight: 400;
+}
+.customer-ui.customer-v2 .account-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.customer-ui.customer-v2 .account-heading h1 {
+  font-size: 20px;
+}
+.customer-ui.customer-v2 .budget-heading {
+  margin: 0;
+  padding: 5px 0;
+}
+.customer-ui.customer-v2 .budget-green-card {
+  gap: 5px;
+  padding: 8px 0;
+}
+.customer-ui.customer-v2 .budget-green-card :is(p, small) {
+  margin-block: 0;
+}
+.customer-ui.customer-v2 .budget-breakdown {
+  padding: 10px 0;
+  gap: 14px;
+}
+.customer-ui.customer-v2 .budget-context {
+  justify-content: center;
+  width: 100%;
+}
+.customer-ui.customer-v2 .customer-notification-empty svg {
+  margin-inline: auto;
+}
+.customer-ui.customer-v2 .goe-chat-header {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 32px;
+  min-height: 98px;
+  align-items: center;
+  padding: 8px 0;
+}
+.customer-ui.customer-v2 .goe-chat-header .customer-goe-identity {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 2px;
+}
+.customer-ui.customer-v2 .customer-goe-identity img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+.customer-ui.customer-v2 .customer-goe-identity strong {
+  font-size: 13px;
+}
+.customer-ui.customer-v2 .customer-goe-identity small {
+  font-size: 10px;
+  color: #8b98a7;
+}
+
+/* Floating and full-page chat share explicit grid slots; legacy flex order must not reorder them. */
+.customer-ui.customer-v2 .goe-chat-header > button {
+  grid-column: 1;
+  grid-row: 1;
+  order: 0;
+  justify-self: start;
+}
+.customer-ui.customer-v2 .goe-chat-header > .customer-goe-identity {
+  grid-column: 2;
+  grid-row: 1;
+  order: 0;
+  width: 100%;
+  min-width: 0;
+}
+.customer-ui.customer-v2:has(.discovery-home) > .site-header {
+  display: none;
+}

@@ -1,3 +1,4 @@
+import { MascotProvider } from './mascot/context';
 import { SharedTripPage } from './components/shared-trip-page';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -16,6 +17,10 @@ import './admin-controls.css';
 import './destination-picker.css';
 import './customer-ui.css';
 import './admin-v2.css';
+import './customer-v2.css';
+import './mascot/mascot.css';
+import './customer-fonts.css';
+import './customer-redesign.css';
 
 if (
   import.meta.env.PROD &&
@@ -35,7 +40,9 @@ if (
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {location.pathname === '/share' ? <SharedTripPage /> : <App />}
+    <MascotProvider>
+      {location.pathname === '/share' ? <SharedTripPage /> : <App />}
+    </MascotProvider>
     <ConfirmationHost />
   </StrictMode>,
 );

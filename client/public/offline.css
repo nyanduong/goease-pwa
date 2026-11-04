@@ -1,7 +1,7 @@
 :root {
   font-family: system-ui, sans-serif;
-  color: #253b45;
-  background: #fafaf8;
+  color: #0f2d3d;
+  background: #fff8ed;
 }
 * {
   box-sizing: border-box;
@@ -10,7 +10,7 @@ body {
   margin: 0;
 }
 main {
-  max-width: 760px;
+  max-width: 430px;
   margin: auto;
   padding: 20px 16px 60px;
 }
@@ -53,7 +53,7 @@ button {
   border: 1px solid #dce3e5;
   border-radius: 24px;
   background: #ffffff;
-  color: #007782;
+  color: #0f3948;
   padding: 12px 16px;
   font: inherit;
   cursor: pointer;
@@ -90,9 +90,9 @@ article button {
   margin: 12px 8px 0 0;
 }
 .primary {
-  background: linear-gradient(110deg, #008d91, #007782);
-  color: white;
-  border-color: #007782;
+  background: linear-gradient(110deg, #ffd370, #ffbf3f);
+  color: #0f2d3d;
+  border-color: #efb344;
 }
 .activity {
   border-top: 1px solid #e5e8de;
@@ -239,4 +239,43 @@ article,
   padding: 16px;
   margin-block: 14px;
   border-radius: 12px;
+}
+
+/* Customer redesign: same warm canvas and sunrise actions as online. */
+main {
+  min-height: 100dvh;
+  background: linear-gradient(150deg, #fffdf9, #fff8ed);
+}
+header {
+  padding-block: 8px 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+header a {
+  color: #0f3948;
+}
+nav a,
+button {
+  color: #0f3948;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 12px;
+}
+#refresh,
+.primary {
+  background: linear-gradient(110deg, #ffd370, #ffbf3f);
+  color: #0f2d3d;
+  border-color: #efb344;
+}
+article,
+.day {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 17px;
+  padding: 18px;
+}
+.hint {
+  padding: 14px;
+  background: #edf4f1;
+  border-radius: 13px;
+  color: #526879;
 }

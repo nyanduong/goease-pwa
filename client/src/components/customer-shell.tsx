@@ -1,4 +1,11 @@
-import { Bookmark, Compass, House, Map, UserRound, Ellipsis } from '../icons';
+import {
+  Compass,
+  Bookmark,
+  Plus,
+  House,
+  UserRound,
+  Ellipsis,
+} from '../customer-icons';
 import {
   useEffect,
   useLayoutEffect,
@@ -88,7 +95,7 @@ export function ActionMenu({
 const destinations = [
   { to: '/', label: 'Trang chủ', Icon: House },
   { to: '/explore', label: 'Khám phá', Icon: Compass },
-  { to: '/trips', label: 'Chuyến đi', Icon: Map },
+  { to: '/trips/new', label: 'Tạo chuyến đi', Icon: Plus },
   { to: '/saved', label: 'Đã lưu', Icon: Bookmark },
   { to: '/account', label: 'Tài khoản', Icon: UserRound },
 ];
@@ -112,9 +119,7 @@ export function AppBottomNavigation({
             0,
             destinations.findIndex(
               ({ to }) =>
-                path === to ||
-                (to === '/trips' &&
-                  (path.startsWith('/trips') || path === '/budget')),
+                path === to || (to === '/trips/new' && path === '/trips/new'),
             ),
           ),
         } as CSSProperties
@@ -122,9 +127,7 @@ export function AppBottomNavigation({
     >
       {destinations.map(({ to, label, Icon }) => {
         const selected =
-          path === to ||
-          (to === '/trips' &&
-            (path.startsWith('/trips') || path === '/budget'));
+          path === to || (to === '/explore' && path.startsWith('/places/'));
         return (
           <a
             key={to}
@@ -133,7 +136,13 @@ export function AppBottomNavigation({
             aria-current={selected ? 'page' : undefined}
             onClick={(event) => {
               event.preventDefault();
-              onNavigate(!signedIn && to !== '/' ? '/login' : to);
+              onNavigate(
+                !signedIn && !['/', '/explore'].includes(to)
+                  ? to === '/trips/new'
+                    ? '/login?next=/trips/new'
+                    : '/login'
+                  : to,
+              );
             }}
           >
             <span className="bottom-nav-icon">

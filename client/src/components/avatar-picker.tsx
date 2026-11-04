@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { images } from '@goease/media';
 import { Sheet } from './journey-sheet';
-import { Camera } from '../icons';
+import { Camera } from '../customer-icons';
 
 export function AvatarPicker({
   avatarUrl,

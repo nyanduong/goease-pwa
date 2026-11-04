@@ -1,8 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useMascot } from '../mascot/context';
 import type { DestinationDto, TripInput } from '@goease/contracts';
 import { withDays } from '../trip-draft';
 import { AiPlanner } from './ai-planner';
-import { MapPin, ChevronDown } from '../icons';
+import {
+  MapPin,
+  ChevronDown,
+  Plus,
+  Minus,
+  UsersRound,
+  Utensils,
+  Landmark,
+  Mountain,
+  TreePalm,
+} from '../customer-icons';
 import { DestinationPicker } from './destination-picker';
 
 export function QuickTripSetup({
@@ -12,6 +23,7 @@ export function QuickTripSetup({
   onPreview,
   onManual,
   onBusyChange,
+  onDatesConfirmed,
 }: {
   draft: TripInput;
   destinations: DestinationDto[];
@@ -19,12 +31,14 @@ export function QuickTripSetup({
   onPreview: (value: TripInput) => void;
   onManual: () => void;
   onBusyChange: (value: boolean) => void;
+  onDatesConfirmed: () => void;
 }) {
+  const { controller } = useMascot();
   const [generating, setGenerating] = useState(false);
-  const [customPeople, setCustomPeople] = useState(
-    draft.travelers.totalCount > 2,
-  );
-  const [customDays, setCustomDays] = useState(false);
+  useEffect(() => {
+    controller.setChannel('trip-planner', generating ? 'planning' : null);
+    return () => controller.setChannel('trip-planner', null);
+  }, [controller, generating]);
   const [choosingDestination, setChoosingDestination] = useState(false);
   const duration =
     Math.round(
@@ -63,6 +77,17 @@ export function QuickTripSetup({
       </div>
       <fieldset className="quick-fields" disabled={generating}>
         <legend className="sr-only">Thông tin để lên lịch</legend>
+        <label className="journey-field">
+          Tên chuyến đi
+          <input
+            value={draft.title}
+            maxLength={160}
+            placeholder="Ví dụ: Đà Nẵng cuối tuần"
+            onChange={(event) =>
+              onChange({ ...draft, title: event.target.value })
+            }
+          />
+        </label>
         <div className="quick-destination-field">
           <span id="quick-destination-label">Điểm đến</span>
           <button
@@ -87,110 +112,105 @@ export function QuickTripSetup({
             dùng thao tác thử lại trước khi lập lịch.
           </p>
         )}
-        <div className="quick-question">
-          <h2>Số ngày</h2>
-          <div className="quick-options" role="group" aria-label="Số ngày">
-            {[1, 2, 3].map((n) => (
-              <button
-                key={n}
-                aria-pressed={duration === n && !customDays}
-                onClick={() => {
-                  setCustomDays(false);
-                  updateDuration(n);
-                }}
-              >
-                {n} ngày
-              </button>
-            ))}
-            <button
-              aria-pressed={customDays}
-              onClick={() => setCustomDays(true)}
+        <div className="customer-trip-dates">
+          <label className="journey-field">
+            Ngày khởi hành
+            <input
+              type="date"
+              value={draft.startDate}
+              onChange={(event) => {
+                const date = event.target.value;
+                if (!date || !Number.isFinite(Date.parse(date))) return;
+                onChange(
+                  withDays({
+                    ...draft,
+                    startDate: date,
+                    endDate: new Date(
+                      Date.parse(date) + (duration - 1) * 86400000,
+                    )
+                      .toISOString()
+                      .slice(0, 10),
+                  }),
+                );
+                onDatesConfirmed();
+              }}
+            />
+          </label>
+          <label className="journey-field">
+            Số ngày
+            <select
+              aria-label="Số ngày"
+              value={duration}
+              onChange={(event) => updateDuration(Number(event.target.value))}
             >
-              Khác
-            </button>
-          </div>
-          {customDays && (
-            <label className="journey-field">
-              Số ngày
-              <select
-                aria-label="Số ngày"
-                value={duration}
-                onChange={(e) => updateDuration(Number(e.target.value))}
-              >
-                {Array.from({ length: 31 }, (_, i) => (
-                  <option key={i} value={i + 1}>
-                    {i + 1} ngày
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <small className="quick-hint">
-            Chọn ngày khởi hành khi lưu chuyến.
-          </small>
+              {Array.from({ length: 31 }, (_, index) => (
+                <option key={index} value={index + 1}>
+                  {index + 1} ngày
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <div className="quick-question">
           <h2>Số người</h2>
-          <div className="quick-options" role="group" aria-label="Đi cùng">
-            {[1, 2].map((n) => (
-              <button
-                key={n}
-                aria-pressed={!customPeople && draft.travelers.totalCount === n}
-                onClick={() => {
-                  setCustomPeople(false);
-                  onChange({ ...draft, travelers: { totalCount: n } });
-                }}
-              >
-                {n === 1 ? 'Một mình' : '2 người'}
-              </button>
-            ))}
-            <button
-              aria-pressed={customPeople}
-              onClick={() => {
-                setCustomPeople(true);
-                onChange({
-                  ...draft,
-                  travelers: {
-                    totalCount: Math.max(3, draft.travelers.totalCount),
-                  },
-                });
-              }}
-            >
-              Nhóm / gia đình
-            </button>
-          </div>
-          {customPeople && (
-            <label className="journey-field">
-              Số người
+          <div className="customer-people-stepper">
+            <UsersRound size={18} />
+            <label className="customer-people-count">
               <input
+                aria-label="Số người"
                 type="number"
                 inputMode="numeric"
                 min={1}
                 max={1000}
                 value={draft.travelers.totalCount || ''}
-                onChange={(e) =>
+                onChange={(event) =>
                   onChange({
                     ...draft,
-                    travelers: { totalCount: Number(e.target.value) },
+                    travelers: { totalCount: Number(event.target.value) },
                   })
                 }
               />
+              <span>người</span>
             </label>
-          )}
+            <button
+              type="button"
+              aria-label="Giảm số người"
+              disabled={draft.travelers.totalCount <= 1}
+              onClick={() =>
+                onChange({
+                  ...draft,
+                  travelers: { totalCount: draft.travelers.totalCount - 1 },
+                })
+              }
+            >
+              <Minus size={18} />
+            </button>
+            <button
+              type="button"
+              aria-label="Tăng số người"
+              disabled={draft.travelers.totalCount >= 1000}
+              onClick={() =>
+                onChange({
+                  ...draft,
+                  travelers: { totalCount: draft.travelers.totalCount + 1 },
+                })
+              }
+            >
+              <Plus size={18} />
+            </button>
+          </div>
         </div>
-        <details className="quick-preferences">
-          <summary>
-            Sở thích, nhịp đi & ngân sách <span>Tùy chọn</span>
-          </summary>
+        <section className="quick-preferences">
+          <h2>Phong cách du lịch</h2>
           <div className="quick-options" role="group" aria-label="Sở thích">
             {(
               [
-                ['food', 'Ẩm thực'],
-                ['culture', 'Văn hóa'],
-                ['nature', 'Thiên nhiên'],
-                ['relaxation', 'Nghỉ dưỡng'],
+                ['relaxation', 'Thư giãn', TreePalm],
+                ['nature', 'Khám phá', Mountain],
+                ['food', 'Ẩm thực', Utensils],
+                ['culture', 'Văn hóa', Landmark],
               ] as const
-            ).map(([code, label]) => (
+            ).map(([code, label, Icon]) => (
               <button
                 key={code}
                 aria-pressed={draft.preferences.interestCodes.includes(code)}
@@ -210,53 +230,57 @@ export function QuickTripSetup({
                   })
                 }
               >
+                <Icon size={20} />
                 {label}
               </button>
             ))}
           </div>
-          <label className="journey-field">
-            Nhịp đi
-            <select
-              aria-label="Nhịp đi"
-              value={draft.preferences.pace}
-              onChange={(e) =>
-                onChange({
-                  ...draft,
-                  preferences: {
-                    ...draft.preferences,
-                    pace: e.target.value as TripInput['preferences']['pace'],
-                  },
-                })
-              }
-            >
-              <option value="relaxed">Thư thả</option>
-              <option value="balanced">Vừa phải</option>
-              <option value="active">Khám phá nhiều</option>
-            </select>
-          </label>
-          <label className="journey-field">
-            Ngân sách cả nhóm (VND, không bắt buộc)
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              max={1e12}
-              step={1}
-              placeholder="Chưa quyết định cũng được"
-              value={draft.budget.amountMinor ?? ''}
-              onChange={(e) =>
-                onChange({
-                  ...draft,
-                  budget: {
-                    ...draft.budget,
-                    amountMinor:
-                      e.target.value === '' ? null : Number(e.target.value),
-                  },
-                })
-              }
-            />
-          </label>
-        </details>
+          <details className="customer-trip-more">
+            <summary>Ngân sách & tùy chọn khác</summary>
+            <label className="journey-field">
+              Nhịp đi
+              <select
+                aria-label="Nhịp đi"
+                value={draft.preferences.pace}
+                onChange={(e) =>
+                  onChange({
+                    ...draft,
+                    preferences: {
+                      ...draft.preferences,
+                      pace: e.target.value as TripInput['preferences']['pace'],
+                    },
+                  })
+                }
+              >
+                <option value="relaxed">Thư thả</option>
+                <option value="balanced">Vừa phải</option>
+                <option value="active">Khám phá nhiều</option>
+              </select>
+            </label>
+            <label className="journey-field">
+              Ngân sách cả nhóm (VND, không bắt buộc)
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={1e12}
+                step={1}
+                placeholder="Chưa quyết định cũng được"
+                value={draft.budget.amountMinor ?? ''}
+                onChange={(e) =>
+                  onChange({
+                    ...draft,
+                    budget: {
+                      ...draft.budget,
+                      amountMinor:
+                        e.target.value === '' ? null : Number(e.target.value),
+                    },
+                  })
+                }
+              />
+            </label>
+          </details>
+        </section>
       </fieldset>
       {choosingDestination && (
         <DestinationPicker

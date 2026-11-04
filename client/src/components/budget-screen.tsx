@@ -9,7 +9,7 @@ import {
   Utensils,
   Wallet,
   Shapes,
-} from '../icons';
+} from '../customer-icons';
 import type {
   ActivityInput,
   TripInput,
@@ -20,11 +20,11 @@ import { moneyText } from '../trip-draft';
 import { priceFitsGroup } from '@goease/contracts';
 
 const categories = [
-  { key: 'transport', label: 'Di chuyển', color: '#1d6152', Icon: Car },
-  { key: 'lodging', label: 'Lưu trú', color: '#abc5a9', Icon: BedDouble },
-  { key: 'meal', label: 'Ăn uống', color: '#efb64f', Icon: Utensils },
-  { key: 'visit', label: 'Trải nghiệm', color: '#d48059', Icon: Ticket },
-  { key: 'other', label: 'Khác', color: '#95a7ab', Icon: Shapes },
+  { key: 'transport', label: 'Di chuyển', color: '#328ff5', Icon: Car },
+  { key: 'lodging', label: 'Lưu trú', color: '#00969c', Icon: BedDouble },
+  { key: 'meal', label: 'Ăn uống', color: '#ffbd3a', Icon: Utensils },
+  { key: 'visit', label: 'Trải nghiệm', color: '#26b6a3', Icon: Ticket },
+  { key: 'other', label: 'Khác', color: '#7161dd', Icon: Shapes },
 ] as const;
 type BudgetProps = {
   destinationSlug?: string | undefined;
@@ -140,58 +140,6 @@ export function BudgetScreen({
         <p className="mvp-demo-label">BẢN XEM TRƯỚC · SỐ LIỆU MINH HỌA</p>
       )}
       <div className="budget-green-card">
-        <span className="budget-eyebrow">Tổng dự kiến đã biết · cả nhóm</span>
-        <strong
-          className={`budget-total ${!hasPrices ? 'budget-no-price' : ''}`}
-        >
-          {hasPrices ? moneyText(known) : 'Chưa rõ'}
-        </strong>
-        <p className="budget-per-person">
-          {!hasPrices
-            ? 'Chi phí sẽ hiển thị khi có giá đủ căn cứ.'
-            : travelers > 0
-              ? `${moneyText(summary?.perPersonMinor ?? Math.round(known / travelers))} / người · ${travelers} người`
-              : 'Chưa xác định số người'}
-        </p>
-        <small className="budget-total-qualifier">
-          Chưa phải tổng chi phí trọn chuyến.
-        </small>
-        {!incomplete && (
-          <div className="budget-meter-row">
-            <div
-              className="budget-meter"
-              role="meter"
-              aria-label="Ngân sách đã dùng theo chi phí đã nhập"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.min(100, percent ?? 0)}
-              aria-valuetext={
-                percent === null
-                  ? 'Chưa có mức ngân sách để so sánh'
-                  : `${percent}% ngân sách`
-              }
-            >
-              <span style={{ width: `${Math.min(100, percent ?? 0)}%` }} />
-            </div>
-            <span>{percent === null ? '—' : `${percent}%`}</span>
-          </div>
-        )}
-        <span
-          className={`budget-reserve ${remaining !== null && remaining < 0 ? 'over-budget' : ''}`}
-        >
-          <Wallet size={17} />
-          {remaining !== null && remaining < 0
-            ? `Đã vượt ngân sách ${moneyText(-remaining)}${missing ? ' (còn khoản chưa có giá)' : ''}`
-            : incomplete
-              ? budget === null
-                ? 'Ngân sách không bắt buộc'
-                : `Ngân sách bạn đặt: ${moneyText(budget)}`
-              : remaining === null
-                ? 'Ngân sách không bắt buộc'
-                : `Chênh lệch với khoản đã nhập: ${moneyText(remaining)}`}
-        </span>
-      </div>
-      <section className="budget-breakdown" aria-label="Chi phí theo nhóm">
         <div
           className="budget-donut"
           style={{ background: `conic-gradient(${gradient})` }}
@@ -207,6 +155,66 @@ export function BudgetScreen({
             <small>người</small>
           </span>
         </div>
+        <div className="budget-total-copy">
+          <span className="budget-eyebrow">Tổng dự kiến đã biết · cả nhóm</span>
+          <strong
+            className={`budget-total ${!hasPrices ? 'budget-no-price' : ''}`}
+          >
+            {hasPrices ? moneyText(known) : 'Chưa rõ'}
+          </strong>
+          <p className="budget-per-person">
+            {!hasPrices
+              ? 'Chi phí sẽ hiển thị khi có giá đủ căn cứ.'
+              : travelers > 0
+                ? `${moneyText(summary?.perPersonMinor ?? Math.round(known / travelers))} / người · ${travelers} người`
+                : 'Chưa xác định số người'}
+          </p>
+          <small className="budget-total-qualifier">
+            Chưa phải tổng chi phí trọn chuyến.
+          </small>
+          <details
+            className="customer-budget-comparison"
+            open={remaining !== null && remaining < 0}
+          >
+            <summary>So với ngân sách đã đặt</summary>
+            {!incomplete && (
+              <div className="budget-meter-row">
+                <div
+                  className="budget-meter"
+                  role="meter"
+                  aria-label="Ngân sách đã dùng theo chi phí đã nhập"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.min(100, percent ?? 0)}
+                  aria-valuetext={
+                    percent === null
+                      ? 'Chưa có mức ngân sách để so sánh'
+                      : `${percent}% ngân sách`
+                  }
+                >
+                  <span style={{ width: `${Math.min(100, percent ?? 0)}%` }} />
+                </div>
+                <span>{percent === null ? '—' : `${percent}%`}</span>
+              </div>
+            )}
+            <span
+              className={`budget-reserve ${remaining !== null && remaining < 0 ? 'over-budget' : ''}`}
+            >
+              <Wallet size={17} />
+              {remaining !== null && remaining < 0
+                ? `Đã vượt ngân sách ${moneyText(-remaining)}${missing ? ' (còn khoản chưa có giá)' : ''}`
+                : incomplete
+                  ? budget === null
+                    ? 'Ngân sách không bắt buộc'
+                    : `Ngân sách bạn đặt: ${moneyText(budget)}`
+                  : remaining === null
+                    ? 'Ngân sách không bắt buộc'
+                    : `Chênh lệch với khoản đã nhập: ${moneyText(remaining)}`}
+            </span>
+          </details>
+        </div>
+      </div>
+      <section className="budget-breakdown" aria-label="Chi phí theo nhóm">
         <ul>
           {rows
             .filter((r) => r.key !== 'other' || r.amount > 0 || r.missing > 0)

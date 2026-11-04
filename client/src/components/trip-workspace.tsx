@@ -34,7 +34,7 @@ import {
   Trash2,
   Map,
   Sparkles,
-} from '../icons';
+} from '../customer-icons';
 import {
   shiftTripDays,
   tripLifecycle,
@@ -744,7 +744,10 @@ export function TripWorkspace({
     </>
   );
   return (
-    <section className={`journey-workspace ${isSetup ? 'journey-setup' : ''}`}>
+    <section
+      className={`journey-workspace ${isSetup ? 'journey-setup' : ''}`}
+      data-view={tab}
+    >
       <header className="journey-top">
         <button
           aria-label="Quay lại"
@@ -753,7 +756,8 @@ export function TripWorkspace({
             if (settings) setSettings(false);
             else if (tab === 'cost' || tab === 'summary') setTab('schedule');
             else if (!loaded && step > 1) {
-              setSettings(true);
+              setStep(1);
+              setSettings(false);
               setError('');
             } else onBack();
           }}
@@ -813,6 +817,7 @@ export function TripWorkspace({
             destinations={destinations}
             onChange={onChange}
             onBusyChange={setGenerating}
+            onDatesConfirmed={() => setDatesConfirmed(true)}
             onManual={nextStep}
             onPreview={(value) => {
               onChange(value);

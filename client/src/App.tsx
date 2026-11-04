@@ -1,3 +1,6 @@
+import { MascotProvider } from './mascot/context';
+import { MascotPreview } from './mascot/preview';
+import { CustomerNotifications } from './components/customer-notifications';
 import { confirmAction } from './confirmation';
 import { images } from '@goease/media';
 import { loadDestinations } from './destinations';
@@ -588,7 +591,7 @@ export function App() {
 
   return (
     <div
-      className={`app-shell customer-ui ${keyboardOpen ? 'is-keyboard-open' : ''} ${isEditor || isPlaceDetail || path === '/budget' ? 'customer-focused' : ''} ${
+      className={`app-shell customer-ui customer-v2 ${keyboardOpen ? 'is-keyboard-open' : ''} ${isEditor || isPlaceDetail || path === '/budget' ? 'customer-focused' : ''} ${
         isWelcome
           ? 'welcome-shell'
           : isPlaceDetail
@@ -758,60 +761,27 @@ export function App() {
           </section>
         ) : path === '/welcome' ? (
           <section className="welcome-page" aria-labelledby="welcome-title">
+            <img
+              className="welcome-landscape"
+              src={images.welcomeHalongBay}
+              alt=""
+            />
             <div className="welcome-hero">
-              <img
-                className="welcome-landscape"
-                src={images.welcomeHalongBay}
-                alt=""
-              />
               <div className="welcome-heading">
                 <Brand />
-                <h1 id="welcome-title">
-                  Just go.
-                  <br />
-                  <em>We’ll plan.</em>
-                </h1>
-                <p className="welcome-subtitle">Việt Nam, theo cách của bạn.</p>
+                <p className="welcome-subtitle">Just go. We’ll plan.</p>
               </div>
-              <svg
-                className="welcome-route"
-                viewBox="0 0 320 240"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M22 210C35 179 104 205 130 152S213 134 250 41"
-                  stroke="#fffdf3"
-                  strokeWidth="2"
-                  strokeDasharray="6 6"
-                  strokeLinecap="round"
-                />
-                {[
-                  { x: 22, y: 205 },
-                  { x: 140, y: 146 },
-                  { x: 250, y: 36 },
-                ].map(({ x, y }) => (
-                  <g key={x} transform={`translate(${x} ${y})`}>
-                    <path
-                      d="M0 5C-3 1-8-4-8-9a8 8 0 1 1 16 0c0 5-5 10-8 14Z"
-                      fill="#fffdf3"
-                    />
-                    <circle cy="-9" r="3" fill="#c9d1ba" />
-                  </g>
-                ))}
-              </svg>
+              <div className="welcome-message">
+                <h1 id="welcome-title">Lên kế hoạch du lịch dễ dàng</h1>
+                <p>Với AI, bản đồ và chi phí cho từng chặng.</p>
+              </div>
               <img
-                className="welcome-mascot"
+                className="welcome-companion"
                 src={images.goeMascot}
-                alt="Goe, linh thú du lịch GoEase"
+                alt="Goe, người bạn đồng hành"
               />
             </div>
             <div className="welcome-actions">
-              <p className="welcome-promise">
-                Bạn chọn niềm vui.
-                <br />
-                Goe lo phần kế hoạch.
-              </p>
               <button
                 className="button button-primary"
                 onClick={() => {
@@ -819,20 +789,20 @@ export function App() {
                   go('/');
                 }}
               >
-                Bắt đầu hành trình →
+                Bắt đầu ngay
               </button>
               <a
-                href="/"
+                href="/login"
                 className="welcome-explore"
-                onClick={(e) => {
-                  e.preventDefault();
+                onClick={(event) => {
+                  event.preventDefault();
                   markWelcomeSeen();
-                  go('/');
+                  go('/login');
                 }}
               >
-                Khám phá trước
+                Đã có tài khoản? <strong>Đăng nhập</strong>
               </a>
-              <small>Không cần tài khoản để bắt đầu</small>
+              <small>Bạn vẫn có thể khám phá trước khi đăng nhập</small>
             </div>
           </section>
         ) : isExplore ? (
@@ -936,11 +906,22 @@ export function App() {
               {link('/login', 'Đăng nhập')} {link('/', 'Về trang chủ')}
             </Notice>
           )
+        ) : import.meta.env.DEV && path === '/dev/mascot' ? (
+          <MascotProvider>
+            <MascotPreview onBack={() => go('/')} />
+          </MascotProvider>
+        ) : path === '/notifications' ? (
+          <CustomerNotifications />
         ) : path === '/account' ? (
           sessionStatus === 'loading' ? (
             <Notice>Đang kiểm tra phiên…</Notice>
           ) : user ? (
-            <AccountPage key={user.id} onSaved={setUser} onLogout={logout} />
+            <AccountPage
+              key={user.id}
+              onSaved={setUser}
+              onLogout={logout}
+              onNavigate={go}
+            />
           ) : (
             <Notice>
               Đăng nhập để quản lý hồ sơ. {link('/login', 'Đăng nhập')}

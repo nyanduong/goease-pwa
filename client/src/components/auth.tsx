@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, EyeOff } from '../icons';
+import { Eye, EyeOff } from '../customer-icons';
 import type {
   UserDto,
   RegistrationPending,
@@ -8,7 +8,8 @@ import type {
 import { RegistrationVerification } from './registration-verification';
 import { api } from '../api';
 import { errorText, type Link } from '../App';
-import { Field, Goe, Notice } from './ui';
+import { Brand, Field, Goe, Notice } from './ui';
+import { images } from '@goease/media';
 
 export function AuthPage({
   register,
@@ -62,6 +63,10 @@ export function AuthPage({
 
       {/* Form card column */}
       <div className="auth-card">
+        <div className="customer-auth-brand">
+          <Brand />
+          <img className="auth-companion" src={images.goeMascot} alt="" />
+        </div>
         <div className="auth-card-header">
           <p className="eyebrow">
             <span></span>CHÀO MỪNG ĐẾN GOEASE
@@ -71,7 +76,7 @@ export function AuthPage({
               ? 'Xác nhận email'
               : register
                 ? 'Tạo tài khoản'
-                : 'Đăng nhập'}
+                : 'Chào mừng trở lại!'}
           </h2>
           <p className="auth-card-sub">
             {continuing
@@ -81,6 +86,24 @@ export function AuthPage({
                 : 'Lịch trình của bạn đang chờ ở đây.'}
           </p>
         </div>
+
+        {!pending && (
+          <nav
+            className="customer-auth-tabs"
+            aria-label="Đăng nhập hoặc đăng ký"
+          >
+            {link(
+              `/login${continuation}`,
+              'Đăng nhập',
+              !register ? 'is-active' : '',
+            )}
+            {link(
+              `/register${continuation}`,
+              'Đăng ký',
+              register ? 'is-active' : '',
+            )}
+          </nav>
+        )}
 
         {pending && registrationInput ? (
           <RegistrationVerification

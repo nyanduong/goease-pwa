@@ -1,3 +1,5 @@
+import { Bell } from '../customer-icons';
+import { AccountAvatar } from './account-avatar';
 import { images, destinationCovers } from '@goease/media';
 import { useState } from 'react';
 import {
@@ -6,10 +8,12 @@ import {
   ChevronRight,
   Map,
   Search,
-  Compass,
-  Wallet,
   MapPin,
-} from '../icons';
+  Mountain,
+  Landmark,
+  Utensils,
+  Island as BeachIcon,
+} from '../customer-icons';
 import { LoadingSkeleton } from './customer-shell';
 import type { DestinationDto, TripDto, UserDto } from '@goease/contracts';
 import { DestinationRegions, matchesRegion } from './destination-regions';
@@ -59,6 +63,7 @@ export function HomeDiscovery({
   onNavigate,
 }: Props) {
   const [query, setQuery] = useState('');
+  const [failedImages, setFailedImages] = useState<string[]>([]);
   const [showAllDestinations, setShowAllDestinations] = useState(false);
   const [category, setCategory] = useState('Tất cả');
   const [region, setRegion] = useState(''),
@@ -120,7 +125,19 @@ export function HomeDiscovery({
       ),
   );
   const IntroHeading = mode === 'home' ? 'h2' : 'h1';
-  const displayed = mode === 'home' ? visible.slice(0, 4) : visible;
+  const featuredOrder = ['da-nang', 'lao-cai', 'khanh-hoa', 'ha-noi'];
+  const displayed =
+    mode === 'home'
+      ? [...visible]
+          .sort((a, b) => {
+            const rank = (slug: string, photo: string | undefined) => {
+              const index = featuredOrder.indexOf(slug);
+              return index >= 0 ? index : photo ? 10 : 20;
+            };
+            return rank(a.slug, a.image) - rank(b.slug, b.image);
+          })
+          .slice(0, 4)
+      : visible;
 
   if (mode === 'goe')
     return (
@@ -149,15 +166,41 @@ export function HomeDiscovery({
             alt=""
           />
           <div className="discovery-banner-copy">
-            <p className="discovery-greeting">
-              Xin chào{user ? `, ${user.displayName}` : ''},
-            </p>
-            <h1>Đi đâu hôm nay?</h1>
+            <button
+              className="customer-home-profile"
+              onClick={() => onNavigate(user ? '/account' : '/login')}
+            >
+              <AccountAvatar user={user} />
+              <span>
+                <small>Xin chào,</small>
+                <strong>{user?.displayName ?? 'Bạn muốn đi đâu?'}</strong>
+              </span>
+            </button>
+            <button
+              className="customer-home-saved"
+              aria-label="Thông báo"
+              onClick={() => onNavigate(user ? '/notifications' : '/login')}
+            >
+              <Bell size={21} />
+            </button>
+            <h1 className="sr-only">Khám phá cùng GoEase</h1>
           </div>
           <span className="discovery-slogan">
-            Just go.
-            <br />
-            We’ll plan.
+            <strong>
+              Khám phá
+              <br />
+              Việt Nam
+            </strong>
+            <small>
+              Thiên nhiên tuyệt đẹp.
+              <br />
+              Văn hóa đa dạng.
+              <br />
+              Ẩm thực phong phú.
+            </small>
+            <button onClick={() => onNavigate('/explore')}>
+              Khám phá ngay <ArrowRight size={15} />
+            </button>
           </span>
           <div className="discovery-start">
             <button
@@ -165,11 +208,40 @@ export function HomeDiscovery({
               className="button home-destination-search"
               onClick={() => setShowAllDestinations(true)}
             >
-              <Search size={18} aria-hidden="true" /> Tìm điểm đến
+              <Search size={18} aria-hidden="true" /> Bạn muốn đi đâu?
               <ChevronRight size={18} aria-hidden="true" />
             </button>
           </div>
         </section>
+      )}
+      {mode === 'home' && (
+        <nav
+          className="customer-home-shortcuts"
+          aria-label="Khám phá theo sở thích"
+        >
+          {[
+            { label: 'Thiên nhiên', key: 'nature', Icon: Mountain },
+            { label: 'Văn hóa', key: 'culture', Icon: Landmark },
+            { label: 'Ẩm thực', key: 'food', Icon: Utensils },
+            { label: 'Biển đảo', key: 'beach', Icon: BeachIcon },
+          ].map(({ label, key, Icon }) => (
+            <button
+              key={key}
+              onClick={() =>
+                onNavigate(
+                  key === 'beach'
+                    ? '/explore?category=nature&q=biển'
+                    : `/explore?category=${key}`,
+                )
+              }
+            >
+              <span>
+                <Icon size={22} />
+              </span>
+              <strong>{label}</strong>
+            </button>
+          ))}
+        </nav>
       )}
       {mode === 'home' && (
         <section className="discovery-trips" aria-label="Chuyến đi của bạn">
@@ -238,76 +310,54 @@ export function HomeDiscovery({
           )}
         </section>
       )}
-      {mode === 'home' && (
-        <section
-          className="discovery-shortcuts"
-          aria-labelledby="discovery-shortcuts-title"
-        >
-          <h2 id="discovery-shortcuts-title" className="sr-only">
-            Truy cập nhanh
-          </h2>
-          <div>
-            <button onClick={() => onNavigate(user ? '/trips' : '/login')}>
-              <Wallet aria-hidden="true" size={21} />
-              <span>Chuyến đi</span>
-            </button>
-            <button onClick={() => onNavigate('/explore')}>
-              <Compass aria-hidden="true" size={21} />
-              <span>Địa điểm</span>
-            </button>
-            <button onClick={() => onNavigate(user ? '/goe' : '/login')}>
-              <img src={images.goeMascot} alt="" width={24} height={24} />
-              <span>Hỏi Goe</span>
-            </button>
-          </div>
-        </section>
-      )}
       <section
         className="discovery-destinations"
         aria-labelledby="discovery-destinations-title"
       >
         <div className="discovery-section-heading">
           <IntroHeading id="discovery-destinations-title">
-            {mode === 'saved' ? 'Điểm đến đã lưu' : 'Điểm đến'}
+            {mode === 'saved' ? 'Điểm đến đã lưu' : 'Gợi ý điểm đến'}
           </IntroHeading>
           <button onClick={() => setShowAllDestinations(true)}>
             Xem tất cả <ChevronRight size={15} />
           </button>
         </div>
-        <details className="home-destination-filters">
-          <summary>
-            <Search size={16} /> Tìm và lọc điểm đến
-          </summary>
-          <label className="discovery-search">
-            <Search size={18} />
-            <input
-              type="search"
-              aria-label="Tìm điểm đến ở Việt Nam"
-              placeholder="Tìm tỉnh/thành"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+        {mode !== 'home' && (
+          <details className="home-destination-filters">
+            <summary>
+              <Search size={16} /> Tìm và lọc điểm đến
+            </summary>
+            <label className="discovery-search">
+              <Search size={18} />
+              <input
+                type="search"
+                aria-label="Tìm điểm đến ở Việt Nam"
+                placeholder="Tìm tỉnh/thành"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </label>
+            <div className="discovery-filters" aria-label="Loại điểm đến">
+              {['Tất cả', 'Thiên nhiên', 'Văn hóa'].map((c) => (
+                <button
+                  key={c}
+                  aria-pressed={category === c}
+                  onClick={() => setCategory(c)}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+            <DestinationRegions
+              region={region}
+              subregion={subregion}
+              onChange={(r, s) => {
+                setRegion(r);
+                setSubregion(s);
+              }}
             />
-          </label>
-          <div className="discovery-filters" aria-label="Loại điểm đến">
-            {['Tất cả', 'Thiên nhiên', 'Văn hóa'].map((c) => (
-              <button
-                key={c}
-                aria-pressed={category === c}
-                onClick={() => setCategory(c)}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-          <DestinationRegions
-            region={region}
-            subregion={subregion}
-            onChange={(r, s) => {
-              setRegion(r);
-              setSubregion(s);
-            }}
-          />
-        </details>
+          </details>
+        )}
         {saveError && (
           <p role="status" className="discovery-empty">
             {saveError}
@@ -332,12 +382,19 @@ export function HomeDiscovery({
                         : `${d.name} · Chưa hỗ trợ lập lịch`
                     }
                   >
-                    {d.image ? (
+                    {d.image && !failedImages.includes(d.slug) ? (
                       <img
                         src={d.image}
                         alt={`${d.name} — ảnh minh họa tạo bằng AI`}
                         loading="lazy"
                         decoding="async"
+                        onError={() =>
+                          setFailedImages((current) =>
+                            current.includes(d.slug)
+                              ? current
+                              : [...current, d.slug],
+                          )
+                        }
                       />
                     ) : (
                       <span

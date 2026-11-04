@@ -1,3 +1,4 @@
+import { companionChatLayout } from '../mascot/placement';
 import {
   useEffect,
   useLayoutEffect,
@@ -6,7 +7,8 @@ import {
   type CSSProperties,
   type PointerEvent,
 } from 'react';
-import { images } from '@goease/media';
+import { MascotRenderer } from '../mascot/renderer';
+import { useMascot, useMascotBehavior } from '../mascot/context';
 import { GoeChat } from './goe-chat';
 
 type Position = { x: number; y: number };
@@ -29,9 +31,16 @@ function bounds() {
         rect.height > 0 && rect.top > 0 && rect.top < window.innerHeight,
     );
   const viewport = window.visualViewport;
-  const left = (viewport?.offsetLeft ?? 0) + 12;
+  const surface = document
+    .querySelector('.customer-ui.customer-v2')
+    ?.getBoundingClientRect();
+  const left = Math.max(viewport?.offsetLeft ?? 0, surface?.left ?? 0) + 12;
   const top = (viewport?.offsetTop ?? 0) + 12;
-  const right = left + (viewport?.width ?? window.innerWidth) - 24;
+  const right =
+    Math.min(
+      (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth),
+      surface?.right ?? window.innerWidth,
+    ) - 12;
   const bottom = Math.min(
     (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight) - 12,
     ...bars.map((rect) => rect.top - 12),
@@ -58,7 +67,13 @@ export function GoeChatWidget({
   onNavigate: (path: string) => void;
   onApplied: () => void;
 }) {
+  const { controller, preferences, update, motionAllowed } = useMascot();
+  const lastAutomaticAction = useMascotBehavior();
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (preferences.hidden) setOpen(false);
+  }, [preferences.hidden]);
+  useEffect(() => () => controller.setChannel('drag', null), [controller]);
   const [visible, setVisible] = useState(false);
   const [started, setStarted] = useState(false);
   const launcher = useRef<HTMLButtonElement>(null);
@@ -110,6 +125,7 @@ export function GoeChatWidget({
       /* Position is optional when storage is unavailable. */
     }
     const fit = () => {
+      if (drag.current) return;
       const limits = bounds();
       if (!dock.current) {
         const rect = launcher.current?.getBoundingClientRect();
@@ -162,62 +178,19 @@ export function GoeChatWidget({
 
   useLayoutEffect(() => {
     if (!open || !position || !panel.current) return;
-    const element = panel.current;
     const place = () => {
-      const limits = bounds();
-      const right = limits.right + launcherSize;
-      const bottom = limits.bottom + launcherSize;
-      const gap = 12;
-      const onLeft = position.x + launcherSize / 2 < (limits.left + right) / 2;
-      const sideRoom = onLeft
-        ? right - position.x - launcherSize - gap
-        : position.x - gap - limits.left;
-      let width = Math.min(400, right - limits.left);
-      let maxHeight = Math.min(560, bottom - limits.top);
-      let x: number;
-      let y: number;
-      if (sideRoom >= 300) {
-        width = Math.min(width, sideRoom);
-        x = onLeft ? position.x + launcherSize + gap : position.x - width - gap;
-        const height = Math.min(element.scrollHeight + 2, maxHeight);
-        y = clamp(
-          position.y + launcherSize / 2 - height / 2,
-          limits.top,
-          bottom - height,
-        );
-      } else {
-        const above = position.y - gap - limits.top;
-        const below = bottom - position.y - launcherSize - gap;
-        const openAbove = above >= below;
-        maxHeight = Math.max(1, Math.min(maxHeight, openAbove ? above : below));
-        const height = Math.min(element.scrollHeight + 2, maxHeight);
-        x = clamp(
-          onLeft ? position.x : position.x + launcherSize - width,
-          limits.left,
-          right - width,
-        );
-        y = openAbove
-          ? position.y - gap - height
-          : position.y + launcherSize + gap;
-      }
-      const next = {
-        left: x,
-        top: y,
-        right: 'auto',
-        bottom: 'auto',
-        width,
-        height: maxHeight,
-        maxHeight,
-        transformOrigin: `${clamp(position.x + launcherSize / 2 - x, 0, width)}px ${clamp(position.y + launcherSize / 2 - y, 0, maxHeight)}px`,
-      };
+      const next = companionChatLayout(position, bounds(), launcherSize);
       setChatStyle((previous) =>
         JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
       );
     };
     place();
-    const observer = new ResizeObserver(place);
-    observer.observe(element);
-    return () => observer.disconnect();
+    window.addEventListener('resize', place);
+    window.visualViewport?.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.visualViewport?.removeEventListener('resize', place);
+    };
   }, [open, position]);
 
   const finishDrag = (event: PointerEvent<HTMLButtonElement>) => {
@@ -225,6 +198,7 @@ export function GoeChatWidget({
     if (!current || current.pointerId !== event.pointerId) return;
     drag.current = null;
     setDragging(false);
+    controller.setChannel('drag', null);
     setTilt(0);
     if (
       !current.moved &&
@@ -232,6 +206,7 @@ export function GoeChatWidget({
       event.pointerType === 'touch'
     ) {
       suppressClick.current = true;
+      controller.play('touch', true);
       setStarted(true);
       setOpen((value) => !value);
     }
@@ -239,9 +214,7 @@ export function GoeChatWidget({
       suppressClick.current = true;
       const limits = bounds();
       const side =
-        current.current.x + launcherSize / 2 < window.innerWidth / 2
-          ? 'left'
-          : 'right';
+        current.current.x < (limits.left + limits.right) / 2 ? 'left' : 'right';
       const y = clamp(current.current.y, limits.top, limits.bottom);
       dock.current = {
         side,
@@ -298,6 +271,14 @@ export function GoeChatWidget({
 
   return (
     <>
+      {preferences.hidden && (
+        <button
+          className="mascot-restore"
+          onClick={() => update({ hidden: false })}
+        >
+          Hiện Goe
+        </button>
+      )}
       {started && (
         <div
           ref={panel}
@@ -335,6 +316,8 @@ export function GoeChatWidget({
       )}
       <button
         ref={launcher}
+        hidden={preferences.hidden}
+        data-last-automatic-action={lastAutomaticAction ?? undefined}
         type="button"
         className={`goe-chat-launcher${dragging ? ' is-dragging' : ''}`}
         style={
@@ -354,6 +337,7 @@ export function GoeChatWidget({
         onPointerDown={(event) => {
           if (!event.isPrimary || event.button !== 0) return;
           suppressClick.current = false;
+          controller.setChannel('cursor', null);
           const rect = event.currentTarget.getBoundingClientRect();
           const origin = { x: rect.left, y: rect.top };
           drag.current = {
@@ -367,7 +351,16 @@ export function GoeChatWidget({
         }}
         onPointerMove={(event) => {
           const current = drag.current;
-          if (!current || current.pointerId !== event.pointerId) return;
+          if (!current) {
+            if (event.pointerType === 'mouse' && !open && motionAllowed) {
+              const rect = event.currentTarget.getBoundingClientRect();
+              const right = event.clientX >= rect.left + rect.width / 2;
+              const down = event.clientY >= rect.top + rect.height / 2;
+              controller.followCursor(down ? (right ? 2 : 3) : right ? 1 : 0);
+            }
+            return;
+          }
+          if (current.pointerId !== event.pointerId) return;
           const dx = event.clientX - current.start.x;
           const dy = event.clientY - current.start.y;
           if (!current.moved && Math.hypot(dx, dy) < 6) return;
@@ -381,8 +374,10 @@ export function GoeChatWidget({
             y: clamp(current.origin.y + dy, limits.top, limits.bottom),
           };
           setDragging(true);
+          controller.setChannel('drag', 'dragging');
           setPosition(current.current);
         }}
+        onPointerLeave={() => controller.setChannel('cursor', null)}
         onPointerUp={finishDrag}
         onPointerCancel={finishDrag}
         onLostPointerCapture={finishDrag}
@@ -390,12 +385,14 @@ export function GoeChatWidget({
           const dragged = suppressClick.current;
           suppressClick.current = false;
           if (dragged && event.detail !== 0) return;
+          controller.setChannel('cursor', null);
+          controller.play('touch', true);
           setStarted(true);
           if (open) close();
           else setOpen(true);
         }}
       >
-        <img src={images.goeMascot} alt="" draggable={false} />
+        <MascotRenderer />
       </button>
     </>
   );
