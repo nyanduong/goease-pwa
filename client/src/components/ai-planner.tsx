@@ -29,6 +29,7 @@ export function AiPlanner({
   const [recoverable, setRecoverable] = useState(false);
   const [quotaReached, setQuotaReached] = useState(false);
   const [catalogUnavailable, setCatalogUnavailable] = useState(false);
+  const animatePreview = localCatalog && immediatePreview;
   const supported =
     Boolean(draft.destinations[0]?.destinationId) &&
     draft.days.length > 0 &&
@@ -62,6 +63,12 @@ export function AiPlanner({
     const payload = currentPayload;
     if (fresh || request.current?.payload !== payload)
       request.current = { payload, key: crypto.randomUUID() };
+    const previewAt =
+      performance.now() +
+      (animatePreview &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 4000
+        : 0);
     try {
       const result = await api<PlannerProposal>('/trips/ai-proposal', {
         method: 'POST',
@@ -69,6 +76,11 @@ export function AiPlanner({
         body: payload,
         signal: AbortSignal.timeout(plannerTiming.clientTimeoutMs),
       });
+      const remaining = previewAt - performance.now();
+      if (active.current && remaining > 0)
+        await new Promise<void>((resolve) =>
+          window.setTimeout(resolve, remaining),
+        );
       if (!active.current) return;
       if (JSON.stringify(latest.current) !== base)
         throw new Error(
@@ -90,8 +102,10 @@ export function AiPlanner({
       setRecoverable(canRecoverAi(e));
       setError(e instanceof Error ? e.message : 'Chưa tạo được đề xuất.');
     } finally {
-      setBusy(false);
-      onBusyChange?.(false);
+      if (active.current) {
+        setBusy(false);
+        onBusyChange?.(false);
+      }
     }
   }
   return (
@@ -131,6 +145,13 @@ export function AiPlanner({
         disabled={busy || !supported}
         onClick={() => void generate(true)}
       >
+        {busy && animatePreview && (
+          <span className="planner-route-loader" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        )}
         {busy
           ? 'Goe đang lên lịch…'
           : immediatePreview
