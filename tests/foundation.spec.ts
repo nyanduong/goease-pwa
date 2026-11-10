@@ -3358,3 +3358,34 @@ test('admin publishes reference prices and mobile customer gets automatic estima
     await connection.close();
   }
 });
+test('mobile trip draft survives cancelled browser Back and discards only on confirmation', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/trips');
+  const signup = await page.request.post('/api/v1/auth/register', {
+    headers: { Origin: new URL(page.url()).origin, 'X-GoEase-Client': 'web' },
+    data: {
+      displayName: 'Navigation fixture',
+      email: `client-nav-${Date.now()}@example.invalid`,
+      password: 'Client-nav-fixture-2026',
+    },
+  });
+  expect(signup.status()).toBe(201);
+  await page.reload();
+  const create = page
+    .getByRole('navigation', { name: 'Điều hướng di động' })
+    .getByRole('link', { name: 'Tạo chuyến đi' });
+  await page.locator('.trip-phase-tabs').waitFor();
+  await create.click();
+  const title = page.getByLabel('Tên chuyến đi', { exact: true });
+  await title.fill('Giữ bản nháp điều hướng');
+  await page.evaluate(() => history.back());
+  await respondToConfirmation(page, false);
+  await expect(title).toHaveValue('Giữ bản nháp điều hướng');
+  await page.evaluate(() => history.back());
+  await respondToConfirmation(page, true);
+  await expect(page).toHaveURL(/\/trips$/);
+  await page.goForward();
+  await expect(title).toHaveValue('');
+});

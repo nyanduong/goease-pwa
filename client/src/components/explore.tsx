@@ -350,7 +350,11 @@ export function ExplorePage({
                 </a>
                 <button
                   type="button"
-                  onClick={() => onNavigate(`/places/${mapPlace.id}`)}
+                  onClick={() =>
+                    onNavigate(
+                      `/places/${mapPlace.id}${savedOnly ? '?from=saved' : ''}`,
+                    )
+                  }
                 >
                   Xem chi tiết <ArrowRight size={14} />
                 </button>

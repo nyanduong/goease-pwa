@@ -31,11 +31,14 @@ export function AuthPage({
     displayName: string;
   } | null>(null);
   const params = new URLSearchParams(location.search);
-  const continuing = params.get('next') === '/trips/new';
+  const next = params.get('next') ?? '';
+  const continuing = next === '/trips/new';
   const destination = params.get('destination');
   const continuation = continuing
     ? `?next=/trips/new${destination && /^[a-f0-9]{24}$/.test(destination) ? `&destination=${destination}` : ''}`
-    : '';
+    : /^\/trips\/[a-f0-9]{24}$/.test(next)
+      ? `?next=${next}`
+      : '';
 
   return (
     <section className="auth-layout">

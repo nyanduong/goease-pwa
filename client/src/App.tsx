@@ -28,7 +28,13 @@ import {
   useMobileViewport,
 } from './components/customer-shell';
 import { HomeDiscovery } from './components/home-discovery';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   tripInputSchema,
   type DestinationDto,
@@ -110,24 +116,41 @@ export function App() {
 
   const saveKey = useRef({ payload: '', key: '' });
 
+  const historyIndex = useRef<number>(history.state?.goeaseIndex ?? 0);
+  const discardChanges = async () => {
+    const discard = await confirmAction(
+      'Chuyến đi có thay đổi chưa lưu. Rời trang mà chưa lưu thay đổi?',
+      {
+        title: 'Bỏ thay đổi chưa lưu?',
+        confirmLabel: 'Bỏ thay đổi',
+        cancelLabel: 'Ở lại',
+        tone: 'warning',
+      },
+    );
+    if (discard) {
+      setDraft(loaded ? inputFromTrip(loaded) : initialDraft());
+      setSaveState(loaded ? 'saved' : 'dirty');
+    }
+    return discard;
+  };
+  const needsLeaveCheck =
+    (path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path)) &&
+    saveState !== 'saved' &&
+    Boolean(
+      draft.title ||
+      draft.notes ||
+      draft.destinations.length ||
+      draft.days.some((d) => d.activities.length),
+    );
   const go = async (next: string) => {
+    if (next === location.pathname + location.search + location.hash) return;
     if (
-      (path === '/trips/new' || /^\/trips\/[a-f0-9]{24}$/.test(path)) &&
       next.split('?')[0] !== path &&
-      saveState !== 'saved' &&
-      (draft.title || draft.days.some((d) => d.activities.length)) &&
-      !(await confirmAction(
-        'Chuyến đi có thay đổi chưa lưu. Rời trang mà chưa lưu thay đổi?',
-        {
-          title: 'Bỏ thay đổi chưa lưu?',
-          confirmLabel: 'Bỏ thay đổi',
-          cancelLabel: 'Ở lại',
-          tone: 'warning',
-        },
-      ))
+      needsLeaveCheck &&
+      !(await discardChanges())
     )
       return;
-    history.pushState({}, '', next);
+    history.pushState({ goeaseIndex: ++historyIndex.current }, '', next);
     setPath(location.pathname);
     setMessage('');
     window.scrollTo(0, 0);
@@ -154,10 +177,49 @@ export function App() {
   );
 
   useEffect(() => {
-    const pop = () => {
-      setPath(location.pathname);
-      setMessage('');
-    };
+    history.replaceState(
+      { ...history.state, goeaseIndex: historyIndex.current },
+      '',
+    );
+  }, []);
+  const approvedTraversal = useRef<number | null>(null);
+  const restoreTarget = useRef<number | null>(null);
+  const pop = useEffectEvent(async () => {
+    const index = history.state?.goeaseIndex;
+    if (restoreTarget.current !== null && index === historyIndex.current) {
+      const target = restoreTarget.current;
+      restoreTarget.current = null;
+      // Let popstate dismiss dialogs from the previous route before asking.
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+      if (await discardChanges()) {
+        approvedTraversal.current = target;
+        history.go(target - historyIndex.current);
+      }
+      return;
+    }
+    if (
+      typeof index === 'number' &&
+      index !== historyIndex.current &&
+      index !== approvedTraversal.current &&
+      path !== location.pathname &&
+      needsLeaveCheck
+    ) {
+      const delta = index - historyIndex.current;
+      restoreTarget.current = index;
+      history.go(-delta);
+      return;
+    }
+    approvedTraversal.current = null;
+    if (typeof index === 'number') historyIndex.current = index;
+    if (location.pathname === '/trips/new' && loaded) {
+      setLoaded(null);
+      setDraft(initialDraft());
+      setSaveState('dirty');
+    }
+    setPath(location.pathname);
+    setMessage('');
+  });
+  useEffect(() => {
     addEventListener('popstate', pop);
     return () => removeEventListener('popstate', pop);
   }, []);
@@ -207,7 +269,7 @@ export function App() {
 
   useEffect(() => {
     if (user?.isAdmin && path !== '/admin') {
-      history.replaceState({}, '', '/admin');
+      history.replaceState(history.state, '', '/admin');
       setPath('/admin');
     }
   }, [user?.isAdmin, path]);
@@ -277,7 +339,7 @@ export function App() {
       /* storage is optional */
     }
     if ((expiredSession || !seen) && !welcomeSeenInMemory) {
-      history.replaceState({}, '', '/welcome');
+      history.replaceState(history.state, '', '/welcome');
       setPath('/welcome');
     }
   }, [path, sessionStatus, user, expiredSession, welcomeSeenInMemory]);
@@ -391,9 +453,6 @@ export function App() {
         ))
       )
         return;
-      setDraft(initialDraft());
-      setLoaded(null);
-      setSaveState('dirty');
     }
     setDraft(initialDraft());
     setLoaded(null);
@@ -461,7 +520,7 @@ export function App() {
       );
       setLoaded(value.trip);
       setDraft(inputFromTrip(value.trip));
-      history.replaceState({}, '', `/trips/${value.trip.id}`);
+      history.replaceState(history.state, '', `/trips/${value.trip.id}`);
       setPath(`/trips/${value.trip.id}`);
       setSaveState('saved');
       setMessage('Đã lưu chuyến đi vào tài khoản.');
@@ -516,7 +575,7 @@ export function App() {
               setDraft(initialDraft());
               void finishOfflineLogout()
                 .then(() => {
-                  history.replaceState({}, '', '/login');
+                  history.replaceState(history.state, '', '/login');
                   setPath('/login');
                 })
                 .catch(() => location.replace('/offline.html'));
@@ -583,7 +642,7 @@ export function App() {
         setList([]);
         setLoaded(null);
         setDraft(initialDraft());
-        history.replaceState({}, '', '/');
+        history.replaceState(history.state, '', '/');
         setPath('/');
       })
       .catch(() => location.replace('/offline.html'));
@@ -981,7 +1040,10 @@ export function App() {
                 setLoaded(null);
                 setSaveState('dirty');
                 go('/trips/new');
-              } else go('/');
+              } else {
+                const next = params.get('next') ?? '';
+                go(/^\/trips\/[a-f0-9]{24}$/.test(next) ? next : '/');
+              }
             }}
           />
         ) : path === '/trips/trash' ? (
@@ -1041,7 +1103,7 @@ export function App() {
           ) : !user ? (
             <Notice>
               Đăng nhập để mở chuyến đi riêng của bạn.{' '}
-              {link('/login', 'Đăng nhập')}
+              {link(`/login?next=${path}`, 'Đăng nhập')}
             </Notice>
           ) : (busy || !message) && path !== '/trips/new' && !loaded ? (
             <Notice>Đang mở lịch trình…</Notice>
@@ -1111,7 +1173,9 @@ export function App() {
           <AppBottomNavigation
             path={path}
             signedIn={Boolean(user)}
-            onNavigate={go}
+            onNavigate={(to) =>
+              to === '/trips/new' ? void start() : void go(to)
+            }
           />
         )}
       {!isAuth && !isWelcome && path !== '/admin' && path !== '/goe' && (
