@@ -479,28 +479,30 @@ export function AdminHistory({
             </table>
           </div>
         )}
-        <footer className="history-browser-pagination">
-          <span>
-            {total > 0
-              ? `Hiển thị ${offset + 1}–${offset + items.length} / ${total} hoạt động`
-              : '0 hoạt động'}{' '}
-            · Trang {Math.floor(offset / 30) + 1}
-          </span>
-          <div>
-            <button
-              disabled={!offset || loading}
-              onClick={() => onPage(Math.max(0, offset - 30))}
-            >
-              Trang trước
-            </button>
-            <button
-              disabled={!hasMore || loading}
-              onClick={() => onPage(offset + 30)}
-            >
-              Trang tiếp
-            </button>
-          </div>
-        </footer>
+        {(items.length > 0 || (!loading && !failedToLoad)) && (
+          <footer className="history-browser-pagination">
+            <span>
+              {total > 0
+                ? `Hiển thị ${offset + 1}–${offset + items.length} / ${total} hoạt động`
+                : '0 hoạt động'}{' '}
+              · Trang {Math.floor(offset / 30) + 1}
+            </span>
+            <div>
+              <button
+                disabled={!offset || loading}
+                onClick={() => onPage(Math.max(0, offset - 30))}
+              >
+                Trang trước
+              </button>
+              <button
+                disabled={!hasMore || loading}
+                onClick={() => onPage(offset + 30)}
+              >
+                Trang tiếp
+              </button>
+            </div>
+          </footer>
+        )}
         <p className="history-browser-help">
           Chọn một hoạt động để xem chi tiết. Thời gian hiển thị theo giờ Việt
           Nam.

@@ -259,4 +259,9 @@ test('history table selects details, filters the whole log, paginates and stays 
   mode = 'empty';
   await page.getByRole('button', { name: 'Thử tải lại', exact: true }).click();
   await expect(log.getByText('Chưa có hoạt động để hiển thị')).toBeVisible();
+  await expect(log.getByText(/0 hoạt động/)).toBeVisible();
+  mode = 'error';
+  await page.getByRole('button', { name: 'Làm mới', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('lỗi kiểm thử');
+  await expect(log.getByText(/0 hoạt động/)).toHaveCount(0);
 });

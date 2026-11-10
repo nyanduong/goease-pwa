@@ -1153,105 +1153,152 @@ export function catalogOperations(
     const ref = (type: string) => ({
       $cond: [{ $eq: ['$entityType', type] }, objectId('$entityId'), null],
     });
-    const textMatch: Record<string, unknown> = {};
     if (query.q) {
-      const literal = query.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      textMatch.$or = [
-        'historyActor',
-        'historyPlace.name',
-        'historyDestination.name',
-        'historyRun.scopeSnapshot.destinationName',
-      ].map((key) => ({ [key]: { $regex: literal, $options: 'i' } }));
+      const name = new RegExp(
+        query.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        'i',
+      );
+      const fallbackMatches = name.test('Người vận hành');
+      const ids = async (collection: string, filter: Record<string, unknown>) =>
+        (
+          await connection
+            .collection(collection)
+            .find(filter, { projection: { _id: 1 } })
+            .toArray()
+        ).map((row) => row._id);
+      const [users, places, destinations, runs] = await Promise.all([
+        ids('users', {
+          displayName: fallbackMatches ? { $type: 'string', $not: name } : name,
+        }),
+        ids(Place.collection.name, { name }),
+        ids(trips.models.Destination.collection.name, { name }),
+        ids(Run.collection.name, { 'scopeSnapshot.destinationName': name }),
+      ]);
+      match.$or = [
+        {
+          'actor.type': { $ne: 'system' },
+          'actor.userId': {
+            [fallbackMatches ? '$nin' : '$in']: [
+              ...users,
+              ...users.map(String),
+            ],
+          },
+        },
+        ...(name.test('Hệ thống') ? [{ 'actor.type': 'system' }] : []),
+        { entityType: 'place', entityId: { $in: places.map(String) } },
+        {
+          entityType: 'destination',
+          entityId: { $in: destinations.map(String) },
+        },
+        { entityType: 'catalog_run', entityId: { $in: runs.map(String) } },
+      ];
     }
     const [result] = await connection
       .collection('audit_logs')
       .aggregate([
         { $match: match },
-        {
-          $project: {
-            action: 1,
-            actor: 1,
-            entityId: 1,
-            entityType: 1,
-            entityRevision: 1,
-            previousRevision: 1,
-            campaignId: 1,
-            batchId: 1,
-            runId: 1,
-            occurredAt: 1,
-            outcome: 1,
-            operationId: 1,
-          },
-        },
-        {
-          $set: {
-            historyUserId: objectId('$actor.userId'),
-            historyPlaceId: ref('place'),
-            historyDestinationId: ref('destination'),
-            historyRunId: ref('catalog_run'),
-          },
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'historyUserId',
-            foreignField: '_id',
-            pipeline: [{ $project: { displayName: 1 } }],
-            as: 'historyUser',
-          },
-        },
-        {
-          $lookup: {
-            from: Place.collection.name,
-            localField: 'historyPlaceId',
-            foreignField: '_id',
-            pipeline: [{ $project: { name: 1, destinationId: 1 } }],
-            as: 'historyPlace',
-          },
-        },
-        {
-          $lookup: {
-            from: trips.models.Destination.collection.name,
-            localField: 'historyDestinationId',
-            foreignField: '_id',
-            pipeline: [{ $project: { name: 1 } }],
-            as: 'historyDestination',
-          },
-        },
-        {
-          $lookup: {
-            from: Run.collection.name,
-            localField: 'historyRunId',
-            foreignField: '_id',
-            pipeline: [{ $project: { scopeSnapshot: 1 } }],
-            as: 'historyRun',
-          },
-        },
-        {
-          $set: {
-            historyActor: {
-              $cond: [
-                { $eq: ['$actor.type', 'system'] },
-                'Hệ thống',
-                {
-                  $ifNull: [
-                    { $first: '$historyUser.displayName' },
-                    'Người vận hành',
-                  ],
-                },
-              ],
-            },
-          },
-        },
-        { $match: textMatch },
+        { $sort: { occurredAt: -1, _id: -1 } },
         {
           $facet: {
+            total: [{ $count: 'value' }],
             items: [
-              { $sort: { occurredAt: -1, _id: -1 } },
               { $skip: query.offset },
               { $limit: 31 },
+              {
+                $project: {
+                  action: 1,
+                  actor: 1,
+                  entityId: 1,
+                  entityType: 1,
+                  entityRevision: 1,
+                  previousRevision: 1,
+                  campaignId: 1,
+                  batchId: 1,
+                  runId: 1,
+                  occurredAt: 1,
+                  outcome: 1,
+                  operationId: 1,
+                },
+              },
+              {
+                $set: {
+                  historyUserId: objectId('$actor.userId'),
+                  historyPlaceId: ref('place'),
+                  historyDestinationId: ref('destination'),
+                  historyRunId: ref('catalog_run'),
+                },
+              },
+              {
+                $lookup: {
+                  from: 'users',
+                  localField: 'historyUserId',
+                  foreignField: '_id',
+                  pipeline: [{ $project: { displayName: 1 } }],
+                  as: 'historyUser',
+                },
+              },
+              {
+                $lookup: {
+                  from: Place.collection.name,
+                  localField: 'historyPlaceId',
+                  foreignField: '_id',
+                  pipeline: [{ $project: { name: 1, destinationId: 1 } }],
+                  as: 'historyPlace',
+                },
+              },
+              {
+                $lookup: {
+                  from: trips.models.Destination.collection.name,
+                  localField: 'historyDestinationId',
+                  foreignField: '_id',
+                  pipeline: [{ $project: { name: 1 } }],
+                  as: 'historyDestination',
+                },
+              },
+              {
+                $lookup: {
+                  from: Run.collection.name,
+                  localField: 'historyRunId',
+                  foreignField: '_id',
+                  pipeline: [{ $project: { scopeSnapshot: 1 } }],
+                  as: 'historyRun',
+                },
+              },
+              {
+                $set: {
+                  historyActor: {
+                    $cond: [
+                      { $eq: ['$actor.type', 'system'] },
+                      'Hệ thống',
+                      {
+                        $ifNull: [
+                          { $first: '$historyUser.displayName' },
+                          'Người vận hành',
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
+              {
+                $lookup: {
+                  from: trips.models.Destination.collection.name,
+                  localField: 'historyPlace.destinationId',
+                  foreignField: '_id',
+                  pipeline: [{ $project: { name: 1 } }],
+                  as: 'placeDestination',
+                },
+              },
+              {
+                $lookup: {
+                  from: Decision.collection.name,
+                  localField: 'operationId',
+                  foreignField: 'operationId',
+                  pipeline: [{ $project: { note: 1 } }, { $limit: 1 }],
+                  as: 'decision',
+                },
+              },
             ],
-            total: [{ $count: 'value' }],
           },
         },
       ])
@@ -1262,13 +1309,8 @@ export function catalogOperations(
       const p = e.historyPlace[0];
       const destination = e.historyDestination[0];
       const run = e.historyRun[0];
-      const placeDestination = p?.destinationId
-        ? await trips.models.Destination.findById(p.destinationId).select(
-            'name',
-          )
-        : null;
       const destinationName =
-        placeDestination?.name ??
+        e.placeDestination[0]?.name ??
         destination?.name ??
         run?.scopeSnapshot?.destinationName ??
         null;
@@ -1302,13 +1344,7 @@ export function catalogOperations(
         occurredAt: new Date(e.occurredAt).toISOString(),
         outcome: e.outcome,
         note:
-          typeof e.operationId === 'string'
-            ? ((
-                await Decision.findOne({ operationId: e.operationId }).select(
-                  'note',
-                )
-              )?.note ?? '')
-            : '',
+          typeof e.operationId === 'string' ? (e.decision[0]?.note ?? '') : '',
       });
     }
     return {

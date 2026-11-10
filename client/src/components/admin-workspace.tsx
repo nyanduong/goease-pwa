@@ -175,7 +175,9 @@ function AdminWorkspaceContent({
   >({ q: '', kind: 'all', period: 'all' });
   useEffect(() => {
     const timer = setTimeout(() => {
-      setHistoryFilters((value) => ({ ...value, q: historySearch }));
+      setHistoryFilters((value) =>
+        value.q === historySearch ? value : { ...value, q: historySearch },
+      );
       setHistoryOffset(0);
     }, 300);
     return () => clearTimeout(timer);
