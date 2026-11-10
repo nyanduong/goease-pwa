@@ -20,6 +20,7 @@ import {
   plannerCatalog,
   cafeSuitable,
   selectPlannerCandidates,
+  rankCatalogPlaces,
 } from '../src/features/ai/itinerary-policy.js';
 const destinationId = '000000000000000000000004',
   placeId = '100000000000000000000001';
@@ -627,6 +628,37 @@ const coffeeCatalog = (): PlaceDto[] =>
       amountMinor: i < 8 ? 20000 : 35000,
     },
   }));
+
+test('catalog rules prioritize museums for culture and add coffee for food on the same trip', () => {
+  const catalog = coffeeCatalog();
+  catalog[3]!.name = 'Bảo tàng địa phương';
+  const request = coffeeRequest();
+  for (const interest of ['culture', 'food'] as const) {
+    request.trip.preferences.interestCodes = [interest];
+    const ranked = rankCatalogPlaces(catalog, request);
+    const days = arrangeCompleteDays({ placeIds: ranked }, request, catalog);
+    const { trip } = validatePlan(
+      days,
+      request,
+      catalog,
+      randomUUID(),
+      false,
+      'rule_based',
+    );
+    assert.equal(trip.generationMode, 'rule_based');
+    assert.ok(
+      trip.days.every((d) =>
+        d.activities.every((a) => a.source === 'rule_based'),
+      ),
+    );
+    if (interest === 'culture')
+      assert.equal(trip.days[0]!.activities[0]!.placeId, catalog[3]!.id);
+    assert.equal(
+      trip.days[0]!.activities.some((a) => a.kind === 'free_time'),
+      interest === 'food',
+    );
+  }
+});
 
 test('balanced and active two-day plans keep visits and meals, add ranked coffee breaks and vary venues', () => {
   const catalog = coffeeCatalog(),

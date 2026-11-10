@@ -867,6 +867,7 @@ export function TripWorkspace({
             <details className="journey-ai-options">
               <summary>Lập lại lịch với Goe</summary>
               <AiPlanner
+                localCatalog={destination?.provinceCode === '48'}
                 draft={withDays({
                   ...draft,
                   title: draft.title.trim() || `Hành trình ${destinationName}`,
@@ -900,7 +901,7 @@ export function TripWorkspace({
             {!loaded && (
               <div className="quick-result-intro">
                 <span className="journey-eyebrow">
-                  {draft.generationMode === 'ai'
+                  {draft.generationMode !== 'manual'
                     ? 'Lịch gợi ý của Goe'
                     : 'Bản nháp'}
                 </span>
@@ -908,6 +909,11 @@ export function TripWorkspace({
                   {destinationName} · {draft.days.length} ngày
                 </h1>
                 <p>
+                  {draft.generationMode === 'rule_based' && (
+                    <>
+                      <span>Lịch gợi ý theo thuật toán</span> ·{' '}
+                    </>
+                  )}
                   {draft.travelers.totalCount} người ·{' '}
                   {datesConfirmed
                     ? `${shortDate(draft.startDate)}–${shortDate(draft.endDate)}`
@@ -1181,6 +1187,22 @@ export function TripWorkspace({
                                   {a.startLocalTime ?? 'Chưa đặt giờ'}
                                 </small>
                                 <strong>{a.title}</strong>
+                                {a.source === 'rule_based' && (
+                                  <small>
+                                    {a.kind === 'meal'
+                                      ? 'Quán ăn mở trong khung giờ dùng bữa'
+                                      : a.kind === 'free_time'
+                                        ? 'Nghỉ cà phê giữa hai điểm dừng'
+                                        : a.placeId &&
+                                            stopPhotos[a.placeId]?.category ===
+                                              'culture' &&
+                                            draft.preferences.interestCodes.includes(
+                                              'culture',
+                                            )
+                                          ? 'Phù hợp sở thích văn hóa'
+                                          : 'Đủ thời gian ghé trong khung giờ hoạt động'}
+                                  </small>
+                                )}
                                 {a.estimatedCost.reference && (
                                   <small>
                                     {!priceFitsGroup(
@@ -1192,7 +1214,7 @@ export function TripWorkspace({
                                   </small>
                                 )}
                                 <small>
-                                  {(a.source === 'ai'
+                                  {(a.source !== 'manual'
                                     ? a.notes.split('\n')[0]
                                     : a.notes) ||
                                     (a.endLocalTime

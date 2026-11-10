@@ -63,7 +63,7 @@ export const activityInputSchema = z
             : !v.reference,
         { message: 'Nguồn giá tham khảo không hợp lệ.' },
       ),
-    source: z.enum(['manual', 'ai']),
+    source: z.enum(['manual', 'ai', 'rule_based']),
   })
   .refine(
     (v) =>
@@ -100,7 +100,7 @@ export const tripInputSchema = z
         .array(z.enum(['walking', 'car', 'motorbike', 'public_transport']))
         .max(4),
     }),
-    generationMode: z.enum(['manual', 'ai']),
+    generationMode: z.enum(['manual', 'ai', 'rule_based']),
     aiRunId: z.uuid().optional(),
     days: z
       .array(

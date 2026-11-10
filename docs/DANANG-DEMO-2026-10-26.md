@@ -1,5 +1,15 @@
 # Demo Đà Nẵng2ngày1đêm — 26/10/2026
 
+## Cập nhật xuất bản local — 10/11/2026
+
+Theo yêu cầu owner xuất bản các địa điểm Đà Nẵng đã đủ dữ liệu, đã rà toàn bộ 3.127 bản nháp trong database local `goease`. Chỉ Thánh địa Mỹ Sơn vượt schema xuất bản và publicationReadiness hiện hành. Các lý do thiếu (có thể trùng nhau): 3.117 mục thiếu giới thiệu, 3.042 mục thiếu ảnh bìa hợp lệ, 480 mục có thông tin giờ/giá chưa đạt kiểm tra. Không bổ sung dữ liệu suy đoán hoặc tự duyệt observations để vượt gate.
+
+Đã xuất bản Thánh địa Mỹ Sơn qua catalog service với expectedRevision/idempotency, transaction, audit và phiên bản công khai; đọc lại revision/publicRevision 5, proposalRevision null. Đối chiếu Google Maps đúng địa điểm và marker gần tọa độ khu vực OSM hiện có; không chép tọa độ Google vào catalog. Ảnh Cloudinary trả HTTP 200 image; giữ ảnh đã duyệt, attribution và dữ liệu biên tập hiện có. [Cổng vé của đơn vị vận hành](https://mysonticketonline.vn/information) vẫn công bố hai mức vé theo quốc tịch và giờ tham quan tương ứng. Không gọi AI hoặc API tính phí.
+
+Kết quả API local: list Đà Nẵng trả 12 địa điểm, hasMore=false; detail Mỹ Sơn đọc được. Mỹ Sơn đủ khám phá nhưng scheduling=false/budgeting=false vì giá audience=restricted, không tự áp dụng giá khách Việt Nam cho nhóm chưa rõ quốc tịch. Giữ 11 điểm đủ dữ liệu planner hiện có và 3.126 bản nháp. Bộ demo trung tâm 2 ngày vẫn là 10 điểm đã mô tả bên dưới, không thêm Mỹ Sơn vào cụm này.
+
+`reviewAfter` theo BR cập nhật 04/11/2026 là nhắc việc biên tập, không phải hạn tự loại giá khỏi dự toán. Các bằng chứng lịch tháng 10 bên dưới là lịch sử kiểm chứng, không phải lượt AI mới ngày 10/11. Đợt này chỉ xác minh schema/readiness, nguồn, ảnh, audit/version và API local; không chạy application tests, gọi model live, triển khai VPS hoặc đồng bộ Atlas. Bằng chứng tác nghiệp ignored: `.local/danang-publish-audit-20261110.json` và `.local/danang-publication-20261110-{plan,result,public-api}.json`, journal tương ứng.
+
 Owner thu hẹp ưu tiên sang Đà Nẵng: đủ tham quan, ăn uống và cà phê cho2ngày; chỉ dùng nguồn dữ liệu miễn phí, xuất bản mục đủ điều kiện. Owner sau đó cho phép đúng1lượt thử Fulldichvu bằng key/số dư hiện có, không tự retry/nạp tiền/bật billing. Không đổi provider ứng dụng. Chưa hoàn thiện740mục/toàn quốc.
 
 ## Dữ liệu đã xuất bản

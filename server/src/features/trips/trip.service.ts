@@ -246,7 +246,7 @@ export function tripService(
             const now = new Date();
             let originalProposal: TripInput | undefined;
             // AI provenance is resolved on the server; the browser cannot invent it.
-            if (value.generationMode === 'ai') {
+            if (value.generationMode !== 'manual') {
               const run = await connection.collection('ai_runs').findOne(
                 {
                   runId: value.aiRunId ?? '',
@@ -257,6 +257,7 @@ export function tripService(
               );
               if (
                 !run ||
+                run.proposal.trip.generationMode !== value.generationMode ||
                 (current?.aiRunId !== value.aiRunId &&
                   ((run.tripId ?? undefined) !== id ||
                     (id && run.expectedRevision !== expectedRevision)))
@@ -270,15 +271,17 @@ export function tripService(
               originalProposal = original;
               const links = new Set(
                 original.days.flatMap((d) =>
-                  d.activities.map((a) => `${a.activityId}:${a.placeId}`),
+                  d.activities.map(
+                    (a) => `${a.activityId}:${a.placeId}:${a.source}`,
+                  ),
                 ),
               );
               if (
                 value.days.some((d) =>
                   d.activities.some(
                     (a) =>
-                      a.source === 'ai' &&
-                      !links.has(`${a.activityId}:${a.placeId}`),
+                      a.source !== 'manual' &&
+                      !links.has(`${a.activityId}:${a.placeId}:${a.source}`),
                   ),
                 )
               )
@@ -290,7 +293,7 @@ export function tripService(
             } else if (
               value.aiRunId ||
               value.days.some((d) =>
-                d.activities.some((a) => a.source === 'ai'),
+                d.activities.some((a) => a.source !== 'manual'),
               )
             ) {
               throw new HttpError(

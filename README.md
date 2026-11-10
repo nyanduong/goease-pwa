@@ -275,3 +275,5 @@ Admin có trang **Tiến trình lấy dữ liệu** để theo dõi hàng đợi
 # Bổ sung dữ liệu toàn quốc
 
 Admin → Đợt thu thập → **Bổ sung dữ liệu toàn quốc**: tiến độ từng mục, lọc kết quả, tạm dừng/tiếp tục, chạy tiếp sau khi API khởi động lại. Kết quả nguồn vẫn chờ duyệt, không tự xuất bản. Nguồn hiện hỗ trợ và giới hạn: [BULK-ENRICHMENT](docs/BULK-ENRICHMENT.md).
+
+**Demo Đà Nẵng (10/11/2026).** Chọn Đà Nẵng, 2 ngày, 2 người, rồi chọn Văn hóa hoặc Ẩm thực và bấm **Lên lịch giúp mình**. Goe xếp lịch bằng thuật toán trên catalog đã publish, không cần khóa AI. Tạo hai chuyến riêng để so sánh. Dùng **Giữ lịch này** để lưu bản muốn trình bày.

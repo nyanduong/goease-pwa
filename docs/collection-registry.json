@@ -1037,7 +1037,7 @@
           "Implemented server-only owned clone reference; fresh manual snapshot/IDs, no expenses. Lifecycle phase date-derived, status unchanged."
         ]
       ],
-      "aiPlannerRuntime": "optional aiRunId UUID; generationMode/source ai|manual; server resolves successful owned proposal, validates activity ID/place pairs, new proposal base revision checked at save."
+      "aiPlannerRuntime": "optional aiRunId UUID; generationMode/source ai|rule_based|manual; server resolves successful owned proposal, validates activity ID/place pairs, new proposal base revision checked at save."
     },
     {
       "name": "trip_revisions",
@@ -1113,7 +1113,7 @@
           "Server multiplies per_person by current travelers exactly once; group_total unchanged; VND/user_entered. Reject unsafe integer total."
         ]
       ],
-      "aiPlannerRuntime": "optional aiRunId UUID; generationMode/source ai|manual; server resolves successful owned proposal, validates activity ID/place pairs, new proposal base revision checked at save."
+      "aiPlannerRuntime": "optional aiRunId UUID; generationMode/source ai|rule_based|manual; server resolves successful owned proposal, validates activity ID/place pairs, new proposal base revision checked at save."
     },
     {
       "name": "trip_access",

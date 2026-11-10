@@ -56,7 +56,7 @@ export function rescheduleDates(
       // even if the original cafe no longer passes the current catalog filters.
       const coffeeBreak =
         activity.kind === 'free_time' &&
-        (activity.source === 'ai' || (original && cafeSuitable(original)));
+        (activity.source !== 'manual' || (original && cafeSuitable(original)));
       const sameKind = (p: PlaceDto) =>
         activity.kind === 'meal'
           ? mealSuitable(p)

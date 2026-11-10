@@ -312,6 +312,7 @@ export function QuickTripSetup({
       <div className="quick-actions">
         <fieldset className="quick-action" disabled={!valid}>
           <AiPlanner
+            localCatalog={destination?.provinceCode === '48'}
             draft={withDays({
               ...draft,
               title:

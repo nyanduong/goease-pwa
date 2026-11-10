@@ -1433,3 +1433,5 @@ Implemented Mongoose strict schemas: catalog_enrichment_jobs và catalog_enrichm
 ### AUTH-OTP-01 (04/11/2026)
 
 `auth_sessions.passwordOtp` là subdocument tùy chọn, select:false: `hash` (SHA-256 của nonce và mã), `nonce` (ngẫu nhiên), `requestHash` (Argon2id của mật khẩu mới), `expiresAt`, `sentAt`, `attempts`. Không có collection mới hoặc index mới. Phiên cũ không có trường vẫn hoạt động; đổi mật khẩu cần yêu cầu mã mới. Xóa challenge khi đổi thành công hoặc gửi mail thất bại; Session TTL dọn cùng phiên. Thời hạn mã luôn kiểm bằng truy vấn, không dựa vào TTL.
+
+AI-02 (10/11/2026). Trip and activity snapshots accept `rule_based` in generationMode/source. A full Đà Nẵng proposal stores an owned, idempotent succeeded ai_runs record (provider catalog, plannerVersion danang-rules-v1), without a usage bucket reservation. Save and date recheck verify the source run, mode and activity/place/source links. Existing ai/manual records remain readable.

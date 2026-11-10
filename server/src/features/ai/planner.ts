@@ -18,6 +18,7 @@ import { requestId } from '../auth/auth.service.js';
 import { calculateBudget } from '../trips/budget.js';
 import {
   arrangeCompleteDays,
+  rankCatalogPlaces,
   eligibleForPlanner,
   itineraryPolicy,
   outsideKnownHours,
@@ -40,6 +41,7 @@ export function validatePlan(
   places: PlaceDto[],
   runId: string,
   adjustment = false,
+  mode: 'ai' | 'rule_based' = 'ai',
 ): PlannerProposal {
   const plan = generatedPlanSchema.parse(raw);
   const { maxStops } = itineraryPolicy(input, adjustment);
@@ -150,7 +152,7 @@ export function validatePlan(
             .filter(Boolean)
             .join('\n')
             .slice(0, 500),
-          source: 'ai' as const,
+          source: mode,
           estimatedCost: catalogCost(place),
         };
       }),
@@ -158,7 +160,7 @@ export function validatePlan(
   });
   const trip = tripInputSchema.parse({
     ...input.trip,
-    generationMode: 'ai',
+    generationMode: mode,
     aiRunId: runId,
     days,
   });
@@ -316,13 +318,17 @@ export function plannerService(
             'Chuyến đi đã thay đổi. Hãy tải bản mới trước khi đổi ngày.',
           );
       }
-      if (input.trip.generationMode === 'ai') {
+      if (input.trip.generationMode !== 'manual') {
         const source = await Run.findOne({
           runId: input.trip.aiRunId ?? '',
           userId: owner,
           status: 'succeeded',
         });
-        if (!source || (source.tripId && source.tripId !== input.tripId))
+        if (
+          !source ||
+          source.proposal.trip.generationMode !== input.trip.generationMode ||
+          (source.tripId && source.tripId !== input.tripId)
+        )
           throw new HttpError(
             409,
             'AI_PROPOSAL_STALE',
@@ -332,14 +338,17 @@ export function plannerService(
           tripInputSchema
             .parse(source.proposal.trip)
             .days.flatMap((d) =>
-              d.activities.map((a) => `${a.activityId}:${a.placeId}`),
+              d.activities.map(
+                (a) => `${a.activityId}:${a.placeId}:${a.source}`,
+              ),
             ),
         );
         if (
           input.trip.days.some((d) =>
             d.activities.some(
               (a) =>
-                a.source === 'ai' && !links.has(`${a.activityId}:${a.placeId}`),
+                a.source !== 'manual' &&
+                !links.has(`${a.activityId}:${a.placeId}:${a.source}`),
             ),
           )
         )
@@ -366,7 +375,7 @@ export function plannerService(
           e instanceof Error ? e.message : 'Không thể đổi ngày.',
         );
       }
-      if (input.trip.generationMode === 'ai') {
+      if (input.trip.generationMode !== 'manual') {
         const runId = randomUUID();
         result.trip.aiRunId = runId;
         await Run.create({
@@ -487,16 +496,6 @@ export function plannerService(
       key: string,
     ): Promise<PlannerProposal> {
       if (
-        !(config.AI_PROVIDER === 'fulldichvu'
-          ? config.FULLDICHVU_API_KEY
-          : config.GEMINI_API_KEY)
-      )
-        throw new HttpError(
-          503,
-          'AI_NOT_CONFIGURED',
-          'Goe AI chưa được cấu hình. Bạn vẫn có thể tự xếp lịch.',
-        );
-      if (
         !input.trip.destinations[0]?.destinationId ||
         input.trip.days.length > 7
       )
@@ -530,6 +529,18 @@ export function plannerService(
             'Chuyến đi đã thay đổi. Tải bản mới trước khi nhờ Goe.',
           );
       }
+      const local = destination.provinceCode === '48' && !input.adjustment;
+      if (
+        !local &&
+        !(config.AI_PROVIDER === 'fulldichvu'
+          ? config.FULLDICHVU_API_KEY
+          : config.GEMINI_API_KEY)
+      )
+        throw new HttpError(
+          503,
+          'AI_NOT_CONFIGURED',
+          'Goe AI chưa được cấu hình. Bạn vẫn có thể tự xếp lịch.',
+        );
       const places = await candidates(input);
       const selected = input.adjustment
         ? input.trip.days.find((d) => d.dayId === input.adjustment!.dayId)
@@ -557,6 +568,52 @@ export function plannerService(
           'AI_CATALOG_COVERAGE',
           `${destination.name} chưa đủ địa điểm và bữa ăn có giá, điều kiện và giờ hoạt động rõ ràng cho chuyến này. Goe chưa tạo lịch hoặc sử dụng lượt AI.`,
         );
+      if (local) {
+        const runId = randomUUID();
+        const placeIds = rankCatalogPlaces(places, input);
+        const plan = arrangeCompleteDays(
+          { placeIds },
+          input,
+          places,
+          'rule_based',
+        );
+        const proposal = validatePlan(
+          plan,
+          input,
+          places,
+          runId,
+          false,
+          'rule_based',
+        );
+        try {
+          await Run.create({
+            runId,
+            userId: owner,
+            key,
+            requestHash: hash,
+            requestId: requestId(),
+            ...(input.tripId
+              ? {
+                  tripId: input.tripId,
+                  expectedRevision: input.expectedRevision!,
+                }
+              : {}),
+            provider: 'catalog',
+            plannerVersion: 'danang-rules-v1',
+            status: 'succeeded',
+            sources: places.map((p) => p.id),
+            proposal,
+            finishedAt: new Date(),
+          });
+        } catch (e) {
+          if (e instanceof Error && 'code' in e && e.code === 11000) {
+            const existing = await cached(owner, key, hash);
+            if (existing) return existing;
+          }
+          throw e;
+        }
+        return proposal;
+      }
       const date = new Date().toISOString().slice(0, 10),
         scopes = ['global', owner.toHexString()];
       for (const scope of scopes) {

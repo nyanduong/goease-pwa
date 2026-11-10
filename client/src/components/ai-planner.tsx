@@ -12,6 +12,7 @@ export function AiPlanner({
   revision,
   onApply,
   immediatePreview = false,
+  localCatalog = false,
   onBusyChange,
 }: {
   draft: TripInput;
@@ -19,6 +20,7 @@ export function AiPlanner({
   revision?: number | undefined;
   onApply: (value: TripInput) => void;
   immediatePreview?: boolean;
+  localCatalog?: boolean;
   onBusyChange?: (value: boolean) => void;
 }) {
   const [busy, setBusy] = useState(false),
@@ -95,23 +97,32 @@ export function AiPlanner({
   return (
     <section
       className={immediatePreview ? 'quick-generate' : 'ai-planner'}
-      aria-label="Goe AI lập lịch"
+      aria-label={
+        localCatalog ? 'Goe xếp lịch theo danh mục' : 'Goe AI lập lịch'
+      }
     >
+      {localCatalog && (
+        <small>
+          Goe xếp lịch theo sở thích và giờ hoạt động trong danh mục Đà Nẵng.
+        </small>
+      )}
       {!immediatePreview && (
         <>
           <h2>
             <Sparkles size={19} /> Để Goe xếp lịch giúp bạn
           </h2>
-          <AppInfo title="Cách Goe tạo lịch">
-            {' '}
-            <p>
-              Goe chọn điểm dừng và giờ đi từ những nơi có đủ giá và giờ hoạt
-              động. Khả năng xếp lịch phụ thuộc dữ liệu tại điểm đến. Khi bấm
-              tạo, ngày đi, số người, ngân sách và sở thích được gửi tới dịch vụ
-              AI được cấu hình cho Goe. Tên, email và ghi chú riêng không được
-              gửi.
-            </p>
-          </AppInfo>
+          {!localCatalog && (
+            <AppInfo title="Cách Goe tạo lịch">
+              {' '}
+              <p>
+                Goe chọn điểm dừng và giờ đi từ những nơi có đủ giá và giờ hoạt
+                động. Khả năng xếp lịch phụ thuộc dữ liệu tại điểm đến. Khi bấm
+                tạo, ngày đi, số người, ngân sách và sở thích được gửi tới dịch
+                vụ AI được cấu hình cho Goe. Tên, email và ghi chú riêng không
+                được gửi.
+              </p>
+            </AppInfo>
+          )}
         </>
       )}
       <button
@@ -134,7 +145,9 @@ export function AiPlanner({
       )}
       {busy && (
         <p role="status">
-          Thường mất vài chục giây. Lịch trình hiện tại vẫn được giữ.
+          {localCatalog
+            ? 'Đang kiểm tra điểm dừng và giờ hoạt động…'
+            : 'Thường mất vài chục giây. Lịch trình hiện tại vẫn được giữ.'}
         </p>
       )}
       {error && (

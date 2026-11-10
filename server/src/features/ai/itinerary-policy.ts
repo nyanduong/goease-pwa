@@ -52,8 +52,13 @@ export function selectPlannerCandidates(pools: {
   return [...visits, ...meals, ...cafes, ...pools.other].slice(0, 30);
 }
 
-function compactPlannerPlaces(places: PlaceDto[], days: number) {
-  if (places.some((p) => !p.mapLocation)) return places;
+function compactPlannerPlaces(
+  places: PlaceDto[],
+  days: number,
+  preferMapped: boolean,
+) {
+  const mapped = places.filter((p) => p.mapLocation);
+  if (!preferMapped && mapped.length !== places.length) return places;
   const radians = (degrees: number) => (degrees * Math.PI) / 180;
   const distanceKm = (a: PlaceDto, b: PlaceDto) => {
     const from = a.mapLocation!,
@@ -70,8 +75,8 @@ function compactPlannerPlaces(places: PlaceDto[], days: number) {
   let best: PlaceDto[] | undefined;
   // Coordinates only guide a compact area choice; this is not road routing or
   // a guarantee that any two stops are within twelve kilometres of each other.
-  for (const anchor of places) {
-    const nearby = places.filter((p) => distanceKm(anchor, p) <= 12);
+  for (const anchor of mapped) {
+    const nearby = mapped.filter((p) => distanceKm(anchor, p) <= 12);
     if (
       nearby.filter((p) => p.category !== 'food').length < days * 2 ||
       nearby.filter(mealSuitable).length < 2
@@ -82,12 +87,35 @@ function compactPlannerPlaces(places: PlaceDto[], days: number) {
   return best ?? places;
 }
 
-// AI ranks candidates; the server constructs a feasible day from the supplied
+// Local meals with regional dishes and optional cafe breaks distinguish a food trip.
+export function rankCatalogPlaces(places: PlaceDto[], input: PlannerRequest) {
+  const interests = input.trip.preferences.interestCodes;
+  const food = interests.includes('food');
+  const score = (p: PlaceDto) =>
+    Number(interests.includes(p.category)) * 4 +
+    Number(
+      interests.includes('culture') && /bảo tàng|di tích|di sản/i.test(p.name),
+    ) *
+      2 +
+    Number(
+      food &&
+        mealSuitable(p) &&
+        /mì quảng|bún|bánh tráng|đặc sản/i.test(p.name + ' ' + p.subtitle),
+    ) *
+      2;
+  return places
+    .filter((p) => !cafeSuitable(p) || food || interests.includes('relaxation'))
+    .sort((a, b) => score(b) - score(a) || a.id.localeCompare(b.id))
+    .map((p) => p.id);
+}
+
+// The ranking orders candidates; the server constructs a feasible day from the supplied
 // catalog. This is not a fallback for provider errors or a routing service.
 export function arrangeCompleteDays(
   raw: unknown,
   input: PlannerRequest,
   places: PlaceDto[],
+  mode: 'ai' | 'rule_based' = 'ai',
 ): GeneratedPlan {
   const ranking = rankedPlacesSchema.safeParse(raw);
   const plan = ranking.success
@@ -116,7 +144,11 @@ export function arrangeCompleteDays(
     );
   // Validate provider IDs against the original catalog above, before selecting
   // a smaller area. A valid outlying ID is not an invented provider selection.
-  const localPlaces = compactPlannerPlaces(places, input.trip.days.length);
+  const localPlaces = compactPlannerPlaces(
+    places,
+    input.trip.days.length,
+    mode === 'rule_based',
+  );
   const visits = localPlaces.filter((p) => p.category !== 'food');
   const meals = localPlaces.filter(mealSuitable);
   const cafes = localPlaces.filter(
