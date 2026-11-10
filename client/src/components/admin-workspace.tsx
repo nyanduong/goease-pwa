@@ -9,7 +9,7 @@ import { AdminVisitProgress } from './admin-visit-progress';
 import { AdminSources } from './admin-sources';
 import { AdminSettingsPage } from './admin-settings';
 import { AdminCampaigns } from './admin-campaigns';
-import { AdminHistory, type HistoryEntry } from './admin-history';
+import { AdminHistory } from './admin-history';
 import { AdminSchedules } from './admin-schedules';
 import { AdminPageHeader } from './admin-visuals';
 import { AdminReviewQueue } from './admin-review-queue';
@@ -165,23 +165,19 @@ function AdminWorkspaceContent({
   const [data, setData] = useState<CatalogOperationsDto | null>(null);
   const [offset, setOffset] = useState(0);
   const [detail, setDetail] = useState<CatalogReviewDto | null>(null);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyOffset, setHistoryOffset] = useState(0);
-  const [historyMore, setHistoryMore] = useState(false);
-  const [historyTotal, setHistoryTotal] = useState(0);
   const [historySearch, setHistorySearch] = useState('');
   const [historyFilters, setHistoryFilters] = useState<
     Omit<CatalogHistoryQuery, 'offset'>
   >({ q: '', kind: 'all', period: 'all' });
   useEffect(() => {
+    if (historyFilters.q === historySearch) return;
     const timer = setTimeout(() => {
-      setHistoryFilters((value) =>
-        value.q === historySearch ? value : { ...value, q: historySearch },
-      );
+      setHistoryFilters((value) => ({ ...value, q: historySearch }));
       setHistoryOffset(0);
     }, 300);
     return () => clearTimeout(timer);
-  }, [historySearch]);
+  }, [historyFilters.q, historySearch]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -213,6 +209,13 @@ function AdminWorkspaceContent({
   }, []);
   const reviewing =
     tab === 'work' || (tab === 'history' && historyView === 'reviews');
+  const viewingHistory = tab === 'history' && historyView === 'events';
+  const history = useCatalogQuery<CatalogHistoryListDto>(
+    '/admin/catalog/history',
+    { offset: String(historyOffset), ...historyFilters },
+    viewingHistory,
+    true,
+  );
   const scoped = scope ? { destinationId: scope } : {};
   const reviews = useCatalogQuery<CatalogReviewListDto>(
     '/admin/catalog/reviews',
@@ -233,7 +236,11 @@ function AdminWorkspaceContent({
     true,
   );
   const reviewError = reviews.error ?? operations.error;
-  const loadError = reviewing ? reviewError?.message : error;
+  const loadError = viewingHistory
+    ? history.error?.message
+    : reviewing
+      ? reviewError?.message
+      : error;
   const items = reviews.data?.items ?? [];
   const reviewTotal = reviews.data?.total;
   useEffect(() => {
@@ -249,24 +256,12 @@ function AdminWorkspaceContent({
   const refresh = useCallback(
     async (quiet = false) => {
       const generation = ++refreshGeneration.current;
-      if (reviewing || !['overview', 'automatic', 'history'].includes(tab))
-        return;
+      if (!['overview', 'automatic'].includes(tab)) return;
       if (!quiet) {
         setLoading(true);
         setError('');
       }
       try {
-        if (tab === 'history' && historyView === 'events') {
-          const value = await api<CatalogHistoryListDto>(
-            `/admin/catalog/history?${new URLSearchParams({ offset: String(historyOffset), ...historyFilters })}`,
-          );
-          if (generation !== refreshGeneration.current) return;
-          setHistory(value.items);
-          setHistoryMore(value.hasMore);
-          setHistoryTotal(value.total);
-          setError('');
-          return;
-        }
         const state = await api<CatalogOperationsDto>(
           `/admin/catalog/operations${scope ? `?destinationId=${scope}` : ''}`,
         );
@@ -283,19 +278,18 @@ function AdminWorkspaceContent({
         if (generation === refreshGeneration.current) setLoading(false);
       }
     },
-    [tab, reviewing, historyOffset, historyView, historyFilters, scope],
+    [tab, scope],
   );
   useEffect(() => {
     void refresh();
   }, [refresh]);
   useEffect(() => {
-    if (reviewing || !['overview', 'automatic', 'history'].includes(tab))
-      return;
+    if (!['overview', 'automatic'].includes(tab)) return;
     const timer = setInterval(() => {
       void refresh(true);
     }, 15000);
     return () => clearInterval(timer);
-  }, [refresh, reviewing, tab]);
+  }, [refresh, tab]);
   function edit(id: string) {
     setOpenPlace({ id, request: Date.now() });
     location.hash = 'places';
@@ -421,8 +415,8 @@ function AdminWorkspaceContent({
               ) : tab === 'history' && historyView === 'events' ? (
                 <button
                   className="history-refresh"
-                  disabled={loading}
-                  onClick={() => void refresh()}
+                  disabled={history.isFetching}
+                  onClick={() => void history.refetch()}
                 >
                   <RefreshCw size={16} /> Làm mới
                 </button>
@@ -437,7 +431,7 @@ function AdminWorkspaceContent({
                 : loadError}{' '}
               <button
                 onClick={() => {
-                  if (!reviewing) void refresh();
+                  if (viewingHistory) void history.refetch();
                   if (reviewing && reviews.isError) void reviews.refetch();
                   if (reviewing && operations.isError)
                     void operations.refetch();
@@ -452,7 +446,7 @@ function AdminWorkspaceContent({
               {notice}
             </p>
           )}
-          {!reviewing && loading && !data ? (
+          {!viewingHistory && !reviewing && loading && !data ? (
             <p role="status">Đang tải dữ liệu…</p>
           ) : (
             (reviewing ||
@@ -583,12 +577,12 @@ function AdminWorkspaceContent({
                 )}
                 {tab === 'history' && historyView === 'events' && (
                   <AdminHistory
-                    items={history}
-                    total={historyTotal}
+                    items={history.data?.items ?? []}
+                    total={history.data?.total ?? 0}
                     offset={historyOffset}
-                    hasMore={historyMore}
-                    loading={loading}
-                    failedToLoad={!!error}
+                    hasMore={history.data?.hasMore ?? false}
+                    loading={history.isLoading}
+                    failedToLoad={history.isError}
                     onPage={setHistoryOffset}
                     onOpen={edit}
                     search={historySearch}

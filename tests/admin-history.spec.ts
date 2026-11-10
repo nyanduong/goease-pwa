@@ -59,7 +59,10 @@ test('history table selects details, filters the whole log, paginates and stays 
   }));
   let mode: 'normal' | 'empty' | 'error' = 'normal';
   let lastPeriod = '';
+  let historyRequests = 0;
+  let filteredTotal = 32;
   await page.route('**/api/v1/admin/catalog/history?**', (route) => {
+    historyRequests++;
     if (mode === 'error')
       return route.fulfill({
         status: 503,
@@ -77,7 +80,7 @@ test('history table selects details, filters the whole log, paginates and stays 
     lastPeriod = params.get('period') ?? '';
     let filtered =
       q === 'phân trang'
-        ? Array.from({ length: 32 }, (_, i) => ({
+        ? Array.from({ length: filteredTotal }, (_, i) => ({
             ...events[0]!,
             id: `page-event-${i}`,
             action: i === 30 ? 'catalog.future_action' : 'catalog.published',
@@ -102,6 +105,7 @@ test('history table selects details, filters the whole log, paginates and stays 
       },
     });
   });
+  await page.clock.install();
   await page.goto('/login');
   await page
     .getByLabel('Email', { exact: true })
@@ -185,7 +189,6 @@ test('history table selects details, filters the whole log, paginates and stays 
   await page.getByLabel('Lọc loại hoạt động').selectOption('all');
   await page.getByLabel('Lọc thời gian hoạt động').selectOption('today');
   await expect.poll(() => lastPeriod).toBe('today');
-  await page.getByLabel('Lọc thời gian hoạt động').selectOption('all');
   await page.getByLabel('Tìm hoạt động', { exact: true }).fill('phân trang');
   await expect(log.locator('.history-browser-row')).toHaveCount(30);
   await log.getByRole('button', { name: 'Trang tiếp', exact: true }).click();
@@ -198,6 +201,26 @@ test('history table selects details, filters the whole log, paginates and stays 
   await expect(
     detail.getByText('catalog.future_action', { exact: true }),
   ).toBeVisible();
+  const requestsBeforeSwitch = historyRequests;
+  filteredTotal = 33;
+  await page
+    .getByRole('button', { name: 'Việc chờ duyệt', exact: true })
+    .click();
+  await expect(log).toBeHidden();
+  await page.clock.fastForward(25_000);
+  await page
+    .getByRole('button', { name: 'Nhật ký hoạt động', exact: true })
+    .click();
+  await expect(page.getByLabel('Tìm hoạt động', { exact: true })).toHaveValue(
+    'phân trang',
+  );
+  await expect(log.getByText(/31–32 \/ 32 hoạt động · Trang 2/)).toBeVisible();
+  await expect(page.getByLabel('Lọc thời gian hoạt động')).toHaveValue('today');
+  expect(historyRequests).toBe(requestsBeforeSwitch);
+  await page.getByRole('button', { name: 'Làm mới', exact: true }).click();
+  await expect(log.getByText(/31–33 \/ 33 hoạt động · Trang 2/)).toBeVisible();
+  expect(historyRequests).toBe(requestsBeforeSwitch + 1);
+  await page.getByLabel('Lọc thời gian hoạt động').selectOption('all');
   await page.getByLabel('Tìm hoạt động', { exact: true }).fill('không-có');
   await expect(
     log.getByText('Không có hoạt động phù hợp', { exact: true }),
