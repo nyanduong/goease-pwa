@@ -9,7 +9,11 @@ import type { PlannerProposal, TripInput } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
 import { canRecoverAi } from '../ai-errors';
 
-function PlannerLoadingDialog() {
+const previewFillMs = 3800;
+
+function PlannerLoadingDialog({ ready }: { ready: boolean }) {
+  const [elapsedPercent, setElapsedPercent] = useState(0);
+  const percent = ready ? 100 : elapsedPercent;
   const dialog = useRef<HTMLDialogElement>(null);
   const { preferences, motionAllowed } = useMascot();
   useEffect(() => {
@@ -17,6 +21,19 @@ function PlannerLoadingDialog() {
     element.showModal();
     return () => element.close();
   }, []);
+  useEffect(() => {
+    if (ready || !motionAllowed) return;
+    const start = performance.now();
+    const timer = window.setInterval(() => {
+      const value = Math.min(
+        99,
+        Math.floor(((performance.now() - start) * 100) / previewFillMs),
+      );
+      setElapsedPercent(value);
+      if (value === 99) window.clearInterval(timer);
+    }, 40);
+    return () => window.clearInterval(timer);
+  }, [ready, motionAllowed]);
   return createPortal(
     <dialog
       ref={dialog}
@@ -31,8 +48,18 @@ function PlannerLoadingDialog() {
         </div>
       )}
       <strong id="planner-loading-title">Goe đang lên lịch…</strong>
-      <div className="planner-loading-track" aria-hidden="true">
-        <span />
+      <div
+        className="planner-loading-meter"
+        role="progressbar"
+        aria-label="Chuẩn bị hiển thị lịch"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+      >
+        <div className="planner-loading-track">
+          <span style={{ transform: `scaleX(${percent / 100})` }} />
+        </div>
+        <span className="planner-loading-percent">{percent}%</span>
       </div>
     </dialog>,
     document.body,
@@ -58,6 +85,7 @@ export function AiPlanner({
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const [previewReady, setPreviewReady] = useState(false);
   const [proposal, setProposal] = useState<PlannerProposal | null>(null);
   const [recoverable, setRecoverable] = useState(false);
   const [quotaReached, setQuotaReached] = useState(false);
@@ -87,6 +115,7 @@ export function AiPlanner({
   });
   async function generate(fresh = false) {
     if (busy || !supported) return;
+    setPreviewReady(false);
     setBusy(true);
     onBusyChange?.(true);
     setError('');
@@ -98,7 +127,7 @@ export function AiPlanner({
     if (fresh || request.current?.payload !== payload)
       request.current = { payload, key: crypto.randomUUID() };
     const previewAt =
-      performance.now() + (animatePreview && motionAllowed ? 4000 : 0);
+      performance.now() + (animatePreview && motionAllowed ? previewFillMs : 0);
     try {
       const result = await api<PlannerProposal>('/trips/ai-proposal', {
         method: 'POST',
@@ -116,6 +145,11 @@ export function AiPlanner({
         throw new Error(
           'Bạn đã thay đổi thông tin khi Goe đang lập lịch. Hãy tạo đề xuất mới để dùng thông tin mới nhất.',
         );
+      if (animatePreview && motionAllowed) {
+        setPreviewReady(true);
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 200));
+        if (!active.current) return;
+      }
       snapshot.current = base;
       if (immediatePreview) onApply(result.trip);
       else setProposal(result);
@@ -187,7 +221,7 @@ export function AiPlanner({
           dưới.
         </p>
       )}
-      {busy && animatePreview && <PlannerLoadingDialog />}
+      {busy && animatePreview && <PlannerLoadingDialog ready={previewReady} />}
       {busy && !animatePreview && (
         <p role="status">
           {localCatalog
