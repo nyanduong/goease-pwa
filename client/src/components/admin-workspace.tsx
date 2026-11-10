@@ -1,3 +1,9 @@
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { refreshCatalogQueries, useCatalogQuery } from '../admin-catalog-query';
 import { adminSections } from '../admin-navigation-config';
 import { AdminVisitProgress } from './admin-visit-progress';
 import { AdminSources } from './admin-sources';
@@ -78,7 +84,16 @@ export function AdminNavigation() {
     </nav>
   );
 }
-export function AdminWorkspace({
+export function AdminWorkspace(props: { destinations: DestinationDto[] }) {
+  // App keys this workspace by admin identity, so cached data is session-local.
+  const [client] = useState(() => new QueryClient());
+  return (
+    <QueryClientProvider client={client}>
+      <AdminWorkspaceContent {...props} />
+    </QueryClientProvider>
+  );
+}
+function AdminWorkspaceContent({
   destinations: initialDestinations,
 }: {
   destinations: DestinationDto[];
@@ -100,7 +115,7 @@ export function AdminWorkspace({
       localStorage.getItem('goease-admin-view-scope') ??
       '',
   );
-  const [catalogRevision, setCatalogRevision] = useState(0);
+  const client = useQueryClient();
   useEffect(() => {
     localStorage.setItem('goease-admin-view-scope', scope);
     setNotice('');
@@ -110,10 +125,6 @@ export function AdminWorkspace({
     setOffset(0);
   }, [scope]);
   const [workSort, setWorkSort] = useState<'priority' | 'newest'>('priority');
-  const [reviewCounts, setReviewCounts] = useState<
-    CatalogReviewListDto['counts']
-  >({ draft: 0, duplicate: 0, source: 0, price: 0, quality: 0 });
-  const [publishedCount, setPublishedCount] = useState(0);
   const [workQuery, setWorkQuery] = useState(''),
     [workKind, setWorkKind] = useState('');
   const [locationKey, setLocationKey] = useState(location.hash);
@@ -152,10 +163,7 @@ export function AdminWorkspace({
     'events',
   );
   const [data, setData] = useState<CatalogOperationsDto | null>(null);
-  const [items, setItems] = useState<CatalogReviewDto[]>([]);
-  const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
-  const [more, setMore] = useState(false);
   const [detail, setDetail] = useState<CatalogReviewDto | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyOffset, setHistoryOffset] = useState(0);
@@ -201,19 +209,51 @@ export function AdminWorkspace({
     changed();
     return () => window.removeEventListener('hashchange', changed);
   }, []);
+  const reviewing =
+    tab === 'work' || (tab === 'history' && historyView === 'reviews');
+  const scoped = scope ? { destinationId: scope } : {};
+  const reviews = useCatalogQuery<CatalogReviewListDto>(
+    '/admin/catalog/reviews',
+    {
+      offset: String(offset),
+      q: workQuery,
+      sort: workSort,
+      ...scoped,
+      ...(workKind ? { kind: workKind } : {}),
+    },
+    reviewing,
+    true,
+  );
+  const operations = useCatalogQuery<CatalogOperationsDto>(
+    '/admin/catalog/operations',
+    scope ? { destinationId: scope } : {},
+    reviewing,
+    true,
+  );
+  const reviewError = reviews.error ?? operations.error;
+  const loadError = reviewing ? reviewError?.message : error;
+  const items = reviews.data?.items ?? [];
+  const reviewTotal = reviews.data?.total;
+  useEffect(() => {
+    if (
+      reviewing &&
+      reviewTotal !== undefined &&
+      offset > 0 &&
+      offset >= reviewTotal
+    )
+      setOffset(Math.max(0, Math.ceil(reviewTotal / 20) - 1) * 20);
+  }, [reviewing, reviewTotal, offset]);
   const refreshGeneration = useRef(0);
   const refresh = useCallback(
     async (quiet = false) => {
       const generation = ++refreshGeneration.current;
+      if (reviewing || !['overview', 'automatic', 'history'].includes(tab))
+        return;
       if (!quiet) {
         setLoading(true);
         setError('');
       }
       try {
-        if (
-          ['rules', 'settings', 'sources', 'progress', 'places'].includes(tab)
-        )
-          return;
         if (tab === 'history' && historyView === 'events') {
           const value = await api<CatalogHistoryListDto>(
             `/admin/catalog/history?${new URLSearchParams({ offset: String(historyOffset), ...historyFilters })}`,
@@ -230,17 +270,6 @@ export function AdminWorkspace({
         );
         if (generation !== refreshGeneration.current) return;
         setData(state);
-        if (tab === 'work' || tab === 'history') {
-          const work = await api<CatalogReviewListDto>(
-            `/admin/catalog/reviews?${new URLSearchParams({ offset: String(offset), q: workQuery, sort: workSort, ...(scope ? { destinationId: scope } : {}), ...(workKind ? { kind: workKind } : {}) })}`,
-          );
-          if (generation !== refreshGeneration.current) return;
-          setItems(work.items);
-          setTotal(work.total);
-          setMore(work.hasMore);
-          setReviewCounts(work.counts);
-          setPublishedCount(work.publishedCount);
-        }
       } catch (e) {
         if (generation !== refreshGeneration.current) return;
         setError(
@@ -252,27 +281,19 @@ export function AdminWorkspace({
         if (generation === refreshGeneration.current) setLoading(false);
       }
     },
-    [
-      tab,
-      offset,
-      historyOffset,
-      historyView,
-      historyFilters,
-      scope,
-      workQuery,
-      workKind,
-      workSort,
-    ],
+    [tab, reviewing, historyOffset, historyView, historyFilters, scope],
   );
   useEffect(() => {
     void refresh();
   }, [refresh]);
   useEffect(() => {
+    if (reviewing || !['overview', 'automatic', 'history'].includes(tab))
+      return;
     const timer = setInterval(() => {
       void refresh(true);
     }, 15000);
     return () => clearInterval(timer);
-  }, [refresh]);
+  }, [refresh, reviewing, tab]);
   function edit(id: string) {
     setOpenPlace({ id, request: Date.now() });
     location.hash = 'places';
@@ -321,7 +342,7 @@ export function AdminWorkspace({
           openPlace={openPlace}
           scope={scope}
           locationKey={locationKey}
-          refreshKey={catalogRevision}
+          active={tab === 'places'}
         />
       </div>
       {tab === 'sources' && (
@@ -407,12 +428,21 @@ export function AdminWorkspace({
             }
           />
 
-          {error && (
+          {loadError && (
             <div className="admin-alert" role="alert">
-              {error === 'An unexpected error occurred'
+              {loadError === 'An unexpected error occurred'
                 ? 'Chưa tải được dữ liệu. Vui lòng thử lại sau.'
-                : error}{' '}
-              <button onClick={() => void refresh()}>Thử tải lại</button>
+                : loadError}{' '}
+              <button
+                onClick={() => {
+                  if (!reviewing) void refresh();
+                  if (reviewing && reviews.isError) void reviews.refetch();
+                  if (reviewing && operations.isError)
+                    void operations.refetch();
+                }}
+              >
+                Thử tải lại
+              </button>
             </div>
           )}
           {notice && (
@@ -420,10 +450,12 @@ export function AdminWorkspace({
               {notice}
             </p>
           )}
-          {loading && !data ? (
+          {!reviewing && loading && !data ? (
             <p role="status">Đang tải dữ liệu…</p>
           ) : (
-            (data || (tab === 'history' && historyView === 'events')) && (
+            (reviewing ||
+              data ||
+              (tab === 'history' && historyView === 'events')) && (
               <>
                 {tab === 'history' && (
                   <div
@@ -449,13 +481,21 @@ export function AdminWorkspace({
                   (tab === 'history' && historyView === 'reviews')) && (
                   <AdminReviewQueue
                     items={items}
-                    total={total}
-                    counts={reviewCounts}
-                    publishedCount={publishedCount}
+                    total={reviews.data?.total ?? 0}
+                    counts={
+                      reviews.data?.counts ?? {
+                        draft: 0,
+                        duplicate: 0,
+                        source: 0,
+                        price: 0,
+                        quality: 0,
+                      }
+                    }
+                    publishedCount={reviews.data?.publishedCount ?? 0}
                     offset={offset}
-                    hasMore={more}
-                    loading={loading}
-                    failedToLoad={!!error}
+                    hasMore={reviews.data?.hasMore ?? false}
+                    loading={reviews.isLoading}
+                    failedToLoad={reviews.isError}
                     query={workQuery}
                     kind={workKind}
                     sort={workSort}
@@ -495,7 +535,7 @@ export function AdminWorkspace({
                       setOffset(value);
                       setDetail(null);
                     }}
-                    run={data?.runs[0]}
+                    run={operations.data?.runs[0]}
                   >
                     {(() => {
                       const selected =
@@ -518,12 +558,11 @@ export function AdminWorkspace({
                           onInspectDuplicate={edit}
                           onDone={async (message) => {
                             setNotice(message);
-                            setCatalogRevision((v) => v + 1);
                             setDetail(null);
-                            await refresh(true);
+                            await refreshCatalogQueries(client);
                           }}
                           onReload={async () => {
-                            await refresh(true);
+                            await refreshCatalogQueries(client);
                           }}
                         />
                       ) : null;

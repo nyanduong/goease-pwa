@@ -1,3 +1,9 @@
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  adminCatalogKey,
+  refreshCatalogQueries,
+  useCatalogQuery,
+} from '../admin-catalog-query';
 import { AdminPageHelp } from './admin-page-help';
 import { confirmAction } from '../confirmation';
 import {
@@ -115,36 +121,28 @@ export function AdminCatalog({
   openPlace,
   scope = '',
   locationKey = '',
-  refreshKey = 0,
+  active,
 }: {
   destinations: DestinationDto[];
   scope?: string;
   locationKey?: string;
-  refreshKey?: number;
+  active: boolean;
   openPlace?: { id: string; request: number } | null;
 }) {
   const [selected, setSelected] = useState<AdminPlaceDto[]>([]);
   const [allMatching, setAllMatching] = useState(false);
-  const [items, setItems] = useState<AdminPlaceDto[]>([]);
   const [importing, setImporting] = useState(false);
   const [category, setCategory] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [qualityFilter, setQualityFilter] = useState('all');
   const [sort, setSort] = useState('updated');
   const [mapView, setMapView] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [overview, setOverview] = useState<AdminOverview | null>(null);
-  const [overviewError, setOverviewError] = useState('');
   const [editorTab, setEditorTab] = useState<PlaceEditorTab>('overview');
   const [photoCount, setPhotoCount] = useState(0);
   const [autosave, setAutosave] = useState(false);
   const [status, setStatus] = useState('all');
   const [q, setQ] = useState('');
   const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [retry, setRetry] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [listError, setListError] = useState('');
   const [form, setForm] = useState<AdminPlaceInput | null>(null);
   const [saved, setSaved] = useState<AdminPlaceDto | null>(null);
   const [publicPlace, setPublicPlace] = useState<AdminPlaceDto | null>(null);
@@ -203,6 +201,7 @@ export function AdminCatalog({
         return;
       setForm(null);
       setImporting(false);
+      if (!params.size) return;
       setQ(params.get('q') ?? '');
       if (params.has('destinationId')) {
         setCategory('all');
@@ -250,9 +249,6 @@ export function AdminCatalog({
     setImporting(false);
   }, [scope]);
   useEffect(() => {
-    setRetry((v) => v + 1);
-  }, [refreshKey]);
-  useEffect(() => {
     if (
       !autosave ||
       !saved ||
@@ -290,45 +286,36 @@ export function AdminCatalog({
   useEffect(() => {
     if (error || success) window.scrollTo(0, 0);
   }, [error, success]);
+  const client = useQueryClient();
+  const refreshCatalog = () => refreshCatalogQueries(client);
+  const places = useCatalogQuery<{
+    items: AdminPlaceDto[];
+    hasMore: boolean;
+    total: number;
+  }>(
+    '/admin/places',
+    {
+      q,
+      status,
+      category,
+      source: sourceFilter,
+      quality: qualityFilter,
+      sort,
+      ...(scope ? { destinationId: scope } : {}),
+      offset: String(offset),
+    },
+    active,
+  );
+  const items = places.data?.items ?? [];
+  const pageTotal = places.data?.total;
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setListError('');
-    void api<{ items: AdminPlaceDto[]; hasMore: boolean; total: number }>(
-      `/admin/places?${new URLSearchParams({ q, status, category, source: sourceFilter, quality: qualityFilter, sort, ...(scope ? { destinationId: scope } : {}), offset: String(offset) })}`,
-    )
-      .then((v) => {
-        if (active) {
-          setItems(v.items);
-          setHasMore(v.hasMore);
-          setTotal(v.total);
-        }
-      })
-      .catch((e: unknown) => {
-        if (active) {
-          setItems([]);
-          setListError(
-            e instanceof Error ? e.message : 'Chưa tải được danh mục.',
-          );
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [
-    q,
-    status,
-    category,
-    sourceFilter,
-    qualityFilter,
-    sort,
-    scope,
-    offset,
-    retry,
-  ]);
+    if (active && pageTotal !== undefined && offset > 0 && offset >= pageTotal)
+      setOffset(Math.max(0, Math.ceil(pageTotal / 20) - 1) * 20);
+  }, [active, pageTotal, offset]);
+  const total = pageTotal ?? 0;
+  const hasMore = places.data?.hasMore ?? false;
+  const loading = places.isLoading;
+  const listError = places.error?.message;
   useEffect(() => {
     setDuplicateCandidates([]);
     setDuplicateCheck('');
@@ -361,23 +348,13 @@ export function AdminCatalog({
       clearTimeout(timer);
     };
   }, [form?.name, form?.destinationId, saved]);
-  useEffect(() => {
-    let active = true;
-    setOverview(null);
-    setOverviewError('');
-    void api<AdminOverview>(
-      `/admin/catalog/overview${scope ? `?destinationId=${scope}` : ''}`,
-    )
-      .then((v) => {
-        if (active) setOverview(v);
-      })
-      .catch(() => {
-        if (active) setOverviewError('Chưa tải được thống kê khu vực.');
-      });
-    return () => {
-      active = false;
-    };
-  }, [scope, retry]);
+  const overviewQuery = useCatalogQuery<AdminOverview>(
+    '/admin/catalog/overview',
+    scope ? { destinationId: scope } : {},
+    active,
+  );
+  const overview = overviewQuery.data;
+  const overviewError = overviewQuery.error?.message;
   const update = (patch: Partial<AdminPlaceInput>) => {
     setForm((f) =>
       f
@@ -511,7 +488,7 @@ export function AdminCatalog({
       setSelected((v) =>
         v.map((p) => (p.id === value.place.id ? value.place : p)),
       );
-      setRetry((v) => v + 1);
+      void refreshCatalog();
       setHistory((v) =>
         [
           {
@@ -531,7 +508,8 @@ export function AdminCatalog({
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Chưa lưu được. Hãy thử lại.');
-      if (e instanceof ApiFailure && e.status === 403) setItems([]);
+      if (e instanceof ApiFailure && e.status === 403)
+        client.removeQueries({ queryKey: adminCatalogKey });
     } finally {
       setBusy(false);
     }
@@ -612,13 +590,12 @@ export function AdminCatalog({
           <AdminPlaceImport
             key={scope}
             destinationId={scope}
+            onImported={refreshCatalog}
             onBack={() => {
               setImporting(false);
-              setRetry((v) => v + 1);
             }}
             onOpen={(id) => {
               setImporting(false);
-              setRetry((v) => v + 1);
               void open(id);
             }}
           />
@@ -628,7 +605,7 @@ export function AdminCatalog({
           {overviewError && (
             <p role="alert">
               {overviewError}{' '}
-              <button onClick={() => setRetry((v) => v + 1)}>
+              <button onClick={() => void overviewQuery.refetch()}>
                 Tải lại thống kê
               </button>
             </p>
@@ -811,7 +788,7 @@ export function AdminCatalog({
             ) : listError ? (
               <div className="admin-empty" role="alert">
                 <p>{listError}</p>
-                <button onClick={() => setRetry((v) => v + 1)}>Thử lại</button>
+                <button onClick={() => void places.refetch()}>Thử lại</button>
               </div>
             ) : !items.length ? (
               <div className="admin-empty">
@@ -935,7 +912,7 @@ export function AdminCatalog({
             }}
             onDone={(ids) => {
               setSelected((v) => v.filter((p) => !ids.includes(p.id)));
-              setRetry((v) => v + 1);
+              void refreshCatalog();
             }}
           />
         </>
@@ -1449,7 +1426,7 @@ export function AdminCatalog({
                   busy={busy}
                   onRestore={() => {
                     if (saved) void open(saved.id);
-                    setRetry((v) => v + 1);
+                    void refreshCatalog();
                   }}
                 />
               </div>

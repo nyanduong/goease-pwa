@@ -321,3 +321,9 @@ Browser checks use mocked 503/network and visibility/online events with Playwrig
 ### Điều hướng khách hàng — 10/11/2026
 
 Kiểm tra bằng tài khoản thử trên bản sao danh mục local Đà Nẵng. Trên Edge desktop và viewport mobile 390px, đã tạo hai lịch 3 ngày/4 người theo sở thích Văn hóa và Ẩm thực, lưu, tải lại, mở từ danh sách và chuyển qua Bản đồ, Chi phí, Tổng kết và Lịch trình. Trên mobile đã kiểm tra tạo chuyến mới sau khi xem chuyến cũ, giữ hoặc bỏ bản nháp bằng Back, đi từ bản đồ Đã lưu vào chi tiết rồi quay về Đã lưu, và mở đúng chuyến qua đường dẫn riêng sau khi đăng nhập. Bộ kiểm thử trong foundation.spec.ts có trường hợp Back/Forward để kiểm tra lại việc giữ và bỏ bản nháp.
+
+### Cache danh sách quản trị — 10/11/2026
+
+Địa điểm và Cần kiểm tra dùng TanStack Query trong bộ nhớ của workspace theo tài khoản admin. Mỗi API, tỉnh, bộ lọc, thứ tự và offset có khóa riêng. Quay lại trong 30 giây dùng kết quả còn mới; sau đó có thể hiện dữ liệu cũ trong lúc tải nền. Query không dùng được thu hồi sau 5 phút khi không còn observer. Điều hướng tab giữ bộ lọc/trang, còn liên kết có tham số vẫn mở đúng bộ lọc được chỉ định. Lưu, nhập, duyệt, khôi phục và xuất bản qua hai màn làm mới danh sách đang mở và bỏ các trang cache không hoạt động. Các thay đổi từ phiên khác hoặc worker được đọc ở lần làm mới tiếp theo.
+
+Kiểm tra Edge với API thật và bản sao riêng của 123 bản nháp Đà Nẵng. Hai màn cùng lọc Bản nháp, trang 3 có 20 dòng mỗi màn. Chuyển qua lại trong 30 giây giữ nguyên từng dòng và thứ tự, ghi nhận 0 GET tới places, reviews, operations và overview. Sau khi tiến đồng hồ trình duyệt 31 giây, mở lại hàng chờ có GET mới. Để sau giảm số việc từ 123 xuống 122. Chấp thuận và xuất bản một fixture làm mục đó rời hàng chờ bản nháp và xuất hiện trong bộ lọc Đã xuất bản. Bài Playwright `admin cache reuses filtered pages` trong catalog-operations.spec.ts kiểm tra lại chuyển tab và làm mới sau xuất bản trên MongoDB kiểm thử.

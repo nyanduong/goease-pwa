@@ -16,11 +16,13 @@ const flags: Record<string, string> = {
 };
 export function AdminPlaceImport({
   onBack,
+  onImported,
   onOpen,
   destinationId,
 }: {
   destinationId?: string;
   onBack: () => void;
+  onImported: () => void;
   onOpen: (id: string) => void;
 }) {
   const [group, setGroup] = useState<PlaceImportSearch['group']>('mixed');
@@ -92,6 +94,7 @@ export function AdminPlaceImport({
           body: payload,
         }),
       );
+      onImported();
     } catch (e) {
       setError(
         e instanceof Error

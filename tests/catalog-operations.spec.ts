@@ -873,3 +873,92 @@ test('V3 policy simulation is read-only, historical restore stages a proposal, a
     publicBefore,
   );
 });
+
+test('admin cache reuses filtered pages and refreshes both lists after approval and publication', async ({
+  page,
+}) => {
+  const scope = '000000000000000000000004';
+  const name = 'Cache QA ' + randomUUID();
+  await page.goto('/login');
+  await page
+    .getByLabel('Email', { exact: true })
+    .fill('catalog-browser@example.invalid');
+  await page
+    .getByLabel('Mật khẩu', { exact: true })
+    .fill('Browser-fixture-2026!');
+  await page.getByRole('button', { name: /^Đăng nhập/ }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+  const created = await page.request.post('/api/v1/admin/places', {
+    headers: {
+      Origin: new URL(page.url()).origin,
+      'X-GoEase-Client': 'web',
+      'Idempotency-Key': randomUUID(),
+    },
+    data: {
+      intent: 'save',
+      place: {
+        destinationId: scope,
+        name,
+        category: 'culture',
+        venueType: 'place',
+        description: 'Dữ liệu tổng hợp dành cho kiểm thử hàng chờ.',
+        locationQuery: 'Địa chỉ fixture',
+        durationMinutes: 60,
+        openingHoursNote: '08:00–18:00',
+        sourceUrl: 'https://example.invalid/cache',
+        referencePrice: null,
+        publicationStatus: 'draft',
+        images: [fixturePhoto],
+        fieldLocks: ['name'],
+      },
+    },
+  });
+  expect(created.ok()).toBe(true);
+  await page.goto('/admin#places?status=draft&destinationId=' + scope);
+  const catalog = page.locator('.admin-catalog.is-listing');
+  const queue = page.locator('.admin-check-workspace');
+  const nav = (label: string) =>
+    page.getByRole('link', { name: label, exact: true }).click();
+  await catalog.getByLabel('Tìm trong danh mục').fill(name);
+  await expect(catalog.locator('.catalog-place-copy h2')).toHaveText(name);
+  await nav('Cần kiểm tra');
+  await queue
+    .locator('.admin-check-tabs')
+    .getByRole('button', { name: /Bản nháp/ })
+    .click();
+  await queue.getByLabel('Tìm việc theo địa điểm').fill(name);
+  await expect(queue.locator('.admin-check-row-copy strong')).toHaveText(name);
+  const gets: string[] = [];
+  page.on('request', (request) => {
+    const path = new URL(request.url()).pathname;
+    if (
+      request.method() === 'GET' &&
+      ['/api/v1/admin/places', '/api/v1/admin/catalog/reviews'].includes(path)
+    )
+      gets.push(path);
+  });
+  await nav('Địa điểm');
+  await expect(catalog.getByLabel('Tìm trong danh mục')).toHaveValue(name);
+  await expect(catalog.locator('.catalog-place-copy h2')).toHaveText(name);
+  await nav('Cần kiểm tra');
+  await expect(queue.locator('.admin-check-row-copy strong')).toHaveText(name);
+  expect(gets).toEqual([]);
+  await queue
+    .getByRole('button', { name: 'Chấp thuận và xuất bản', exact: true })
+    .click();
+  await respondToConfirmation(page);
+  await expect(
+    queue.getByRole('heading', { name: '0 việc cần kiểm tra' }),
+  ).toBeVisible();
+  expect(gets).toContain('/api/v1/admin/catalog/reviews');
+  await nav('Địa điểm');
+  await expect(catalog.locator('.catalog-library-pagination')).toContainText(
+    '0 địa điểm',
+  );
+  expect(gets).toContain('/api/v1/admin/places');
+  await catalog
+    .locator('.catalog-status-tabs')
+    .getByRole('button', { name: /Đã xuất bản/ })
+    .click();
+  await expect(catalog.locator('.catalog-place-copy h2')).toHaveText(name);
+});
