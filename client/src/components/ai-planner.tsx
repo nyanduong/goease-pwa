@@ -1,3 +1,6 @@
+import { createPortal } from 'react-dom';
+import { MascotRenderer } from '../mascot/renderer';
+import { useMascot } from '../mascot/context';
 import { AppInfo } from './app-info';
 import { plannerTiming } from '@goease/contracts';
 import { useEffect, useRef, useState } from 'react';
@@ -5,6 +8,36 @@ import { Sparkles } from '../icons';
 import type { PlannerProposal, TripInput } from '@goease/contracts';
 import { api, ApiFailure } from '../api';
 import { canRecoverAi } from '../ai-errors';
+
+function PlannerLoadingDialog() {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const { preferences, motionAllowed } = useMascot();
+  useEffect(() => {
+    const element = dialog.current!;
+    element.showModal();
+    return () => element.close();
+  }, []);
+  return createPortal(
+    <dialog
+      ref={dialog}
+      className="planner-loading-dialog"
+      aria-labelledby="planner-loading-title"
+      onCancel={(event) => event.preventDefault()}
+      data-motion={motionAllowed}
+    >
+      {!preferences.hidden && (
+        <div className="planner-dancing-goe">
+          <MascotRenderer />
+        </div>
+      )}
+      <strong id="planner-loading-title">Goe đang lên lịch…</strong>
+      <div className="planner-loading-track" aria-hidden="true">
+        <span />
+      </div>
+    </dialog>,
+    document.body,
+  );
+}
 
 export function AiPlanner({
   draft,
@@ -29,6 +62,7 @@ export function AiPlanner({
   const [recoverable, setRecoverable] = useState(false);
   const [quotaReached, setQuotaReached] = useState(false);
   const [catalogUnavailable, setCatalogUnavailable] = useState(false);
+  const { motionAllowed } = useMascot();
   const animatePreview = localCatalog && immediatePreview;
   const supported =
     Boolean(draft.destinations[0]?.destinationId) &&
@@ -64,11 +98,7 @@ export function AiPlanner({
     if (fresh || request.current?.payload !== payload)
       request.current = { payload, key: crypto.randomUUID() };
     const previewAt =
-      performance.now() +
-      (animatePreview &&
-      !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ? 4000
-        : 0);
+      performance.now() + (animatePreview && motionAllowed ? 4000 : 0);
     try {
       const result = await api<PlannerProposal>('/trips/ai-proposal', {
         method: 'POST',
@@ -145,13 +175,6 @@ export function AiPlanner({
         disabled={busy || !supported}
         onClick={() => void generate(true)}
       >
-        {busy && animatePreview && (
-          <span className="planner-route-loader" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-        )}
         {busy
           ? 'Goe đang lên lịch…'
           : immediatePreview
@@ -164,7 +187,8 @@ export function AiPlanner({
           dưới.
         </p>
       )}
-      {busy && (
+      {busy && animatePreview && <PlannerLoadingDialog />}
+      {busy && !animatePreview && (
         <p role="status">
           {localCatalog
             ? 'Đang kiểm tra điểm dừng và giờ hoạt động…'

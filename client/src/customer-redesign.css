@@ -2996,41 +2996,66 @@ body:has(.account-page[data-page='password'])
   }
 }
 
-.planner-route-loader {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 36px;
-  margin-inline-end: 8px;
-  vertical-align: middle;
-  background: linear-gradient(currentColor, currentColor) center / 100% 1px
-    no-repeat;
+.planner-loading-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(280px, calc(100vw - 32px));
+  padding: 24px 30px 30px;
+  border: 0;
+  border-radius: 24px;
+  background: #fffbf3;
+  color: #153945;
+  text-align: center;
+  box-shadow: 0 18px 60px #102d3640;
 }
-.planner-route-loader i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: planner-waypoint 1.35s ease-in-out infinite;
+.planner-loading-dialog::backdrop {
+  background: rgb(10 27 34 / 68%);
 }
-.planner-route-loader i:nth-child(2) {
-  animation-delay: 0.22s;
+.planner-dancing-goe {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 8px;
+  transform-origin: center bottom;
 }
-.planner-route-loader i:nth-child(3) {
-  animation-delay: 0.44s;
+.planner-loading-track {
+  height: 8px;
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #f0e4cd;
 }
-@keyframes planner-waypoint {
+.planner-loading-track span {
+  display: block;
+  height: 100%;
+  background: #eeac28;
+  border-radius: inherit;
+  transform-origin: left;
+}
+.planner-loading-dialog[data-motion='true'] .planner-dancing-goe {
+  animation: planner-goe-dance 900ms ease-in-out infinite;
+}
+.planner-loading-dialog[data-motion='true'] .planner-loading-track span {
+  animation: planner-loading-fill 4s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes planner-goe-dance {
   0%,
-  65%,
+  50%,
   100% {
-    transform: scale(1);
+    transform: translateY(0) scale(1.04, 0.96);
   }
-  30% {
-    transform: scale(1.65);
+  25% {
+    transform: translate(-6px, -9px) rotate(-9deg);
+  }
+  75% {
+    transform: translate(6px, -9px) rotate(9deg);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .planner-route-loader i {
-    animation: none;
+@keyframes planner-loading-fill {
+  from {
+    transform: scaleX(0.04);
+  }
+  to {
+    transform: scaleX(0.96);
   }
 }
