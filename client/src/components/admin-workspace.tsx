@@ -256,7 +256,7 @@ function AdminWorkspaceContent({
   const refresh = useCallback(
     async (quiet = false) => {
       const generation = ++refreshGeneration.current;
-      if (!['overview', 'automatic'].includes(tab)) return;
+      if (tab !== 'automatic') return;
       if (!quiet) {
         setLoading(true);
         setError('');
@@ -284,7 +284,7 @@ function AdminWorkspaceContent({
     void refresh();
   }, [refresh]);
   useEffect(() => {
-    if (!['overview', 'automatic'].includes(tab)) return;
+    if (tab !== 'automatic') return;
     const timer = setInterval(() => {
       void refresh(true);
     }, 15000);
@@ -355,7 +355,6 @@ function AdminWorkspaceContent({
       {tab === 'overview' && (
         <AdminDashboard
           scope={scope}
-          operations={data}
           onOpen={edit}
           destinations={destinations}
         />
@@ -375,7 +374,9 @@ function AdminWorkspaceContent({
             destinations={destinations}
             scope={scope}
             operations={data}
-            onRefresh={() => refresh(true)}
+            onRefresh={async () => {
+              await Promise.all([refresh(true), refreshCatalogQueries(client)]);
+            }}
           />
         </section>
       )}

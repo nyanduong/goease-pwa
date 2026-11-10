@@ -104,3 +104,69 @@ test('admin header is consistent and only scopes pages that consume the selected
     }
   }
 });
+
+test('overview reuses the Đà Nẵng dashboard within 30 seconds', async ({
+  page,
+}) => {
+  const login = await page.request.post('/api/v1/auth/login', {
+    headers: { Origin: e2eWebOrigin, 'X-GoEase-Client': 'web' },
+    data: {
+      email: 'catalog-browser@example.invalid',
+      password: 'Browser-fixture-2026!',
+    },
+  });
+  expect(login.ok()).toBe(true);
+  await page.clock.install();
+  const gets: string[] = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (
+      request.method() === 'GET' &&
+      /^\/api\/v1\/admin\/catalog\/(overview|settings|operations)$/.test(
+        url.pathname,
+      )
+    ) {
+      gets.push(url.pathname + url.search);
+    }
+  });
+  await page.goto('/admin#overview');
+  const total = page
+    .locator('.admin-kpi')
+    .filter({ hasText: 'Tổng địa điểm' })
+    .locator('strong');
+  await expect(total).toBeVisible();
+  await page.getByRole('button', { name: /Khu vực quản lý/ }).click();
+  const picker = page.getByRole('dialog');
+  await picker.getByPlaceholder('Tìm tên tỉnh/thành…').fill('Đà Nẵng');
+  const scopedResponse = (endpoint: string) =>
+    page.waitForResponse((r) => {
+      const url = new URL(r.url());
+      return (
+        url.pathname === '/api/v1/admin/catalog/' + endpoint &&
+        url.searchParams.has('destinationId') &&
+        r.ok()
+      );
+    });
+  const [overview, activity] = await Promise.all([
+    scopedResponse('overview'),
+    scopedResponse('operations'),
+    picker.getByRole('button', { name: /^Đà Nẵng/ }).click(),
+  ]);
+  const count = (await overview.json()).data.total.toLocaleString('vi-VN');
+  await activity.finished();
+  await expect(total).toHaveText(count);
+  const nav = page.locator('.admin-navigation');
+  await nav
+    .getByRole('link', { name: 'Lịch sử & phê duyệt', exact: true })
+    .click();
+  await expect(total).toBeHidden();
+  const beforeReturn = [...gets];
+  await page.clock.fastForward(25_000);
+  await nav.getByRole('link', { name: 'Tổng quan', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Khu vực quản lý: Đà Nẵng', exact: true }),
+  ).toBeVisible();
+  await expect(total).toHaveText(count);
+  await page.clock.runFor(100);
+  expect(gets).toEqual(beforeReturn);
+});

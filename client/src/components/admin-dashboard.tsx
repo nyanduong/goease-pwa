@@ -7,14 +7,13 @@ import {
 } from '../icons';
 import { AdminPageHeader, AdminPlaceImage } from './admin-visuals';
 import { catalogQuality } from '@goease/contracts';
-import { useEffect, useState } from 'react';
 import type {
   AdminOverview,
   AdminSettings,
   DestinationDto,
   CatalogOperationsDto,
 } from '@goease/contracts';
-import { api } from '../api';
+import { useCatalogQuery } from '../admin-catalog-query';
 import { AdminMap } from './admin-map';
 
 const date = (s: string | null) =>
@@ -23,43 +22,35 @@ const date = (s: string | null) =>
     : 'Chưa có';
 export function AdminDashboard({
   scope,
-  operations,
   onOpen,
   destinations,
 }: {
   scope: string;
-  operations: CatalogOperationsDto | null;
   onOpen: (id: string) => void;
   destinations: DestinationDto[];
 }) {
-  const [data, setData] = useState<AdminOverview | null>(null),
-    [settings, setSettings] = useState<AdminSettings | null>(null);
-  const [error, setError] = useState(''),
-    [retry, setRetry] = useState(0);
-  useEffect(() => {
-    let active = true;
-    setError('');
-    setData(null);
-    void Promise.all([
-      api<AdminOverview>(
-        `/admin/catalog/overview${scope ? `?destinationId=${scope}` : ''}`,
-      ),
-      api<AdminSettings>('/admin/catalog/settings'),
-    ])
-      .then(([d, s]) => {
-        if (active) {
-          setData(d);
-          setSettings(s);
-        }
-      })
-      .catch((e) => {
-        if (active)
-          setError(e instanceof Error ? e.message : 'Chưa tải được dữ liệu.');
-      });
-    return () => {
-      active = false;
-    };
-  }, [scope, retry]);
+  const params: Record<string, string> = scope ? { destinationId: scope } : {};
+  const overview = useCatalogQuery<AdminOverview>(
+    '/admin/catalog/overview',
+    params,
+    true,
+  );
+  const preferences = useCatalogQuery<AdminSettings>(
+    '/admin/catalog/settings',
+    {},
+    true,
+  );
+  const activity = useCatalogQuery<CatalogOperationsDto>(
+    '/admin/catalog/operations',
+    params,
+    true,
+    true,
+  );
+  const data = overview.data;
+  const settings = preferences.data;
+  const operations = activity.data;
+  const queries = [overview, preferences, activity];
+  const error = queries.find((query) => query.isError)?.error;
   const region =
     destinations.find((d) => d.id === scope)?.name ?? 'tất cả khu vực';
   const href = (filter: string) => `#places?${filter}`;
@@ -82,11 +73,19 @@ export function AdminDashboard({
       />
       {error && (
         <div className="admin-alert" role="alert">
-          {error}{' '}
-          <button onClick={() => setRetry((v) => v + 1)}>Thử tải lại</button>
+          {error.message}{' '}
+          <button
+            onClick={() =>
+              queries.forEach((query) => {
+                if (query.isError) void query.refetch();
+              })
+            }
+          >
+            Thử tải lại
+          </button>
         </div>
       )}
-      {!data && !error && (
+      {(overview.isLoading || preferences.isLoading) && (
         <p role="status">Đang tổng hợp dữ liệu từ danh mục…</p>
       )}
       {data && settings && (
@@ -276,7 +275,10 @@ export function AdminDashboard({
                     </div>
                   </a>
                 ))}
-                {!operations?.runs.length && (
+                {activity.isLoading && (
+                  <p role="status">Đang tải các lượt cập nhật…</p>
+                )}
+                {operations && !operations.runs.length && (
                   <p>
                     Chưa có lượt cập nhật.{' '}
                     <a href="#automatic">Thiết lập nguồn và lịch</a>
@@ -286,11 +288,13 @@ export function AdminDashboard({
               <Quality data={data} />
               <section className="admin-panel">
                 <h2>Nguồn & cảnh báo</h2>
-                <p>
-                  {operations?.connected
-                    ? 'Geoapify đã cấu hình khóa'
-                    : 'Geoapify chưa kết nối'}
-                </p>
+                {operations && (
+                  <p>
+                    {operations.connected
+                      ? 'Geoapify đã cấu hình khóa'
+                      : 'Geoapify chưa kết nối'}
+                  </p>
+                )}
                 <p>
                   Đồng bộ thành công gần nhất: {date(data.sources.lastSuccess)}
                 </p>

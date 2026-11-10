@@ -1,3 +1,5 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { refreshCatalogQueries } from '../admin-catalog-query';
 import { AdminPageHelp } from './admin-page-help';
 import { useEffect, useState } from 'react';
 import type { AdminSettings, DestinationDto } from '@goease/contracts';
@@ -18,6 +20,7 @@ export function AdminSettingsPage({
 }: {
   destinations: DestinationDto[];
 }) {
+  const client = useQueryClient();
   const [tab, setTab] = useState<SettingsTab>('destinations');
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [error, setError] = useState('');
@@ -61,6 +64,7 @@ export function AdminSettingsPage({
           body: JSON.stringify({ ...fields, expectedRevision: revision }),
         }),
       );
+      await refreshCatalogQueries(client);
       setNotice(
         'Đã lưu cài đặt. Các lần kiểm tra tiếp theo sẽ dùng thiết lập này.',
       );
