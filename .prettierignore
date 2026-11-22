@@ -5,3 +5,7 @@ dist
 playwright-report
 test-results
 AGENTS.md
+
+# Preserve the approved source documents byte-for-byte.
+docs/GoEase-Commercial-V1-PRD-v0.4.1-approved.md
+docs/GoEase-UX-Information-Architecture-v0.5-approved.md

@@ -4,7 +4,8 @@
 
 Read the current task, [README.md](README.md), [the source index](docs/README.md), and [the decision log](docs/DECISIONS.md) before changing behavior or design.
 
-- The approved Commercial V1 PRD v0.4.1 governs business rules and product scope. The approved UX Information Architecture v0.5 governs navigation and user flows. Check the source index for availability. If a decision depends on a missing official document, use a copy confirmed by the product owner or obtain their explicit decision.
+- The approved [Commercial V1 PRD v0.4.1](docs/GoEase-Commercial-V1-PRD-v0.4.1-approved.md) governs business requirements, scope, and acceptance criteria.
+- The approved [UX Information Architecture v0.5](docs/GoEase-UX-Information-Architecture-v0.5-approved.md) governs navigation and user flows. Follow the approved entries and review the [decision log](docs/DECISIONS.md) for conflicting statuses and open questions. Obtain an explicit owner decision before work that depends on those items.
 - The approved [Brand & Design Foundation](Figma/brand/DESIGN.md) governs visual design. Keep the approved palette, typography and G logo unless the owner approves a change.
 - Verify current technical behavior against code, contracts, tests and configuration. Derive desired business behavior from the approved product sources and recorded owner decisions.
 - Work within the approved scope. Do not add features, roles or modules based on legacy documents, historical Git material, prototypes, or existing code. Historical retrieval is for explicit maintenance or recovery requests.
