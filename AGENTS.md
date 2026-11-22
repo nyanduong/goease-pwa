@@ -2,17 +2,22 @@
 
 ## Context
 
-Read AGENTS.md, README.md, docs/BR.md, docs/ARCHITECTURE.md, docs/F0-VERIFICATION.md, docs/DB-BASELINE.md, docs/DATA-TRACEABILITY.md, docs/collection-registry.json, docs/F1-HANDOFF.md, and the current task before changes. docs/BR.md is the current business authority; docs/archive/BR-v0.2-draft.md is reference only. The product owner's latest explicit instructions take precedence over repository recommendations.
+Read the current task, [README.md](README.md), [the source index](docs/README.md), and [the decision log](docs/DECISIONS.md) before changing behavior or design.
 
-The owner has confirmed a complete rewrite: React + Vite + TypeScript + Tailwind, Express + TypeScript, MongoDB + Mongoose. Develop against local MongoDB first; move to Atlas after the local implementation is complete. Do not import code from the old GoEase repository or reopen the stack choice without a concrete owner request.
+- The approved Commercial V1 PRD v0.4.1 governs business rules and product scope. The approved UX Information Architecture v0.5 governs navigation and user flows. Check the source index for availability. If a decision depends on a missing official document, use a copy confirmed by the product owner or obtain their explicit decision.
+- The approved [Brand & Design Foundation](Figma/brand/DESIGN.md) governs visual design. Keep the approved palette, typography and G logo unless the owner approves a change.
+- Verify current technical behavior against code, contracts, tests and configuration. Derive desired business behavior from the approved product sources and recorded owner decisions.
+- Work within the approved scope. Do not add features, roles or modules based on legacy documents, historical Git material, prototypes, or existing code. Historical retrieval is for explicit maintenance or recovery requests.
+- Record each approved business-rule change and its approval source in [docs/DECISIONS.md](docs/DECISIONS.md). Mark proposals as pending until the owner approves them.
 
-Baseline v0.2 is accepted as design, not implemented features or approval of every proposed policy. Google plus email/password, npm workspaces with one package-lock.json, npm run dev and localhost web/API are confirmed. Local development uses the existing localhost:27017 MongoDB rs0 service and the separate goease database; preserve that service and other databases. Follow the current task for Git scope; F1-A uses main without branch/PR.
+The owner confirmed React + Vite + TypeScript + Tailwind, Express + TypeScript, and MongoDB + Mongoose. Keep this stack and the current repository unless the owner explicitly requests a change. Do not import code from the old GoEase repository. Keep npm workspaces, one `package-lock.json`, and local web/API through `npm run dev`.
+
+Develop against the existing MongoDB service at `localhost:27017`, replica set `rs0`, and the separate `goease` database. Preserve that service and other databases. Atlas is a separate deployment environment. Follow the current task for Git scope.
 
 ## Working agreement
 
-- A business-rule change must update related BR identifiers, schema/data dictionary/contracts, and tests; explicitly mark planned checks or schemas that are not implemented. Keep DB-BASELINE.md and collection-registry.json aligned; the registry is not executable schema.
+- For approved business-rule changes, update the related requirement identifiers, schemas, data dictionaries, contracts and tests as applicable. Distinguish planned checks and schemas from implemented behavior.
 - Complete the authorized task in small, reviewable changes. Make routine implementation choices without repeatedly asking for permission.
-- Treat BR sections marked "Đề xuất" or "Cần chốt" as proposals or open questions, not approved product policy. Advance unaffected foundation work; ask only when a missing decision materially changes behavior.
 - Keep one web application and one Express API. Organize server code by features as they are implemented. Add abstractions when there is a real consumer or concrete need.
 - Keep business rules, authorization, provider secrets, quotas, and payment verification on the server. Derive ownership from the authenticated identity, never from a trusted client-supplied owner ID.
 - Keep API request/response contracts independent of React, the DOM, and Mongoose. Never import server models or private configuration into shared/client code.
@@ -23,7 +28,7 @@ Baseline v0.2 is accepted as design, not implemented features or approval of eve
 
 ## Verification and handoff
 
-Run the relevant checks available in the repository. The bootstrap task must establish build, typecheck, lint, and a repeatable MongoDB connectivity check before those commands can be cited as existing.
+Run the relevant checks available in the repository. Check package scripts and their targets before running commands that write to a database, call an external provider, or change deployment state.
 
 Prioritize checks for persisted data, ownership boundaries, invalid inputs, and provider failures. Add focused tests for real behavioral risks; documentation-only changes do not require application tests.
 

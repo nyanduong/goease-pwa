@@ -4,7 +4,7 @@ import { normalizeSearch, type exploreService } from './explore.service.js';
 const ticketSource =
   'https://www.hoianworldheritage.org.vn/vi/news/Du-lich-Hoi-An/cap-nhat-ve-tham-quan-khu-pho-co-hoi-an-hanh-trinh-cham-ve-nguyen-ban-giua-long-di-san-3033.hwh';
 // Area reference points, not verified entrances. No coordinates for generic dishes.
-// OSM-derived points: © OpenStreetMap contributors, ODbL; see docs/TRIP-MAP.md.
+// OSM-derived points: © OpenStreetMap contributors, ODbL (https://www.openstreetmap.org/copyright).
 const mapLocations: Record<string, MapLocation> = {
   '100000000000000000000001': {
     latitude: 15.8771291,
