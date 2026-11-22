@@ -460,64 +460,92 @@ export function catalogOperations(
       /[.*+?^${}()|[\]\\]/g,
       '\\$&',
     );
-    const [page] = await Review.aggregate<{
+    // Join the bounded reviews once per place. A correlated blocker lookup for
+    // every review exceeded the runtime's 2s MongoDB socket timeout at 26k rows.
+    const [page] = await Place.aggregate<{
       items: { _id: Types.ObjectId }[];
       count: { total: number }[];
       groups: { _id: string; count: number }[];
       published: { total: number }[];
     }>([
-      { $match: { state: 'open' } },
-      {
-        $lookup: {
-          from: 'places',
-          localField: 'placeId',
-          foreignField: '_id',
-          as: 'place',
-        },
-      },
-      { $unwind: '$place' },
       {
         $match: {
-          'place.deletedAt': null,
+          deletedAt: null,
           ...(destinationId
-            ? { 'place.destinationId': new Types.ObjectId(destinationId) }
+            ? { destinationId: new Types.ObjectId(destinationId) }
             : {}),
-          ...(search ? { 'place.searchText': { $regex: search } } : {}),
-          $or: [
-            { kind: { $nin: ['draft', 'price'] } },
-            { kind: 'draft', 'place.publicationStatus': 'draft' },
-            {
-              kind: 'price',
-              'place.referencePrice.reviewAfter': { $lt: catalogToday() },
-              'place.publicationStatus': { $ne: 'archived' },
-            },
-          ],
+          ...(search ? { searchText: { $regex: search } } : {}),
         },
       },
       {
         $lookup: {
           from: 'catalog_reviews',
-          let: { placeId: '$placeId' },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$placeId', '$$placeId'] },
-                kind: { $in: ['source', 'duplicate'] },
-                state: { $ne: 'resolved' },
-              },
-            },
-            { $limit: 1 },
-            { $project: { _id: 1 } },
-          ],
-          as: 'blocking',
+          localField: '_id',
+          foreignField: 'placeId',
+          as: 'reviews',
         },
       },
       {
+        $project: {
+          publicationStatus: 1,
+          'referencePrice.reviewAfter': 1,
+          'reviews._id': 1,
+          'reviews.kind': 1,
+          'reviews.state': 1,
+          'reviews.updatedAt': 1,
+        },
+      },
+      {
+        $set: {
+          blocking: {
+            $anyElementTrue: [
+              {
+                $map: {
+                  input: '$reviews',
+                  as: 'review',
+                  in: {
+                    $and: [
+                      { $in: ['$$review.kind', ['source', 'duplicate']] },
+                      { $ne: ['$$review.state', 'resolved'] },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+      { $unwind: '$reviews' },
+      {
         $match: {
-          $or: [
-            { kind: { $nin: ['draft', 'quality'] } },
-            { 'blocking.0': { $exists: false } },
+          'reviews.state': 'open',
+          $and: [
+            {
+              $or: [
+                { 'reviews.kind': { $nin: ['draft', 'price'] } },
+                { 'reviews.kind': 'draft', publicationStatus: 'draft' },
+                {
+                  'reviews.kind': 'price',
+                  'referencePrice.reviewAfter': { $lt: catalogToday() },
+                  publicationStatus: { $ne: 'archived' },
+                },
+              ],
+            },
+            {
+              $or: [
+                { 'reviews.kind': { $nin: ['draft', 'quality'] } },
+                { blocking: false },
+              ],
+            },
           ],
+        },
+      },
+      {
+        $project: {
+          _id: '$reviews._id',
+          kind: '$reviews.kind',
+          updatedAt: '$reviews.updatedAt',
+          'place.publicationStatus': '$publicationStatus',
         },
       },
       {

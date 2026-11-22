@@ -12,7 +12,7 @@ const feature = (
 ) => ({
   type: 'Feature',
   geometry: { type: 'Point', coordinates },
-  properties: {
+  properties: { 
     place_id: 'fixture-only-1',
     name: 'Quán kiểm thử',
     formatted: 'Hội An',

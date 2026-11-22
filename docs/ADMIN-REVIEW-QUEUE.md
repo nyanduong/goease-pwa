@@ -29,3 +29,20 @@ Theo owner, nguồn tải Wikimedia dùng imageinfo.url nguyên bản thay thumb
 - Gọi service trên dữ liệu Hà Nội: 40 review, tổng count khớp total, filter draft giữ count toàn tập, hai trang không lặp, q không khớp trả rỗng, reason không báo thiếu ảnh đã có.
 - Playwright component smoke với DTO thật và ảnh Cloudinary thật: chọn việc, ảnh lớn, ghi chú/Để sau gửi revision đúng (decision API mock, không xử lý việc live), tìm kiếm, trống/xóa lọc, phân trang, sort; không tràn ngang ở 1600/1366/768/390/320. Đã xem screenshot desktop/mobile. Chưa chạy lại toàn bộ browser suite dùng MongoDB test trong đợt này; selector suite cũ đã cập nhật theo nhãn mới.
 - Worker native pipeline đã lưu được ảnh Bảo tàng Hồ Chí Minh 1536×1413 WebP trên Cloudinary; hàng đợi cũ còn pending/failed/empty, không phải mọi ảnh đã nâng cấp. Các assertion province-import integration sửa version 2 chưa chạy lại trong đợt này.
+
+## Sửa lỗi tải hàng chờ — 11/11/2026
+
+Trên catalog local có 26.597 việc, API trả HTTP 500 do `MongoNetworkTimeoutError`: truy vấn aggregate cũ mất khoảng 3 giây khi lọc Đà Nẵng và 10–12 giây khi xem tất cả, vượt `socketTimeoutMS=2000` của kết nối runtime. MongoDB vẫn kết nối và dữ liệu vẫn còn.
+
+Truy vấn mới lọc địa điểm trước, join `catalog_reviews` một lần bằng index `placeId + kind`, rồi lấy cả việc mở và blocker từ cùng mảng tối đa năm loại việc. Bỏ lookup tương quan lặp theo từng review, chỉ giữ field cần cho count/sort trước phân trang. Giữ nguyên quyền admin, blocker nguồn/trùng (kể cả đang hẹn lại), phạm vi, tìm kiếm, count toàn tập, thứ tự và trang 20 việc; không đổi contracts, schema/index hoặc policy nghiệp vụ. Giữ nguyên timeout kết nối runtime.
+
+Đã quan sát aggregate mới trên dữ liệu local toàn tập khoảng 0,7–0,9 giây. Lần đọc đầu sau khi API khởi động vẫn cần đối soát review hiện có; số đo aggregate không bao gồm bước này. Trình duyệt trong phiên admin thật đã tải được danh sách, 26.597 việc, số đếm từng loại và inspector.
+
+Kiểm thử hồi quy `server/test/catalog-review-queue.integration.ts` dùng replica set riêng của harness và chính `createDatabase` runtime (socket timeout 2 giây), kiểm quyền customer/admin, source/duplicate open/snoozed/resolved, hẹn đến hạn, deleted/archived, scope, count qua bộ lọc, sort và phân trang trên 27.000 địa điểm fixture. Không gọi provider thật hoặc dùng database ứng dụng cho fixture.
+
+```powershell
+$env:MONGOD_BINARY = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
+npx tsx --test server/test/catalog-review-queue.integration.ts
+```
+
+Kiểm chứng đợt sửa: hồi quy 27.000 fixture đạt; `catalog-operations.integration.ts` đạt 11/11 checks; server unit tests đạt 126/126; typecheck, lint, build, Prettier các file sửa và `git diff --check` đạt. Build còn cảnh báo chunk >500 kB hiện hữu. Chưa chạy toàn bộ integration/E2E suite hoặc xác minh bản host/VPS cho thay đổi này.
