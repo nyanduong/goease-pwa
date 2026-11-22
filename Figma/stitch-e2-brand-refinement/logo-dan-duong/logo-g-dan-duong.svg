@@ -1,0 +1,44 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16233F"></stop>
+      <stop offset="100%" stop-color="#19264D"></stop>
+    </linearGradient>
+    <linearGradient id="innerFoldGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6CA6DC"></stop>
+      <stop offset="100%" stop-color="#A7DDF7"></stop>
+    </linearGradient>
+    <linearGradient id="bottomFoldGrad512" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5F9AD5"></stop>
+      <stop offset="100%" stop-color="#B6E3FA"></stop>
+    </linearGradient>
+    <clipPath id="gRibbonClip512">
+      <path d="M 352 122 C 324 101 295 90 262 90 C 177 90 101 162 101 251 C 101 337 168 414 257 414 C 327 414 379 374 399 301 L 421 311 L 408 227 L 268 274 L 334 273 L 358 281 C 342 330 303 371 254 371 C 191 371 147 321 147 255 C 147 189 196 136 258 136 C 285 136 304 142 324 159 C 337 171 355 165 362 154 C 370 142 364 129 352 122 Z"></path>
+    </clipPath>
+  </defs>
+
+  <!-- Base tile -->
+  <rect width="512" height="512" rx="114" fill="url(#bgGrad512)"></rect>
+
+  <!-- Main white ribbon body -->
+  <path d="M 352 122 C 324 101 295 90 262 90 C 177 90 101 162 101 251 C 101 337 168 414 257 414 C 327 414 379 374 399 301 L 421 311 L 408 227 L 268 274 L 334 273 L 358 281 C 342 330 303 371 254 371 C 191 371 147 321 147 255 C 147 189 196 136 258 136 C 285 136 304 142 324 159 C 337 171 355 165 362 154 C 370 142 364 129 352 122 Z" fill="#FFFFFF"></path>
+
+  <!-- Clipped ribbon fold facets and coral tip -->
+  <g clip-path="url(#gRibbonClip512)">
+    <!-- Facet 1: Inner curve of left loop -->
+    <path d="M 267 90 C 210 94 164 122 145 173 C 128 218 131 267 162 306 C 146 279 142 251 152 221 C 168 168 208 126 267 90 Z" fill="url(#innerFoldGrad512)"></path>
+
+    <!-- Facet 2: Bottom outside curve extending up right -->
+    <path d="M 98 295 C 115 346 164 389 224 396 C 287 404 342 369 370 323 C 389 293 397 261 409 227 L 424 310 L 399 301 C 375 382 318 425 255 425 C 172 424 109 369 98 295 Z" fill="url(#bottomFoldGrad512)"></path>
+
+    <!-- Facet 3: Arrow crossbar triangular facet -->
+    <polygon points="268,274 408,227 334,273" fill="#9AD2F4" opacity="0.85"></polygon>
+
+    <!-- Facet 4: Coral diagonal end cut -->
+    <polygon points="356,114 385,125 385,177 312,177" fill="#FF8A5B"></polygon>
+  </g>
+
+  <!-- Location pin with negative navy hole -->
+  <path d="M 267 190 C 249.6 190 235.5 204.3 235.5 222 C 235.5 241.5 267 274 267 274 C 267 274 298.5 241.5 298.5 222 C 298.5 204.3 284.4 190 267 190 Z" fill="#FF8A5B"></path>
+  <circle cx="267" cy="222" r="14" fill="#16233F"></circle>
+</svg>

@@ -1,17 +1,73 @@
-<h2>Shape Creator</h2>
-<p>Count: <input id="count" type="number" value="5"></p>
-<button id="create">Create</button>
-<button id="cancel">Cancel</button>
-<script>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GoEase Design Builder</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      color: var(--figma-color-text, #182723);
+      background: var(--figma-color-bg, #ffffff);
+      font: 13px/1.45 system-ui, sans-serif;
+    }
+    h1 { margin: 0; font-size: 17px; line-height: 22px; }
+    p { margin: 5px 0 12px; color: var(--figma-color-text-secondary, #4c615a); }
+    button {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: #285b49;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    button:focus-visible { outline: 2px solid var(--figma-color-border-selected, #378266); outline-offset: 2px; }
+    button:disabled { opacity: .55; cursor: wait; }
+    #status {
+      min-height: 42px;
+      margin: 10px 0 0;
+      padding: 8px 10px;
+      border-radius: 7px;
+      background: var(--figma-color-bg-secondary, #f0f4f1);
+      overflow-wrap: anywhere;
+      font-size: 12px;
+    }
+    #status[data-state="success"] { color: var(--figma-color-text-success, #285b49); }
+    #status[data-state="error"] { color: var(--figma-color-text-danger, #a32432); }
+  </style>
+</head>
+<body>
+  <h1>GoEase Design Builder</h1>
+  <p>Dựng wireframe T01 Home v2 trong sandbox.</p>
+  <button id="generate" type="button">Generate T01 Home v2</button>
+  <p id="status" role="status" aria-live="polite" aria-atomic="true">Sẵn sàng.</p>
+  <script>
+    const button = document.getElementById("generate");
+    const status = document.getElementById("status");
 
-document.getElementById('create').onclick = () => {
-  const textbox = document.getElementById('count');
-  const count = parseInt(textbox.value, 10);
-  parent.postMessage({ pluginMessage: { type: 'create-shapes', count } }, '*')
-}
+    function showStatus(type, text) {
+      status.dataset.state = type;
+      status.textContent = text;
+      button.disabled = type === "progress";
+    }
 
-document.getElementById('cancel').onclick = () => {
-  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
-}
+    button.addEventListener("click", () => {
+      showStatus("progress", "Đang kiểm tra sandbox…");
+      parent.postMessage({ pluginMessage: { type: "generate" } }, "*");
+    });
 
-</script>
+    window.addEventListener("message", (event) => {
+      const message = event.data?.pluginMessage;
+      if (typeof message?.text !== "string") return;
+      if (["progress", "success", "error"].includes(message.type)) {
+        showStatus(message.type, message.text);
+      }
+    });
+  </script>
+</body>
+</html>
