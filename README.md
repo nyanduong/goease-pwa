@@ -3,6 +3,11 @@
 Repository của GoEase PWA. Định hướng sản phẩm hiện tại là **Local-first Cần Thơ**.
 Xem phiên bản và tình trạng sẵn có của các nguồn nghiệp vụ, UX và visual trong [chỉ mục tài liệu](docs/README.md). Quy tắc làm việc của agent nằm trong [AGENTS.md](AGENTS.md).
 
+## Quy trình nhánh
+
+- Tạo nhánh `feature/*` từ `develop` và mở PR vào `develop`.
+- Sau khi UAT đạt, mở PR release từ `develop` vào `main`. Chỉ cập nhật `main` qua PR release.
+
 ## Chạy local
 
 - Dùng Node.js theo [`.node-version`](.node-version), npm `11.12.1` và một `package-lock.json` cho toàn bộ workspace.
