@@ -17,6 +17,15 @@ npm ci
 npm run dev
 ```
 
+Để chạy riêng từng tiến trình từ root, dùng lệnh tương ứng.
+
+```powershell
+npm run dev:web  # Frontend tại localhost:5181
+npm run dev:api  # Express tại localhost:3000
+```
+
+Web cần API đang chạy ở cổng cấu hình để kiểm tra health.
+
 Mở [GoEase](http://localhost:5181/), [API health](http://localhost:3000/api/v1/health) hoặc [health qua Vite](http://localhost:5181/api/v1/health). Vite chuyển tiếp `/api/` tới Express. Cổng mặc định của web và API lần lượt là `5181` và `3000`. Khi cần đổi cổng, đặt `GOEASE_WEB_PORT` hoặc `GOEASE_API_PORT` trong shell trước khi chạy. [Mẫu web](client/.env.example) · [Mẫu API](server/.env.example)
 
 Foundation dùng cấu hình từ môi trường tiến trình. API liveness trả HTTP 200 khi Express phản hồi. [Trạng thái database](http://localhost:3000/api/v1/health/db) trả HTTP 503 với mã `DATABASE_NOT_CONFIGURED` cho đến khi có lớp kết nối MongoDB.

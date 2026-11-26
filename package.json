@@ -8,6 +8,8 @@
   },
   "scripts": {
     "dev": "npm run build --workspace @goease/contracts && concurrently --kill-others --names web,api \"npm run dev --workspace @goease/client\" \"npm run dev --workspace @goease/server\"",
+    "dev:web": "npm run build --workspace @goease/contracts && npm run dev --workspace @goease/client",
+    "dev:api": "npm run build --workspace @goease/contracts && npm run dev --workspace @goease/server",
     "build": "npm run build --workspace @goease/contracts && npm run build --workspace @goease/server && npm run build --workspace @goease/client",
     "typecheck": "npm run build --workspace @goease/contracts && npm run typecheck --workspaces",
     "lint": "eslint . --max-warnings 0",
