@@ -5,8 +5,9 @@ Xem phiên bản và tình trạng sẵn có của các nguồn nghiệp vụ, U
 
 ## Quy trình nhánh
 
-- Tạo nhánh `feature/*` từ `develop` và mở PR vào `develop`.
-- Sau khi UAT đạt, mở PR release từ `develop` vào `main`. Chỉ cập nhật `main` qua PR release.
+- Duy trì ba nhánh trong đợt rebuild. Phát triển phiên bản mới trên `nyan`, giữ `develop` làm baseline và giữ `main` đến giai đoạn release.
+- Sau khi chủ dự án nghiệm thu từng task, kiểm tra diff, chạy kiểm tra local phù hợp, commit đúng phạm vi, push lên `origin/nyan` và cập nhật tiến độ.
+- Chỉ mở PR từ `nyan` vào `develop` sau khi chủ dự án nghiệm thu toàn bộ phiên bản mới. Quy trình từng task không có feature branch, PR hoặc merge vào `develop`. Không push lên `main`, force-push hoặc viết lại lịch sử Git.
 
 ## Chạy local
 

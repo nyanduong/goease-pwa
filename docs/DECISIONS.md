@@ -14,6 +14,12 @@
 | **M0 / Task 01.** Chuyển sang Lean Solo Development. Tạm dừng thiết kế thêm trên Stitch và Figma. Phát triển từ PRD, IA, Brand Foundation E2 và các màn hình đã được duyệt.           | Chỉ đạo của chủ dự án trong yêu cầu M0 / Task 01.                                                                       |
 | **Traveler shell.** Bốn mục theo thứ tự **Khám phá · Đi chơi · Dấu ấn · Tôi** được xác nhận cho foundation responsive.                                                             | Chủ dự án chỉ định trong phạm vi M0 / Task 01, mục 8. [IA §2.1][ia], [PRD §4.1][prd].                                    |
 
+### Quy trình Git cho phát triển solo
+
+Chủ dự án chỉ định duy trì ba nhánh trong đợt rebuild. `nyan` là nhánh phát triển duy nhất, `develop` giữ baseline và `main` giữ đến giai đoạn release. Sau khi nghiệm thu từng task, rà soát diff, chạy kiểm tra local, commit đúng phạm vi, push lên `origin/nyan` và cập nhật tiến độ. PR từ `nyan` vào `develop` cần nghiệm thu toàn bộ phiên bản mới. Nguồn phê duyệt là yêu cầu **Simplify Solo Development Workflow** ngày 26/11/2026. [Quy trình Git](../AGENTS.md#git-workflow)
+
+Chủ dự án đã nghiệm thu **M0 / Task 01 · Frontend Foundation** ngày 26/11/2026 trong cuộc trao đổi thiết lập workflow mới. [Phạm vi và kiểm tra M0](frontend-foundation.md)
+
 ## Trạng thái cần chủ dự án đối chiếu
 
 | Mục                                           | Bằng chứng                                                                                                                                                                                                   | Cần xác nhận                                                                                                                                                                   |

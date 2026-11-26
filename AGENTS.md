@@ -13,7 +13,14 @@ Read the current task, [README.md](README.md), [the source index](docs/README.md
 
 The owner confirmed React + Vite + TypeScript + Tailwind, Express + TypeScript, and MongoDB + Mongoose. Keep this stack and the current repository unless the owner explicitly requests a change. Do not import code from the old GoEase repository. Keep npm workspaces, one `package-lock.json`, and local web/API through `npm run dev`.
 
-Develop against the existing MongoDB service at `localhost:27017`, replica set `rs0`, and the separate `goease` database. Preserve that service and other databases. Atlas is a separate deployment environment. Follow the current task for Git scope.
+Develop against the existing MongoDB service at `localhost:27017`, replica set `rs0`, and the separate `goease` database. Preserve that service and other databases. Atlas is a separate deployment environment.
+
+## Git workflow
+
+- Keep three branches during the rebuild. Develop exclusively on `nyan`, retain `develop` at the rebuild baseline, and keep `main` unchanged until release.
+- After the project owner accepts a task, review the Git diff, run the relevant local checks, commit only that task, push to `origin/nyan`, and update progress.
+- Do not create per-task feature branches or pull requests, merge into `develop` automatically, push to `main`, force-push, or rewrite Git history.
+- Open a pull request from `nyan` into `develop` only after the entire new GoEase version is complete and accepted by the project owner.
 
 ## Working agreement
 
