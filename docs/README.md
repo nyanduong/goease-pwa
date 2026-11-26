@@ -9,11 +9,11 @@
 
 [Decision log](DECISIONS.md) dẫn các quyết định đã xác nhận về tài liệu nguồn và ghi riêng trạng thái mâu thuẫn. Chờ quyết định của chủ dự án trước khi triển khai phần phụ thuộc vào mục còn mở.
 
-[Traveler Foundation M0](frontend-foundation.md) mô tả cấu trúc chuyển đổi, domain map và quy trình nghiệm thu local.
+[Traveler Foundation M0](frontend-foundation.md) mô tả baseline đang chạy, domain map và quy trình kiểm tra local.
 
 ## Tài liệu thiết kế và đề xuất
 
-Các concept khảo sát, prototype, màn minh họa và đề xuất chưa được duyệt dùng để thảo luận. Các vòng Stitch trong `Figma/stitch-exploration-round-2/` và `Figma/stitch-e2-brand-refinement/` lưu quá trình khám phá. Brand Foundation ghi nhận quyết định visual và các vai trò đã kiểm tra trên T01. Các điểm đánh dấu `UNKNOWN` trong handoff vẫn cần xác nhận. Hướng dẫn trong `client/qa/` phục vụ kiểm tra kỹ thuật với fixture.
+Các concept khảo sát, prototype, màn minh họa và đề xuất chưa được duyệt dùng để thảo luận. Các vòng Stitch trong `Figma/stitch-exploration-round-2/` và `Figma/stitch-e2-brand-refinement/` lưu quá trình khám phá. Brand Foundation ghi nhận quyết định visual và các vai trò đã kiểm tra trên T01. Các điểm đánh dấu `UNKNOWN` trong handoff vẫn cần xác nhận.
 
 ## Phê duyệt thay đổi
 
@@ -26,8 +26,6 @@ Các concept khảo sát, prototype, màn minh họa và đề xuất chưa đư
 
 BR v0.2, baseline schema, registry thiết kế, các báo cáo nghiệm thu cũ, kế hoạch UI legacy và concept pack trước E2 đã được gỡ khỏi checkout. Bản chụp trước lần dọn ở commit `af95353` trong Git có thể dùng để phục hồi theo yêu cầu cụ thể của chủ dự án.
 
-## Tài nguyên và vận hành
+## Truy xuất mã trước Clean Rebuild
 
-- Media hiện có được tra qua [manifest Cloudinary](../packages/media/assets-manifest.json). `media:verify` đọc manifest và đối chiếu CDN. Các ảnh bằng chứng cũ bị gỡ chưa có bản ghi trong manifest.
-- `media:upload` quét ảnh trong Git index dưới `client/public/images/` hoặc `docs/`. Checkout sau cleanup không có đầu vào phù hợp và script báo `No tracked image sources`. Khi cần upload, dùng worktree riêng và đưa đúng các ảnh nguồn đã được duyệt vào index. Đối với ảnh lịch sử được yêu cầu riêng, lấy đúng bản gốc từ Git và giữ đường dẫn nếu cần đối chiếu checksum của manifest.
-- Seed danh mục tỉnh đọc [dữ liệu trong mã nguồn](../server/src/features/trips/province-catalog.ts). Fixture của tests nằm trong code test và harness. QA mascot ghi báo cáo riêng vào `.local/mascot-assets-qa.json`. Tệp tạo bởi quy trình migration lấy đường dẫn tường minh từ người vận hành và được sinh từ database đích.
+Checkpoint `1f33cfcc01d12c87883b5df3d87df79737b919c3` lưu source, tests, scripts và manifest media trước Task 02. Ví dụ, đọc manifest cũ bằng `git show 1f33cfc:packages/media/assets-manifest.json`. Xem [README gốc](../README.md#chạy-local) để chạy baseline hiện tại.

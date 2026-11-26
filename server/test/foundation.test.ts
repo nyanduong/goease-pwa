@@ -1,210 +1,107 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
-import type { AddressInfo } from 'node:net';
-import { Router } from 'express';
+import { once } from 'node:events';
+import { type AddressInfo } from 'node:net';
+import { after, before, test } from 'node:test';
+import { apiErrorSchema, healthSchema } from '@goease/contracts';
 import { createApp } from '../src/app.js';
-import { authLimiter } from '../src/features/auth/security.js';
-import { parseConfig } from '../src/config.js';
-import { validateTestUri } from '../scripts/test-database.js';
-import {
-  apiErrorSchema,
-  databaseHealthSchema,
-  healthSchema,
-} from '@goease/contracts';
+import { readConfig } from '../src/config.js';
+import type { log } from '../src/logger.js';
 
-test('HTTP liveness, real dependency failure contract, recovery, CORS and safe errors', async () => {
-  let available = true;
-  const app = createApp(
-    { CLIENT_ORIGIN: 'http://localhost:5173' },
-    async () => {
-      if (!available) throw new Error('mongodb://secret:password@private-host');
-    },
-  );
-  const server = app.listen(0, '127.0.0.1');
-  await new Promise<void>((resolve) => server.once('listening', resolve));
-  const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  try {
-    const health = await fetch(`${base}/api/v1/health`, {
-      headers: { Origin: 'http://localhost:5173' },
-    });
-    assert.equal(health.status, 200);
-    healthSchema.parse(await health.json());
-    assert.equal(
-      health.headers.get('access-control-allow-origin'),
-      'http://localhost:5173',
-    );
-    assert.equal(health.headers.get('cache-control'), 'no-store');
-    const db = await fetch(`${base}/api/v1/health/db`);
-    databaseHealthSchema.parse(await db.json());
-    available = false;
-    const unavailable = await fetch(`${base}/api/v1/health/db`);
-    assert.equal(unavailable.status, 503);
-    const failure = apiErrorSchema.parse(await unavailable.json());
-    assert.equal(failure.error.code, 'DATABASE_UNAVAILABLE');
-    assert.doesNotMatch(
-      JSON.stringify(failure),
-      /secret|password|private-host/,
-    );
-    assert.equal((await fetch(`${base}/api/v1/health`)).status, 200);
-    available = true;
-    assert.equal((await fetch(`${base}/api/v1/health/db`)).status, 200);
-    const missing = await fetch(`${base}/missing`);
-    assert.equal(missing.status, 404);
-    apiErrorSchema.parse(await missing.json());
-    const invalid = await fetch(`${base}/api/v1/health`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: '{invalid',
-    });
-    assert.equal(invalid.status, 400);
-    apiErrorSchema.parse(await invalid.json());
-    const large = await fetch(`${base}/api/v1/health`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ value: 'a'.repeat(17000) }),
-    });
-    assert.equal(large.status, 413);
-  } finally {
-    await new Promise<void>((resolve) => server.close(() => resolve()));
-  }
+const events: Parameters<typeof log>[] = [];
+const app = createApp((...entry) => events.push(entry));
+let origin: string;
+const server = app.listen(0, '127.0.0.1');
+
+before(async () => {
+  await once(server, 'listening');
+  origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
-test('environment validation fails without leaking values', () => {
-  const valid = {
-    CLIENT_ORIGIN: 'http://localhost:5173',
-    MONGODB_URI: 'mongodb://127.0.0.1:27017/goease',
-  };
-  assert.equal(parseConfig(valid).PORT, 3000);
-  for (const env of [
-    { ...valid, PORT: 'no' },
-    { ...valid, PORT: '65536' },
-    { ...valid, CLIENT_ORIGIN: 'http://localhost:5173/path' },
-    { ...valid, MONGODB_URI: 'secret-value' },
-    {},
-  ]) {
+after(async () => {
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
+});
+
+test('liveness matches the Traveler contract and carries a server-generated request ID', async () => {
+  const headers = { 'X-Request-Id': 'client-supplied-value' };
+  const response = await fetch(`${origin}/api/v1/health`, { headers });
+  assert.equal(response.status, 200);
+  assert.deepEqual(healthSchema.parse(await response.json()), {
+    ok: true,
+    data: { status: 'up', service: 'goease-api' },
+  });
+  const requestId = response.headers.get('x-request-id') ?? '';
+  assert.match(requestId, /^[0-9a-f-]{36}$/);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.ok(
+    events.some(
+      ([, event, fields]) =>
+        event === 'http.completed' &&
+        fields?.requestId === requestId &&
+        fields.method === 'GET' &&
+        fields.statusCode === 200,
+    ),
+  );
+
+  const second = await fetch(`${origin}/api/v1/health`);
+  assert.notEqual(second.headers.get('x-request-id'), requestId);
+  await second.body?.cancel();
+});
+
+test('database status reports an unconfigured database', async () => {
+  const response = await fetch(`${origin}/api/v1/health/db`);
+  assert.equal(response.status, 503);
+  assert.equal(
+    apiErrorSchema.parse(await response.json()).error.code,
+    'DATABASE_NOT_CONFIGURED',
+  );
+});
+
+test('unknown paths and invalid JSON return safe error envelopes', async () => {
+  const unknown = await fetch(
+    `${origin}/example-private-path?query=example-private-query`,
+  );
+  assert.equal(unknown.status, 404);
+  assert.equal(
+    apiErrorSchema.parse(await unknown.json()).error.code,
+    'NOT_FOUND',
+  );
+
+  const malformed = await fetch(`${origin}/api/v1/health`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{invalid-example-body',
+  });
+  assert.equal(malformed.status, 400);
+  assert.equal(
+    apiErrorSchema.parse(await malformed.json()).error.code,
+    'INVALID_REQUEST',
+  );
+
+  const oversized = await fetch(`${origin}/api/v1/health`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify('x'.repeat(17_000)),
+  });
+  assert.equal(oversized.status, 413);
+  assert.equal(
+    apiErrorSchema.parse(await oversized.json()).error.code,
+    'PAYLOAD_TOO_LARGE',
+  );
+  assert.doesNotMatch(
+    JSON.stringify(events),
+    /example-private|invalid-example|client-supplied/,
+  );
+});
+
+test('configuration defaults to loopback, validates port boundaries and hides invalid input', () => {
+  assert.deepEqual(readConfig({}), { host: 'localhost', port: 3000 });
+  assert.equal(readConfig({ GOEASE_API_PORT: '65535' }).port, 65535);
+  for (const port of ['', '0', '65536', '1e3', 'example-invalid-value']) {
     assert.throws(
-      () => parseConfig(env),
-      (error: unknown) =>
-        error instanceof Error &&
-        /Invalid environment/.test(error.message) &&
-        !error.message.includes('secret-value'),
+      () => readConfig({ GOEASE_API_PORT: port }),
+      /^Error: GOEASE_API_PORT must be an integer between 1 and 65535\.$/,
     );
   }
-});
-
-test('Atlas SRV config is accepted without weakening HTTPS or test-database guards', () => {
-  const env = {
-    NODE_ENV: 'production',
-    CLIENT_ORIGIN: 'https://test.example.com',
-    MONGODB_URI:
-      'mongodb+srv://test-user:test-password@cluster.example.com/goease_test?retryWrites=true&w=majority',
-  };
-  assert.equal(parseConfig(env).MONGODB_URI, env.MONGODB_URI);
-  assert.equal(parseConfig(env).TRUST_PROXY_LOOPBACK, false);
-  assert.equal(parseConfig(env).BACKGROUND_WORKERS_ENABLED, true);
-  assert.equal(
-    parseConfig({ ...env, BACKGROUND_WORKERS_ENABLED: 'false' })
-      .BACKGROUND_WORKERS_ENABLED,
-    false,
-  );
-  assert.throws(() =>
-    parseConfig({ ...env, BACKGROUND_WORKERS_ENABLED: 'disabled' }),
-  );
-  assert.equal(
-    parseConfig({ ...env, TRUST_PROXY_LOOPBACK: 'true' }).TRUST_PROXY_LOOPBACK,
-    true,
-  );
-  assert.throws(() => parseConfig({ ...env, TRUST_PROXY_LOOPBACK: 'yes' }));
-  assert.throws(() =>
-    parseConfig({ ...env, CLIENT_ORIGIN: 'http://test.example.com' }),
-  );
-  assert.throws(() => validateTestUri(env.MONGODB_URI, 'development'));
-  assert.throws(
-    () =>
-      parseConfig({
-        ...env,
-        MONGODB_URI: 'https://test-user:test-password@cluster.example.com',
-      }),
-    (error: unknown) =>
-      error instanceof Error &&
-      error.message === 'Invalid environment: MONGODB_URI',
-  );
-});
-
-test('proxy client IPs remain isolated and untrusted forwarded headers cannot bypass auth limits', async () => {
-  for (const trusted of [false, true]) {
-    const router = Router();
-    const limit = authLimiter(1, 60);
-    let account = 0;
-    router.get('/probe', (req, res) => {
-      limit(req, `fixture-${account++}@example.com`);
-      res.json({ ip: req.ip });
-    });
-    const app = createApp(
-      {
-        CLIENT_ORIGIN: 'https://test.example.com',
-        TRUST_PROXY_LOOPBACK: trusted,
-      },
-      async () => {},
-      undefined,
-      router,
-    );
-    const server = app.listen(0, '127.0.0.1');
-    await new Promise<void>((resolve) => server.once('listening', resolve));
-    const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/v1/probe`;
-    try {
-      assert.equal(
-        (await fetch(url, { headers: { 'X-Forwarded-For': '198.51.100.1' } }))
-          .status,
-        200,
-      );
-      const second = await fetch(url, {
-        headers: { 'X-Forwarded-For': '198.51.100.2' },
-      });
-      assert.equal(second.status, trusted ? 200 : 429);
-      if (trusted) {
-        assert.deepEqual(await second.json(), { ip: '198.51.100.2' });
-        // Express stops at the first untrusted hop; a prepended fake IP cannot reset the bucket.
-        assert.equal(
-          (
-            await fetch(url, {
-              headers: { 'X-Forwarded-For': '203.0.113.99, 198.51.100.2' },
-            })
-          ).status,
-          429,
-        );
-      }
-    } finally {
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-    }
-  }
-});
-
-test('database smoke guard refuses application, remote and production targets', () => {
-  assert.throws(() =>
-    validateTestUri(
-      'mongodb://localhost:27019/goease_f0_test',
-      'development',
-      'mongodb://localhost:27019/goease_f0_test',
-    ),
-  );
-  assert.equal(
-    validateTestUri(
-      'mongodb://127.0.0.1:27017/goease_f0_test?replicaSet=rs0',
-      'development',
-    ),
-    'mongodb://127.0.0.1:27017/goease_f0_test?replicaSet=rs0',
-  );
-  for (const uri of [
-    undefined,
-    'mongodb://127.0.0.1:27017/goease',
-    'mongodb://remote:27017/goease_f0_test',
-    'mongodb+srv://host/goease_f0_test',
-    'mongodb://127.0.0.1:27017/goease_f0_test?authSource=admin',
-  ]) {
-    assert.throws(() => validateTestUri(uri, 'development'));
-  }
-  assert.throws(() =>
-    validateTestUri('mongodb://localhost:27017/goease_f0_test', 'production'),
-  );
 });

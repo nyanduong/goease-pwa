@@ -1,69 +1,61 @@
+import { createServer } from 'node:http';
 import { createApp } from './app.js';
-import { parseConfig } from './config.js';
-import { createDatabase } from './database.js';
-import { createLogger } from './observability/logger.js';
-import { createProduct } from './product.js';
+import { readConfig } from './config.js';
+import { log } from './logger.js';
 
-const logger = createLogger(process.env.NODE_ENV);
+function main() {
+  let config;
+  try {
+    config = readConfig(process.env);
+  } catch (error) {
+    log('error', 'api.config_invalid', {
+      message:
+        error instanceof Error ? error.message : 'Invalid API configuration.',
+    });
+    process.exitCode = 1;
+    return;
+  }
 
-async function main() {
-  const config = parseConfig(process.env);
-  const database = createDatabase(config.MONGODB_URI, logger);
-  const product = createProduct(database.connection, config, { logger });
-  database.connection.on('connected', () => {
-    void product
-      .initialize(true)
-      .then(() => {
-        if (!config.BACKGROUND_WORKERS_ENABLED) return;
-        product.operations.start();
-        product.imageSearch.start();
-        product.descriptionSearch.start();
-        product.visitSearch.start();
-        product.enrichment.startWorker();
-      })
-      .catch(() => logger.write('product.init_failed'));
-  });
-  const app = createApp(config, database.ping, logger, product.router);
-  const server = app.listen(config.PORT, config.HOST, () => {
-    logger.write('api.started');
-  });
-  void database.start();
+  const server = createServer(createApp());
   let stopping = false;
-  async function shutdown() {
+
+  function shutdown(signal: NodeJS.Signals) {
     if (stopping) return;
     stopping = true;
-    logger.write('api.stopping');
-    const deadline = setTimeout(() => process.exit(1), 10000);
-    deadline.unref();
-    server.closeIdleConnections();
-    await new Promise<void>((resolve) => server.close(() => resolve()));
-    await product.recovery.drain();
-    await product.enrichment.stopWorker();
-    await product.operations.stop();
-    await product.imageSearch.stop();
-    await product.descriptionSearch.stop();
-    await product.visitSearch.stop();
-    await database.close();
-    clearTimeout(deadline);
-  }
-  const stop = () => {
-    void shutdown().catch(() => {
-      logger.write('api.shutdown_failed');
+    log('info', 'api.stopping', { signal });
+
+    const deadline = setTimeout(() => {
+      log('error', 'api.shutdown_timeout');
       process.exitCode = 1;
-    });
-  };
-  process.once('SIGINT', stop);
-  process.once('SIGTERM', stop);
-  server.once('error', () => {
-    logger.write('api.listen_failed');
-    void shutdown()
-      .catch(() => logger.write('api.shutdown_failed'))
-      .finally(() => {
+      server.closeAllConnections();
+    }, 5000);
+    deadline.unref();
+
+    server.close((error) => {
+      clearTimeout(deadline);
+      process.off('SIGINT', shutdown);
+      process.off('SIGTERM', shutdown);
+      if (error) {
+        log('error', 'api.shutdown_failed');
         process.exitCode = 1;
-      });
+      } else if (process.exitCode !== 1) {
+        log('info', 'api.stopped');
+      }
+    });
+  }
+
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    log('error', 'api.listen_failed', {
+      port: config.port,
+      code: error.code ?? 'UNKNOWN',
+    });
+    process.exitCode = 1;
+  });
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+  server.listen(config.port, config.host, () => {
+    log('info', 'api.started', { host: config.host, port: config.port });
   });
 }
-main().catch(() => {
-  logger.write('api.startup_failed');
-  process.exitCode = 1;
-});
+
+main();

@@ -13,7 +13,7 @@ Read the current task, [README.md](README.md), [the source index](docs/README.md
 
 The owner confirmed React + Vite + TypeScript + Tailwind, Express + TypeScript, and MongoDB + Mongoose. Keep this stack and the current repository unless the owner explicitly requests a change. Do not import code from the old GoEase repository. Keep npm workspaces, one `package-lock.json`, and local web/API through `npm run dev`.
 
-Develop against the existing MongoDB service at `localhost:27017`, replica set `rs0`, and the separate `goease` database. Preserve that service and other databases. Atlas is a separate deployment environment.
+The clean foundation runs with no database connection. MongoDB and Mongoose remain the approved stack for upcoming data features. Preserve the existing local MongoDB service and its databases. Atlas is a separate deployment environment.
 
 ## Git workflow
 

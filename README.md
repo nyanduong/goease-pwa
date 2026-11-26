@@ -1,7 +1,6 @@
 # GoEase
 
-Repository của GoEase PWA. Định hướng sản phẩm hiện tại là **Local-first Cần Thơ**.
-Xem phiên bản và tình trạng sẵn có của các nguồn nghiệp vụ, UX và visual trong [chỉ mục tài liệu](docs/README.md). Quy tắc làm việc của agent nằm trong [AGENTS.md](AGENTS.md).
+**Nền tảng khám phá, trải nghiệm và nhận quyền lợi khi du lịch miền Tây.** GoEase bắt đầu từ Cần Thơ và ưu tiên người địa phương. [Nguồn đã duyệt](docs/README.md) · [Quy tắc repository](AGENTS.md)
 
 ## Quy trình nhánh
 
@@ -11,31 +10,16 @@ Xem phiên bản và tình trạng sẵn có của các nguồn nghiệp vụ, U
 
 ## Chạy local
 
-- Dùng Node.js theo [`.node-version`](.node-version), npm `11.12.1` và một `package-lock.json` cho toàn bộ workspace.
-- Local development dùng MongoDB đã có tại `localhost:27017`, replica set `rs0`, database riêng `goease`. Dùng cấu hình service hiện hữu và giữ nguyên các database khác.
-- Dùng các tệp môi trường mẫu để cấu hình web và API. Chỉ sao chép nếu tệp đích chưa có. Biến `VITE_*` là công khai. Lưu credentials ở môi trường API hoặc hệ thống triển khai.
-
-Chạy các lệnh sau trong PowerShell từ thư mục gốc.
+Dùng Node.js theo [`.node-version`](.node-version), npm `11.12.1` và một `package-lock.json` ở root. Chạy từ thư mục gốc.
 
 ```powershell
 npm ci
-if (-not (Test-Path server/.env)) { Copy-Item server/.env.example server/.env }
-if (-not (Test-Path client/.env)) { Copy-Item client/.env.example client/.env }
 npm run dev
 ```
 
-Mở [web local](http://localhost:5180), [API health](http://localhost:3000/api/v1/health) hoặc [MongoDB health](http://localhost:3000/api/v1/health/db). Vite proxy `/api` tới API trên `localhost:3000`. Các biến cấu hình nằm trong [server/.env.example](server/.env.example) và [client/.env.example](client/.env.example).
+Mở [GoEase](http://localhost:5181/), [API health](http://localhost:3000/api/v1/health) hoặc [health qua Vite](http://localhost:5181/api/v1/health). Vite chuyển tiếp `/api/` tới Express. Cổng mặc định của web và API lần lượt là `5181` và `3000`. Khi cần đổi cổng, đặt `GOEASE_WEB_PORT` hoặc `GOEASE_API_PORT` trong shell trước khi chạy. [Mẫu web](client/.env.example) · [Mẫu API](server/.env.example)
 
-`npm run db:init` kiểm tra primary của replica set hiện hữu. `npm run db:check` ghi, đọc và xóa một marker kiểm tra trong database loopback `goease_f0_test`. Chạy các lệnh thao tác dữ liệu như seed khi công việc yêu cầu rõ ràng.
-
-### Nghiệm thu Traveler Foundation (M0)
-
-```powershell
-npm ci
-npm run dev:foundation
-```
-
-Mở [Traveler Foundation](http://localhost:5181/) và [health qua Vite](http://localhost:5181/api/v1/health). Lệnh trên phục vụ route health hiện có bằng Express tại [localhost:3001](http://localhost:3001/api/v1/health), trong một tiến trình local không kết nối MongoDB. Hai cổng 5181 và 3001 dành cho bản nghiệm thu. Xem [kiến trúc, cấu trúc và kiểm thử M0](docs/frontend-foundation.md).
+Foundation dùng cấu hình từ môi trường tiến trình. API liveness trả HTTP 200 khi Express phản hồi. [Trạng thái database](http://localhost:3000/api/v1/health/db) trả HTTP 503 với mã `DATABASE_NOT_CONFIGURED` cho đến khi có lớp kết nối MongoDB.
 
 ## Kiểm tra và build
 
@@ -43,25 +27,20 @@ Mở [Traveler Foundation](http://localhost:5181/) và [health qua Vite](http://
 npm run typecheck
 npm run lint
 npm test
+npm run test:e2e
 npm run build
-npm run format:check
 ```
 
-[CI](.github/workflows/ci.yml) chạy các kiểm tra này sau `npm ci`. Integration và browser E2E có harness MongoDB riêng. Khi cần chạy, đặt `MONGOD_BINARY` tới binary đã cài và kiểm tra các cổng của harness, 27021 cho integration và 27020 cho E2E. Browser E2E dùng Microsoft Edge trên Windows, web/API mặc định ở 5180/3000. Có thể đặt `E2E_WEB_PORT` và `E2E_API_PORT` nếu cổng đã có tiến trình.
+`npm test` chạy các kiểm tra Express trên cổng loopback tạm thời. Playwright dùng Microsoft Edge và tự khởi động cả hai workspace ở cổng web `5191` và API `3011`. Build xuất `dist/` cho contracts, API và frontend. Chạy API đã build bằng `npm run start --workspace @goease/server`.
 
-Build tạo `dist/` cho client, server và hai package dùng chung. Có thể khởi động bản build API bằng `npm run start --workspace @goease/server`. Khi cần triển khai, tham khảo [Nginx](deploy/goease.nginx.conf), [systemd](deploy/goease-api.service) và [mẫu môi trường deployment](deploy/.env.example).
+## Tổ chức mã
 
-## Tổ chức mã và dữ liệu
+| Thư mục                                    | Nội dung                                                                      |
+| ------------------------------------------ | ----------------------------------------------------------------------------- |
+| [client/](client/)                         | React, Vite, TypeScript, Tailwind và Playwright cho Traveler Foundation       |
+| [server/](server/)                         | Express, cấu hình môi trường, health, xử lý lỗi, logging và graceful shutdown |
+| [packages/contracts/](packages/contracts/) | DTO và schema runtime cho health và lỗi API                                   |
+| [docs/](docs/)                             | Nguồn đã duyệt, decision log và ghi chú kỹ thuật                              |
+| [Figma/](Figma/)                           | Brand Foundation E2, logo và thiết kế tham chiếu                              |
 
-| Vị trí                                     | Nội dung                                               |
-| ------------------------------------------ | ------------------------------------------------------ |
-| [client/](client/)                         | React, Vite và Tailwind                                |
-| [client-v2/](client-v2/)                   | Traveler Foundation trong giai đoạn chuyển đổi         |
-| [server/](server/)                         | API Express và MongoDB qua Mongoose                    |
-| [packages/contracts/](packages/contracts/) | DTO và schema kiểm tra ở ranh giới API                 |
-| [packages/media/](packages/media/)         | URL public và manifest checksum của tài sản Cloudinary |
-| [tests/](tests/)                           | Browser E2E                                            |
-| [docs/](docs/)                             | Chỉ mục nguồn đã duyệt và decision log                 |
-| [Figma/brand/](Figma/brand/)               | Brand Design System và assets bàn giao                 |
-
-`npm run media:verify` đối chiếu các URL CDN và checksum trong manifest. `npm run media:upload` cần ảnh nguồn được Git theo dõi ở vị trí mà script hỗ trợ. Script QA atlas mascot ghi báo cáo JSON cục bộ tới `.local/mascot-assets-qa.json`.
+Checkpoint `1f33cfcc01d12c87883b5df3d87df79737b919c3` lưu cây mã ngay trước cleanup, gồm cả giao diện Foundation đã nghiệm thu và mã legacy để truy xuất qua Git. [Ghi chú Traveler Foundation](docs/frontend-foundation.md)
