@@ -1,0 +1,67 @@
+/* Brand values from Figma/brand/DESIGN.md and Figma/brand/tokens.json. */
+@theme {
+  --color-primary: #334eac;
+  --color-on-primary: #ffffff;
+  --color-canvas: #f7f8fc;
+  --color-surface: #ffffff;
+  --color-ink: #202a46;
+  --color-ink-secondary: #43516c;
+  --color-hero-surface: #19264d;
+  --color-hero-media: #131e3d;
+  --color-featured-media: #ebf0fa;
+  --color-selection-soft: #e9edfa;
+  --color-switch-track: #eceff6;
+  --color-divider: #e1e5f0;
+  --color-control-border: #7785a6;
+  --color-decorative-coral: #ff8a5b;
+  --color-warm-surface: #ffe8df;
+  --color-warm-ink: #8f352b;
+  --color-media-label: rgb(14 22 43 / 85%);
+
+  --font-brand:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-control: Arial, sans-serif;
+  --text-hero: 24px;
+  --text-hero--line-height: 1.25;
+  --text-hero--font-weight: 800;
+  --text-hero--letter-spacing: -0.3px;
+  --text-wordmark: 20px;
+  --text-wordmark--font-weight: 800;
+  --text-wordmark--letter-spacing: -0.4px;
+  --text-section: 18px;
+  --text-section--font-weight: 800;
+  --text-section--letter-spacing: -0.2px;
+  --text-featured: 17px;
+  --text-featured--line-height: 1.2;
+  --text-featured--font-weight: 800;
+  --text-category: 13px;
+  --text-category--line-height: 1.2;
+  --text-category--font-weight: 700;
+  --text-suggestion: 13px;
+  --text-suggestion--line-height: 1.3;
+  --text-suggestion--font-weight: 700;
+  --text-supporting: 12px;
+  --text-supporting--font-weight: 500;
+  --text-control: 13px;
+  --text-control--font-weight: 700;
+  --text-navigation: 12px;
+  --text-navigation--line-height: 1;
+  --text-navigation--font-weight: 600;
+
+  --radius-media-label: 6px;
+  --radius-switch-tab: 9px;
+  --radius-icon-tile: 10px;
+  --radius-field: 12px;
+  --radius-card: 14px;
+  --radius-featured: 18px;
+  --radius-hero: 20px;
+  --radius-pill: 999px;
+  --spacing-switch-gap: 4px;
+  --spacing-chip-gap: 6px;
+  --spacing-grid-gap: 10px;
+  --spacing-section-title-bottom: 12px;
+  --spacing-page-inset: 16px;
+  --spacing-main-gap: 20px;
+  --spacing-main-bottom: 24px;
+  --shadow-card: 0 1px 3px rgb(32 42 70 / 3%);
+}

@@ -1,0 +1,9 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="512" height="512" rx="114" fill="#16233F"></rect>
+                  <!-- Optical adjustment for 16px: robust silhouette G + arrow and bold coral beacon -->
+                  <path d="M 352 122 C 324 101 295 90 262 90 C 177 90 101 162 101 251 C 101 337 168 414 257 414 C 327 414 379 374 399 301 L 421 311 L 408 227 L 268 274 L 334 273 L 358 281 C 342 330 303 371 254 371 C 191 371 147 321 147 255 C 147 189 196 136 258 136 C 285 136 304 142 324 159 C 337 171 355 165 362 154 C 370 142 364 129 352 122 Z" fill="#FFFFFF"></path>
+                  <!-- Single contrast fold for 16px clarity -->
+                  <path d="M 101 251 C 101 337 168 414 257 414 L 254 371 C 191 371 147 321 147 255 Z" fill="#5F9AD5"></path>
+                  <!-- Prominent Coral Pin dot so it never blurs or disappears at 16px -->
+                  <circle cx="267" cy="226" r="34" fill="#FF8A5B"></circle>
+                </svg>

@@ -8,12 +8,14 @@
   },
   "scripts": {
     "dev": "npm run build --workspace @goease/media && npm run build --workspace @goease/contracts && concurrently --kill-others \"npm run dev --workspace @goease/client\" \"npm run dev --workspace @goease/server\"",
-    "build": "npm run build --workspace @goease/media && npm run build --workspace @goease/contracts && npm run build --workspace @goease/server && npm run build --workspace @goease/client",
+    "dev:foundation": "npm run build --workspace @goease/contracts && concurrently --kill-others --names web,health \"npm run dev --workspace @goease/client-v2\" \"tsx scripts/foundation-health.ts\"",
+    "build": "npm run build --workspace @goease/media && npm run build --workspace @goease/contracts && npm run build --workspace @goease/server && npm run build --workspace @goease/client && npm run build --workspace @goease/client-v2",
     "typecheck": "npm run build --workspace @goease/media && npm run build --workspace @goease/contracts && npm run typecheck --workspaces && tsc -p tsconfig.tools.json",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "npm run build --workspace @goease/media && npm run build --workspace @goease/contracts && npm run test --workspace @goease/server",
+    "test:foundation": "playwright test --config client-v2/playwright.config.ts",
     "test:e2e": "npm run build && playwright test",
     "test:catalog-browser": "npm run build --workspace @goease/media && npm run build --workspace @goease/contracts && playwright test --config tests/catalog.playwright.config.ts",
     "db:check": "npm run db:check --workspace @goease/server",
@@ -37,6 +39,7 @@
   },
   "workspaces": [
     "client",
+    "client-v2",
     "server",
     "packages/contracts",
     "packages/media"

@@ -9,6 +9,8 @@
 
 [Decision log](DECISIONS.md) dẫn các quyết định đã xác nhận về tài liệu nguồn và ghi riêng trạng thái mâu thuẫn. Chờ quyết định của chủ dự án trước khi triển khai phần phụ thuộc vào mục còn mở.
 
+[Traveler Foundation M0](frontend-foundation.md) mô tả cấu trúc chuyển đổi, domain map và quy trình nghiệm thu local.
+
 ## Tài liệu thiết kế và đề xuất
 
 Các concept khảo sát, prototype, màn minh họa và đề xuất chưa được duyệt dùng để thảo luận. Các vòng Stitch trong `Figma/stitch-exploration-round-2/` và `Figma/stitch-e2-brand-refinement/` lưu quá trình khám phá. Brand Foundation ghi nhận quyết định visual và các vai trò đã kiểm tra trên T01. Các điểm đánh dấu `UNKNOWN` trong handoff vẫn cần xác nhận. Hướng dẫn trong `client/qa/` phục vụ kiểm tra kỹ thuật với fixture.

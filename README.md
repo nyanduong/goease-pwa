@@ -27,6 +27,15 @@ Mở [web local](http://localhost:5180), [API health](http://localhost:3000/api/
 
 `npm run db:init` kiểm tra primary của replica set hiện hữu. `npm run db:check` ghi, đọc và xóa một marker kiểm tra trong database loopback `goease_f0_test`. Chạy các lệnh thao tác dữ liệu như seed khi công việc yêu cầu rõ ràng.
 
+### Nghiệm thu Traveler Foundation (M0)
+
+```powershell
+npm ci
+npm run dev:foundation
+```
+
+Mở [Traveler Foundation](http://localhost:5181/) và [health qua Vite](http://localhost:5181/api/v1/health). Lệnh trên phục vụ route health hiện có bằng Express tại [localhost:3001](http://localhost:3001/api/v1/health), trong một tiến trình local không kết nối MongoDB. Hai cổng 5181 và 3001 dành cho bản nghiệm thu. Xem [kiến trúc, cấu trúc và kiểm thử M0](docs/frontend-foundation.md).
+
 ## Kiểm tra và build
 
 ```powershell
@@ -46,6 +55,7 @@ Build tạo `dist/` cho client, server và hai package dùng chung. Có thể kh
 | Vị trí                                     | Nội dung                                               |
 | ------------------------------------------ | ------------------------------------------------------ |
 | [client/](client/)                         | React, Vite và Tailwind                                |
+| [client-v2/](client-v2/)                   | Traveler Foundation trong giai đoạn chuyển đổi         |
 | [server/](server/)                         | API Express và MongoDB qua Mongoose                    |
 | [packages/contracts/](packages/contracts/) | DTO và schema kiểm tra ở ranh giới API                 |
 | [packages/media/](packages/media/)         | URL public và manifest checksum của tài sản Cloudinary |

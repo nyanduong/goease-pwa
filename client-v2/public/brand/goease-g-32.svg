@@ -1,0 +1,13 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="512" height="512" rx="114" fill="#16233F"></rect>
+                  <!-- Clean bold G ribbon without micro noise -->
+                  <path d="M 352 122 C 324 101 295 90 262 90 C 177 90 101 162 101 251 C 101 337 168 414 257 414 C 327 414 379 374 399 301 L 421 311 L 408 227 L 268 274 L 334 273 L 358 281 C 342 330 303 371 254 371 C 191 371 147 321 147 255 C 147 189 196 136 258 136 C 285 136 304 142 324 159 C 337 171 355 165 362 154 C 370 142 364 129 352 122 Z" fill="#FFFFFF"></path>
+                  <!-- Simplified shading for 32px -->
+                  <path d="M 101 251 C 101 337 168 414 257 414 L 254 371 C 191 371 147 321 147 255 Z" fill="#5F9AD5"></path>
+                  <polygon points="268,274 408,227 334,273" fill="#9AD2F4"></polygon>
+                  <!-- Coral Top Tip -->
+                  <circle cx="342" cy="144" r="22" fill="#FF8A5B"></circle>
+                  <!-- Pin: solid clean coral for high readability -->
+                  <path d="M 267 195 C 252 195 240 207 240 222 C 240 240 267 274 267 274 C 267 274 294 240 294 222 C 294 207 282 195 267 195 Z" fill="#FF8A5B"></path>
+                  <circle cx="267" cy="222" r="11" fill="#16233F"></circle>
+                </svg>

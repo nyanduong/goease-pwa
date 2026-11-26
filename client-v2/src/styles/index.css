@@ -1,0 +1,199 @@
+@import 'tailwindcss';
+@import './e2.css';
+
+:root {
+  --mobile-nav-height: 64px;
+}
+
+body {
+  @apply m-0 bg-canvas font-brand text-ink;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  @apply fixed start-4 top-3 z-30 rounded-field bg-surface px-4 py-3 font-bold text-primary;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.shell-width {
+  @apply mx-auto w-full max-w-[390px] px-page-inset md:max-w-[960px] md:px-8;
+}
+
+.traveler-header {
+  @apply sticky top-0 z-20 border-b border-divider bg-surface;
+  padding-top: env(safe-area-inset-top);
+}
+
+.brand-link {
+  @apply flex min-h-11 shrink-0 items-center gap-2.5 text-wordmark;
+}
+
+.traveler-nav {
+  @apply fixed inset-x-0 bottom-0 grid grid-cols-4 border-t border-divider bg-surface font-control text-navigation text-ink-secondary;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.traveler-nav a {
+  @apply flex flex-col items-center justify-center gap-1.5;
+  min-height: var(--mobile-nav-height);
+}
+
+.traveler-nav a:focus-visible {
+  outline-offset: -3px;
+}
+
+.traveler-nav a[aria-current='page'] {
+  @apply font-bold text-primary;
+}
+
+.traveler-nav a[aria-current='page'] svg {
+  box-sizing: content-box;
+  @apply rounded-icon-tile bg-selection-soft px-3 py-0.5;
+}
+
+.traveler-main {
+  @apply grid content-start gap-main-gap pt-main-gap;
+  scroll-margin-top: 64px;
+  padding-bottom: calc(
+    var(--spacing-main-bottom) + var(--mobile-nav-height) +
+      env(safe-area-inset-bottom)
+  );
+}
+
+.traveler-main:focus {
+  outline: none;
+}
+
+.foundation-hero {
+  @apply overflow-hidden rounded-hero border border-hero-surface bg-hero-surface text-on-primary;
+}
+
+.hero-art {
+  @apply relative h-[125px] overflow-hidden bg-hero-media;
+}
+
+.hero-art img {
+  @apply absolute top-0 left-1/2 h-full w-auto max-w-none -translate-x-1/2;
+  aspect-ratio: 358 / 125;
+}
+
+.hero-art span {
+  @apply absolute top-2.5 left-2.5 rounded-media-label bg-media-label px-2 py-0.5 text-supporting text-selection-soft;
+}
+
+.hero-copy {
+  @apply px-page-inset pt-3.5 pb-[18px];
+}
+
+.hero-copy p {
+  @apply mt-2 text-sm leading-relaxed text-selection-soft;
+}
+
+.hero-copy .hero-region {
+  @apply mt-0 mb-1 text-supporting;
+}
+
+.hero-title {
+  @apply text-hero;
+}
+
+.surface {
+  @apply rounded-card border border-divider bg-surface p-page-inset shadow-card;
+}
+
+.section-title {
+  @apply text-section;
+}
+
+.health-card {
+  @apply grid gap-4 text-sm;
+}
+
+.icon-tile {
+  @apply grid size-11 shrink-0 place-items-center rounded-icon-tile bg-selection-soft text-primary;
+}
+
+.endpoint {
+  @apply text-xs text-ink-secondary;
+}
+
+.health-result {
+  @apply flex flex-wrap items-center justify-between gap-3 border-t border-divider pt-4;
+}
+
+.health-result .action-button {
+  @apply w-full md:w-auto;
+}
+
+.status-label {
+  @apply flex items-center gap-1.5 font-bold;
+}
+
+.action-button {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-field bg-primary px-4 font-control text-control text-on-primary;
+}
+
+.action-button[aria-disabled='true'] {
+  @apply cursor-wait bg-selection-soft text-primary;
+}
+
+.return-link {
+  @apply inline-flex min-h-11 items-center font-bold text-primary underline underline-offset-4;
+}
+
+@media (width >= 48rem) {
+  .traveler-header .shell-width {
+    min-height: 72px;
+  }
+
+  .traveler-nav {
+    @apply static flex gap-1 border-0 p-0;
+  }
+
+  .traveler-nav a {
+    @apply min-h-11 flex-row gap-2 rounded-icon-tile px-3;
+  }
+
+  .traveler-nav a:hover,
+  .traveler-nav a[aria-current='page'] {
+    @apply bg-selection-soft;
+  }
+
+  .traveler-nav a[aria-current='page'] svg {
+    @apply bg-transparent p-0;
+  }
+
+  .traveler-main {
+    @apply gap-main-gap pt-8 pb-main-bottom;
+    scroll-margin-top: 80px;
+  }
+
+  .foundation-hero {
+    @apply grid min-h-[244px] grid-cols-2;
+  }
+
+  .hero-art {
+    @apply order-last h-full;
+  }
+
+  .hero-art img {
+    left: 34%;
+  }
+
+  .hero-copy {
+    @apply self-center p-8;
+  }
+
+  .health-card {
+    @apply p-6;
+  }
+}

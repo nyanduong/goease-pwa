@@ -1,0 +1,20 @@
+<svg fill="none" height="100%" preserveAspectRatio="none" viewBox="0 0 358 125" width="100%" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#131E3D" height="125" width="358"></rect>
+<circle cx="295" cy="30" fill="#334EAC" fill-opacity="0.32" r="28"></circle>
+<circle cx="295" cy="30" fill="#FF8A5B" fill-opacity="0.2" r="14"></circle>
+<!-- Star lights -->
+<circle cx="45" cy="24" fill="#FFFFFF" fill-opacity="0.9" r="1.5"></circle>
+<circle cx="110" cy="18" fill="#FFFFFF" fill-opacity="0.75" r="1"></circle>
+<circle cx="178" cy="28" fill="#FFFFFF" fill-opacity="0.85" r="1.5"></circle>
+<circle cx="230" cy="15" fill="#FFFFFF" fill-opacity="0.6" r="1"></circle>
+<!-- River banks and water layers -->
+<path d="M-10 82 C70 65, 180 98, 370 70 L370 125 L-10 125 Z" fill="#1D2B52"></path>
+<path d="M-10 98 C80 82, 190 115, 370 92 L370 125 L-10 125 Z" fill="#162243"></path>
+<!-- Wave and boat silhouette -->
+<path d="M15 106 C100 96, 210 116, 345 102" stroke="#FF8A5B" stroke-dasharray="5 7" stroke-linecap="round" stroke-width="2.5"></path>
+<path d="M50 116 C140 108, 240 120, 310 112" stroke="#334EAC" stroke-linecap="round" stroke-width="2"></path>
+<!-- Small lantern boat -->
+<path d="M125 76 L148 76 L142 86 L131 86 Z" fill="#FF8A5B" fill-opacity="0.9"></path>
+<line stroke="#FFE8DF" stroke-width="1.8" x1="136" x2="136" y1="68" y2="76"></line>
+<circle cx="136" cy="67" fill="#FFE8DF" r="2.5"></circle>
+</svg>
